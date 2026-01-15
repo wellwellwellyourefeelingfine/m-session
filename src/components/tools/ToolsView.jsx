@@ -12,8 +12,10 @@ import DosageTool from './DosageTool';
 import ResourcesTool from './ResourcesTool';
 import FAQTool from './FAQTool';
 import SettingsTool from './SettingsTool';
+import HelpTool from './HelpTool';
 
 const tools = [
+  { id: 'help', label: 'I NEED HELP', component: HelpTool },
   { id: 'timer', label: 'TIMER', component: TimerTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
