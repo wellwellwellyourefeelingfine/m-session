@@ -268,6 +268,43 @@
   }
 }
 
+/* Horizontal slide animations for journal navigation */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRight {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
 }
@@ -290,4 +327,20 @@
 
 .animate-fadeOut {
   animation: fadeOut 0.3s ease-out forwards;
+}
+
+.animate-slideInFromRight {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}
+
+.animate-slideOutToRight {
+  animation: slideOutToRight 0.3s ease-out forwards;
+}
+
+.animate-slideInFromLeft {
+  animation: slideInFromLeft 0.3s ease-out forwards;
+}
+
+.animate-slideOutToLeft {
+  animation: slideOutToLeft 0.3s ease-out forwards;
 }
