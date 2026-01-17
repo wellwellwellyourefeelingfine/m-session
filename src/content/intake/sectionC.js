@@ -37,10 +37,5 @@ export const sectionCQuestions = [
       { value: 'long', label: '6+ hours' },
     ],
   },
-  {
-    field: 'startTime',
-    type: 'time',
-    label: 'What time are you starting?',
-    required: false,
-  },
+  // Note: startTime question removed - now handled when user clicks Begin Session
 ];

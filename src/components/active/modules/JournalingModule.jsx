@@ -75,7 +75,7 @@ export default function JournalingModule({ module, onComplete, onSkip }) {
     <div className="flex flex-col h-full px-6 py-8">
       {/* Header with title and instructions */}
       <div className="text-center mb-6">
-        <h2 className="font-serif text-lg text-[var(--color-text-primary)] mb-3">
+        <h2 className="text-[var(--color-text-primary)] mb-3">
           {module.title}
         </h2>
 

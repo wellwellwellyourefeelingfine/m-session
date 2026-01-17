@@ -137,7 +137,7 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
     <div className="flex flex-col justify-between px-6 py-8">
       <div className="flex-1 flex items-center justify-center w-full">
         <div className="text-center space-y-8 max-w-md mx-auto">
-          <h2 className="font-serif text-xl text-[var(--color-text-primary)]">
+          <h2 className="text-[var(--color-text-primary)]">
             {module.title}
           </h2>
 
@@ -163,11 +163,11 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
                 <div
                   className={`w-32 h-32 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleSize()}`}
                 >
-                  <span className="text-3xl font-serif text-[var(--color-text-primary)]">{countdown}</span>
+                  <span className="text-lg text-[var(--color-text-primary)]">{countdown}</span>
                 </div>
               </div>
 
-              <p className="font-serif text-2xl text-[var(--color-text-primary)]">
+              <p className="text-lg text-[var(--color-text-primary)]">
                 {getPhaseText()}
               </p>
 
@@ -180,7 +180,7 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
           {!isRunning && cycleCount >= totalCycles && (
             <>
               <div className="py-8">
-                <p className="font-serif text-xl text-[var(--color-text-primary)]">
+                <p className="text-[var(--color-text-primary)]">
                   Well done.
                 </p>
                 <p className="text-[var(--color-text-secondary)] mt-4">

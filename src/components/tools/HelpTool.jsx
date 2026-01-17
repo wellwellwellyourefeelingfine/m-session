@@ -7,7 +7,7 @@ export default function HelpTool() {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="font-serif text-lg">You Are Safe</h3>
+        <h3>You Are Safe</h3>
         <p className="text-[var(--color-text-secondary)]">
           Take a deep breath. This experience is temporary.
         </p>

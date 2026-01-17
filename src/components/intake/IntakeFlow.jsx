@@ -28,16 +28,39 @@ const allQuestions = [
   ...sectionDQuestions.map(q => ({ ...q, section: 'D', sectionTitle: 'Safety & Practicality' })),
 ];
 
+// Safety warning messages for health conditions
+const HEALTH_WARNINGS = {
+  heartConditions: {
+    title: 'Important Health Information',
+    message: 'MDMA significantly increases heart rate and blood pressure. People with heart conditions face elevated risks including cardiac events. Please consult with a healthcare provider before proceeding, or consider whether this experience is right for you at this time.',
+    continueLabel: 'I understand the risks',
+  },
+  psychiatricHistory: {
+    title: 'Important Health Information',
+    message: 'MDMA can potentially trigger or exacerbate psychotic episodes in individuals with a history of psychosis or severe psychiatric conditions. Please consult with a mental health professional before proceeding, or consider whether this experience is right for you at this time.',
+    continueLabel: 'I understand the risks',
+  },
+};
+
 export default function IntakeFlow() {
   const {
     intake,
     updateIntakeResponse,
+    setIntakeQuestionIndex,
     completeIntake,
   } = useSessionStore();
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  // Use store for question index persistence
+  const currentQuestionIndex = intake.currentQuestionIndex || 0;
   const [isVisible, setIsVisible] = useState(true);
-  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(
+    currentQuestionIndex >= allQuestions.length
+  );
+  const [activeWarning, setActiveWarning] = useState(null); // 'heartConditions' | 'psychiatricHistory' | null
+
+  const setCurrentQuestionIndex = (index) => {
+    setIntakeQuestionIndex(index);
+  };
 
   const currentQuestion = allQuestions[currentQuestionIndex];
   const currentValue = intake.responses[currentQuestion?.field];
@@ -56,12 +79,30 @@ export default function IntakeFlow() {
   const handleAnswer = (value) => {
     updateIntakeResponse(currentQuestion.section, currentQuestion.field, value);
 
+    // Check if this is a health condition question with "yes" answer - show warning
+    if (currentQuestion.field === 'heartConditions' && value === 'yes') {
+      setActiveWarning('heartConditions');
+      return; // Don't auto-advance, wait for warning acknowledgment
+    }
+    if (currentQuestion.field === 'psychiatricHistory' && value === 'yes') {
+      setActiveWarning('psychiatricHistory');
+      return; // Don't auto-advance, wait for warning acknowledgment
+    }
+
     // Auto-advance after a brief delay for single-select
     if (currentQuestion.type === 'single-select') {
       setTimeout(() => {
         goToNextQuestion();
       }, 300);
     }
+  };
+
+  // Handle warning acknowledgment
+  const handleWarningAcknowledge = () => {
+    setActiveWarning(null);
+    setTimeout(() => {
+      goToNextQuestion();
+    }, 100);
   };
 
   // Navigate to next question with fade animation
@@ -128,7 +169,7 @@ export default function IntakeFlow() {
         className="max-w-md mx-auto px-6 py-8 transition-opacity duration-300"
         style={{ opacity: isVisible ? 1 : 0 }}
       >
-        <h2 className="font-serif text-lg mb-8">Ready to Begin</h2>
+        <h2 className="mb-8">Ready to Begin</h2>
 
         {(intake.showSafetyWarnings || intake.showMedicationWarning) && (
           <SafetyWarning
@@ -259,6 +300,40 @@ export default function IntakeFlow() {
           </button>
         )}
       </div>
+
+      {/* Health Warning Modal */}
+      {activeWarning && HEALTH_WARNINGS[activeWarning] && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6">
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6">
+            <h3 className="text-[var(--color-text-primary)] mb-4">
+              {HEALTH_WARNINGS[activeWarning].title}
+            </h3>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
+              {HEALTH_WARNINGS[activeWarning].message}
+            </p>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={handleWarningAcknowledge}
+                className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
+              >
+                {HEALTH_WARNINGS[activeWarning].continueLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  // Reset the answer to "no" and close warning
+                  updateIntakeResponse(currentQuestion.section, currentQuestion.field, 'no');
+                  setActiveWarning(null);
+                }}
+                className="w-full py-2 text-[var(--color-text-tertiary)] text-xs underline"
+              >
+                Change my answer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

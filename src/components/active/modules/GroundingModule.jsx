@@ -48,7 +48,7 @@ export default function GroundingModule({ module, onComplete, onSkip }) {
     <div className="flex flex-col justify-between px-6 py-8">
       <div className="flex-1 flex items-center justify-center w-full">
         <div className="text-center space-y-8 max-w-md mx-auto">
-          <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+          <h2 className="text-[var(--color-text-primary)]">
             {currentStepData.title}
           </h2>
 

@@ -158,7 +158,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
     <div className="max-w-md mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h2 className="font-serif text-xl mb-2">
+        <h2 className="mb-2">
           {isActiveSession ? 'Session Timeline' : 'Your Session Timeline'}
         </h2>
 
@@ -291,7 +291,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
       {warningModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
-            <h3 className="font-serif text-lg mb-4">Note</h3>
+            <h3 className="mb-4">Note</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">
               {warningModal.message}
             </p>
@@ -317,7 +317,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
       {errorModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
-            <h3 className="font-serif text-lg mb-4">Can't Add Module</h3>
+            <h3 className="mb-4">Can't Add Module</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">
               {errorModal.message}
             </p>

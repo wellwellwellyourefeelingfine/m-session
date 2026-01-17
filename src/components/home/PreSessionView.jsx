@@ -24,7 +24,7 @@ export default function PreSessionView() {
 
   return (
     <div className="max-w-md mx-auto px-6 py-8">
-      <h2 className="font-serif text-lg mb-2">Your Session Timeline</h2>
+      <h2 className="mb-2">Your Session Timeline</h2>
       <p className="text-[var(--color-text-secondary)] mb-8">
         Review your personalized timeline below. You can start when ready.
       </p>

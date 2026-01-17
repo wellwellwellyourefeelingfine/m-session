@@ -64,7 +64,7 @@ export default function OpenSpace({ phase }) {
           {phaseContent.title}
         </p>
 
-        <p className="font-serif text-xl mb-8 text-[var(--color-text-primary)]">
+        <p className="mb-8 text-[var(--color-text-primary)]">
           {phaseContent.message}
         </p>
 

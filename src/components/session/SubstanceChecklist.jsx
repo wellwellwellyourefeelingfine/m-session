@@ -102,7 +102,7 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">Before We Begin</h2>
+              <h2 className="text-sm mb-4">Before We Begin</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 Let's make sure you're ready to start your session.
               </p>
@@ -141,7 +141,7 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">Substance Testing</h2>
+              <h2 className="text-sm mb-4">Substance Testing</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 Testing your substance helps ensure safety. We encourage using an at-home testing kit or sending a sample to a lab.
               </p>
@@ -191,7 +191,7 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">Dosage</h2>
+              <h2 className="text-sm mb-4">Dosage</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 Have you weighed and prepared your intended dose?
               </p>
@@ -258,7 +258,7 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">Prepare Your Space</h2>
+              <h2 className="text-sm mb-4">Prepare Your Space</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 Before taking your substance, take a moment to prepare your environment.
               </p>
@@ -313,14 +313,14 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">Confirm Time</h2>
+              <h2 className="text-sm mb-4">Confirm Time</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 We've recorded that you took your substance at:
               </p>
             </div>
 
             <div className="text-center py-6">
-              <p className="font-serif text-3xl">
+              <p className="text-lg">
                 {formatTime(substanceChecklist.ingestionTime)}
               </p>
             </div>
@@ -377,7 +377,7 @@ export default function SubstanceChecklist() {
         return (
           <div className="space-y-8">
             <div>
-              <h2 className="font-serif text-xl mb-4">You're Ready</h2>
+              <h2 className="text-sm mb-4">You're Ready</h2>
               <p className="text-[var(--color-text-secondary)] mb-6">
                 Your session will now begin. Find a comfortable position—lying down is often best for the come-up.
               </p>

@@ -40,17 +40,35 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
     return `${minutes} min`;
   };
 
-  const getIntensityColor = (intensity) => {
+  // Convert intensity to dot count (1-3 dots)
+  const getIntensityDots = (intensity) => {
     switch (intensity) {
       case 'gentle':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        return 1;
       case 'moderate':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+        return 2;
       case 'deep':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
+        return 3;
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 1;
     }
+  };
+
+  // Render intensity dots
+  const renderIntensityDots = (intensity) => {
+    const dotCount = getIntensityDots(intensity);
+    return (
+      <span className="flex items-center space-x-1">
+        {[1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full ${
+              i <= dotCount ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+            }`}
+          />
+        ))}
+      </span>
+    );
   };
 
   const getPhaseName = (p) => {
@@ -85,7 +103,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
         <div className="px-6 pb-4 border-b border-[var(--color-border)]">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-serif text-lg">Add Activity</h3>
+              <h3>Add Activity</h3>
               <p className="text-[var(--color-text-tertiary)] text-sm">
                 Adding to {getPhaseName(phase)} phase
               </p>
@@ -165,16 +183,14 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
                                 {module.title}
                               </p>
                               {hasWarning && (
-                                <span className="text-yellow-500 text-xs">⚠</span>
+                                <span className="text-[var(--accent)] text-xs">⚠</span>
                               )}
                             </div>
                             <p className="text-[var(--color-text-secondary)] text-sm mt-1">
                               {module.description}
                             </p>
                             <div className="flex items-center space-x-3 mt-2">
-                              <span className={`text-xs px-2 py-0.5 rounded ${getIntensityColor(module.intensity)}`}>
-                                {module.intensity}
-                              </span>
+                              {renderIntensityDots(module.intensity)}
                               <span className="text-[var(--color-text-tertiary)] text-xs">
                                 {formatDuration(module.defaultDuration)}
                               </span>

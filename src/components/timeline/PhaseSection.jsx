@@ -67,15 +67,15 @@ export default function PhaseSection({
         <div className="mb-4">
           <div className="flex items-baseline justify-between">
             <div>
-              <h3 className={`font-serif text-lg ${phaseStatus === 'active' ? 'text-[var(--color-text-primary)]' : ''}`}>
+              <h3 className={`${phaseStatus === 'active' ? 'text-[var(--color-text-primary)]' : ''}`}>
                 {title}
                 {isActiveSession && phaseStatus === 'active' && (
-                  <span className="ml-2 text-xs text-green-500 uppercase tracking-wider">Active</span>
+                  <span className="ml-2 text-xs text-[var(--accent)] uppercase tracking-wider">Active</span>
                 )}
               </h3>
               <p className="text-[var(--color-text-tertiary)] text-sm">{subtitle}</p>
             </div>
-            <span className={`text-sm ${isOverLimit ? 'text-red-500' : 'text-[var(--color-text-tertiary)]'}`}>
+            <span className={`text-sm ${isOverLimit ? 'text-[var(--accent)]' : 'text-[var(--color-text-tertiary)]'}`}>
               {formatDuration(duration)}
               {maxDuration && phase === 'come-up' && ` / ${formatDuration(maxDuration)}`}
             </span>
@@ -85,7 +85,7 @@ export default function PhaseSection({
           {phase === 'come-up' && maxDuration && (
             <div className="mt-2 w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
               <div
-                className={`h-full transition-all duration-300 ${isOverLimit ? 'bg-red-500' : 'bg-[var(--color-text-primary)]'}`}
+                className={`h-full transition-all duration-300 ${isOverLimit ? 'bg-[var(--accent)]' : 'bg-[var(--color-text-primary)]'}`}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>

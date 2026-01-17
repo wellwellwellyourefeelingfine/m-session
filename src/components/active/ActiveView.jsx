@@ -1,12 +1,13 @@
 /**
  * ActiveView Component
  * Active session display - shows current phase and module
- * Handles intro, check-ins, and module rendering
+ * Handles substance checklist, intro, check-ins, and module rendering
  */
 
 import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import ModuleRenderer from './ModuleRenderer';
+import SubstanceChecklist from '../session/SubstanceChecklist';
 import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import OpenSpace from './OpenSpace';
@@ -61,7 +62,6 @@ export default function ActiveView() {
       case 'not-started':
       case 'intake':
       case 'pre-session':
-      case 'substance-checklist':
         return (
           <div className="min-h-[60vh] flex items-center justify-center px-6">
             <p className="text-[var(--color-text-secondary)] text-center">
@@ -70,6 +70,9 @@ export default function ActiveView() {
           </div>
         );
 
+      case 'substance-checklist':
+        return <SubstanceChecklist />;
+
       case 'active':
         return renderActiveSession();
 
@@ -77,7 +80,7 @@ export default function ActiveView() {
         return (
           <div className="min-h-[60vh] flex items-center justify-center px-6">
             <div className="text-center space-y-8">
-              <p className="font-serif text-lg text-[var(--color-text-primary)]">
+              <p className="text-[var(--color-text-primary)]">
                 Session paused.
               </p>
               <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto">
@@ -91,7 +94,7 @@ export default function ActiveView() {
         return (
           <div className="min-h-[60vh] flex items-center justify-center px-6">
             <div className="text-center space-y-8">
-              <p className="font-serif text-lg text-[var(--color-text-secondary)]">
+              <p className="text-[var(--color-text-secondary)]">
                 Session complete.
               </p>
               <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto">

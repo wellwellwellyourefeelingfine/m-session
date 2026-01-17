@@ -128,7 +128,7 @@ export default function ComeUpCheckIn() {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn">
         <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
-          <h3 className="font-serif text-lg mb-4">Are you sure?</h3>
+          <h3 className="mb-4">Are you sure?</h3>
           <p className="text-[var(--color-text-secondary)] mb-6">
             It's only been {minutesSinceIngestion} minutes since you took your substance.
             Usually the onset happens between the 20-45 minute mark.
@@ -177,7 +177,7 @@ export default function ComeUpCheckIn() {
       <div className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}>
         <div className="flex justify-between items-start mb-6">
           <div>
-            <h3 className="font-serif text-lg mb-1">How are you feeling?</h3>
+            <h3 className="mb-1">How are you feeling?</h3>
             <p className="text-[var(--color-text-tertiary)] text-sm">
               {minutesSinceIngestion} minutes since ingestion
             </p>

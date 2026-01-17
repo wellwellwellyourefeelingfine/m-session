@@ -23,14 +23,15 @@
     --color-text-tertiary: var(--text-tertiary);
     --color-border: var(--border);
 
-    /* Accent */
-    --accent: #666666;
-    --accent-hover: #444444;
+    /* Accent - warm pastel orange (sun-faded) */
+    --accent: #E8A87C;
+    --accent-muted: #E8A87C80;
+    --accent-bg: #E8A87C20;
 
-    /* Functional Colors */
-    --warning: #8B8B8B;
-    --success: #666666;
-    --error: #4A4A4A;
+    /* Functional Colors - all use accent */
+    --warning: var(--accent);
+    --success: var(--accent);
+    --error: var(--accent);
 
     /* Spacing */
     --space-1: 0.25rem;
@@ -75,6 +76,11 @@
     --color-text-secondary: var(--text-secondary);
     --color-text-tertiary: var(--text-tertiary);
     --color-border: var(--border);
+
+    /* Accent - soft blue-purple */
+    --accent: #9D8CD9;
+    --accent-muted: #9D8CD980;
+    --accent-bg: #9D8CD920;
   }
 
   /* Base Styles */
@@ -102,14 +108,14 @@
     text-transform: uppercase;
   }
 
-  /* Typography Base */
+  /* Typography Base - Azeret Mono uppercase for all text */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'DM Serif Text', serif;
-    font-size: 24px;
+    font-family: 'Azeret Mono', monospace;
+    font-size: 12px;
     font-weight: 400;
-    line-height: 1.3;
+    line-height: 1.6;
     margin-bottom: var(--space-4);
-    text-transform: none;
+    text-transform: uppercase;
   }
 
   p {

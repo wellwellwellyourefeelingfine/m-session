@@ -17,7 +17,7 @@ export default function ConfirmModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn px-6">
       <div className="bg-[var(--color-bg)] w-full max-w-sm rounded-lg p-6 animate-fadeIn">
         {/* Title */}
-        <h3 className="font-serif text-lg mb-3" style={{ textTransform: 'none' }}>
+        <h3 className="mb-3">
           {title}
         </h3>
 
