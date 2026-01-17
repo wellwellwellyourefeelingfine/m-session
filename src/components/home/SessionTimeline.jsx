@@ -53,7 +53,7 @@ export default function SessionTimeline() {
   const getModuleStatus = (status) => {
     switch (status) {
       case 'completed':
-        return { symbol: '+', color: 'text-green-500' };
+        return { symbol: '+', color: 'text-[var(--accent)]' };
       case 'skipped':
         return { symbol: '-', color: 'text-[var(--color-text-tertiary)]' };
       case 'active':
@@ -142,7 +142,7 @@ export default function SessionTimeline() {
       {/* Session header */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="font-serif text-lg">Session Timeline</h2>
+          <h2>Session Timeline</h2>
           {sessionPhase === 'active' ? (
             <button
               onClick={pauseSession}

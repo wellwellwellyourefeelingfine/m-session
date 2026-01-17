@@ -13,7 +13,7 @@ export default function Button({
   className = '',
   ...props
 }) {
-  const baseStyles = 'touch-target font-serif uppercase tracking-wider text-sm transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'touch-target uppercase tracking-wider text-sm transition-opacity duration-300 disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
     primary: 'bg-app-black dark:bg-app-white text-app-white dark:text-app-black px-8 py-4 hover:opacity-80',

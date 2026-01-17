@@ -9,6 +9,7 @@ import { getModuleById } from '../../content/modules';
 import GroundingModule from './modules/GroundingModule';
 import JournalingModule from './modules/JournalingModule';
 import MeditationModule from './modules/MeditationModule';
+import GuidedMeditationModule from './modules/GuidedMeditationModule';
 import OpenSpaceModule from './modules/OpenSpaceModule';
 import CheckInModule from './modules/CheckInModule';
 import BreathingModule from './modules/BreathingModule';
@@ -58,6 +59,9 @@ export default function ModuleRenderer({ module }) {
     case 'breathing':
       return <BreathingModule {...commonProps} />;
 
+    case 'guided-meditation':
+      return <GuidedMeditationModule {...commonProps} />;
+
     case 'open-space':
     case 'gentle-movement':
     case 'music-listening':
@@ -80,7 +84,7 @@ export default function ModuleRenderer({ module }) {
         <div className="flex flex-col justify-between px-6 py-8">
           <div className="flex-1 flex items-center justify-center w-full">
             <div className="text-center space-y-8 max-w-md mx-auto">
-              <h2 className="font-serif text-xl text-[var(--color-text-primary)]">
+              <h2 className="text-[var(--color-text-primary)]">
                 {module.title}
               </h2>
 

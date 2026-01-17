@@ -26,7 +26,7 @@ export default function HelpButton() {
       {isOpen && (
         <div className="fixed inset-0 bg-[var(--color-text-primary)]/95 z-50 flex items-center justify-center p-6">
           <div className="max-w-md w-full space-y-8">
-            <h2 className="font-serif text-lg text-[var(--color-bg)] text-center">
+            <h2 className="text-[var(--color-bg)] text-center">
               You Are Safe
             </h2>
 

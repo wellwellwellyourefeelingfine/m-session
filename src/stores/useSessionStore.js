@@ -25,6 +25,7 @@ export const useSessionStore = create(
       // ============================================
       intake: {
         currentSection: 'A',
+        currentQuestionIndex: 0,    // Track which question user is on
         responses: {
           // Section A: Experience & Context
           experienceLevel: null,
@@ -136,6 +137,19 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // MEDITATION PLAYBACK STATE
+      // ============================================
+      meditationPlayback: {
+        moduleInstanceId: null,       // Which module is playing
+        isPlaying: false,             // Is meditation currently running
+        hasStarted: false,            // Has user clicked Begin
+        startedAt: null,              // Timestamp when current segment started
+        pausedAt: null,               // Timestamp when paused (null if playing)
+        accumulatedTime: 0,           // Total accumulated seconds from previous segments
+        currentPromptIndex: 0,        // Current prompt index
+      },
+
+      // ============================================
       // INTAKE ACTIONS
       // ============================================
 
@@ -162,6 +176,12 @@ export const useSessionStore = create(
       setIntakeSection: (section) => {
         set({
           intake: { ...get().intake, currentSection: section },
+        });
+      },
+
+      setIntakeQuestionIndex: (index) => {
+        set({
+          intake: { ...get().intake, currentQuestionIndex: index },
         });
       },
 
@@ -690,6 +710,80 @@ export const useSessionStore = create(
           comeUpCheckIn: {
             ...get().comeUpCheckIn,
             waitingForCheckIn: waiting,
+          },
+        });
+      },
+
+      // ============================================
+      // MEDITATION PLAYBACK ACTIONS
+      // ============================================
+
+      startMeditationPlayback: (moduleInstanceId) => {
+        set({
+          meditationPlayback: {
+            moduleInstanceId,
+            isPlaying: true,
+            hasStarted: true,
+            startedAt: Date.now(),
+            pausedAt: null,
+            accumulatedTime: 0,
+            currentPromptIndex: 0,
+          },
+        });
+      },
+
+      updateMeditationPlayback: (updates) => {
+        const state = get();
+        set({
+          meditationPlayback: {
+            ...state.meditationPlayback,
+            ...updates,
+          },
+        });
+      },
+
+      pauseMeditationPlayback: () => {
+        const state = get();
+        const { startedAt, accumulatedTime } = state.meditationPlayback;
+        const now = Date.now();
+
+        // Calculate time elapsed in current segment and add to accumulated
+        const currentSegment = startedAt ? (now - startedAt) / 1000 : 0;
+        const newAccumulated = (accumulatedTime || 0) + currentSegment;
+
+        set({
+          meditationPlayback: {
+            ...state.meditationPlayback,
+            isPlaying: false,
+            pausedAt: now,
+            accumulatedTime: newAccumulated,
+            startedAt: null, // Clear startedAt since we're paused
+          },
+        });
+      },
+
+      resumeMeditationPlayback: () => {
+        const state = get();
+        set({
+          meditationPlayback: {
+            ...state.meditationPlayback,
+            isPlaying: true,
+            startedAt: Date.now(), // Start a new segment
+            pausedAt: null,
+          },
+        });
+      },
+
+      resetMeditationPlayback: () => {
+        set({
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            pausedAt: null,
+            accumulatedTime: 0,
+            currentPromptIndex: 0,
           },
         });
       },

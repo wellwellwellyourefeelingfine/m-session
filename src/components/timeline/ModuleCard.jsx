@@ -2,9 +2,13 @@
  * ModuleCard Component
  * Individual module card in the timeline editor
  * Displays module info with remove option
+ * Supports clickable duration for variable-duration modules
  */
 
+import { useState } from 'react';
 import { getModuleById, MODULE_TYPES } from '../../content/modules';
+import { useSessionStore } from '../../stores/useSessionStore';
+import DurationPicker from '../shared/DurationPicker';
 
 export default function ModuleCard({
   module,
@@ -13,8 +17,16 @@ export default function ModuleCard({
   isCurrentModule = false,
   canRemove = true,
 }) {
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
+
   const libraryModule = getModuleById(module.libraryId);
   const moduleType = MODULE_TYPES[libraryModule?.type];
+
+  // Check if this module supports variable duration
+  const hasVariableDuration = libraryModule?.hasVariableDuration === true;
+  const durationSteps = libraryModule?.durationSteps || [10, 15, 20, 25, 30];
+  const canEditDuration = hasVariableDuration && !isActiveSession;
 
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -25,17 +37,35 @@ export default function ModuleCard({
     return `${mins}m`;
   };
 
-  const getIntensityColor = (intensity) => {
+  // Convert intensity to dot count (1-3 dots)
+  const getIntensityDots = (intensity) => {
     switch (intensity) {
       case 'gentle':
-        return 'text-green-600 dark:text-green-400';
+        return 1;
       case 'moderate':
-        return 'text-yellow-600 dark:text-yellow-400';
+        return 2;
       case 'deep':
-        return 'text-orange-600 dark:text-orange-400';
+        return 3;
       default:
-        return 'text-[var(--color-text-tertiary)]';
+        return 1;
     }
+  };
+
+  // Render intensity dots
+  const renderIntensityDots = (intensity) => {
+    const dotCount = getIntensityDots(intensity);
+    return (
+      <span className="flex items-center space-x-1">
+        {[1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className={`w-1.5 h-1.5 rounded-full ${
+              i <= dotCount ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+            }`}
+          />
+        ))}
+      </span>
+    );
   };
 
   // Determine styling based on module status during active session
@@ -44,7 +74,7 @@ export default function ModuleCard({
   const isGrayedOut = isCompleted || isSkipped;
 
   const getBorderClass = () => {
-    if (isCurrentModule) return 'border-2 border-green-500';
+    if (isCurrentModule) return 'border-2 border-[var(--accent)]';
     if (isGrayedOut) return 'border border-[var(--color-border)] opacity-50';
     return 'border border-[var(--color-border)]';
   };
@@ -68,9 +98,9 @@ export default function ModuleCard({
         {/* Status indicator for active session */}
         {isActiveSession && (
           <div className="mr-3 w-4 flex-shrink-0">
-            {isCompleted && <span className="text-green-500">✓</span>}
+            {isCompleted && <span className="text-[var(--accent)]">✓</span>}
             {isSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
-            {isCurrentModule && <span className="text-green-500">●</span>}
+            {isCurrentModule && <span className="text-[var(--accent)]">●</span>}
             {!isCompleted && !isSkipped && !isCurrentModule && <span className="text-[var(--color-text-tertiary)]">○</span>}
           </div>
         )}
@@ -81,13 +111,26 @@ export default function ModuleCard({
             <p className={`truncate pr-2 ${getTextClass()}`}>
               {module.title}
             </p>
-            <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0">
-              {formatDuration(module.duration)}
-            </span>
+            {canEditDuration ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDurationPicker(true);
+                }}
+                className="text-[var(--color-text-secondary)] text-sm flex-shrink-0 underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+                title="Click to change duration"
+              >
+                {formatDuration(module.duration)}
+              </button>
+            ) : (
+              <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0">
+                {formatDuration(module.duration)}
+              </span>
+            )}
           </div>
           <div className="flex items-center space-x-2 mt-1">
-            <span className={`text-xs uppercase tracking-wider ${isGrayedOut ? 'text-[var(--color-text-tertiary)]' : getIntensityColor(libraryModule?.intensity)}`}>
-              {libraryModule?.intensity || 'gentle'}
+            <span className={isGrayedOut ? 'opacity-50' : ''}>
+              {renderIntensityDots(libraryModule?.intensity)}
             </span>
             <span className="text-[var(--color-text-tertiary)] text-xs">
               {moduleType?.label || module.libraryId}
@@ -99,13 +142,28 @@ export default function ModuleCard({
         {canRemove && (
           <button
             onClick={onRemove}
-            className="ml-3 p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+            className="ml-3 p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors opacity-0 group-hover:opacity-100"
             title="Remove"
           >
             ×
           </button>
         )}
       </div>
+
+      {/* Duration Picker Modal */}
+      {showDurationPicker && (
+        <DurationPicker
+          isOpen={showDurationPicker}
+          onClose={() => setShowDurationPicker(false)}
+          onSelect={(newDuration) => {
+            updateModuleDuration(module.instanceId, newDuration);
+          }}
+          currentDuration={module.duration}
+          durationSteps={durationSteps}
+          minDuration={libraryModule?.minDuration || 10}
+          maxDuration={libraryModule?.maxDuration || 30}
+        />
+      )}
     </div>
   );
 }

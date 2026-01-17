@@ -190,7 +190,7 @@ export default function ComeUpIntro() {
         >
           {currentStep.content.isBreathing ? (
             // Breathing step - larger, centered text
-            <p className="font-serif text-3xl leading-relaxed text-[var(--color-text-primary)]">
+            <p className="text-lg leading-relaxed text-[var(--color-text-primary)]">
               {currentStep.content.body}
             </p>
           ) : (
@@ -199,7 +199,7 @@ export default function ComeUpIntro() {
               <p className="uppercase tracking-widest text-[var(--color-text-tertiary)] mb-6">
                 {currentStep.content.title}
               </p>
-              <p className="font-serif text-xl leading-relaxed mb-12 text-[var(--color-text-primary)]">
+              <p className="leading-relaxed mb-12 text-[var(--color-text-primary)]">
                 {currentStep.content.body}
               </p>
 

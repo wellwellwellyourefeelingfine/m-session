@@ -35,7 +35,7 @@ export default function JournalSettings({ onClose }) {
       <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h3 className="font-serif text-lg" style={{ textTransform: 'none' }}>
+          <h3>
             Journal Settings
           </h3>
           <button
