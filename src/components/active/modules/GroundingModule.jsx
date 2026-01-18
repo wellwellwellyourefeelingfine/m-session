@@ -2,11 +2,21 @@
  * GroundingModule Component
  * Simple grounding and breathing exercises
  * Used for session opening, anxiety, and transitions
+ *
+ * Uses shared UI components:
+ * - ModuleControlBar for consistent bottom controls
+ * - ModuleLayout for consistent layout structure
+ *
+ * Reports step progress to parent via onTimerUpdate for ModuleStatusBar display
  */
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
-export default function GroundingModule({ module, onComplete, onSkip }) {
+// Shared UI components
+import ModuleLayout, { ModuleHeader, ModuleContent } from '../capabilities/ModuleLayout';
+import ModuleControlBar from '../capabilities/ModuleControlBar';
+
+export default function GroundingModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
@@ -24,83 +34,78 @@ export default function GroundingModule({ module, onComplete, onSkip }) {
     },
     {
       title: 'Set Your Intention',
-      content: 'What do you want to remember about why you\'re here today? Hold that intention gently.',
+      content: "What do you want to remember about why you're here today? Hold that intention gently.",
     },
   ];
 
   const currentStepData = steps[currentStep];
+  const isLastStep = currentStep >= steps.length - 1;
 
-  const handleNext = () => {
+  // Report step progress to parent for ModuleStatusBar
+  useEffect(() => {
+    if (!onTimerUpdate) return;
+
+    const progress = ((currentStep + 1) / steps.length) * 100;
+
+    onTimerUpdate({
+      progress,
+      elapsed: currentStep + 1,
+      total: steps.length,
+      showTimer: false, // Steps don't show timer
+      isPaused: false,
+    });
+  }, [currentStep, steps.length, onTimerUpdate]);
+
+  const handleNext = useCallback(() => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete();
     }
-  };
+  }, [currentStep, steps.length, onComplete]);
 
-  const handlePrevious = () => {
+  const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
+  }, [currentStep]);
+
+  // Get primary button config
+  const getPrimaryButton = () => {
+    return {
+      label: isLastStep ? 'Complete' : 'Continue',
+      onClick: handleNext,
+    };
   };
 
   return (
-    <div className="flex flex-col justify-between px-6 py-8">
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div className="text-center space-y-8 max-w-md mx-auto">
-          <h2 className="text-[var(--color-text-primary)]">
-            {currentStepData.title}
-          </h2>
+    <>
+      <ModuleLayout
+        layout={{ centered: true, maxWidth: 'md' }}
+      >
+        <ModuleContent centered>
+          <ModuleHeader
+            title={currentStepData.title}
+            centered
+          />
 
-          <p className="text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="text-[var(--color-text-secondary)] leading-relaxed uppercase tracking-wider text-xs">
             {currentStepData.content}
           </p>
+        </ModuleContent>
+      </ModuleLayout>
 
-          {/* Progress indicator */}
-          <div className="flex justify-center space-x-2 mt-8">
-            {steps.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-colors duration-300 ${
-                  index === currentStep
-                    ? 'bg-[var(--color-text-primary)]'
-                    : index < currentStep
-                      ? 'bg-[var(--color-text-secondary)]'
-                      : 'bg-[var(--color-border)]'
-                }`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full max-w-md mx-auto mt-8 space-y-4">
-        <button
-          onClick={handleNext}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                     uppercase tracking-wider hover:opacity-80 transition-opacity duration-300"
-        >
-          {currentStep < steps.length - 1 ? 'Continue' : 'Complete'}
-        </button>
-
-        <div className="flex space-x-4">
-          {currentStep > 0 && (
-            <button
-              onClick={handlePrevious}
-              className="flex-1 py-2 text-[var(--color-text-tertiary)] underline"
-            >
-              Back
-            </button>
-          )}
-
-          <button
-            onClick={onSkip}
-            className="flex-1 py-2 text-[var(--color-text-tertiary)] underline"
-          >
-            Skip Module
-          </button>
-        </div>
-      </div>
-    </div>
+      {/* Fixed control bar above tab bar */}
+      <ModuleControlBar
+        phase="sequential"
+        primary={getPrimaryButton()}
+        showBack={currentStep > 0}
+        showSkip={true}
+        onBack={handlePrevious}
+        onSkip={onSkip}
+        backConfirmMessage="Go back to the previous step?"
+        skipConfirmMessage="Skip this grounding exercise?"
+      />
+    </>
   );
 }

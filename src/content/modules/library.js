@@ -2,11 +2,25 @@
  * Module Library
  * Central repository of all available session modules
  * Each module has metadata about when/how it can be used
+ *
+ * CAPABILITIES SYSTEM:
+ * Each module can define a `capabilities` object that controls how it renders.
+ * See src/components/active/capabilities/index.js for full schema documentation.
+ *
+ * Capability types:
+ * - timer: { type, showProgress, showTimeDisplay, autoComplete }
+ * - prompts: { type, fadeTransition, showProgress }
+ * - animation: { type, color, size }
+ * - audio: { type, src, showMuteButton } (future)
+ * - input: { type, saveToJournal, placeholder }
+ * - controls: { showBeginButton, showPauseButton, showSkipButton, etc. }
+ * - layout: { centered, maxWidth, padding }
  */
 
 export const MODULE_TYPES = {
   grounding: { label: 'Grounding', intensity: 'gentle' },
   breathing: { label: 'Breathing', intensity: 'gentle' },
+  'breath-meditation': { label: 'Breath Meditation', intensity: 'gentle' },
   'guided-meditation': { label: 'Guided Meditation', intensity: 'gentle' },
   'body-scan-light': { label: 'Light Body Scan', intensity: 'gentle' },
   'music-listening': { label: 'Music Listening', intensity: 'gentle' },
@@ -64,9 +78,15 @@ export const moduleLibrary = [
     content: {
       instructions: 'Find a comfortable position. Feel your body making contact with the surface beneath you. Notice the weight of your body, the temperature of the air, any sounds around you.',
       prompts: [
-        'What do you notice in your body right now?',
-        'What are five things you can see, four you can hear, three you can touch?',
+        { title: 'Notice Your Body', text: 'Feel your feet on the ground. Notice where your body is supported. You are safe here.' },
+        { title: 'Breathe Slowly', text: 'Breathe in slowly for 4 counts... hold for 4... and out for 6. Let each breath settle you deeper.' },
+        { title: 'Set Your Intention', text: 'What do you want to remember about why you\'re here today? Hold that intention gently.' },
       ],
+    },
+    // Uses custom GroundingModule component (sequential steps)
+    capabilities: {
+      prompts: { type: 'sequential', showProgress: true, fadeTransition: true },
+      controls: { showBeginButton: false, showSkipButton: true, showBackButton: true },
     },
     tags: ['grounding', 'beginner', 'calming'],
   },
@@ -89,6 +109,12 @@ export const moduleLibrary = [
         exhale: 8,
         cycles: 8,
       },
+    },
+    // Uses custom BreathingModule component (phase-based animation)
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breathing-circle', size: 'large' },
+      controls: { showBeginButton: true, showSkipButton: true },
     },
     tags: ['breathing', 'calming', 'anxiety-relief'],
   },
@@ -113,8 +139,103 @@ export const moduleLibrary = [
         cycles: 10,
       },
     },
+    // Uses custom BreathingModule component (phase-based animation)
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breathing-circle', size: 'large' },
+      controls: { showBeginButton: true, showSkipButton: true },
+    },
     tags: ['breathing', 'calming', 'focus'],
   },
+
+  // === BREATH MEDITATION 2.0 (with BreathOrb animation) ===
+  {
+    id: 'breath-meditation-calm',
+    type: 'breath-meditation',
+    title: 'Calming Breath',
+    description: 'A guided breath meditation with visual orb to help you find calm and presence.',
+    defaultDuration: 10,
+    minDuration: 5,
+    maxDuration: 20,
+    intensity: 'gentle',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['come-up'],
+    content: {
+      instructions: 'Follow the orb with your breath. Let it guide you to a slower, deeper rhythm.',
+      breathSequences: [
+        // Start with a 3-3-3-3 pattern for testing holdAfterExhale
+        { type: 'cycles', count: 5, pattern: { inhale: 3, hold: 3, exhale: 3, holdAfterExhale: 3 } },
+        // Then slow down to 5-5-6 for the remainder
+        { type: 'duration', seconds: 300, pattern: { inhale: 5, hold: 5, exhale: 6, holdAfterExhale: 0 } },
+      ],
+    },
+    // Uses custom BreathMeditationModule with BreathOrb
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breath-orb' },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
+    },
+    tags: ['breathing', 'meditation', 'calming', 'orb'],
+  },
+  {
+    id: 'breath-meditation-deep',
+    type: 'breath-meditation',
+    title: 'Deep Relaxation Breath',
+    description: 'A longer breath meditation that progressively slows your breathing for deep relaxation.',
+    defaultDuration: 15,
+    minDuration: 10,
+    maxDuration: 30,
+    intensity: 'gentle',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['come-up', 'peak'],
+    content: {
+      instructions: 'This practice will gradually slow your breath. Trust the orb and let your nervous system settle.',
+      breathSequences: [
+        // Warm up with normal breathing
+        { type: 'cycles', count: 3, pattern: { inhale: 3, hold: 0, exhale: 3, holdAfterExhale: 0 } },
+        // Box breathing to establish rhythm
+        { type: 'cycles', count: 4, pattern: { inhale: 4, hold: 4, exhale: 4, holdAfterExhale: 4 } },
+        // Slow down with extended exhale
+        { type: 'cycles', count: 5, pattern: { inhale: 4, hold: 4, exhale: 6, holdAfterExhale: 2 } },
+        // Deep slow breathing
+        { type: 'duration', seconds: 300, pattern: { inhale: 5, hold: 5, exhale: 8, holdAfterExhale: 2 } },
+      ],
+    },
+    // Uses custom BreathMeditationModule with BreathOrb
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breath-orb' },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
+    },
+    tags: ['breathing', 'meditation', 'deep-relaxation', 'orb'],
+  },
+  {
+    id: 'breath-meditation-4-7-8',
+    type: 'breath-meditation',
+    title: '4-7-8 Breath Meditation',
+    description: 'The classic relaxation breath with visual guidance. Activates your parasympathetic nervous system.',
+    defaultDuration: 10,
+    minDuration: 5,
+    maxDuration: 15,
+    intensity: 'gentle',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['come-up', 'integration'],
+    content: {
+      instructions: 'Breathe in for 4, hold for 7, exhale for 8. This pattern activates your relaxation response.',
+      breathSequences: [
+        // Pure 4-7-8 breathing for the full duration
+        { type: 'cycles', count: 10, pattern: { inhale: 4, hold: 7, exhale: 8, holdAfterExhale: 0 } },
+      ],
+    },
+    // Uses custom BreathMeditationModule with BreathOrb
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breath-orb' },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
+    },
+    tags: ['breathing', 'meditation', '4-7-8', 'relaxation', 'orb'],
+  },
+
   {
     id: 'guided-meditation-breath',
     type: 'guided-meditation',
@@ -129,6 +250,14 @@ export const moduleLibrary = [
     hasVariableDuration: true,
     durationSteps: [10, 15, 20, 25, 30],
     meditationId: 'breath-awareness-default',
+    // Uses custom GuidedMeditationModule (timed prompts + playback)
+    capabilities: {
+      timer: { type: 'elapsed', showProgress: true, showTimeDisplay: true, autoComplete: true },
+      prompts: { type: 'timed', fadeTransition: true },
+      // Future: audio: { type: 'voiceover', showMuteButton: true },
+      // Future: animation: { type: 'glowing-orb', color: 'orange' },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
+    },
     tags: ['meditation', 'breath', 'mindfulness', 'guided'],
   },
   {
@@ -150,6 +279,12 @@ export const moduleLibrary = [
         'What do you notice in your hands and feet?',
       ],
     },
+    // Uses ModuleShell with simple capabilities
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
+    },
     tags: ['body', 'awareness', 'gentle'],
   },
   {
@@ -165,6 +300,12 @@ export const moduleLibrary = [
     recommendedPhases: ['come-up', 'peak'],
     content: {
       instructions: 'Put on music that feels right for this moment. Close your eyes and let the music wash over you. There\'s nothing to do but listen and feel.',
+    },
+    // Uses ModuleShell - simple open module
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
     },
     tags: ['music', 'passive', 'immersive'],
   },
@@ -186,6 +327,12 @@ export const moduleLibrary = [
         'Can you move even slower?',
       ],
     },
+    // Uses ModuleShell - simple open module
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
+    },
     tags: ['movement', 'body', 'intuitive'],
   },
 
@@ -203,6 +350,13 @@ export const moduleLibrary = [
     recommendedPhases: ['peak'],
     content: {
       instructions: 'Let go of any agenda. Simply be aware of whatever arises—thoughts, feelings, sensations—without grasping or pushing away. Rest in the space of awareness itself.',
+    },
+    // Uses ModuleShell - simple meditation with prompts
+    capabilities: {
+      prompts: { type: 'static' },
+      // Future: animation: { type: 'fade-pulse' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
     },
     tags: ['meditation', 'spacious', 'non-directive'],
   },
@@ -225,6 +379,13 @@ export const moduleLibrary = [
         'What feels true in this moment?',
       ],
     },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: "What's on your mind?" },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
     tags: ['journaling', 'expression', 'light'],
   },
   {
@@ -246,6 +407,12 @@ export const moduleLibrary = [
         'What does this part of your body want you to know?',
       ],
     },
+    // Uses ModuleShell - simple meditation with prompts
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
+    },
     tags: ['body', 'somatic', 'exploration'],
   },
   {
@@ -266,6 +433,12 @@ export const moduleLibrary = [
         'How can I be gentle with myself?',
         'What would I say to a friend feeling this way?',
       ],
+    },
+    // Uses ModuleShell - simple meditation with prompts
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
     },
     tags: ['self-compassion', 'kindness', 'heart'],
   },
@@ -291,6 +464,13 @@ export const moduleLibrary = [
         'What am I ready to release?',
       ],
     },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'Let your thoughts flow freely...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
     tags: ['journaling', 'deep', 'insight'],
   },
   {
@@ -313,6 +493,13 @@ export const moduleLibrary = [
         'How old does this part feel?',
       ],
     },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'Begin a dialogue with this part...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
     tags: ['IFS', 'parts', 'deep-work'],
   },
   {
@@ -333,6 +520,13 @@ export const moduleLibrary = [
         'What have you been wanting to say?',
         'What do they need to know?',
       ],
+    },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'Dear...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
     },
     tags: ['writing', 'expression', 'healing'],
   },
@@ -355,6 +549,13 @@ export const moduleLibrary = [
         'What simple pleasure am I thankful for?',
       ],
     },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'I am grateful for...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
     tags: ['gratitude', 'appreciation', 'positive'],
   },
   {
@@ -376,6 +577,13 @@ export const moduleLibrary = [
         'How do I want to be in the days ahead?',
       ],
     },
+    // Uses custom JournalingModule (journal store integration)
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'As I close this session...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
     tags: ['closing', 'integration', 'completion'],
   },
 
@@ -394,6 +602,12 @@ export const moduleLibrary = [
     content: {
       instructions: 'This is open time. Rest, move, listen to music, or simply be. Follow your inner guidance.',
     },
+    // Uses ModuleShell - simple open module
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
+    },
     tags: ['open', 'flexible', 'unstructured'],
   },
   {
@@ -409,6 +623,12 @@ export const moduleLibrary = [
     recommendedPhases: ['come-up', 'peak', 'integration'],
     content: {
       instructions: 'Take care of your physical needs. Stay hydrated. Stretch if your body wants to move.',
+    },
+    // Uses ModuleShell - simple open module
+    capabilities: {
+      prompts: { type: 'static' },
+      controls: { showBeginButton: false, showSkipButton: true },
+      layout: { centered: true },
     },
     tags: ['break', 'rest', 'physical'],
   },

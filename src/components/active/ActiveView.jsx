@@ -4,17 +4,26 @@
  * Handles substance checklist, intro, check-ins, and module rendering
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import ModuleRenderer from './ModuleRenderer';
+import ModuleStatusBar from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
 import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import OpenSpace from './OpenSpace';
-import PhaseHeader from './PhaseHeader';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
+
+  // Module timer state (passed up from modules via context or prop drilling)
+  const [moduleTimerState, setModuleTimerState] = useState({
+    progress: 0,
+    elapsed: 0,
+    total: 0,
+    showTimer: false,
+    isPaused: false,
+  });
 
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const timeline = useSessionStore((state) => state.timeline);
@@ -32,6 +41,19 @@ export default function ActiveView() {
     const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
   }, []);
+
+  // Reset module timer state when module changes
+  useEffect(() => {
+    if (!currentModule) {
+      setModuleTimerState({
+        progress: 0,
+        elapsed: 0,
+        total: 0,
+        showTimer: false,
+        isPaused: false,
+      });
+    }
+  }, [currentModule?.instanceId]);
 
   // Auto-start next module when appropriate
   useEffect(() => {
@@ -56,6 +78,24 @@ export default function ActiveView() {
       startModule(nextModule.instanceId);
     }
   }, [sessionPhase, currentModule, nextModule, currentPhase, comeUpCheckIn.introCompleted, comeUpCheckIn.waitingForCheckIn, startModule]);
+
+  // Handler to update module timer state (called by modules)
+  // Memoized with useCallback to prevent infinite loops in child useEffects
+  const handleModuleTimerUpdate = useCallback((timerState) => {
+    setModuleTimerState((prev) => {
+      // Only update if values actually changed to prevent unnecessary re-renders
+      if (
+        prev.progress === timerState.progress &&
+        prev.elapsed === timerState.elapsed &&
+        prev.total === timerState.total &&
+        prev.showTimer === timerState.showTimer &&
+        prev.isPaused === timerState.isPaused
+      ) {
+        return prev;
+      }
+      return timerState;
+    });
+  }, []);
 
   const renderContent = () => {
     switch (sessionPhase) {
@@ -118,28 +158,42 @@ export default function ActiveView() {
   const renderActiveSession = () => {
     // Come-up phase: Show intro first, then modules with check-in
     if (currentPhase === 'come-up') {
-      // Show intro if not completed
+      // Show intro if not completed (no status bar during intro)
       if (!comeUpCheckIn.introCompleted) {
         return <ComeUpIntro />;
       }
 
-      // After intro, render module or open space
+      // After intro, render module or open space with status bar
       return (
         <div className="relative">
-          <PhaseHeader phase="come-up" />
+          {/* Fixed status bar below main header */}
+          <ModuleStatusBar
+            phase="come-up"
+            progress={moduleTimerState.progress}
+            moduleElapsed={moduleTimerState.elapsed}
+            moduleTotal={moduleTimerState.total}
+            showModuleTimer={moduleTimerState.showTimer}
+            isPaused={moduleTimerState.isPaused}
+          />
 
-          {currentModule ? (
-            <ModuleRenderer module={currentModule} />
-          ) : nextModule ? (
-            // Waiting for check-in before next module
-            <div className="pt-20 px-6 flex items-center justify-center min-h-[40vh]">
-              <p className="text-center text-[var(--color-text-tertiary)]">
-                Complete the check-in to continue...
-              </p>
-            </div>
-          ) : (
-            <OpenSpace phase="come-up" />
-          )}
+          {/* Content area with padding for status bar (h-9 = 36px) */}
+          <div className="pt-9">
+            {currentModule ? (
+              <ModuleRenderer
+                module={currentModule}
+                onTimerUpdate={handleModuleTimerUpdate}
+              />
+            ) : nextModule ? (
+              // Waiting for check-in before next module
+              <div className="pt-20 px-6 flex items-center justify-center min-h-[40vh]">
+                <p className="text-center text-[var(--color-text-tertiary)]">
+                  Complete the check-in to continue...
+                </p>
+              </div>
+            ) : (
+              <OpenSpace phase="come-up" />
+            )}
+          </div>
 
           {/* Check-in modal (minimized or expanded) */}
           {comeUpCheckIn.isVisible && <ComeUpCheckIn />}
@@ -150,13 +204,27 @@ export default function ActiveView() {
     // Peak and Integration phases: Standard module flow
     return (
       <div className="relative">
-        <PhaseHeader phase={currentPhase} />
+        {/* Fixed status bar below main header */}
+        <ModuleStatusBar
+          phase={currentPhase}
+          progress={moduleTimerState.progress}
+          moduleElapsed={moduleTimerState.elapsed}
+          moduleTotal={moduleTimerState.total}
+          showModuleTimer={moduleTimerState.showTimer}
+          isPaused={moduleTimerState.isPaused}
+        />
 
-        {currentModule ? (
-          <ModuleRenderer module={currentModule} />
-        ) : (
-          <OpenSpace phase={currentPhase} />
-        )}
+        {/* Content area with padding for status bar (h-9 = 36px) */}
+        <div className="pt-9">
+          {currentModule ? (
+            <ModuleRenderer
+              module={currentModule}
+              onTimerUpdate={handleModuleTimerUpdate}
+            />
+          ) : (
+            <OpenSpace phase={currentPhase} />
+          )}
+        </div>
       </div>
     );
   };

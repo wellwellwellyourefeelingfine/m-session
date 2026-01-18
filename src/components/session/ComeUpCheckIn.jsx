@@ -101,12 +101,13 @@ export default function ComeUpCheckIn() {
     maximizeCheckIn();
   };
 
-  // Minimized state - small bar directly above tabs (flush, no gap)
+  // Minimized state - small bar directly above control bar (flush, no gap)
+  // Control bar is at bottom-16 (64px) with h-14 (56px), so check-in bar is at bottom-[120px]
   if (isMinimized) {
     return (
       <button
         onClick={handleMinimizedClick}
-        className="fixed bottom-[52px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
+        className="fixed bottom-[120px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
       >
         <div className="flex items-center space-x-3">
           <span className="text-[var(--color-text-tertiary)]">○</span>
