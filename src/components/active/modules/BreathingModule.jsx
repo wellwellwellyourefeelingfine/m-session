@@ -1,15 +1,26 @@
 /**
  * BreathingModule Component
  * Guides the user through breathing exercises with timed visuals
+ *
+ * Uses shared UI components:
+ * - ModuleControlBar for consistent bottom controls
+ * - ModuleLayout for consistent layout structure
+ *
+ * Reports timer state to parent via onTimerUpdate for ModuleStatusBar display
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-export default function BreathingModule({ module, onComplete, onSkip }) {
+// Shared UI components
+import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
+import ModuleControlBar from '../capabilities/ModuleControlBar';
+
+export default function BreathingModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const [phase, setPhase] = useState('inhale'); // 'inhale' | 'hold' | 'exhale' | 'holdAfterExhale'
   const [cycleCount, setCycleCount] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
 
   // Get timing config from module or use defaults
   const config = module.content?.timerConfig || {
@@ -21,6 +32,70 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
   };
 
   const totalCycles = config.cycles || 8;
+
+  // Check if exercise is complete
+  const isComplete = hasStarted && !isRunning && cycleCount >= totalCycles;
+
+  // Calculate total duration per cycle
+  const cycleDuration = (config.inhale || 4) + (config.hold || 0) + (config.exhale || 4) + (config.holdAfterExhale || 0);
+  const totalDuration = cycleDuration * totalCycles;
+
+  // Report timer state to parent for ModuleStatusBar
+  useEffect(() => {
+    if (!onTimerUpdate) return;
+
+    // Calculate approximate elapsed time based on cycles completed
+    const elapsedCycles = cycleCount;
+    const elapsed = elapsedCycles * cycleDuration;
+    const progress = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 0;
+
+    onTimerUpdate({
+      progress,
+      elapsed,
+      total: totalDuration,
+      showTimer: isRunning,
+      isPaused: false,
+    });
+  }, [cycleCount, isRunning, cycleDuration, totalDuration, onTimerUpdate]);
+
+  const advancePhase = useCallback(() => {
+    switch (phase) {
+      case 'inhale':
+        if (config.hold > 0) {
+          setPhase('hold');
+        } else {
+          setPhase('exhale');
+        }
+        break;
+      case 'hold':
+        setPhase('exhale');
+        break;
+      case 'exhale':
+        if (config.holdAfterExhale > 0) {
+          setPhase('holdAfterExhale');
+        } else {
+          // Complete cycle
+          const newCount = cycleCount + 1;
+          if (newCount >= totalCycles) {
+            setIsRunning(false);
+          } else {
+            setCycleCount(newCount);
+            setPhase('inhale');
+          }
+        }
+        break;
+      case 'holdAfterExhale':
+        // Complete cycle
+        const newCount = cycleCount + 1;
+        if (newCount >= totalCycles) {
+          setIsRunning(false);
+        } else {
+          setCycleCount(newCount);
+          setPhase('inhale');
+        }
+        break;
+    }
+  }, [phase, config, cycleCount, totalCycles]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -60,48 +135,18 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [phase, isRunning, cycleCount]);
+  }, [phase, isRunning, config, advancePhase]);
 
-  const advancePhase = () => {
-    switch (phase) {
-      case 'inhale':
-        if (config.hold > 0) {
-          setPhase('hold');
-        } else {
-          setPhase('exhale');
-        }
-        break;
-      case 'hold':
-        setPhase('exhale');
-        break;
-      case 'exhale':
-        if (config.holdAfterExhale > 0) {
-          setPhase('holdAfterExhale');
-        } else {
-          completeCycle();
-        }
-        break;
-      case 'holdAfterExhale':
-        completeCycle();
-        break;
-    }
-  };
-
-  const completeCycle = () => {
-    const newCount = cycleCount + 1;
-    if (newCount >= totalCycles) {
-      setIsRunning(false);
-    } else {
-      setCycleCount(newCount);
-      setPhase('inhale');
-    }
-  };
-
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
+    setHasStarted(true);
     setIsRunning(true);
     setCycleCount(0);
     setPhase('inhale');
-  };
+  }, []);
+
+  const handleStop = useCallback(() => {
+    setIsRunning(false);
+  }, []);
 
   const getPhaseText = () => {
     switch (phase) {
@@ -133,92 +178,95 @@ export default function BreathingModule({ module, onComplete, onSkip }) {
     }
   };
 
+  // Determine current phase for control bar
+  const getControlPhase = () => {
+    if (!hasStarted) return 'idle';
+    if (isComplete) return 'completed';
+    return 'active';
+  };
+
+  // Get primary button config based on phase
+  const getPrimaryButton = () => {
+    const controlPhase = getControlPhase();
+
+    if (controlPhase === 'idle') {
+      return {
+        label: 'Begin',
+        onClick: handleStart,
+      };
+    }
+
+    if (controlPhase === 'active') {
+      return {
+        label: 'Stop Early',
+        onClick: handleStop,
+      };
+    }
+
+    if (controlPhase === 'completed') {
+      return {
+        label: 'Continue',
+        onClick: onComplete,
+      };
+    }
+
+    return null;
+  };
+
   return (
-    <div className="flex flex-col justify-between px-6 py-8">
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div className="text-center space-y-8 max-w-md mx-auto">
-          <h2 className="text-[var(--color-text-primary)]">
-            {module.title}
-          </h2>
-
-          {!isRunning && cycleCount === 0 && (
-            <>
-              <p className="text-[var(--color-text-secondary)] leading-relaxed">
-                {module.content?.instructions || 'Follow the breathing pattern. Breathe naturally and don\'t strain.'}
-              </p>
-
-              <button
-                onClick={handleStart}
-                className="mt-8 px-8 py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors uppercase tracking-wider"
-              >
-                Begin
-              </button>
-            </>
-          )}
-
-          {isRunning && (
-            <>
-              {/* Breathing circle animation */}
-              <div className="flex justify-center py-8">
-                <div
-                  className={`w-32 h-32 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleSize()}`}
-                >
-                  <span className="text-lg text-[var(--color-text-primary)]">{countdown}</span>
-                </div>
-              </div>
-
-              <p className="text-lg text-[var(--color-text-primary)]">
-                {getPhaseText()}
-              </p>
-
-              <p className="text-[var(--color-text-tertiary)] text-sm">
-                Cycle {cycleCount + 1} of {totalCycles}
-              </p>
-            </>
-          )}
-
-          {!isRunning && cycleCount >= totalCycles && (
-            <>
-              <div className="py-8">
-                <p className="text-[var(--color-text-primary)]">
-                  Well done.
-                </p>
-                <p className="text-[var(--color-text-secondary)] mt-4">
-                  Take a moment to notice how you feel.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="w-full max-w-md mx-auto mt-8 space-y-4">
-        {(!isRunning && cycleCount >= totalCycles) || !isRunning ? (
-          <>
-            <button
-              onClick={onComplete}
-              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                         uppercase tracking-wider hover:opacity-80 transition-opacity duration-300"
-            >
-              Continue
-            </button>
-
-            <button
-              onClick={onSkip}
-              className="w-full py-2 text-[var(--color-text-tertiary)] underline"
-            >
-              Skip
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => setIsRunning(false)}
-            className="w-full py-2 text-[var(--color-text-tertiary)] underline"
-          >
-            Stop Early
-          </button>
+    <>
+      <ModuleLayout
+        layout={{ centered: true, maxWidth: 'md' }}
+      >
+        {/* Idle state: show start screen */}
+        {!hasStarted && (
+          <IdleScreen
+            title={module.title}
+            description={module.content?.instructions || "Follow the breathing pattern. Breathe naturally and don't strain."}
+          />
         )}
-      </div>
-    </div>
+
+        {/* Active state: breathing exercise */}
+        {isRunning && (
+          <div className="text-center space-y-6">
+            {/* Cycle indicator */}
+            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider">
+              Cycle {cycleCount + 1} / {totalCycles}
+            </p>
+
+            {/* Breathing circle animation */}
+            <div className="flex justify-center py-4">
+              <div
+                className={`w-32 h-32 rounded-full border-2 border-[var(--color-border)] flex items-center justify-center transition-transform duration-1000 ease-in-out ${getCircleSize()}`}
+              >
+                <span className="text-lg text-[var(--color-text-primary)]">{countdown}</span>
+              </div>
+            </div>
+
+            <p className="text-[var(--color-text-primary)] uppercase tracking-wider text-sm">
+              {getPhaseText()}
+            </p>
+          </div>
+        )}
+
+        {/* Completed state */}
+        {isComplete && (
+          <CompletionScreen
+            title="Well done."
+            message="Take a moment to notice how you feel."
+          />
+        )}
+      </ModuleLayout>
+
+      {/* Fixed control bar above tab bar */}
+      <ModuleControlBar
+        phase={getControlPhase()}
+        primary={getPrimaryButton()}
+        showBack={false}
+        showSkip={!isComplete}
+        onSkip={onSkip}
+        skipConfirmMessage="Skip this breathing exercise?"
+      />
+    </>
   );
 }

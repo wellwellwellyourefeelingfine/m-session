@@ -2,10 +2,20 @@
  * ComeUpIntro Component
  * The initial ~10 minute guided introduction at the start of the session
  * Helps the user settle in before the first scheduled module
+ *
+ * Uses shared UI components:
+ * - ModuleControlBar for consistent bottom controls
+ * - ModuleProgressBar for progress display
+ * - ModuleLayout for consistent layout structure
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+
+// Shared UI components
+import ModuleLayout from '../active/capabilities/ModuleLayout';
+import ModuleControlBar from '../active/capabilities/ModuleControlBar';
+import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
 
 const INTRO_STEPS = [
   {
@@ -29,7 +39,7 @@ const INTRO_STEPS = [
     duration: 20,
     content: {
       title: 'Your Space',
-      body: 'Notice your surroundings. You\'ve created a safe container for this experience. Everything you need is here.',
+      body: "Notice your surroundings. You've created a safe container for this experience. Everything you need is here.",
     },
   },
   {
@@ -37,7 +47,7 @@ const INTRO_STEPS = [
     duration: 30,
     content: {
       title: 'Settle In',
-      body: 'Let\'s take a few breaths together. Breathe in slowly through your nose... and out through your mouth. There\'s nowhere else to be right now.',
+      body: "Let's take a few breaths together. Breathe in slowly through your nose... and out through your mouth. There's nowhere else to be right now.",
     },
   },
   {
@@ -81,7 +91,7 @@ const INTRO_STEPS = [
     duration: 25,
     content: {
       title: 'Let Go',
-      body: 'Release any tension you\'re holding. Your jaw. Your shoulders. Your hands. Let gravity do the work.',
+      body: "Release any tension you're holding. Your jaw. Your shoulders. Your hands. Let gravity do the work.",
     },
   },
   {
@@ -89,7 +99,7 @@ const INTRO_STEPS = [
     duration: 25,
     content: {
       title: 'Trust the Process',
-      body: 'Whatever arises is welcome. You don\'t need to control anything. Simply notice, and let it be.',
+      body: "Whatever arises is welcome. You don't need to control anything. Simply notice, and let it be.",
     },
   },
   {
@@ -97,7 +107,7 @@ const INTRO_STEPS = [
     duration: 20,
     content: {
       title: 'Be Patient',
-      body: 'The medicine will begin working in its own time. Most people feel the first effects between 20-45 minutes. There\'s no need to rush.',
+      body: "The medicine will begin working in its own time. Most people feel the first effects between 20-45 minutes. There's no need to rush.",
     },
   },
   {
@@ -105,7 +115,7 @@ const INTRO_STEPS = [
     duration: 20,
     content: {
       title: 'Guidance Available',
-      body: 'We\'ll be here with you, offering gentle guidance and checking in as you settle into the experience.',
+      body: "We'll be here with you, offering gentle guidance and checking in as you settle into the experience.",
     },
   },
   {
@@ -113,7 +123,7 @@ const INTRO_STEPS = [
     duration: 0, // User must click to continue
     content: {
       title: 'Ready to Begin',
-      body: 'When you\'re ready, we\'ll move into the first part of your session and check in with how you\'re feeling.',
+      body: "When you're ready, we'll move into the first part of your session and check in with how you're feeling.",
       showContinue: true,
     },
   },
@@ -128,6 +138,21 @@ export default function ComeUpIntro() {
 
   const currentStep = INTRO_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === INTRO_STEPS.length - 1;
+
+  const handleNext = useCallback(() => {
+    if (isLastStep) {
+      completeIntro();
+      return;
+    }
+
+    setIsVisible(false);
+    setTimeout(() => {
+      const nextIndex = currentStepIndex + 1;
+      setCurrentStepIndex(nextIndex);
+      setTimeRemaining(INTRO_STEPS[nextIndex].duration);
+      setIsVisible(true);
+    }, 500);
+  }, [isLastStep, currentStepIndex, completeIntro]);
 
   // Auto-advance timer
   useEffect(() => {
@@ -144,24 +169,9 @@ export default function ComeUpIntro() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentStepIndex]);
+  }, [currentStepIndex, currentStep.duration, handleNext]);
 
-  const handleNext = () => {
-    if (isLastStep) {
-      completeIntro();
-      return;
-    }
-
-    setIsVisible(false);
-    setTimeout(() => {
-      const nextIndex = currentStepIndex + 1;
-      setCurrentStepIndex(nextIndex);
-      setTimeRemaining(INTRO_STEPS[nextIndex].duration);
-      setIsVisible(true);
-    }, 500);
-  };
-
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     // Skip to the last step (ready step)
     setIsVisible(false);
     setTimeout(() => {
@@ -169,22 +179,47 @@ export default function ComeUpIntro() {
       setTimeRemaining(0);
       setIsVisible(true);
     }, 500);
+  }, []);
+
+  // Progress percentage
+  const progress = ((currentStepIndex + 1) / INTRO_STEPS.length) * 100;
+
+  // Get primary button config
+  const getPrimaryButton = () => {
+    // On the last step, show "Begin Session"
+    if (isLastStep) {
+      return {
+        label: 'Begin Session',
+        onClick: handleNext,
+      };
+    }
+
+    // On steps with auto-advance, show "Continue" to allow skipping ahead
+    if (currentStep.duration > 0) {
+      return {
+        label: 'Continue',
+        onClick: handleNext,
+      };
+    }
+
+    return null;
   };
 
   return (
-    <div className="flex flex-col px-6 py-8">
+    <>
       {/* Progress bar at top */}
-      <div className="w-full h-0.5 bg-[var(--color-border)]">
-        <div
-          className="h-full bg-[var(--color-text-primary)] transition-all duration-500"
-          style={{ width: `${((currentStepIndex + 1) / INTRO_STEPS.length) * 100}%` }}
-        />
-      </div>
+      <ModuleProgressBar
+        progress={progress}
+        visible={true}
+        showTime={false}
+      />
 
-      {/* Main content */}
-      <div className="flex-1 flex items-center justify-center py-12">
+      <ModuleLayout
+        layout={{ centered: true, maxWidth: 'md' }}
+        hasProgressBar={true}
+      >
         <div
-          className={`max-w-md text-center transition-opacity duration-500 ${
+          className={`text-center transition-opacity duration-500 ${
             isVisible ? 'opacity-100' : 'opacity-0'
           }`}
         >
@@ -195,45 +230,27 @@ export default function ComeUpIntro() {
             </p>
           ) : (
             // Regular step
-            <>
-              <p className="uppercase tracking-widest text-[var(--color-text-tertiary)] mb-6">
+            <div className="space-y-6">
+              <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
                 {currentStep.content.title}
               </p>
-              <p className="leading-relaxed mb-12 text-[var(--color-text-primary)]">
+              <p className="leading-relaxed text-[var(--color-text-primary)]">
                 {currentStep.content.body}
               </p>
-
-              {currentStep.content.showContinue && (
-                <button
-                  onClick={handleNext}
-                  className="px-8 py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors uppercase tracking-wider"
-                >
-                  Continue
-                </button>
-              )}
-            </>
+            </div>
           )}
         </div>
-      </div>
+      </ModuleLayout>
 
-      {/* Bottom controls */}
-      <div className="flex justify-between items-center">
-        <button
-          onClick={handleSkip}
-          className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm uppercase tracking-wider"
-        >
-          Skip Intro
-        </button>
-
-        {!currentStep.content.showContinue && currentStep.duration > 0 && (
-          <button
-            onClick={handleNext}
-            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors text-sm uppercase tracking-wider"
-          >
-            Continue →
-          </button>
-        )}
-      </div>
-    </div>
+      {/* Fixed control bar above tab bar */}
+      <ModuleControlBar
+        phase={isLastStep ? 'completed' : 'active'}
+        primary={getPrimaryButton()}
+        showBack={false}
+        showSkip={!isLastStep}
+        onSkip={handleSkip}
+        skipConfirmMessage="Skip the introduction?"
+      />
+    </>
   );
 }

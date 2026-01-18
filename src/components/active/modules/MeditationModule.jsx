@@ -1,43 +1,50 @@
 /**
  * MeditationModule Component
  * Placeholder for meditation and breathing exercises
+ *
+ * Uses shared UI components:
+ * - ModuleControlBar for consistent bottom controls
+ * - ModuleLayout for consistent layout structure
  */
 
-export default function MeditationModule({ module, onComplete, onSkip }) {
+// Shared UI components
+import ModuleLayout, { ModuleHeader, ModuleContent } from '../capabilities/ModuleLayout';
+import ModuleControlBar from '../capabilities/ModuleControlBar';
+
+export default function MeditationModule({ module, onComplete, onSkip, onTimerUpdate }) {
+  // Get primary button config
+  const getPrimaryButton = () => {
+    return {
+      label: 'Continue',
+      onClick: onComplete,
+    };
+  };
+
   return (
-    <div className="flex flex-col justify-between px-6 py-8">
-      <div className="flex-1 flex items-center justify-center w-full">
-        <div className="text-center space-y-8 max-w-md mx-auto">
-          <h2 className="text-[var(--color-text-primary)]">
-            {module.title}
-          </h2>
+    <>
+      <ModuleLayout layout={{ centered: true, maxWidth: 'md' }}>
+        <ModuleContent centered>
+          <ModuleHeader
+            title={module.title}
+            instructions={module.content?.instructions || 'Find a comfortable position and close your eyes.'}
+            centered
+          />
 
-          <p className="text-[var(--color-text-secondary)] leading-relaxed">
-            {module.content?.instructions || 'Find a comfortable position and close your eyes.'}
-          </p>
-
-          <p className="text-[var(--color-text-tertiary)]">
+          <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider">
             Meditation module - full implementation coming soon
           </p>
-        </div>
-      </div>
+        </ModuleContent>
+      </ModuleLayout>
 
-      <div className="w-full max-w-md mx-auto mt-8 space-y-4">
-        <button
-          onClick={onComplete}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                     uppercase tracking-wider hover:opacity-80 transition-opacity duration-300"
-        >
-          Continue
-        </button>
-
-        <button
-          onClick={onSkip}
-          className="w-full py-2 text-[var(--color-text-tertiary)] underline"
-        >
-          Skip
-        </button>
-      </div>
-    </div>
+      {/* Fixed control bar above tab bar */}
+      <ModuleControlBar
+        phase="simple"
+        primary={getPrimaryButton()}
+        showBack={false}
+        showSkip={true}
+        onSkip={onSkip}
+        skipConfirmMessage="Skip this meditation?"
+      />
+    </>
   );
 }
