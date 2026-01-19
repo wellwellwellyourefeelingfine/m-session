@@ -4,11 +4,20 @@
  */
 
 import { breathAwarenessMeditation } from './breath-awareness';
+import {
+  guidedBreathOrbMeditation,
+  generateBreathSequences,
+  generateTimedPrompts,
+} from './guided-breath-orb';
 
 // Registry of all available meditations
 export const meditationLibrary = {
   'breath-awareness-default': breathAwarenessMeditation,
+  'guided-breath-orb': guidedBreathOrbMeditation,
 };
+
+// Re-export guided breath orb utilities
+export { generateBreathSequences, generateTimedPrompts, guidedBreathOrbMeditation };
 
 /**
  * Get a meditation by its ID
