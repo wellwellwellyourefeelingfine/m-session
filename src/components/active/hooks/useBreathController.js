@@ -286,7 +286,7 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
 
         return newTime;
       });
-    }, 50); // 50ms for smooth animation updates
+    }, 25); // 25ms (40fps) for smooth animation updates
 
     return () => {
       if (timerRef.current) {

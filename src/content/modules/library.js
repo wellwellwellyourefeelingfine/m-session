@@ -235,6 +235,29 @@ export const moduleLibrary = [
     },
     tags: ['breathing', 'meditation', '4-7-8', 'relaxation', 'orb'],
   },
+  {
+    id: 'breath-meditation-guided',
+    type: 'breath-meditation',
+    title: 'Guided Breath Meditation',
+    description: 'A breath meditation with visual orb and spoken guidance to help you settle into presence.',
+    defaultDuration: 10,
+    minDuration: 10,
+    maxDuration: 30,
+    intensity: 'gentle',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['come-up', 'peak'],
+    content: {
+      instructions: 'Follow the orb with your breath while guided prompts help you settle into presence.',
+      // No breathSequences = uses guided mode with generateBreathSequences()
+    },
+    // Uses custom BreathMeditationModule with BreathOrb and guided prompts
+    capabilities: {
+      timer: { type: 'breathing', autoComplete: true },
+      animation: { type: 'breath-orb' },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
+    },
+    tags: ['breathing', 'meditation', 'guided', 'orb'],
+  },
 
   {
     id: 'guided-meditation-breath',
