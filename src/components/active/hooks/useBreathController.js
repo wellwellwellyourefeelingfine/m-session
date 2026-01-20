@@ -2,13 +2,14 @@
  * useBreathController Hook
  *
  * Manages breath timing and sequencing for breath meditation modules.
- * Supports multiple sequence types (cycle-based and duration-based) with
+ * Supports multiple sequence types (cycle-based, duration-based, and idle) with
  * smooth transitions that never cut off mid-breath.
  *
  * Features:
  * - Flexible breath patterns (inhale-hold-exhale-holdAfterExhale)
  * - Cycle-based sequences (e.g., 5 cycles of 4-4-4-4)
  * - Duration-based sequences (e.g., 1 minute of 5-5-5-0)
+ * - Idle sequences (timed periods with no breath guidance)
  * - Graceful sequence transitions (always completes current breath)
  * - Progress tracking for animations
  */
@@ -127,9 +128,10 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
 
   // Get current sequence and pattern
   const currentSequence = sequences[currentSequenceIndex] || null;
+  const isIdleSegment = currentSequence?.type === 'idle';
   const currentPattern = currentSequence?.pattern || { inhale: 4, hold: 0, exhale: 4, holdAfterExhale: 0 };
 
-  // Calculate if current sequence should end (for duration-based)
+  // Calculate if current sequence should end (for duration-based or idle)
   const shouldSequenceEnd = useCallback(() => {
     if (!currentSequence) return true;
 
@@ -137,8 +139,11 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
       return currentCycle >= currentSequence.count;
     }
 
-    if (currentSequence.type === 'duration') {
-      return sequenceElapsedTime >= currentSequence.seconds;
+    if (currentSequence.type === 'duration' || currentSequence.type === 'idle') {
+      const targetDuration = currentSequence.type === 'idle'
+        ? currentSequence.duration
+        : currentSequence.seconds;
+      return sequenceElapsedTime >= targetDuration;
     }
 
     return false;
@@ -165,9 +170,17 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     let elapsedTime = 0;
 
     sequences.forEach((seq, index) => {
-      const cycleDur = getCycleDuration(seq.pattern);
+      if (seq.type === 'idle') {
+        // Idle segments have a fixed duration
+        totalTime += seq.duration;
 
-      if (seq.type === 'cycles') {
+        if (index < currentSequenceIndex) {
+          elapsedTime += seq.duration;
+        } else if (index === currentSequenceIndex) {
+          elapsedTime += sequenceElapsedTime;
+        }
+      } else if (seq.type === 'cycles') {
+        const cycleDur = getCycleDuration(seq.pattern);
         const seqTime = cycleDur * seq.count;
         totalTime += seqTime;
 
@@ -191,8 +204,52 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     return totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0;
   }, [sequences, currentSequenceIndex, currentCycle, phaseDuration, phaseTimeRemaining, sequenceElapsedTime]);
 
+  // Transition to next sequence
+  const transitionToNextSequence = useCallback(() => {
+    const nextSequenceIndex = currentSequenceIndex + 1;
+
+    if (nextSequenceIndex >= sequences.length) {
+      // All sequences complete
+      setIsRunning(false);
+      setIsComplete(true);
+      onComplete?.();
+      return;
+    }
+
+    // Transition to next sequence
+    setCurrentSequenceIndex(nextSequenceIndex);
+    setCurrentCycle(0);
+    setSequenceElapsedTime(0);
+    setPendingSequenceTransition(false);
+
+    const nextSeq = sequences[nextSequenceIndex];
+
+    if (nextSeq.type === 'idle') {
+      // For idle segments, set phase to 'idle' (no breath animation)
+      setPhase('idle');
+      setPhaseDuration(nextSeq.duration);
+      setPhaseTimeRemaining(nextSeq.duration);
+    } else {
+      // For breath segments, start with inhale
+      const nextPattern = nextSeq.pattern;
+      const nextDuration = getPhaseDuration(nextPattern, 'inhale');
+
+      setPhase('inhale');
+      setPhaseDuration(nextDuration);
+      setPhaseTimeRemaining(nextDuration);
+    }
+
+    onSequenceChange?.(nextSequenceIndex);
+  }, [currentSequenceIndex, sequences, onComplete, onSequenceChange]);
+
   // Advance to next phase
   const advancePhase = useCallback(() => {
+    // Handle idle segments - they just run down their duration then transition
+    if (isIdleSegment) {
+      transitionToNextSequence();
+      return;
+    }
+
     const nextPhase = getNextPhase(phase, currentPattern);
 
     if (nextPhase) {
@@ -220,29 +277,7 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
 
       if (sequenceShouldEnd || pendingSequenceTransition) {
         // Move to next sequence
-        const nextSequenceIndex = currentSequenceIndex + 1;
-
-        if (nextSequenceIndex >= sequences.length) {
-          // All sequences complete
-          setIsRunning(false);
-          setIsComplete(true);
-          onComplete?.();
-        } else {
-          // Transition to next sequence
-          setCurrentSequenceIndex(nextSequenceIndex);
-          setCurrentCycle(0);
-          setSequenceElapsedTime(0);
-          setPendingSequenceTransition(false);
-
-          const nextPattern = sequences[nextSequenceIndex].pattern;
-          const nextDuration = getPhaseDuration(nextPattern, 'inhale');
-
-          setPhase('inhale');
-          setPhaseDuration(nextDuration);
-          setPhaseTimeRemaining(nextDuration);
-
-          onSequenceChange?.(nextSequenceIndex);
-        }
+        transitionToNextSequence();
       } else {
         // Start new cycle in same sequence
         const nextDuration = getPhaseDuration(currentPattern, 'inhale');
@@ -251,8 +286,8 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
         setPhaseTimeRemaining(nextDuration);
       }
     }
-  }, [phase, currentPattern, currentCycle, currentSequence, currentSequenceIndex,
-      sequences, sequenceElapsedTime, pendingSequenceTransition, onComplete, onSequenceChange]);
+  }, [phase, currentPattern, currentCycle, currentSequence, isIdleSegment,
+      sequenceElapsedTime, pendingSequenceTransition, transitionToNextSequence]);
 
   // Main timer effect
   useEffect(() => {
@@ -296,7 +331,7 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     };
   }, [isRunning, advancePhase]);
 
-  // Check for duration-based sequence completion
+  // Check for duration-based or idle sequence completion
   useEffect(() => {
     if (!isRunning || !currentSequence) return;
 
@@ -304,18 +339,31 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
       // Mark for transition after current cycle completes
       setPendingSequenceTransition(true);
     }
+
+    // Note: Idle segments are handled directly via timer countdown in phaseTimeRemaining
+    // They don't need the pendingSequenceTransition mechanism
   }, [isRunning, currentSequence, sequenceElapsedTime]);
 
   // Start the breath controller
   const start = useCallback(() => {
     if (sequences.length === 0) return;
 
-    const firstPattern = sequences[0].pattern;
-    const firstDuration = getPhaseDuration(firstPattern, 'inhale');
+    const firstSeq = sequences[0];
 
-    setPhase('inhale');
-    setPhaseDuration(firstDuration);
-    setPhaseTimeRemaining(firstDuration);
+    // Handle first sequence being idle
+    if (firstSeq.type === 'idle') {
+      setPhase('idle');
+      setPhaseDuration(firstSeq.duration);
+      setPhaseTimeRemaining(firstSeq.duration);
+    } else {
+      const firstPattern = firstSeq.pattern;
+      const firstDuration = getPhaseDuration(firstPattern, 'inhale');
+
+      setPhase('inhale');
+      setPhaseDuration(firstDuration);
+      setPhaseTimeRemaining(firstDuration);
+    }
+
     setCurrentCycle(0);
     setCurrentSequenceIndex(0);
     setSequenceElapsedTime(0);
@@ -357,6 +405,9 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     setPendingSequenceTransition(false);
   }, []);
 
+  // Get current segment label (for idle segments)
+  const currentSegmentLabel = currentSequence?.label || null;
+
   return {
     // Current state
     phase,
@@ -375,6 +426,11 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     // Sequence tracking
     currentSequenceIndex,
     totalSequences: sequences.length,
+    isIdleSegment,
+    currentSegmentLabel,
+
+    // Elapsed time in current sequence (useful for idle segments)
+    sequenceElapsedTime,
 
     // Overall progress
     overallProgress: calculateOverallProgress(),
