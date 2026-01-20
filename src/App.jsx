@@ -7,7 +7,9 @@
  * that need to maintain their state (timer, progress) across tab switches.
  */
 
+import { useEffect } from 'react';
 import { useAppStore } from './stores/useAppStore';
+import { useAIStore } from './stores/useAIStore';
 import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
 import ActiveView from './components/active/ActiveView';
@@ -16,6 +18,26 @@ import ToolsView from './components/tools/ToolsView';
 
 function App() {
   const currentTab = useAppStore((state) => state.currentTab);
+
+  // AI key expiration check
+  const checkKeyExpiration = useAIStore((state) => state.checkKeyExpiration);
+  const clearApiKey = useAIStore((state) => state.clearApiKey);
+
+  useEffect(() => {
+    // Check on mount
+    if (checkKeyExpiration()) {
+      clearApiKey();
+    }
+
+    // Check periodically (every minute)
+    const interval = setInterval(() => {
+      if (checkKeyExpiration()) {
+        clearApiKey();
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [checkKeyExpiration, clearApiKey]);
 
   return (
     <AppShell>

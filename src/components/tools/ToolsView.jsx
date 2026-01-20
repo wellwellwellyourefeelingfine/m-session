@@ -13,6 +13,7 @@ import ResourcesTool from './ResourcesTool';
 import FAQTool from './FAQTool';
 import SettingsTool from './SettingsTool';
 import HelpTool from './HelpTool';
+import AISettingsTool from './AISettingsTool';
 
 const tools = [
   { id: 'help', label: 'I NEED HELP', component: HelpTool },
@@ -20,6 +21,7 @@ const tools = [
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'faq', label: 'FAQ', component: FAQTool },
+  { id: 'ai', label: 'AI ASSISTANT', component: AISettingsTool },
   { id: 'settings', label: 'SETTINGS', component: SettingsTool },
 ];
 
