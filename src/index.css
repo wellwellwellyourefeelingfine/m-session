@@ -396,3 +396,83 @@
 .animate-breath-idle {
   animation: breath-idle 4s ease-in-out infinite;
 }
+
+/* AI Assistant Modal Animations - Slide from right */
+@keyframes slideInFromRightFull {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToRightFull {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.animate-slideInFromRightFull {
+  animation: slideInFromRightFull 0.3s ease-out forwards;
+}
+
+.animate-slideOutToRightFull {
+  animation: slideOutToRightFull 0.3s ease-out forwards;
+}
+
+/* Chat sidebar animations */
+@keyframes sidebarExpand {
+  from {
+    width: 2.5rem;
+  }
+  to {
+    width: 12rem;
+  }
+}
+
+@keyframes sidebarCollapse {
+  from {
+    width: 12rem;
+  }
+  to {
+    width: 2.5rem;
+  }
+}
+
+.animate-sidebar-expand {
+  animation: sidebarExpand 0.2s ease-out forwards;
+}
+
+.animate-sidebar-collapse {
+  animation: sidebarCollapse 0.2s ease-out forwards;
+}
+
+/* Typing indicator animation */
+@keyframes typingDot {
+  0%, 60%, 100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.animate-typing-dot {
+  animation: typingDot 1.4s ease-in-out infinite;
+}
+
+.animate-typing-dot-delayed-1 {
+  animation: typingDot 1.4s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+.animate-typing-dot-delayed-2 {
+  animation: typingDot 1.4s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
