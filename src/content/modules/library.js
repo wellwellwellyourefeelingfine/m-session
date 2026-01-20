@@ -153,21 +153,15 @@ export const moduleLibrary = [
     id: 'breath-meditation-calm',
     type: 'breath-meditation',
     title: 'Calming Breath',
-    description: 'A guided breath meditation with visual orb to help you find calm and presence.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 20,
+    description: 'A 15-minute guided breathing meditation that progressively deepens your breath, then gently returns to natural breathing.',
+    defaultDuration: 15,
     intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up'],
     content: {
-      instructions: 'Follow the orb with your breath. Let it guide you to a slower, deeper rhythm.',
-      breathSequences: [
-        // Start with a 3-3-3-3 pattern for testing holdAfterExhale
-        { type: 'cycles', count: 5, pattern: { inhale: 3, hold: 3, exhale: 3, holdAfterExhale: 3 } },
-        // Then slow down to 5-5-6 for the remainder
-        { type: 'duration', seconds: 300, pattern: { inhale: 5, hold: 5, exhale: 6, holdAfterExhale: 0 } },
-      ],
+      instructions: 'Follow the orb with your breath as it guides you through a natural progression from gentle to deep breathing.',
+      // Reference the meditation content file with segments and prompts
+      meditationId: 'calming-breath-15min',
     },
     // Uses custom BreathMeditationModule with BreathOrb
     capabilities: {
@@ -175,7 +169,7 @@ export const moduleLibrary = [
       animation: { type: 'breath-orb' },
       controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
     },
-    tags: ['breathing', 'meditation', 'calming', 'orb'],
+    tags: ['breathing', 'meditation', 'calming', 'orb', '15-minute'],
   },
   {
     id: 'breath-meditation-deep',

@@ -20,7 +20,9 @@ import {
   generateBreathSequences,
   generateTimedPrompts,
   guidedBreathOrbMeditation,
+  getMeditationById,
 } from '../../../content/meditations';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
 import ModuleControlBar, { SlotButton, MuteButton } from '../capabilities/ModuleControlBar';
@@ -66,23 +68,54 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   // Get library module for metadata
   const libraryModule = getModuleById(module.libraryId);
 
-  // Check if this module has custom sequences (non-guided mode)
-  const hasCustomSequences = !!(module.content?.breathSequences || libraryModule?.content?.breathSequences);
+  // Check if module references a meditation content file
+  const meditationContentId = module.content?.meditationId || libraryModule?.content?.meditationId;
+  const meditationContent = meditationContentId ? getMeditationById(meditationContentId) : null;
 
-  // Duration state (only used for guided mode)
+  // Check if this is a fixed-duration meditation (like calming breath 15min)
+  const isFixedDuration = meditationContent?.isFixedDuration || false;
+
+  // Check if this module has custom sequences (non-guided mode)
+  const hasCustomSequences = !!(module.content?.breathSequences || libraryModule?.content?.breathSequences || meditationContent?.segments);
+
+  // Duration state (only used for guided mode with adjustable duration)
   const [selectedDuration, setSelectedDuration] = useState(
     module.duration || libraryModule?.defaultDuration || 10
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
 
+  // Convert meditation content segments to breath controller sequences
+  const convertSegmentsToSequences = useCallback((segments) => {
+    return segments.map(segment => {
+      if (segment.type === 'idle') {
+        return {
+          type: 'idle',
+          duration: segment.duration,
+          label: segment.label,
+        };
+      }
+      // Breath segment
+      return {
+        type: 'cycles',
+        count: segment.cycles,
+        pattern: segment.pattern,
+        label: segment.label,
+      };
+    });
+  }, []);
+
   // Generate sequences and prompts based on duration
   const sequences = useMemo(() => {
-    if (hasCustomSequences) {
+    // If meditation content has segments, convert them
+    if (meditationContent?.segments) {
+      return convertSegmentsToSequences(meditationContent.segments);
+    }
+    if (hasCustomSequences && !meditationContent) {
       return module.content?.breathSequences || libraryModule?.content?.breathSequences;
     }
     // Use guided breath orb sequences
     return generateBreathSequences(selectedDuration);
-  }, [hasCustomSequences, module.content?.breathSequences, libraryModule?.content?.breathSequences, selectedDuration]);
+  }, [meditationContent, hasCustomSequences, module.content?.breathSequences, libraryModule?.content?.breathSequences, selectedDuration, convertSegmentsToSequences]);
 
   // Generate simple prompts for custom sequences based on total duration
   const generateSimplePrompts = useCallback((seqs) => {
@@ -120,12 +153,20 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   }, []);
 
   const timedPrompts = useMemo(() => {
-    if (hasCustomSequences) {
+    // If meditation content has prompts, use them directly
+    if (meditationContent?.prompts) {
+      // Convert prompts format: { time, text } -> { timeSeconds, text }
+      return meditationContent.prompts.map(p => ({
+        timeSeconds: p.time,
+        text: p.text,
+      }));
+    }
+    if (hasCustomSequences && !meditationContent) {
       // Generate simple prompts for custom sequences
       return generateSimplePrompts(sequences);
     }
     return generateTimedPrompts(selectedDuration);
-  }, [hasCustomSequences, selectedDuration, sequences, generateSimplePrompts]);
+  }, [meditationContent, hasCustomSequences, selectedDuration, sequences, generateSimplePrompts]);
 
   // Module state
   const [hasStarted, setHasStarted] = useState(false);
@@ -138,14 +179,11 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   // Current prompt state
   const [currentPrompt, setCurrentPrompt] = useState(null);
   const [promptVisible, setPromptVisible] = useState(false);
+  const lastPromptIndexRef = useRef(-1); // Track which prompt we last showed to prevent re-triggering
 
   // Track idle animation phase
   const idleAnimationRef = useRef(null);
   const idleStartTimeRef = useRef(null);
-
-  // Track elapsed time for prompts
-  const elapsedTimeRef = useRef(0);
-  const lastTickRef = useRef(Date.now());
 
   // Initialize breath controller
   const breathController = useBreathController({
@@ -160,18 +198,27 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
 
   // Calculate total duration for progress reporting
   const calculateTotalDuration = useCallback(() => {
+    // If meditation content has a fixed duration, use it
+    if (meditationContent?.duration) {
+      return meditationContent.duration;
+    }
+
     let total = 0;
     sequences.forEach(seq => {
-      const cycleDuration = (seq.pattern.inhale || 0) + (seq.pattern.hold || 0) +
-                            (seq.pattern.exhale || 0) + (seq.pattern.holdAfterExhale || 0);
-      if (seq.type === 'cycles') {
-        total += cycleDuration * seq.count;
-      } else if (seq.type === 'duration') {
-        total += seq.seconds;
+      if (seq.type === 'idle') {
+        total += seq.duration;
+      } else {
+        const cycleDuration = (seq.pattern.inhale || 0) + (seq.pattern.hold || 0) +
+                              (seq.pattern.exhale || 0) + (seq.pattern.holdAfterExhale || 0);
+        if (seq.type === 'cycles') {
+          total += cycleDuration * seq.count;
+        } else if (seq.type === 'duration') {
+          total += seq.seconds;
+        }
       }
     });
     return total;
-  }, [sequences]);
+  }, [meditationContent, sequences]);
 
   // Report timer state to parent for ModuleStatusBar
   useEffect(() => {
@@ -190,55 +237,51 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   }, [breathController.overallProgress, breathController.hasStarted, breathController.isComplete,
       breathController.isRunning, calculateTotalDuration, onTimerUpdate]);
 
-  // Track elapsed time and update prompts
+  // Track prompts based on breath controller's progress
+  // Uses a ref to track the last shown prompt index to prevent re-triggering
   useEffect(() => {
-    if (!breathController.isRunning || timedPrompts.length === 0) return;
+    if (!breathController.hasStarted || breathController.isComplete || timedPrompts.length === 0) return;
 
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const delta = (now - lastTickRef.current) / 1000;
-      lastTickRef.current = now;
-      elapsedTimeRef.current += delta;
+    // Calculate elapsed time from the breath controller's overall progress
+    const totalDuration = calculateTotalDuration();
+    const currentTime = (breathController.overallProgress / 100) * totalDuration;
 
-      // Find the current prompt based on elapsed time
-      const currentTime = elapsedTimeRef.current;
-
-      // Find the most recent prompt that should be showing
-      let activePrompt = null;
-      for (let i = timedPrompts.length - 1; i >= 0; i--) {
-        if (timedPrompts[i].timeSeconds <= currentTime) {
-          // Check if this prompt is still "active" (within 8 seconds of start)
-          const promptAge = currentTime - timedPrompts[i].timeSeconds;
-          if (promptAge < 8) {
-            activePrompt = timedPrompts[i];
-          }
-          break;
+    // Find which prompt should be active based on current time
+    let activePromptIndex = -1;
+    for (let i = timedPrompts.length - 1; i >= 0; i--) {
+      if (timedPrompts[i].timeSeconds <= currentTime) {
+        // Check if this prompt is still within its display window (8 seconds)
+        const promptAge = currentTime - timedPrompts[i].timeSeconds;
+        if (promptAge < 8) {
+          activePromptIndex = i;
         }
+        break;
       }
+    }
 
-      if (activePrompt && activePrompt.text !== currentPrompt?.text) {
-        // New prompt - fade out old, then fade in new
-        setPromptVisible(false);
-        setTimeout(() => {
-          setCurrentPrompt(activePrompt);
-          setPromptVisible(true);
-        }, 300);
-      } else if (!activePrompt && currentPrompt) {
-        // No active prompt - fade out
+    // Only update if we're showing a different prompt than before
+    if (activePromptIndex !== lastPromptIndexRef.current) {
+      const previousIndex = lastPromptIndexRef.current;
+      lastPromptIndexRef.current = activePromptIndex;
+
+      if (activePromptIndex === -1) {
+        // No prompt should be showing - fade out current
         setPromptVisible(false);
         setTimeout(() => setCurrentPrompt(null), 300);
+      } else if (previousIndex === -1) {
+        // Going from no prompt to a prompt - just fade in
+        setCurrentPrompt(timedPrompts[activePromptIndex]);
+        setPromptVisible(true);
+      } else {
+        // Transitioning from one prompt to another - fade out, then fade in
+        setPromptVisible(false);
+        setTimeout(() => {
+          setCurrentPrompt(timedPrompts[activePromptIndex]);
+          setPromptVisible(true);
+        }, 300);
       }
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [breathController.isRunning, timedPrompts, currentPrompt]);
-
-  // Reset elapsed time when paused/resumed
-  useEffect(() => {
-    if (breathController.isRunning) {
-      lastTickRef.current = Date.now();
     }
-  }, [breathController.isRunning]);
+  }, [breathController.hasStarted, breathController.isComplete, breathController.overallProgress, timedPrompts, calculateTotalDuration]);
 
   // Handle start button - wait for idle animation to reach contracted state
   const handleBegin = useCallback(() => {
@@ -256,8 +299,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
       if (isNearContracted) {
         setHasStarted(true);
         setIsWaitingForIdleComplete(false);
-        elapsedTimeRef.current = 0;
-        lastTickRef.current = Date.now();
+        lastPromptIndexRef.current = -1; // Reset prompt tracking
         breathController.start();
       } else {
         idleAnimationRef.current = requestAnimationFrame(checkIdlePhase);
@@ -289,6 +331,15 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [hasStarted, breathController]);
+
+  // Pause meditation when user navigates away from Active tab (within app)
+  const currentTab = useAppStore((state) => state.currentTab);
+
+  useEffect(() => {
+    if (currentTab !== 'active' && hasStarted && breathController.isRunning) {
+      breathController.pause();
+    }
+  }, [currentTab, hasStarted, breathController]);
 
   // Keep screen awake during active meditation (prevents phone from sleeping)
   const wakeLockRef = useRef(null);
@@ -422,8 +473,20 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
     const currentSeq = sequences[breathController.currentSequenceIndex];
     if (!currentSeq) return null;
 
+    // For idle segments, show the label
+    if (currentSeq.type === 'idle') {
+      return currentSeq.label || 'Free Breathing';
+    }
+
     const pattern = currentSeq.pattern;
-    const patternStr = `${pattern.inhale}-${pattern.hold}-${pattern.exhale}-${pattern.holdAfterExhale}`;
+    // Only show non-zero values in the pattern (e.g., 4-0-6-0 becomes 4-6)
+    const patternParts = [
+      pattern.inhale,
+      pattern.hold,
+      pattern.exhale,
+      pattern.holdAfterExhale
+    ].filter(val => val > 0);
+    const patternStr = patternParts.join('-');
 
     if (currentSeq.type === 'cycles') {
       return `Cycle ${breathController.currentCycle + 1} / ${currentSeq.count} · ${patternStr}`;
@@ -477,8 +540,8 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
               phaseDuration={hasStarted ? breathController.phaseDuration : 4}
               phaseSecondsRemaining={hasStarted ? breathController.phaseSecondsRemaining : 4}
               moonAngle={hasStarted ? breathController.moonAngle : 180}
-              isActive={hasStarted && breathController.isRunning}
-              isIdle={!hasStarted}
+              isActive={hasStarted && breathController.isRunning && !breathController.isIdleSegment}
+              isIdle={!hasStarted || breathController.isIdleSegment}
               size="medium"
             />
 
@@ -508,8 +571,8 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
                 {getDescription()}
               </p>
 
-              {/* Duration selector button (only for guided mode) */}
-              {!hasCustomSequences && (
+              {/* Duration selector button (only for guided mode, not fixed duration) */}
+              {!hasCustomSequences && !isFixedDuration && (
                 <button
                   onClick={() => setShowDurationPicker(true)}
                   className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
@@ -518,6 +581,13 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
                   <span className="text-2xl font-light">{selectedDuration}</span>
                   <span className="text-sm ml-1">min</span>
                 </button>
+              )}
+
+              {/* Show fixed duration display for fixed-duration meditations */}
+              {isFixedDuration && meditationContent?.duration && (
+                <div className="text-[var(--color-text-tertiary)] text-sm">
+                  {Math.floor(meditationContent.duration / 60)} minutes
+                </div>
               )}
             </div>
           )}
@@ -563,8 +633,8 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
         rightSlot={rightSlotContent}
       />
 
-      {/* Duration picker modal (only for guided mode) */}
-      {!hasCustomSequences && (
+      {/* Duration picker modal (only for guided mode, not fixed duration) */}
+      {!hasCustomSequences && !isFixedDuration && (
         <DurationPicker
           isOpen={showDurationPicker}
           onClose={() => setShowDurationPicker(false)}
