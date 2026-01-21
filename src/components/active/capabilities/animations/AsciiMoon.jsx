@@ -26,8 +26,9 @@ const CENTER_Y = SIZE / 2;
 const RADIUS = 8;
 
 // Animation timing
-const RENDER_INTERVAL = 200; // ms between frames
+const RENDER_INTERVAL = 50; // ms between frames (faster for staggered updates)
 const CYCLE_DURATION = 10000; // ms for full cycle
+const CHAR_CHANGE_INTERVAL = 150; // ms - each character changes on its own schedule
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
@@ -40,14 +41,19 @@ export default function AsciiMoon({ className = '' }) {
   const animationRef = useRef(null);
   const lastRenderRef = useRef(0);
 
-  // Generate stable threshold grid (randomized once per mount)
-  const thresholds = useMemo(() => {
+  // Generate stable grid data (randomized once per mount)
+  // Each cell has: threshold (for phase), timeOffset (for staggered updates), lastChange (timestamp)
+  const gridData = useMemo(() => {
     const grid = [];
     for (let y = 0; y < SIZE; y++) {
       const row = [];
       for (let x = 0; x < SIZE; x++) {
         const nx = 0.1 + (x / SIZE) * 0.8;
-        row.push(nx + (Math.random() * 0.15 - 0.075));
+        row.push({
+          threshold: nx + (Math.random() * 0.15 - 0.075),
+          timeOffset: Math.random() * CHAR_CHANGE_INTERVAL, // random offset for staggered timing
+          currentChar: null, // will be set on first render
+        });
       }
       grid.push(row);
     }
@@ -63,31 +69,51 @@ export default function AsciiMoon({ className = '' }) {
     return 1;
   };
 
-  // Render a single frame
-  const render = (phase) => {
+  // Render a single frame with staggered character updates
+  const render = (phase, now) => {
     let out = '';
     for (let y = 0; y < SIZE; y++) {
       for (let x = 0; x < SIZE; x++) {
+        const cell = gridData[y][x];
         const dx = x - CENTER_X + 0.5;
         const dy = y - CENTER_Y + 0.5;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const inCircle = dist <= RADIUS;
 
+        // Check if this cell should update based on its staggered timing
+        const cellTime = now + cell.timeOffset;
+        const shouldUpdate = Math.floor(cellTime / CHAR_CHANGE_INTERVAL) !== Math.floor((cellTime - RENDER_INTERVAL) / CHAR_CHANGE_INTERVAL);
+
         if (!inCircle) {
-          out += pick(MID);
+          // Background characters - update on staggered schedule
+          if (shouldUpdate || cell.currentChar === null) {
+            cell.currentChar = pick(MID);
+          }
+          out += cell.currentChar;
           continue;
         }
 
         let lit;
         if (phase <= 0.5) {
           const threshold = phase * 2;
-          lit = thresholds[y][x] < threshold;
+          lit = cell.threshold < threshold;
         } else {
           const threshold = (phase - 0.5) * 2;
-          lit = thresholds[y][x] >= threshold;
+          lit = cell.threshold >= threshold;
         }
 
-        out += lit ? pick(SPARSE) : pick(DENSE);
+        // Moon characters - update on staggered schedule
+        if (shouldUpdate || cell.currentChar === null) {
+          cell.currentChar = lit ? pick(SPARSE) : pick(DENSE);
+        } else {
+          // Even if not updating timing, check if lit state changed
+          const charSet = lit ? SPARSE : DENSE;
+          if (!charSet.includes(cell.currentChar)) {
+            cell.currentChar = pick(charSet);
+          }
+        }
+
+        out += cell.currentChar;
       }
       out += '\n';
     }
@@ -97,16 +123,18 @@ export default function AsciiMoon({ className = '' }) {
   useEffect(() => {
     const loop = (timestamp) => {
       if (timestamp - lastRenderRef.current >= RENDER_INTERVAL) {
-        const rawPhase = (Date.now() % CYCLE_DURATION) / CYCLE_DURATION;
-        setOutput(render(easedPhase(rawPhase)));
+        const now = Date.now();
+        const rawPhase = (now % CYCLE_DURATION) / CYCLE_DURATION;
+        setOutput(render(easedPhase(rawPhase), now));
         lastRenderRef.current = timestamp;
       }
       animationRef.current = requestAnimationFrame(loop);
     };
 
     // Initial render
-    const rawPhase = (Date.now() % CYCLE_DURATION) / CYCLE_DURATION;
-    setOutput(render(easedPhase(rawPhase)));
+    const now = Date.now();
+    const rawPhase = (now % CYCLE_DURATION) / CYCLE_DURATION;
+    setOutput(render(easedPhase(rawPhase), now));
 
     animationRef.current = requestAnimationFrame(loop);
 
@@ -115,7 +143,7 @@ export default function AsciiMoon({ className = '' }) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [thresholds]);
+  }, [gridData]);
 
   return (
     <pre
