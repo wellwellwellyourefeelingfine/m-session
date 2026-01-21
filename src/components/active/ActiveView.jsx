@@ -12,6 +12,7 @@ import SubstanceChecklist from '../session/SubstanceChecklist';
 import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import OpenSpace from './OpenSpace';
+import AsciiMoon from './capabilities/animations/AsciiMoon';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
@@ -103,10 +104,11 @@ export default function ActiveView() {
       case 'intake':
       case 'pre-session':
         return (
-          <div className="min-h-[60vh] flex items-center justify-center px-6">
+          <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 gap-8">
             <p className="text-[var(--color-text-secondary)] text-center">
               Complete your intake on the Home tab to begin your session.
             </p>
+            <AsciiMoon />
           </div>
         );
 
