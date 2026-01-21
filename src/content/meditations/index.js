@@ -10,12 +10,14 @@ import {
   generateTimedPrompts,
 } from './guided-breath-orb';
 import { calmingBreath15Min } from './calming-breath-15min';
+import { openAwarenessMeditation } from './open-awareness';
 
 // Registry of all available meditations
 export const meditationLibrary = {
   'breath-awareness-default': breathAwarenessMeditation,
   'guided-breath-orb': guidedBreathOrbMeditation,
   'calming-breath-15min': calmingBreath15Min,
+  'open-awareness': openAwarenessMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -23,6 +25,9 @@ export { generateBreathSequences, generateTimedPrompts, guidedBreathOrbMeditatio
 
 // Re-export calming breath meditation
 export { calmingBreath15Min };
+
+// Re-export open awareness meditation
+export { openAwarenessMeditation };
 
 /**
  * Get a meditation by its ID

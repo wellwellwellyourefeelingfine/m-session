@@ -187,8 +187,22 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
         if (index < currentSequenceIndex) {
           elapsedTime += seqTime;
         } else if (index === currentSequenceIndex) {
-          elapsedTime += cycleDur * currentCycle +
-            (phaseDuration - phaseTimeRemaining);
+          // Add completed cycles
+          elapsedTime += cycleDur * currentCycle;
+
+          // Add elapsed time within current cycle based on current phase
+          // We need to account for completed phases, not just current phase progress
+          const pattern = seq.pattern;
+          const phases = ['inhale', 'hold', 'exhale', 'holdAfterExhale'];
+          const currentPhaseIndex = phases.indexOf(phase);
+
+          // Add durations of completed phases in current cycle
+          for (let p = 0; p < currentPhaseIndex; p++) {
+            elapsedTime += pattern[phases[p]] || 0;
+          }
+
+          // Add elapsed time in current phase
+          elapsedTime += (phaseDuration - phaseTimeRemaining);
         }
       } else if (seq.type === 'duration') {
         totalTime += seq.seconds;
@@ -202,7 +216,7 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
     });
 
     return totalTime > 0 ? (elapsedTime / totalTime) * 100 : 0;
-  }, [sequences, currentSequenceIndex, currentCycle, phaseDuration, phaseTimeRemaining, sequenceElapsedTime]);
+  }, [sequences, currentSequenceIndex, currentCycle, phase, phaseDuration, phaseTimeRemaining, sequenceElapsedTime]);
 
   // Transition to next sequence
   const transitionToNextSequence = useCallback(() => {

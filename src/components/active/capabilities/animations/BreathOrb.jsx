@@ -116,13 +116,13 @@ export default function BreathOrb({
     }
   };
 
-  // Get phase text
+  // Get phase text (lowercase)
   const getPhaseText = () => {
     switch (phase) {
-      case 'inhale': return 'Inhale';
-      case 'hold': return 'Hold';
-      case 'exhale': return 'Exhale';
-      case 'holdAfterExhale': return 'Hold';
+      case 'inhale': return 'inhale';
+      case 'hold': return 'hold';
+      case 'exhale': return 'exhale';
+      case 'holdAfterExhale': return 'hold';
       default: return '';
     }
   };
@@ -226,31 +226,31 @@ export default function BreathOrb({
 
       {/* Center Text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        {/* Phase text */}
+        {/* Phase text - DM Serif, 14px, uppercase, white */}
         {isActive && (
           <span
-            className={`uppercase tracking-wider font-mono text-[var(--color-text-primary)] ${sizeConfig.textSize}`}
-            style={{ opacity: 0.9 }}
+            className="font-serif text-white uppercase"
+            style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
           >
             {getPhaseText()}
           </span>
         )}
 
-        {/* Countdown */}
+        {/* Countdown - DM Serif, 16px, white */}
         {isActive && (
           <span
-            className={`font-mono text-[var(--color-text-secondary)] ${sizeConfig.countdownSize} mt-1`}
-            style={{ opacity: 0.7 }}
+            className="font-serif text-white mt-1"
+            style={{ fontSize: '24px', opacity: 0.6 }}
           >
             {phaseSecondsRemaining}
           </span>
         )}
 
-        {/* Idle state text */}
+        {/* Idle state text - matches active phase text styling */}
         {isIdle && !isActive && (
           <span
-            className={`uppercase tracking-wider font-mono text-[var(--color-text-tertiary)] ${sizeConfig.textSize}`}
-            style={{ opacity: 0.6 }}
+            className="font-serif text-white uppercase"
+            style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
           >
             Ready
           </span>

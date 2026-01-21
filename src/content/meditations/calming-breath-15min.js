@@ -23,7 +23,7 @@ export const calmingBreath15Min = {
     {
       type: 'idle',
       duration: 15,
-      label: 'Settling In',
+      label: 'Intro',
     },
 
     // Segment 1: 4-0-4-0 for 6 cycles (48s)
@@ -126,60 +126,53 @@ export const calmingBreath15Min = {
    * - Segment 10 (Closing):       893s - 900s  (7s idle)
    */
   prompts: [
-    // Segment 0: Settling In (0-15s)
-    // Let user settle without immediate instruction
-    { time: 1, text: 'Find a comfortable position.' },
-    { time: 9, text: 'We\'ll begin with gentle, natural breaths.' },
+    // Segment 0: Settling In (0-15s) - 3 prompts, evenly spaced
+    { time: 1, text: 'Settle into a comfortable position.' },
+    { time: 6, text: 'Soften your gaze on the orb.' },
+    { time: 11, text: 'The orb will guide your breath. Follow along gently.' },
 
-    // Segment 1: 4-4 pattern (15-63s) - 6 cycles of 8s each
-    // Cycle 1 starts at 15s, cycle 2 at 23s, cycle 3 at 31s, etc.
-    { time: 17, text: 'Breathe in slowly... and out.' },
-    { time: 33, text: 'Follow the orb with your breath.' },
-    { time: 49, text: 'Let each exhale release a little tension.' },
+    // Segment 1: Gentle Start - 4-4 pattern (15-63s) - 3 prompts
+    { time: 18, text: 'Breathe in as the orb expands... out as it contracts.' },
+    { time: 34, text: 'No need to force anything. Just follow.' },
+    { time: 50, text: 'With each exhale, let your shoulders drop.' },
 
-    // Segment 2: 4-2-6 pattern (63-135s) - 6 cycles of 12s each
-    // Cycle 1: 63-75s, cycle 2: 75-87s, cycle 3: 87-99s, etc.
-    { time: 65, text: 'Now adding a brief pause after inhaling.' },
-    { time: 89, text: 'Inhale... hold gently... release slowly.' },
-    { time: 113, text: 'The exhale is longer now. Let it calm you.' },
+    // Segment 2: Adding Pause - 4-2-6 pattern (63-135s) - 3 prompts
+    { time: 60, text: 'Now we add a brief pause at the top of the breath.' },
+    { time: 92, text: 'Inhale... pause... and a long, slow release.' },
+    { time: 116, text: 'The exhale is where the calm lives.' },
 
-    // Segment 3: 5-1-7 pattern (135-239s) - 8 cycles of 13s each
-    // Cycle 1: 135-148s, cycle 2: 148-161s, etc.
-    { time: 137, text: 'Deepening the breath.' },
-    { time: 163, text: 'Longer inhales... longer exhales.' },
-    { time: 202, text: 'Feel your body settling.' },
+    // Segment 3: Deepening - 5-1-7 pattern (135-239s) - 3 prompts
+    { time: 140, text: 'Deepening now. Longer breaths.' },
+    { time: 175, text: 'Feel your belly expand with each inhale.' },
+    { time: 210, text: 'Your body knows how to do this.' },
 
-    // Segment 4: 6-2-7 pattern (239-299s) - 4 cycles of 15s each
-    // Cycle 1: 239-254s, cycle 2: 254-269s, etc.
-    { time: 241, text: 'Full, nourishing breaths.' },
-    { time: 271, text: 'You\'re doing beautifully.' },
+    // Segment 4: Full Breath - 6-2-7 pattern (239-299s) - 2 prompts
+    { time: 245, text: 'Full, nourishing breaths.' },
+    { time: 275, text: 'You\'re settling into a steady rhythm.' },
 
-    // Segment 5: 6-8 pattern (299-467s) - 12 cycles of 14s each
-    // This is a long, steady segment. Fewer prompts, more space.
-    { time: 301, text: 'Releasing the hold. Just breathe and release.' },
-    { time: 357, text: 'Let the extended exhale calm your nervous system.' },
-    { time: 427, text: 'Stay with this rhythm.' },
+    // Segment 5: Extended Exhale - 6-8 pattern (299-467s) - 3 prompts
+    { time: 310, text: 'Releasing the pause. Just inhale and release.' },
+    { time: 370, text: 'Long exhales calm your nervous system.' },
+    { time: 430, text: 'Stay here. Let the breath breathe you.' },
 
-    // Segment 6: 7-9 pattern (467-659s) - 12 cycles of 16s each
-    // Deepest breathing. Spacious prompts.
-    { time: 469, text: 'Now into our deepest breaths.' },
-    { time: 533, text: 'Long, slow inhales. Even longer exhales.' },
-    { time: 597, text: 'You are completely safe here.' },
+    // Segment 6: Deep Flow - 7-9 pattern (467-659s) - 3 prompts
+    { time: 480, text: 'Our deepest breaths now.' },
+    { time: 550, text: 'Slow and spacious. Just being.' },
+    { time: 620, text: 'With each breath, an opening of awareness. An opening of our internal rhythm.' },
 
-    // Segment 7: 6-9 pattern (659-719s) - 4 cycles of 15s each
-    // Beginning to return. Gentle transition.
-    { time: 661, text: 'Beginning to ease back gently.' },
-    { time: 691, text: 'Maintaining the calm.' },
+    // Segment 7: Easing Back - 6-9 pattern (659-719s) - 2 prompts
+    { time: 665, text: 'Gently easing back now.' },
+    { time: 695, text: 'Carrying the calm with you.' },
 
-    // Segment 8: 5-7 pattern (719-743s) - 2 cycles of 12s each
-    // Short segment, one prompt is enough
-    { time: 721, text: 'Returning toward natural breathing.' },
+    // Segment 8: Returning - 5-7 pattern (719-743s) - 1 prompt
+    { time: 725, text: 'Returning toward your natural breath.' },
 
-    // Segment 9: Free breathing (743-893s) - 150s idle
-    // User breathes freely. Minimal guidance.
-    { time: 746, text: 'Now breathe freely, however feels natural.' },
-    { time: 806, text: 'No pattern to follow. Just be.' },
-    { time: 866, text: 'When you\'re ready, slowly return your awareness.' },
+    // Segment 9: Free Breathing (743-893s) - 3 prompts
+    { time: 750, text: 'Breathe freely now. No pattern to follow.' },
+    { time: 810, text: 'Just be with whatever is here.' },
+    { time: 860, text: 'When you\'re ready, begin to notice the room around you.' },
+
+    // Segment 10: Closing (893-900s) - no prompts, end in silence
   ],
 };
 
