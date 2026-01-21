@@ -21,6 +21,7 @@ import BreathMeditationModule from './modules/BreathMeditationModule';
 import JournalingModule from './modules/JournalingModule';
 import GuidedMeditationModule from './modules/GuidedMeditationModule';
 import CheckInModule from './modules/CheckInModule';
+import OpenAwarenessModule from './modules/OpenAwarenessModule';
 
 // Import the generic shell
 import { ModuleShell } from './capabilities';
@@ -53,6 +54,9 @@ export const CUSTOM_MODULES = {
 
   // Check-in has specialized response collection
   'check-in': CheckInModule,
+
+  // Open awareness has audio-text sync with variable duration
+  'open-awareness': OpenAwarenessModule,
 };
 
 /**
@@ -64,7 +68,6 @@ export const SHELL_MODULE_TYPES = [
   'meditation',
   'body-scan-light',
   'body-scan-deep',
-  'open-awareness',
   'self-compassion',
 
   // Open/passive types (just content + continue/skip)
