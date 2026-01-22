@@ -15,9 +15,15 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 h-16 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)' }}>
-        <div className="h-full flex items-center px-6">
+        <div className="h-full flex items-center px-4">
           {/* App Title - DM Serif Text (left-aligned) */}
-          <h1 className="font-serif text-2xl" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+          <h1
+            className="font-serif text-3xl leading-none mt-3 -ml-2"
+            style={{
+              fontFamily: 'DM Serif Text, serif',
+              textTransform: 'none'
+            }}
+          >
             Session
           </h1>
 
