@@ -19,9 +19,9 @@ export const sectionBQuestions = [
   {
     field: 'holdingQuestion',
     type: 'text',
-    label: 'Is there a question you are holding?',
-    description: 'Optional - something you want to explore or understand.',
-    placeholder: 'What would you like to explore?',
+    label: 'What is your intention for this session?',
+    description: 'Optional - an intention, question, or theme to guide your experience.',
+    placeholder: 'What do you want to explore, heal, or understand?',
     required: false,
     multiline: true,
   },

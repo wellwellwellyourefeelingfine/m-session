@@ -137,6 +137,16 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // PHASE TRANSITIONS STATE
+      // ============================================
+      phaseTransitions: {
+        // 'none' | 'come-up-to-peak' | 'peak-to-integration' | 'session-closing'
+        activeTransition: null,
+        // Tracks completion of transition steps
+        transitionCompleted: false,
+      },
+
+      // ============================================
       // MEDITATION PLAYBACK STATE
       // ============================================
       meditationPlayback: {
@@ -634,6 +644,7 @@ export const useSessionStore = create(
             introCompleted: true,
             isVisible: true,
             isMinimized: false,
+            // No waitingForCheckIn lock - the modal overlay naturally blocks interaction
             promptCount: 1,
             lastPromptAt: new Date(),
           },
@@ -694,14 +705,14 @@ export const useSessionStore = create(
               ...state.comeUpCheckIn.responses,
               { response, timestamp: now, minutesSinceIngestion },
             ],
-            isMinimized: true,
-            waitingForCheckIn: false,
+            // Don't auto-minimize here - let the component handle showing reassurance first
+            // The component will call minimizeCheckIn() after the reassurance is dismissed
           },
         });
 
-        // If fully arrived, transition to peak phase
+        // If fully arrived, begin the transition to peak phase
         if (response === 'fully-arrived') {
-          get().transitionToPeak();
+          get().beginPeakTransition();
         }
       },
 
@@ -792,6 +803,24 @@ export const useSessionStore = create(
       // PHASE TRANSITIONS
       // ============================================
 
+      // Begin the come-up to peak transition (shows transition component)
+      beginPeakTransition: () => {
+        const state = get();
+        set({
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: 'come-up-to-peak',
+            transitionCompleted: false,
+          },
+          comeUpCheckIn: {
+            ...state.comeUpCheckIn,
+            isVisible: false,
+            isMinimized: true,
+          },
+        });
+      },
+
+      // Complete the come-up to peak transition (called after transition component finishes)
       transitionToPeak: () => {
         const state = get();
         const now = new Date();
@@ -818,10 +847,10 @@ export const useSessionStore = create(
               },
             },
           },
-          comeUpCheckIn: {
-            ...state.comeUpCheckIn,
-            isVisible: false,
-            isMinimized: true,
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: null,
+            transitionCompleted: true,
           },
           modules: {
             ...state.modules,
@@ -927,7 +956,8 @@ export const useSessionStore = create(
           .filter((m) => m.phase === currentPhase && m.status === 'upcoming')
           .sort((a, b) => a.order - b.order)[0];
 
-        // If in come-up phase, set waiting for check-in before next module
+        // If in come-up phase, show check-in modal before next module
+        // The modal overlay naturally blocks interaction, no lock needed
         if (currentPhase === 'come-up') {
           set({
             modules: {
@@ -938,7 +968,6 @@ export const useSessionStore = create(
             },
             comeUpCheckIn: {
               ...state.comeUpCheckIn,
-              waitingForCheckIn: true,
               isMinimized: false,
               promptCount: state.comeUpCheckIn.promptCount + 1,
               lastPromptAt: now,
@@ -993,7 +1022,8 @@ export const useSessionStore = create(
 
         const historyEntry = { ...module, status: 'skipped', completedAt: now };
 
-        // If in come-up phase, set waiting for check-in before next module
+        // If in come-up phase, show check-in modal before next module
+        // The modal overlay naturally blocks interaction, no lock needed
         if (currentPhase === 'come-up') {
           set({
             modules: {
@@ -1004,7 +1034,6 @@ export const useSessionStore = create(
             },
             comeUpCheckIn: {
               ...state.comeUpCheckIn,
-              waitingForCheckIn: true,
               isMinimized: false,
               promptCount: state.comeUpCheckIn.promptCount + 1,
               lastPromptAt: now,
@@ -1244,6 +1273,10 @@ export const useSessionStore = create(
             currentResponse: null,
             introCompleted: false,
             waitingForCheckIn: false,
+          },
+          phaseTransitions: {
+            activeTransition: null,
+            transitionCompleted: false,
           },
         });
       },

@@ -53,7 +53,7 @@ export const useJournalStore = create(
       // ============================================
       settings: {
         fontSize: 'medium', // 'small' | 'medium' | 'large'
-        fontFamily: 'sans', // 'sans' | 'serif' | 'mono'
+        fontFamily: 'mono', // 'sans' | 'serif' | 'mono'
         lineHeight: 'normal', // 'compact' | 'normal' | 'relaxed'
       },
 
@@ -62,7 +62,7 @@ export const useJournalStore = create(
       // ============================================
 
       // Add a new entry
-      addEntry: ({ content = '', source = 'manual', sessionId = null, moduleTitle = null }) => {
+      addEntry: ({ content = '', source = 'manual', sessionId = null, moduleTitle = null, isEdited = false }) => {
         const now = Date.now();
         const newEntry = {
           id: generateId(),
@@ -74,7 +74,7 @@ export const useJournalStore = create(
           source, // 'manual' | 'session'
           sessionId,
           moduleTitle,
-          isEdited: false,
+          isEdited, // true if entry was created for immediate editing (skips confirmation)
         };
 
         set((state) => ({

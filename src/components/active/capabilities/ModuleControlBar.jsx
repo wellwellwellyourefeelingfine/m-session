@@ -90,7 +90,7 @@ export default function ModuleControlBar({
 
           {/* Center: Primary button */}
           <div className="flex-1 flex justify-center px-4">
-            {primary.label && (
+            {primary?.label && (
               <button
                 onClick={primary.onClick}
                 disabled={primary.disabled}

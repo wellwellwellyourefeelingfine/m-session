@@ -4,6 +4,7 @@
  * Font size, font family, line height
  */
 
+import { useState } from 'react';
 import { useJournalStore } from '../../stores/useJournalStore';
 
 const FONT_SIZE_OPTIONS = [
@@ -25,29 +26,54 @@ const LINE_HEIGHT_OPTIONS = [
 ];
 
 export default function JournalSettings({ onClose }) {
+  const [isClosing, setIsClosing] = useState(false);
+
   const settings = useJournalStore((state) => state.settings);
   const setFontSize = useJournalStore((state) => state.setFontSize);
   const setFontFamily = useJournalStore((state) => state.setFontFamily);
   const setLineHeight = useJournalStore((state) => state.setLineHeight);
 
+  // Handle close with animation
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 300); // Match animation duration
+  };
+
+  // Handle backdrop click to close
+  const handleBackdropClick = (e) => {
+    // Only close if clicking the backdrop itself, not the modal content
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn">
-      <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
+    <div
+      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${
+        isClosing ? 'animate-fadeOut' : 'animate-fadeIn'
+      }`}
+      onClick={handleBackdropClick}
+    >
+      <div className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-5 pb-20 ${
+        isClosing ? 'animate-slideDownOut' : 'animate-slideUp'
+      }`}>
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-start mb-2">
           <h3>
             Journal Settings
           </h3>
           <button
-            onClick={onClose}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors p-2 -m-2"
+            onClick={handleClose}
+            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors p-1 -mt-1 -mr-1"
           >
             <span className="text-xl">&times;</span>
           </button>
         </div>
 
         {/* Settings sections */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Font Size */}
           <SettingSection title="Text Size">
             <div className="flex gap-2">
@@ -93,23 +119,28 @@ export default function JournalSettings({ onClose }) {
             </div>
           </SettingSection>
 
-          {/* Preview */}
+          {/* Preview - fixed height container to prevent modal size changes */}
           <SettingSection title="Preview">
             <div
-              className={`p-4 border border-[var(--color-border)] rounded ${getFontSizeClass(settings.fontSize)} ${getFontFamilyClass(settings.fontFamily)} ${getLineHeightClass(settings.lineHeight)}`}
-              style={{ textTransform: 'none' }}
+              className="border border-[var(--color-border)] rounded overflow-hidden"
+              style={{ height: '88px' }}
             >
-              <p className="text-[var(--color-text-primary)]">
-                The quick brown fox jumps over the lazy dog.
-              </p>
+              <div
+                className={`p-4 h-full flex items-center ${getFontSizeClass(settings.fontSize)} ${getFontFamilyClass(settings.fontFamily)} ${getLineHeightClass(settings.lineHeight)}`}
+                style={{ textTransform: 'none' }}
+              >
+                <p className="text-[var(--color-text-primary)]">
+                  The quick brown fox jumps over the lazy dog.
+                </p>
+              </div>
             </div>
           </SettingSection>
         </div>
 
         {/* Done button */}
         <button
-          onClick={onClose}
-          className="w-full mt-8 py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+          onClick={handleClose}
+          className="w-full mt-4 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
         >
           Done
         </button>
@@ -122,7 +153,7 @@ export default function JournalSettings({ onClose }) {
 function SettingSection({ title, children }) {
   return (
     <div>
-      <h4 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-widest mb-3">
+      <h4 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-widest mb-2">
         {title}
       </h4>
       {children}
