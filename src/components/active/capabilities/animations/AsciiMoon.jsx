@@ -147,7 +147,8 @@ export default function AsciiMoon({ className = '' }) {
 
   return (
     <pre
-      className={`font-mono text-[8px] leading-[0.93] tracking-[0.3em] text-[var(--color-text-tertiary)] whitespace-pre select-none ${className}`}
+      className={`font-mono text-[8px] leading-[0.93] tracking-[0.3em] whitespace-pre select-none ${className}`}
+      style={{ color: 'var(--accent)', opacity: 0.7 }}
     >
       {output}
     </pre>

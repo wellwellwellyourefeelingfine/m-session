@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
@@ -13,6 +14,7 @@ import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
+import PhilosophyContent from '../shared/PhilosophyContent';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
@@ -102,15 +104,26 @@ export default function ActiveView() {
     switch (sessionPhase) {
       case 'not-started':
       case 'intake':
-      case 'pre-session':
+      case 'pre-session': {
+        const setCurrentTab = useAppStore.getState().setCurrentTab;
         return (
-          <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 gap-8">
-            <p className="text-[var(--color-text-secondary)] text-center">
+          <div className="flex flex-col items-center px-6 pt-6 pb-12 gap-8">
+            <button
+              onClick={() => setCurrentTab('home')}
+              className="border border-[var(--accent)] bg-[var(--accent-bg)] px-5 py-2.5 text-[var(--color-text-secondary)] text-center hover:opacity-70 transition-opacity uppercase tracking-wider text-xs"
+            >
               Complete your intake on the Home tab to begin your session.
-            </p>
+            </button>
             <AsciiMoon />
+            <div className="max-w-xl w-full mt-4">
+              <h1 className="text-xl font-serif text-center mb-8 text-[var(--color-text-primary)]">
+                Core Philosophy
+              </h1>
+              <PhilosophyContent />
+            </div>
           </div>
         );
+      }
 
       case 'substance-checklist':
         return <SubstanceChecklist />;

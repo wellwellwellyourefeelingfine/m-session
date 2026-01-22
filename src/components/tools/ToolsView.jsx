@@ -14,9 +14,11 @@ import FAQTool from './FAQTool';
 import SettingsTool from './SettingsTool';
 import HelpTool from './HelpTool';
 import AISettingsTool from './AISettingsTool';
+import PhilosophyTool from './PhilosophyTool';
 
 const tools = [
   { id: 'help', label: 'I NEED HELP', component: HelpTool },
+  { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
   { id: 'timer', label: 'TIMER', component: TimerTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
