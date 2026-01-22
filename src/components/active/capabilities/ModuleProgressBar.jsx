@@ -1,11 +1,11 @@
 /**
  * ModuleProgressBar Component
  *
- * A minimal, fixed-position progress bar at the top of the screen.
+ * A minimal, fixed-position progress bar below the header.
  * Shows module progress for timed activities.
  *
  * Features:
- * - Fixed at top of screen
+ * - Fixed below header (top-16 = 64px)
  * - Thin, unobtrusive design
  * - Smooth animation
  * - Optional time display below
@@ -33,8 +33,8 @@ export default function ModuleProgressBar({
   if (!visible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-40">
-      {/* Progress bar track */}
+    <div className="fixed top-16 left-0 right-0 z-40">
+      {/* Progress bar track - positioned below header */}
       <div className="h-0.5 bg-[var(--color-border)]">
         {/* Progress bar fill */}
         <div

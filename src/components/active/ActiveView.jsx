@@ -12,6 +12,7 @@ import ModuleStatusBar from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
 import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
+import PeakTransition from '../session/PeakTransition';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import PhilosophyContent from '../shared/PhilosophyContent';
@@ -31,12 +32,14 @@ export default function ActiveView() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const timeline = useSessionStore((state) => state.timeline);
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
+  const phaseTransitions = useSessionStore((state) => state.phaseTransitions);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
   const currentModule = getCurrentModule();
   const nextModule = getNextModule();
   const currentPhase = timeline.currentPhase;
+  const activeTransition = phaseTransitions?.activeTransition;
 
   // Trigger fade-in when component mounts
   useEffect(() => {
@@ -63,24 +66,20 @@ export default function ActiveView() {
     // Don't auto-start if:
     // - Not in active phase
     // - Already have a current module
-    // - Waiting for check-in (during come-up)
     // - Intro not completed (during come-up)
     if (sessionPhase !== 'active') return;
     if (currentModule) return;
 
-    // During come-up phase
-    if (currentPhase === 'come-up') {
-      // Don't start module if intro isn't done
-      if (!comeUpCheckIn.introCompleted) return;
-      // Don't start module if waiting for check-in response
-      if (comeUpCheckIn.waitingForCheckIn) return;
-    }
+    // During come-up phase, don't start module if intro isn't done
+    if (currentPhase === 'come-up' && !comeUpCheckIn.introCompleted) return;
 
     // Start next module if available
+    // Note: The check-in modal overlay naturally blocks user interaction,
+    // so the module can be "started" in the background while the modal shows
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
-  }, [sessionPhase, currentModule, nextModule, currentPhase, comeUpCheckIn.introCompleted, comeUpCheckIn.waitingForCheckIn, startModule]);
+  }, [sessionPhase, currentModule, nextModule, currentPhase, comeUpCheckIn.introCompleted, startModule]);
 
   // Handler to update module timer state (called by modules)
   // Memoized with useCallback to prevent infinite loops in child useEffects
@@ -171,6 +170,11 @@ export default function ActiveView() {
   };
 
   const renderActiveSession = () => {
+    // Check for active phase transitions first
+    if (activeTransition === 'come-up-to-peak') {
+      return <PeakTransition />;
+    }
+
     // Come-up phase: Show intro first, then modules with check-in
     if (currentPhase === 'come-up') {
       // Show intro if not completed (no status bar during intro)

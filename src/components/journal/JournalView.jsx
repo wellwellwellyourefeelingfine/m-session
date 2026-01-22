@@ -5,7 +5,7 @@
  * Default view is editor (new entry) - like iOS Notes
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useJournalStore } from '../../stores/useJournalStore';
 import JournalEditor from './JournalEditor';
 import JournalList from './JournalList';
@@ -31,13 +31,9 @@ export default function JournalView() {
   // Settings modal
   const [showSettings, setShowSettings] = useState(false);
   // Confirmation modals
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditSessionConfirm, setShowEditSessionConfirm] = useState(false);
   const [pendingSessionEntry, setPendingSessionEntry] = useState(null);
 
-  const entries = useJournalStore((state) => state.entries);
-  const addEntry = useJournalStore((state) => state.addEntry);
-  const deleteEntry = useJournalStore((state) => state.deleteEntry);
   const getEntryById = useJournalStore((state) => state.getEntryById);
 
   // Get current entry data
@@ -104,42 +100,6 @@ export default function JournalView() {
     navigateToEditor(null);
   }, [currentView, activeEntryId, navigateToEditor]);
 
-  // Delete current entry (from editor)
-  const handleDeleteRequest = useCallback(() => {
-    if (activeEntryId) {
-      setShowDeleteConfirm(true);
-    }
-  }, [activeEntryId]);
-
-  // Delete entry from list view
-  const [pendingDeleteId, setPendingDeleteId] = useState(null);
-
-  const handleDeleteFromList = useCallback((entryId) => {
-    setPendingDeleteId(entryId);
-    setShowDeleteConfirm(true);
-  }, []);
-
-  const handleConfirmDelete = useCallback(() => {
-    // Delete from list view
-    if (pendingDeleteId) {
-      deleteEntry(pendingDeleteId);
-      setShowDeleteConfirm(false);
-      setPendingDeleteId(null);
-      return;
-    }
-    // Delete from editor view
-    if (activeEntryId) {
-      deleteEntry(activeEntryId);
-      setShowDeleteConfirm(false);
-      navigateToList();
-    }
-  }, [activeEntryId, pendingDeleteId, deleteEntry, navigateToList]);
-
-  const handleCancelDelete = useCallback(() => {
-    setShowDeleteConfirm(false);
-    setPendingDeleteId(null);
-  }, []);
-
   // Get animation classes
   const getEditorAnimationClass = () => {
     if (!isAnimating) return '';
@@ -156,7 +116,7 @@ export default function JournalView() {
   };
 
   return (
-    <div className="relative overflow-hidden" style={{ height: 'calc(100vh - 9rem)' }}>
+    <div className="fixed top-16 left-0 right-0 bottom-[52px] overflow-hidden">
       {/* Editor View */}
       {(currentView === VIEW_EDITOR || isAnimating) && (
         <div
@@ -164,6 +124,7 @@ export default function JournalView() {
           style={{ zIndex: currentView === VIEW_EDITOR ? 10 : 5 }}
         >
           <JournalEditor
+            key={activeEntryId || 'new'}
             entryId={activeEntryId}
             onBack={navigateToList}
             isVisible={currentView === VIEW_EDITOR && !isAnimating}
@@ -181,7 +142,7 @@ export default function JournalView() {
             onSelectEntry={navigateToEditor}
             onNewEntry={handleNewEntry}
             onSettings={() => setShowSettings(true)}
-            onDeleteEntry={handleDeleteFromList}
+            isSettingsOpen={showSettings}
           />
         </div>
       )}
@@ -200,19 +161,6 @@ export default function JournalView() {
       {/* Settings Modal */}
       {showSettings && (
         <JournalSettings onClose={() => setShowSettings(false)} />
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <ConfirmModal
-          title="Delete Entry"
-          message="Delete this entry? This cannot be undone."
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-          isDestructive
-        />
       )}
 
       {/* Edit Session Entry Confirmation Modal */}

@@ -31,6 +31,80 @@ const REASSURANCE_MESSAGES = {
   starting: 'Good. The experience is beginning to open. Stay relaxed and continue to breathe gently. The effects will continue to build over the next little while.',
 };
 
+/**
+ * Status indicator circle for minimized bar
+ * - No response: empty circle with accent stroke
+ * - 'waiting': empty circle with accent stroke (same as no response)
+ * - 'starting': half-filled circle
+ * - 'fully-arrived': fully filled circle
+ */
+function StatusIndicator({ status }) {
+  const size = 14;
+  const strokeWidth = 1.5;
+  const radius = (size - strokeWidth) / 2;
+  const center = size / 2;
+
+  // Empty circle (no response or waiting)
+  if (!status || status === 'waiting') {
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={strokeWidth}
+        />
+      </svg>
+    );
+  }
+
+  // Half-filled circle (starting)
+  if (status === 'starting') {
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Background stroke circle */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={strokeWidth}
+        />
+        {/* Half fill using clip path */}
+        <defs>
+          <clipPath id="halfClip">
+            <rect x="0" y={center} width={size} height={center} />
+          </clipPath>
+        </defs>
+        <circle
+          cx={center}
+          cy={center}
+          r={radius - strokeWidth / 2}
+          fill="var(--accent)"
+          clipPath="url(#halfClip)"
+        />
+      </svg>
+    );
+  }
+
+  // Fully filled circle (fully-arrived)
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <circle
+        cx={center}
+        cy={center}
+        r={radius}
+        fill="var(--accent)"
+        stroke="var(--accent)"
+        strokeWidth={strokeWidth}
+      />
+    </svg>
+  );
+}
+
 export default function ComeUpCheckIn() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState(null);
@@ -73,14 +147,21 @@ export default function ComeUpCheckIn() {
       return;
     }
 
-    // If waiting or starting, show reassurance then minimize
+    // If waiting or starting, record response immediately then show reassurance
     if (value === 'waiting' || value === 'starting') {
+      recordCheckInResponse(value); // Record immediately so module can start
       setShowReassurance(true);
+      // Auto-close after 8 seconds if user doesn't dismiss manually
       setTimeout(() => {
-        recordCheckInResponse(value);
-        setShowReassurance(false);
-        setSelectedResponse(null);
-      }, 4000); // Show reassurance for 4 seconds
+        // Minimize first, then clear local state after a tick
+        // This prevents a flash of the question modal before minimizing
+        minimizeCheckIn();
+        // Clear local state after minimized to reset for next open
+        setTimeout(() => {
+          setShowReassurance(false);
+          setSelectedResponse(null);
+        }, 50);
+      }, 8000);
       return;
     }
 
@@ -101,28 +182,8 @@ export default function ComeUpCheckIn() {
     maximizeCheckIn();
   };
 
-  // Minimized state - small bar directly above control bar (flush, no gap)
-  // Control bar is at bottom-16 (64px) with h-14 (56px), so check-in bar is at bottom-[120px]
-  if (isMinimized) {
-    return (
-      <button
-        onClick={handleMinimizedClick}
-        className="fixed bottom-[120px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
-      >
-        <div className="flex items-center space-x-3">
-          <span className="text-[var(--color-text-tertiary)]">○</span>
-          <span className="text-[var(--color-text-secondary)]">
-            How are you feeling?
-          </span>
-        </div>
-        <span className="text-[var(--color-text-tertiary)] text-sm">
-          {currentResponse === 'waiting' && 'Waiting...'}
-          {currentResponse === 'starting' && 'Starting to feel it'}
-          {!currentResponse && 'Tap to check in'}
-        </span>
-      </button>
-    );
-  }
+  // IMPORTANT: Check local UI states FIRST, before store-driven states
+  // This prevents the modal from disappearing when store updates
 
   // Confirmation dialog for early "fully arrived"
   if (showConfirmation) {
@@ -158,9 +219,30 @@ export default function ComeUpCheckIn() {
 
   // Reassurance message
   if (showReassurance && selectedResponse) {
+    const handleDismissReassurance = () => {
+      setShowReassurance(false);
+      setSelectedResponse(null);
+      // Response was already recorded, just minimize
+      minimizeCheckIn();
+    };
+
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn">
-        <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
+      <div
+        className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn"
+        onClick={handleDismissReassurance}
+      >
+        <div
+          className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={handleDismissReassurance}
+              className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
+            >
+              <span className="text-xl">−</span>
+            </button>
+          </div>
           <p className="text-[var(--color-text-secondary)] leading-relaxed mb-6">
             {REASSURANCE_MESSAGES[selectedResponse]}
           </p>
@@ -169,6 +251,25 @@ export default function ComeUpCheckIn() {
           </p>
         </div>
       </div>
+    );
+  }
+
+  // Minimized state - small bar directly above control bar (flush, no gap)
+  // Control bar is at bottom-16 (64px) with h-14 (56px), so check-in bar is at bottom-[120px]
+  // NOTE: This check comes AFTER local UI state checks (confirmation, reassurance)
+  if (isMinimized) {
+    return (
+      <button
+        onClick={handleMinimizedClick}
+        className="fixed bottom-[120px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
+      >
+        <div className="flex items-center space-x-3">
+          <StatusIndicator status={currentResponse} />
+          <span className="text-[var(--color-text-secondary)]">
+            How are you feeling?
+          </span>
+        </div>
+      </button>
     );
   }
 
@@ -198,7 +299,7 @@ export default function ComeUpCheckIn() {
               onClick={() => handleSelect(option.value)}
               className={`w-full py-4 px-4 border text-left transition-colors ${
                 currentResponse === option.value
-                  ? 'border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]'
+                  ? 'border-[var(--accent)] bg-[var(--accent-bg)]'
                   : 'border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)]'
               }`}
             >

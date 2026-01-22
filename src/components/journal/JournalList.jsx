@@ -3,35 +3,94 @@
  * Displays journal entries grouped by source (session vs manual)
  * Uses corner brackets similar to session timeline
  * Empty state shows prompt to create first entry
+ * Delete mode: minus button toggles delete mode, entries can be selected for deletion
  */
 
+import { useState } from 'react';
 import { useJournalStore } from '../../stores/useJournalStore';
 import JournalEntryRow from './JournalEntryRow';
+import ConfirmModal from './ConfirmModal';
 
-export default function JournalList({ onSelectEntry, onNewEntry, onSettings, onDeleteEntry }) {
+export default function JournalList({ onSelectEntry, onNewEntry, onSettings, isSettingsOpen = false }) {
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
+
   const entries = useJournalStore((state) => state.entries);
   const getSessionEntries = useJournalStore((state) => state.getSessionEntries);
   const getManualEntries = useJournalStore((state) => state.getManualEntries);
+  const deleteEntry = useJournalStore((state) => state.deleteEntry);
 
   const sessionEntries = getSessionEntries();
   const manualEntries = getManualEntries();
   const hasEntries = entries.length > 0;
 
+  const handleDeleteModeToggle = () => {
+    setIsDeleteMode(!isDeleteMode);
+    setPendingDeleteId(null);
+  };
+
+  const handleEntryClick = (entryId) => {
+    if (isDeleteMode) {
+      setPendingDeleteId(entryId);
+    } else {
+      onSelectEntry(entryId);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId) {
+      deleteEntry(pendingDeleteId);
+      setPendingDeleteId(null);
+      // If no more entries, exit delete mode
+      if (entries.length <= 1) {
+        setIsDeleteMode(false);
+      }
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setPendingDeleteId(null);
+  };
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header - just settings button, right aligned */}
-      <div className="flex items-center justify-end px-2 pt-5 pb-2">
+      {/* Header - delete mode button and settings button, right aligned */}
+      <div className="flex items-center justify-end gap-2 px-2 pt-5 pb-2">
+        {/* Delete mode toggle button - only show if there are entries */}
+        {hasEntries && (
+          <button
+            onClick={handleDeleteModeToggle}
+            className="touch-target transition-colors"
+            aria-label={isDeleteMode ? 'Exit delete mode' : 'Enter delete mode'}
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill={isDeleteMode ? 'var(--accent)' : 'none'}
+              fillOpacity={isDeleteMode ? 0.6 : 1}
+              stroke={isDeleteMode ? 'var(--accent)' : 'var(--color-text-tertiary)'}
+              strokeWidth="1.5"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="8" y1="12" x2="16" y2="12" />
+            </svg>
+          </button>
+        )}
+
+        {/* Settings button */}
         <button
           onClick={onSettings}
-          className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors touch-target"
+          className="transition-colors touch-target"
           aria-label="Settings"
         >
           <svg
             width="20"
             height="20"
             viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
+            fill={isSettingsOpen ? 'var(--accent)' : 'none'}
+            fillOpacity={isSettingsOpen ? 0.6 : 1}
+            stroke={isSettingsOpen ? 'var(--accent)' : 'var(--color-text-tertiary)'}
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -64,8 +123,9 @@ export default function JournalList({ onSelectEntry, onNewEntry, onSettings, onD
               <EntrySection
                 title="Session Entries"
                 entries={sessionEntries}
-                onSelectEntry={onSelectEntry}
-                onDeleteEntry={onDeleteEntry}
+                onEntryClick={handleEntryClick}
+                isDeleteMode={isDeleteMode}
+                pendingDeleteId={pendingDeleteId}
               />
             )}
 
@@ -74,19 +134,33 @@ export default function JournalList({ onSelectEntry, onNewEntry, onSettings, onD
               <EntrySection
                 title="Manual Entries"
                 entries={manualEntries}
-                onSelectEntry={onSelectEntry}
-                onDeleteEntry={onDeleteEntry}
+                onEntryClick={handleEntryClick}
+                isDeleteMode={isDeleteMode}
+                pendingDeleteId={pendingDeleteId}
               />
             )}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {pendingDeleteId && (
+        <ConfirmModal
+          title="Delete Entry"
+          message="Are you sure you want to delete this note?"
+          confirmLabel="Yes"
+          cancelLabel="No"
+          onConfirm={handleConfirmDelete}
+          onCancel={handleCancelDelete}
+          isDestructive
+        />
+      )}
     </div>
   );
 }
 
 // Section component with corner brackets
-function EntrySection({ title, entries, onSelectEntry, onDeleteEntry }) {
+function EntrySection({ title, entries, onEntryClick, isDeleteMode, pendingDeleteId }) {
   if (!entries || entries.length === 0) return null;
 
   return (
@@ -112,8 +186,9 @@ function EntrySection({ title, entries, onSelectEntry, onDeleteEntry }) {
             <JournalEntryRow
               key={entry.id}
               entry={entry}
-              onSelect={() => onSelectEntry(entry.id)}
-              onDelete={() => onDeleteEntry(entry.id)}
+              onSelect={() => onEntryClick(entry.id)}
+              isDeleteMode={isDeleteMode}
+              isSelected={pendingDeleteId === entry.id}
             />
           ))}
         </div>

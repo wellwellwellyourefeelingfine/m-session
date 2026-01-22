@@ -2,10 +2,10 @@
  * JournalEntryRow Component
  * Individual entry row in the journal list
  * Compact design: Title on first line, date + preview on second line
- * Delete X button in top right corner
+ * In delete mode: clicking selects for deletion with accent highlight
  */
 
-export default function JournalEntryRow({ entry, onSelect, onDelete }) {
+export default function JournalEntryRow({ entry, onSelect, isDeleteMode = false, isSelected = false }) {
   // Format date for display
   const formatDate = (timestamp) => {
     if (!timestamp) return '';
@@ -39,59 +39,49 @@ export default function JournalEntryRow({ entry, onSelect, onDelete }) {
     });
   };
 
-  const handleDelete = (e) => {
-    e.stopPropagation(); // Prevent triggering onSelect
-    onDelete();
+  // Determine button styling based on mode
+  const getButtonClass = () => {
+    const baseClass = 'w-full text-left py-2 px-2 -mx-2 rounded transition-colors';
+
+    if (isSelected) {
+      // Selected for deletion - accent highlight
+      return `${baseClass} border border-[var(--accent)] bg-[var(--accent-bg)]`;
+    }
+
+    if (isDeleteMode) {
+      // Delete mode but not selected - subtle indication
+      return `${baseClass} hover:bg-[var(--accent-bg)] hover:border hover:border-[var(--accent)]`;
+    }
+
+    // Normal mode
+    return `${baseClass} hover:bg-[var(--color-bg-secondary)]`;
   };
 
   return (
-    <div className="relative group">
-      <button
-        onClick={onSelect}
-        className="w-full text-left py-2 px-2 pr-8 -mx-2 rounded hover:bg-[var(--color-bg-secondary)] transition-colors"
-      >
-        {/* Title row */}
-        <div className="flex items-center justify-between gap-2">
-          <h3
-            className="text-[var(--color-text-primary)] truncate flex-1"
-            style={{ textTransform: 'none' }}
-          >
-            {entry.title || 'Untitled'}
-          </h3>
-          <span className="text-[var(--color-text-tertiary)] text-xs shrink-0">
-            {formatDate(entry.updatedAt)}
-          </span>
-        </div>
-
-        {/* Preview row */}
-        <p
-          className="text-[var(--color-text-tertiary)] text-xs truncate mt-0.5"
+    <button
+      onClick={onSelect}
+      className={getButtonClass()}
+    >
+      {/* Title row */}
+      <div className="flex items-center justify-between gap-2">
+        <h3
+          className="text-[var(--color-text-primary)] truncate flex-1"
           style={{ textTransform: 'none' }}
         >
-          {entry.preview || (entry.source === 'session' ? `From: ${entry.moduleTitle || 'Session'}` : 'No additional text')}
-        </p>
-      </button>
+          {entry.title || 'Untitled'}
+        </h3>
+        <span className="text-[var(--color-text-tertiary)] text-xs shrink-0">
+          {formatDate(entry.updatedAt)}
+        </span>
+      </div>
 
-      {/* Delete button - visible on hover */}
-      <button
-        onClick={handleDelete}
-        className="absolute top-2 right-0 p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Delete entry"
+      {/* Preview row */}
+      <p
+        className="text-[var(--color-text-tertiary)] text-xs truncate mt-0.5"
+        style={{ textTransform: 'none' }}
       >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </div>
+        {entry.preview || (entry.source === 'session' ? `From: ${entry.moduleTitle || 'Session'}` : 'No additional text')}
+      </p>
+    </button>
   );
 }
