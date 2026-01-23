@@ -1,14 +1,19 @@
 /**
  * SubstanceChecklist Component
- * Pre-session questionnaire about substance readiness
- * Split into two parts with a Pre-Substance Activity page between them
+ * Pre-session preparation questionnaire (5 steps)
  *
- * Part 1 (steps 0-3): Preparation questions (substance ready, tested, dosage, prepare space)
- * Part 2 (steps 0-2): Take substance, confirm time, begin session
+ * Step 0: Do you have your MDMA ready?
+ * Step 1: Have you tested your substance?
+ * Step 2: Dosage preparation (input + feedback)
+ * Step 3: Prepare your space (tips)
+ * Step 4: Trusted contact & session helper
+ *
+ * After completion, transitions to PreSessionIntro via substanceChecklistSubPhase
  */
 
 import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
 
 const DOSAGE_FEEDBACK = {
   light: {
@@ -33,20 +38,15 @@ const DOSAGE_FEEDBACK = {
   },
 };
 
-export default function SubstanceChecklist({ part = 'part1' }) {
+export default function SubstanceChecklist() {
   const [step, setStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [showTimeEdit, setShowTimeEdit] = useState(false);
-  const [editedTime, setEditedTime] = useState('');
 
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const updateSubstanceChecklist = useSessionStore((state) => state.updateSubstanceChecklist);
-  const recordIngestionTime = useSessionStore((state) => state.recordIngestionTime);
-  const confirmIngestionTime = useSessionStore((state) => state.confirmIngestionTime);
-  const startSession = useSessionStore((state) => state.startSession);
   const setSubstanceChecklistSubPhase = useSessionStore((state) => state.setSubstanceChecklistSubPhase);
 
-  const totalSteps = part === 'part1' ? 4 : 3;
+  const totalSteps = 5;
 
   const fadeTransition = (callback) => {
     setIsVisible(false);
@@ -61,58 +61,14 @@ export default function SubstanceChecklist({ part = 'part1' }) {
   };
 
   const handleBack = () => {
-    if (step === 0 && part === 'part2') {
-      // Go back to activity menu from Part 2
-      fadeTransition(() => setSubstanceChecklistSubPhase('activity-menu'));
-      return;
-    }
     fadeTransition(() => setStep(step - 1));
   };
 
-  const handleTakeSubstance = () => {
-    recordIngestionTime(new Date());
-    handleNext();
+  const handleContinueToIntro = () => {
+    fadeTransition(() => setSubstanceChecklistSubPhase('pre-session-intro'));
   };
 
-  const handleContinueToActivities = () => {
-    fadeTransition(() => setSubstanceChecklistSubPhase('activity-menu'));
-  };
-
-  const handleTimeConfirm = (isCorrect) => {
-    if (isCorrect) {
-      confirmIngestionTime();
-      handleNext();
-    } else {
-      setShowTimeEdit(true);
-    }
-  };
-
-  const handleTimeEdit = () => {
-    if (editedTime) {
-      const [hours, minutes] = editedTime.split(':').map(Number);
-      const newTime = new Date();
-      newTime.setHours(hours, minutes, 0, 0);
-      recordIngestionTime(newTime);
-    }
-    confirmIngestionTime();
-    setShowTimeEdit(false);
-    handleNext();
-  };
-
-  const handleBeginSession = () => {
-    startSession();
-  };
-
-  const formatTime = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // ============================================
-  // PART 1: Preparation (Steps 0-3)
-  // ============================================
-  const renderPart1Step = () => {
+  const renderStep = () => {
     switch (step) {
       // Step 0: Do you have your MDMA ready?
       case 0:
@@ -120,7 +76,7 @@ export default function SubstanceChecklist({ part = 'part1' }) {
           <div className="space-y-8">
             <div>
               <h2 className="text-sm mb-4">Before We Begin</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
+              <p className="text-[var(--color-text-primary)] mb-6">
                 Let's make sure you're ready to start your session.
               </p>
             </div>
@@ -158,7 +114,7 @@ export default function SubstanceChecklist({ part = 'part1' }) {
           <div className="space-y-8">
             <div>
               <h2 className="text-sm mb-4">Substance Testing</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
+              <p className="text-[var(--color-text-primary)] mb-6">
                 Testing your substance helps ensure safety. We encourage using an at-home testing kit or sending a sample to a lab.
               </p>
             </div>
@@ -208,7 +164,7 @@ export default function SubstanceChecklist({ part = 'part1' }) {
           <div className="space-y-8">
             <div>
               <h2 className="text-sm mb-4">Dosage</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
+              <p className="text-[var(--color-text-primary)] mb-6">
                 Have you weighed and prepared your intended dose?
               </p>
             </div>
@@ -269,18 +225,18 @@ export default function SubstanceChecklist({ part = 'part1' }) {
           </div>
         );
 
-      // Step 3: Prepare setting (no "I've Taken It" — just Continue to activities)
+      // Step 3: Prepare your space
       case 3:
         return (
           <div className="space-y-8">
             <div>
               <h2 className="text-sm mb-4">Prepare Your Space</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
+              <p className="text-[var(--color-text-primary)] mb-6">
                 Before taking your substance, take a moment to prepare your environment.
               </p>
             </div>
 
-            <div className="space-y-4 text-[var(--color-text-secondary)]">
+            <div className="space-y-4 text-[var(--color-text-primary)]">
               <div className="flex items-start space-x-3">
                 <span className="text-[var(--color-text-tertiary)]">•</span>
                 <p>Make sure you have water nearby</p>
@@ -311,7 +267,48 @@ export default function SubstanceChecklist({ part = 'part1' }) {
                 Back
               </button>
               <button
-                onClick={handleContinueToActivities}
+                onClick={handleNext}
+                className="px-6 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        );
+
+      // Step 4: Trusted Contact & Session Helper
+      case 4:
+        return (
+          <div className="space-y-6 flex flex-col items-center text-center">
+            <h2 className="text-sm">Trusted Contact & Support</h2>
+
+            <div className="py-2">
+              <AsciiDiamond />
+            </div>
+
+            <div className="space-y-6">
+              <p className="text-[var(--color-text-primary)]">
+                If you haven't already, let someone you trust know your plan. A simple text is enough.
+              </p>
+
+              <p className="text-[var(--color-text-primary)]">
+                During the session, stay in your prepared space. If things get difficult and you feel the urge to leave, contact this person first.
+              </p>
+
+              <p className="text-[var(--color-text-tertiary)]">
+                You can access the Session Helper anytime by tapping the &#9786; button.
+              </p>
+            </div>
+
+            <div className="flex justify-between w-full pt-4">
+              <button
+                onClick={handleBack}
+                className="text-[var(--color-text-tertiary)] underline"
+              >
+                Back
+              </button>
+              <button
+                onClick={handleContinueToIntro}
                 className="px-6 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
               >
                 Continue
@@ -324,135 +321,6 @@ export default function SubstanceChecklist({ part = 'part1' }) {
         return null;
     }
   };
-
-  // ============================================
-  // PART 2: Take Substance + Begin (Steps 0-2)
-  // ============================================
-  const renderPart2Step = () => {
-    switch (step) {
-      // Step 0: Take your substance
-      case 0:
-        return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Take Your Substance</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
-                When you're ready, take your substance. There's no rush—take your time.
-              </p>
-            </div>
-
-            <button
-              onClick={handleTakeSubstance}
-              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
-            >
-              I've Taken It
-            </button>
-
-            <button
-              onClick={handleBack}
-              className="text-[var(--color-text-tertiary)] underline"
-            >
-              Back
-            </button>
-          </div>
-        );
-
-      // Step 1: Confirm ingestion time
-      case 1:
-        return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Confirm Time</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
-                We've recorded that you took your substance at:
-              </p>
-            </div>
-
-            <div className="text-center py-6">
-              <p className="text-lg">
-                {formatTime(substanceChecklist.ingestionTime)}
-              </p>
-            </div>
-
-            {!showTimeEdit ? (
-              <div className="space-y-4">
-                <p className="text-[var(--color-text-primary)]">
-                  Is this within 5 minutes of when you actually took it?
-                </p>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => handleTimeConfirm(true)}
-                    className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-                  >
-                    Yes, that's correct
-                  </button>
-                  <button
-                    onClick={() => handleTimeConfirm(false)}
-                    className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-[var(--color-text-tertiary)]"
-                  >
-                    No, let me adjust
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-[var(--color-text-primary)]">
-                  What time did you take your substance?
-                </p>
-                <input
-                  type="time"
-                  value={editedTime}
-                  onChange={(e) => setEditedTime(e.target.value)}
-                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent focus:outline-none focus:border-[var(--color-text-primary)]"
-                />
-                <button
-                  onClick={handleTimeEdit}
-                  disabled={!editedTime}
-                  className={`w-full py-4 uppercase tracking-wider transition-opacity ${
-                    editedTime
-                      ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)]'
-                      : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
-                  }`}
-                >
-                  Confirm Time
-                </button>
-              </div>
-            )}
-          </div>
-        );
-
-      // Step 2: Ready to begin
-      case 2:
-        return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">You're Ready</h2>
-              <p className="text-[var(--color-text-secondary)] mb-6">
-                Your session will now begin. Find a comfortable position—lying down is often best for the come-up.
-              </p>
-            </div>
-
-            <div className="p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-              <p className="text-[var(--color-text-secondary)] text-sm">
-                The first 20-60 minutes are the come-up phase. We'll guide you through settling in and check in with you periodically. There's nothing you need to do except relax and allow the experience to unfold.
-              </p>
-            </div>
-
-            <button
-              onClick={handleBeginSession}
-              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
-            >
-              Begin Session
-            </button>
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const renderStep = part === 'part1' ? renderPart1Step : renderPart2Step;
 
   return (
     <div className="max-w-md mx-auto px-6 py-8">

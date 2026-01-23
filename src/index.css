@@ -150,6 +150,14 @@
   }
 }
 
+/* Circle Spacer - small stroke-only circle for separating content sections */
+.circle-spacer {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-text-tertiary);
+}
+
 /* Session-specific utilities */
 @layer utilities {
   /* Active Session State */

@@ -27,15 +27,5 @@ export const sectionCQuestions = [
       { value: 'breathing', label: 'Breathwork' },
     ],
   },
-  {
-    field: 'sessionDuration',
-    type: 'single-select',
-    label: 'Expected session duration?',
-    options: [
-      { value: 'short', label: '3-4 hours' },
-      { value: 'medium', label: '4-6 hours' },
-      { value: 'long', label: '6+ hours' },
-    ],
-  },
   // Note: startTime question removed - now handled when user clicks Begin Session
 ];

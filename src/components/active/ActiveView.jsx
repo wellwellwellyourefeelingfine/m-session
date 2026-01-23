@@ -10,9 +10,7 @@ import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
-import PreSubstanceActivity from '../session/PreSubstanceActivity';
-import PreSubstanceIntention from '../session/PreSubstanceIntention';
-import ComeUpIntro from '../session/ComeUpIntro';
+import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import PeakTransition from '../session/PeakTransition';
 import OpenSpace from './OpenSpace';
@@ -68,12 +66,8 @@ export default function ActiveView() {
     // Don't auto-start if:
     // - Not in active phase
     // - Already have a current module
-    // - Intro not completed (during come-up)
     if (sessionPhase !== 'active') return;
     if (currentModule) return;
-
-    // During come-up phase, don't start module if intro isn't done
-    if (currentPhase === 'come-up' && !comeUpCheckIn.introCompleted) return;
 
     // Start next module if available
     // Note: The check-in modal overlay naturally blocks user interaction,
@@ -81,7 +75,7 @@ export default function ActiveView() {
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
-  }, [sessionPhase, currentModule, nextModule, currentPhase, comeUpCheckIn.introCompleted, startModule]);
+  }, [sessionPhase, currentModule, nextModule, startModule]);
 
   // Handler to update module timer state (called by modules)
   // Memoized with useCallback to prevent infinite loops in child useEffects
@@ -107,15 +101,11 @@ export default function ActiveView() {
 
   const renderSubstanceChecklistRouter = () => {
     switch (substanceChecklistSubPhase) {
-      case 'activity-menu':
-        return <PreSubstanceActivity />;
-      case 'intention':
-        return <PreSubstanceIntention />;
-      case 'part2':
-        return <SubstanceChecklist part="part2" />;
+      case 'pre-session-intro':
+        return <PreSessionIntro />;
       case 'part1':
       default:
-        return <SubstanceChecklist part="part1" />;
+        return <SubstanceChecklist />;
     }
   };
 
@@ -126,7 +116,7 @@ export default function ActiveView() {
       case 'pre-session': {
         const setCurrentTab = useAppStore.getState().setCurrentTab;
         return (
-          <div className="flex flex-col items-center px-6 pt-6 pb-12 gap-8">
+          <div className="flex flex-col items-center px-6 pt-2 pb-12 gap-6">
             <button
               onClick={() => setCurrentTab('home')}
               className="border border-[var(--accent)] bg-[var(--accent-bg)] px-5 py-2.5 text-[var(--color-text-secondary)] text-center hover:opacity-70 transition-opacity uppercase tracking-wider text-xs"
@@ -134,7 +124,7 @@ export default function ActiveView() {
               Complete your intake on the Home tab to begin your session.
             </button>
             <AsciiMoon />
-            <div className="max-w-xl w-full mt-4">
+            <div className="max-w-xl w-full">
               <h1 className="text-xl font-serif text-center mb-8 text-[var(--color-text-primary)]">
                 Core Philosophy
               </h1>
@@ -195,14 +185,8 @@ export default function ActiveView() {
       return <PeakTransition />;
     }
 
-    // Come-up phase: Show intro first, then modules with check-in
+    // Come-up phase: modules with check-in
     if (currentPhase === 'come-up') {
-      // Show intro if not completed (no status bar during intro)
-      if (!comeUpCheckIn.introCompleted) {
-        return <ComeUpIntro />;
-      }
-
-      // After intro, render module or open space with status bar
       return (
         <div className="relative">
           {/* Fixed status bar below main header */}
@@ -222,13 +206,6 @@ export default function ActiveView() {
                 module={currentModule}
                 onTimerUpdate={handleModuleTimerUpdate}
               />
-            ) : nextModule ? (
-              // Waiting for check-in before next module
-              <div className="pt-20 px-6 flex items-center justify-center min-h-[40vh]">
-                <p className="text-center text-[var(--color-text-tertiary)]">
-                  Complete the check-in to continue...
-                </p>
-              </div>
             ) : (
               <OpenSpace phase="come-up" />
             )}

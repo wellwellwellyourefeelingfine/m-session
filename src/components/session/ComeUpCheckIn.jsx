@@ -111,6 +111,7 @@ export default function ComeUpCheckIn() {
   const [showReassurance, setShowReassurance] = useState(false);
   const [isAnimatingOut, setIsAnimatingOut] = useState(false);
   const prevMinimizedRef = useRef(null);
+  const reassuranceTimerRef = useRef(null);
 
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
   const recordCheckInResponse = useSessionStore((state) => state.recordCheckInResponse);
@@ -121,6 +122,15 @@ export default function ComeUpCheckIn() {
   const minutesSinceIngestion = getMinutesSinceIngestion();
   const isMinimized = comeUpCheckIn.isMinimized;
   const currentResponse = comeUpCheckIn.currentResponse;
+
+  // Clean up reassurance timer on unmount
+  useEffect(() => {
+    return () => {
+      if (reassuranceTimerRef.current) {
+        clearTimeout(reassuranceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Track when transitioning to minimized state for animation
   useEffect(() => {
@@ -151,16 +161,16 @@ export default function ComeUpCheckIn() {
     if (value === 'waiting' || value === 'starting') {
       recordCheckInResponse(value); // Record immediately so module can start
       setShowReassurance(true);
+      // Clear any existing timer
+      if (reassuranceTimerRef.current) {
+        clearTimeout(reassuranceTimerRef.current);
+      }
       // Auto-close after 8 seconds if user doesn't dismiss manually
-      setTimeout(() => {
-        // Minimize first, then clear local state after a tick
-        // This prevents a flash of the question modal before minimizing
+      reassuranceTimerRef.current = setTimeout(() => {
+        setShowReassurance(false);
+        setSelectedResponse(null);
         minimizeCheckIn();
-        // Clear local state after minimized to reset for next open
-        setTimeout(() => {
-          setShowReassurance(false);
-          setSelectedResponse(null);
-        }, 50);
+        reassuranceTimerRef.current = null;
       }, 8000);
       return;
     }
@@ -220,9 +230,12 @@ export default function ComeUpCheckIn() {
   // Reassurance message
   if (showReassurance && selectedResponse) {
     const handleDismissReassurance = () => {
+      if (reassuranceTimerRef.current) {
+        clearTimeout(reassuranceTimerRef.current);
+        reassuranceTimerRef.current = null;
+      }
       setShowReassurance(false);
       setSelectedResponse(null);
-      // Response was already recorded, just minimize
       minimizeCheckIn();
     };
 

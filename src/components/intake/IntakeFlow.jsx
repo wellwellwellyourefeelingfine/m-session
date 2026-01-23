@@ -40,6 +40,21 @@ const HEALTH_WARNINGS = {
     message: 'MDMA can potentially trigger or exacerbate psychotic episodes in individuals with a history of psychosis or severe psychiatric conditions. Please consult with a mental health professional before proceeding, or consider whether this experience is right for you at this time.',
     continueLabel: 'I understand the risks',
   },
+  contraindicatedMedications: {
+    title: 'Important Safety Information',
+    message: 'The use of any of these medications with MDMA is not advised. Please see the safety information in the toolbar for more info.',
+    continueLabel: 'Continue',
+  },
+  lastMDMAUseRecent: {
+    title: 'Important Information',
+    message: 'Using MDMA more frequently than every 3 months may reduce its effectiveness due to tolerance. Some research also suggests potential neurotoxicity concerns with frequent use. Consider whether waiting longer might serve you better.',
+    continueLabel: 'Continue',
+  },
+  lastMDMAUseVeryRecent: {
+    title: 'Important Safety Information',
+    message: 'Using MDMA less than a month after your last use significantly increases health risks and greatly reduces the therapeutic benefit. Serotonin levels need time to replenish. We strongly recommend waiting at least 3 months between uses.',
+    continueLabel: 'I understand the risks',
+  },
 };
 
 export default function IntakeFlow() {
@@ -88,6 +103,18 @@ export default function IntakeFlow() {
       setActiveWarning('psychiatricHistory');
       return; // Don't auto-advance, wait for warning acknowledgment
     }
+    if (currentQuestion.field === 'contraindicatedMedications' && value === 'yes') {
+      setActiveWarning('contraindicatedMedications');
+      return; // Don't auto-advance, wait for warning acknowledgment
+    }
+    if (currentQuestion.field === 'lastMDMAUse' && value === '1-3-months') {
+      setActiveWarning('lastMDMAUseRecent');
+      return;
+    }
+    if (currentQuestion.field === 'lastMDMAUse' && value === 'less-than-1-month') {
+      setActiveWarning('lastMDMAUseVeryRecent');
+      return;
+    }
 
     // Auto-advance after a brief delay for single-select
     if (currentQuestion.type === 'single-select') {
@@ -105,14 +132,33 @@ export default function IntakeFlow() {
     }, 100);
   };
 
+  // Check if a question should be skipped based on its skipWhen condition
+  const shouldSkipQuestion = (question) => {
+    if (!question?.skipWhen) return false;
+    const { field, value } = question.skipWhen;
+    return intake.responses[field] === value;
+  };
+
   // Navigate to next question with fade animation
   const goToNextQuestion = () => {
     if (currentQuestionIndex < totalQuestions - 1) {
+      let nextIndex = currentQuestionIndex + 1;
+      // Skip questions whose skipWhen condition is met
+      while (nextIndex < totalQuestions && shouldSkipQuestion(allQuestions[nextIndex])) {
+        nextIndex++;
+      }
       setIsVisible(false);
-      setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setIsVisible(true);
-      }, 300);
+      if (nextIndex < totalQuestions) {
+        setTimeout(() => {
+          setCurrentQuestionIndex(nextIndex);
+          setIsVisible(true);
+        }, 300);
+      } else {
+        setTimeout(() => {
+          setShowCompletionScreen(true);
+          setIsVisible(true);
+        }, 300);
+      }
     } else {
       // All questions done
       setIsVisible(false);
@@ -126,9 +172,14 @@ export default function IntakeFlow() {
   // Navigate to previous question with fade animation
   const goToPreviousQuestion = () => {
     if (currentQuestionIndex > 0) {
+      let prevIndex = currentQuestionIndex - 1;
+      // Skip questions whose skipWhen condition is met
+      while (prevIndex > 0 && shouldSkipQuestion(allQuestions[prevIndex])) {
+        prevIndex--;
+      }
       setIsVisible(false);
       setTimeout(() => {
-        setCurrentQuestionIndex(currentQuestionIndex - 1);
+        setCurrentQuestionIndex(prevIndex);
         setIsVisible(true);
       }, 300);
     }
