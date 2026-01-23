@@ -13,6 +13,7 @@
 
 import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import { calculateBoosterDose } from '../../stores/useSessionStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
 
 const DOSAGE_FEEDBACK = {
@@ -45,8 +46,13 @@ export default function SubstanceChecklist() {
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const updateSubstanceChecklist = useSessionStore((state) => state.updateSubstanceChecklist);
   const setSubstanceChecklistSubPhase = useSessionStore((state) => state.setSubstanceChecklistSubPhase);
+  const booster = useSessionStore((state) => state.booster);
+  const updateBoosterPrepared = useSessionStore((state) => state.updateBoosterPrepared);
 
-  const totalSteps = 5;
+  const showBoosterStep = booster.considerBooster;
+  const totalSteps = showBoosterStep ? 6 : 5;
+
+  const BOOSTER_STEP = 3; // Only used when showBoosterStep is true
 
   const fadeTransition = (callback) => {
     setIsVisible(false);
@@ -69,7 +75,77 @@ export default function SubstanceChecklist() {
   };
 
   const renderStep = () => {
-    switch (step) {
+    // Booster prep step (inserted after dosage when applicable)
+    if (showBoosterStep && step === BOOSTER_STEP) {
+      const boosterDose = substanceChecklist.plannedDosageMg
+        ? calculateBoosterDose(substanceChecklist.plannedDosageMg)
+        : null;
+
+      return (
+        <div className="space-y-8">
+          <div>
+            <h2 className="text-sm mb-4">Supplemental Dose</h2>
+            <p className="text-[var(--color-text-primary)] mb-6">
+              Do you have your supplemental dose prepared?
+            </p>
+          </div>
+
+          {boosterDose && (
+            <div className="p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
+              <p className="text-[var(--color-text-secondary)] text-sm">
+                Based on your initial dose, your supplemental dose would be approximately{' '}
+                <span className="text-[var(--color-text-primary)] font-medium">{boosterDose}mg</span>.
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+                This is approximately half your initial dose.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <button
+              onClick={() => {
+                updateBoosterPrepared('yes');
+                handleNext();
+              }}
+              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+            >
+              Yes, I have it ready
+            </button>
+            <button
+              onClick={() => {
+                updateBoosterPrepared('no');
+                handleNext();
+              }}
+              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+            >
+              No, I'll prepare it now
+            </button>
+            <button
+              onClick={() => {
+                updateBoosterPrepared('decided-not-to');
+                handleNext();
+              }}
+              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
+            >
+              I've decided not to take a booster
+            </button>
+          </div>
+
+          <button
+            onClick={handleBack}
+            className="text-[var(--color-text-tertiary)] underline"
+          >
+            Back
+          </button>
+        </div>
+      );
+    }
+
+    // Map step for non-booster logic
+    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
+
+    switch (displayStep) {
       // Step 0: Do you have your MDMA ready?
       case 0:
         return (

@@ -117,9 +117,9 @@ export default function ComeUpCheckIn() {
   const recordCheckInResponse = useSessionStore((state) => state.recordCheckInResponse);
   const minimizeCheckIn = useSessionStore((state) => state.minimizeCheckIn);
   const maximizeCheckIn = useSessionStore((state) => state.maximizeCheckIn);
-  const getMinutesSinceIngestion = useSessionStore((state) => state.getMinutesSinceIngestion);
+  const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
 
-  const minutesSinceIngestion = getMinutesSinceIngestion();
+  const minutesSinceIngestion = getElapsedMinutes();
   const isMinimized = comeUpCheckIn.isMinimized;
   const currentResponse = comeUpCheckIn.currentResponse;
 

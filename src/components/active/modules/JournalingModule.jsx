@@ -25,8 +25,8 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
   const settings = useJournalStore((state) => state.settings);
 
   // Get session ID for linking entry to session
-  const sessionStartTime = useSessionStore((state) => state.timeline.actualStartTime);
-  const sessionId = sessionStartTime ? new Date(sessionStartTime).toISOString() : null;
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
+  const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
 
   // Get font classes from settings
   const getFontSizeClass = () => {

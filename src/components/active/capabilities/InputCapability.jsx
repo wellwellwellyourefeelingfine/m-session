@@ -83,8 +83,8 @@ function JournalInput({
   const settings = useJournalStore((state) => state.settings);
 
   // Session info for journal entry
-  const sessionStartTime = useSessionStore((state) => state.timeline.actualStartTime);
-  const sessionId = sessionStartTime ? new Date(sessionStartTime).toISOString() : null;
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
+  const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
 
   // Style classes from journal settings
   const getFontSizeClass = () => {
@@ -215,8 +215,8 @@ export function useJournalContent({ moduleTitle, saveToJournal = true }) {
   const [content, setContent] = useState('');
 
   const addEntry = useJournalStore((state) => state.addEntry);
-  const sessionStartTime = useSessionStore((state) => state.timeline.actualStartTime);
-  const sessionId = sessionStartTime ? new Date(sessionStartTime).toISOString() : null;
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
+  const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
 
   const save = useCallback(() => {
     if (saveToJournal && content.trim()) {

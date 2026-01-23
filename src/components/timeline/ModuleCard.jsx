@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { getModuleById, MODULE_TYPES } from '../../content/modules';
-import { useSessionStore } from '../../stores/useSessionStore';
+import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import DurationPicker from '../shared/DurationPicker';
 
 export default function ModuleCard({
@@ -69,13 +69,31 @@ export default function ModuleCard({
   };
 
   // Determine styling based on module status during active session
-  const isCompleted = isActiveSession && module.status === 'completed';
-  const isSkipped = isActiveSession && module.status === 'skipped';
+  const isBooster = module.isBoosterModule || module.libraryId === 'booster-consideration';
+  const booster = useSessionStore((state) => state.booster);
+
+  // For booster modules, gray-out is based on the booster decision status, not module status
+  const isCompleted = isActiveSession && (isBooster
+    ? booster.status === 'taken'
+    : module.status === 'completed');
+  const isSkipped = isActiveSession && (isBooster
+    ? (booster.status === 'skipped' || booster.status === 'expired')
+    : module.status === 'skipped');
   const isGrayedOut = isCompleted || isSkipped;
+  const plannedDosageMg = useSessionStore((state) => state.substanceChecklist.plannedDosageMg);
+  const boosterDoseMg = plannedDosageMg ? calculateBoosterDose(plannedDosageMg) : null;
+
+  const formatTimestamp = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   const getBorderClass = () => {
     if (isCurrentModule) return 'border-2 border-[var(--accent)]';
+    if (isBooster && isGrayedOut) return 'border-2 border-[var(--accent)] opacity-80';
     if (isGrayedOut) return 'border border-[var(--color-border)] opacity-50';
+    if (isBooster) return 'border-2 border-[var(--accent)] bg-[var(--accent-bg)]';
     return 'border border-[var(--color-border)]';
   };
 
@@ -86,8 +104,8 @@ export default function ModuleCard({
   };
 
   return (
-    <div className={`group relative bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${getBorderClass()}`}>
-      <div className="flex items-center p-3">
+    <div className={`group relative bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${getBorderClass()} ${isBooster ? 'rounded-full' : ''}`}>
+      <div className={`flex items-center ${isBooster ? 'pl-4 pr-2 py-2' : 'p-3'}`}>
         {/* Drag handle placeholder - only show when not in active session */}
         {!isActiveSession && (
           <div className="text-[var(--color-text-tertiary)] mr-3 cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
@@ -95,8 +113,8 @@ export default function ModuleCard({
           </div>
         )}
 
-        {/* Status indicator for active session */}
-        {isActiveSession && (
+        {/* Status indicator for active session (hidden for booster card) */}
+        {isActiveSession && !isBooster && (
           <div className="mr-3 w-4 flex-shrink-0">
             {isCompleted && <span className="text-[var(--accent)]">✓</span>}
             {isSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
@@ -107,35 +125,52 @@ export default function ModuleCard({
 
         {/* Module info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <p className={`truncate pr-2 ${getTextClass()}`}>
-              {module.title}
-            </p>
-            {canEditDuration ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDurationPicker(true);
-                }}
-                className="text-[var(--color-text-secondary)] text-sm flex-shrink-0 underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
-                title="Click to change duration"
+          {isBooster ? (
+            <div className="flex flex-col items-center justify-center text-center w-full pt-3">
+              <p
+                className={`text-[1.05rem] normal-case ${isGrayedOut ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'}`}
+                style={{ fontFamily: 'DM Serif Text, serif', fontStyle: 'italic' }}
               >
-                {formatDuration(module.duration)}
-              </button>
-            ) : (
-              <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0">
-                {formatDuration(module.duration)}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center space-x-2 mt-1">
-            <span className={isGrayedOut ? 'opacity-50' : ''}>
-              {renderIntensityDots(libraryModule?.intensity)}
-            </span>
-            <span className="text-[var(--color-text-tertiary)] text-xs">
-              {moduleType?.label || module.libraryId}
-            </span>
-          </div>
+                {booster.status === 'taken' && booster.boosterTakenAt
+                  ? `Booster of ${boosterDoseMg}mg taken at ${formatTimestamp(booster.boosterTakenAt)}`
+                  : module.title}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 min-w-0">
+                  <p className={`truncate ${getTextClass()}`}>
+                    {module.title}
+                  </p>
+                </div>
+                {canEditDuration ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDurationPicker(true);
+                    }}
+                    className="text-[var(--color-text-secondary)] text-sm flex-shrink-0 underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+                    title="Click to change duration"
+                  >
+                    {formatDuration(module.duration)}
+                  </button>
+                ) : (
+                  <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0">
+                    {formatDuration(module.duration)}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-2 mt-1">
+                <span className={isGrayedOut ? 'opacity-50' : ''}>
+                  {renderIntensityDots(libraryModule?.intensity)}
+                </span>
+                <span className="text-[var(--color-text-tertiary)] text-xs">
+                  {moduleType?.label || module.libraryId}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Remove button - only show if canRemove is true */}
