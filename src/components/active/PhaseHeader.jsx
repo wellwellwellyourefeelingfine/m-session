@@ -16,7 +16,6 @@ export default function PhaseHeader({ phase }) {
   const [elapsedDisplay, setElapsedDisplay] = useState('0:00');
 
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
-  const getMinutesSinceIngestion = useSessionStore((state) => state.getMinutesSinceIngestion);
   const timeline = useSessionStore((state) => state.timeline);
 
   // Update elapsed time display every second

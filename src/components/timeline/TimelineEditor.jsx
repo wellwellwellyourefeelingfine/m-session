@@ -19,6 +19,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
 
   const modules = useSessionStore((state) => state.modules);
   const timeline = useSessionStore((state) => state.timeline);
+  const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const addModule = useSessionStore((state) => state.addModule);
   const removeModule = useSessionStore((state) => state.removeModule);
   const validatePhaseModules = useSessionStore((state) => state.validatePhaseModules);
@@ -165,7 +166,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
         {isActiveSession ? (
           <div className="space-y-2">
             <p className="text-[var(--color-text-secondary)]">
-              Started at {formatTime(timeline?.actualStartTime)} · {elapsedDisplay} elapsed
+              Started at {formatTime(substanceChecklist?.ingestionTime)} · {elapsedDisplay} elapsed
             </p>
             {/* Phase progress indicator */}
             <div className="flex items-center space-x-2 text-sm">
@@ -210,7 +211,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
           <PhaseSection
             phase="peak"
             title="Peak"
-            subtitle="~60-120 min"
+            subtitle="~60-150 min"
             description="Open awareness, light exploration"
             modules={peakModules}
             duration={peakDuration}

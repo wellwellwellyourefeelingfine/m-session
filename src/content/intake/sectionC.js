@@ -27,5 +27,16 @@ export const sectionCQuestions = [
       { value: 'breathing', label: 'Breathwork' },
     ],
   },
+  {
+    field: 'considerBooster',
+    type: 'single-select',
+    label: 'Would you like to consider a supplemental dose?',
+    description: 'Some people choose to take a smaller "booster" dose partway through their session to extend the experience. This is entirely optional.',
+    options: [
+      { value: 'yes', label: 'Yes, I\'d like to consider it' },
+      { value: 'no', label: 'No, just one dose' },
+      { value: 'decide-later', label: 'I\'ll decide during the session' },
+    ],
+  },
   // Note: startTime question removed - now handled when user clicks Begin Session
 ];

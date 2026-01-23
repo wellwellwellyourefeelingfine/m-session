@@ -4,8 +4,8 @@
  * Handles substance checklist, intro, check-ins, and module rendering
  */
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSessionStore } from '../../stores/useSessionStore';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSessionStore, shouldShowBooster } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar from './ModuleStatusBar';
@@ -13,6 +13,7 @@ import SubstanceChecklist from '../session/SubstanceChecklist';
 import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import PeakTransition from '../session/PeakTransition';
+import BoosterConsiderationModal from '../session/BoosterConsiderationModal';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import PhilosophyContent from '../shared/PhilosophyContent';
@@ -33,13 +34,18 @@ export default function ActiveView() {
   const timeline = useSessionStore((state) => state.timeline);
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
   const phaseTransitions = useSessionStore((state) => state.phaseTransitions);
+  const booster = useSessionStore((state) => state.booster);
+  const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
+  const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
+  const expireBooster = useSessionStore((state) => state.expireBooster);
   const currentModule = getCurrentModule();
   const nextModule = getNextModule();
   const currentPhase = timeline.currentPhase;
   const activeTransition = phaseTransitions?.activeTransition;
+  const boosterCheckRef = useRef(null);
 
   // Trigger fade-in when component mounts
   useEffect(() => {
@@ -60,6 +66,53 @@ export default function ActiveView() {
       });
     }
   }, [currentModule?.instanceId]);
+
+  // Booster timing check - polls every 60 seconds during active session
+  useEffect(() => {
+    if (sessionPhase !== 'active') return;
+    if (!booster.considerBooster) return;
+    if (booster.status === 'taken' || booster.status === 'skipped' || booster.status === 'expired') return;
+
+    const checkBooster = () => {
+      const ingestionTime = substanceChecklist.ingestionTime;
+      if (!ingestionTime) return;
+
+      const minutesSinceDose = (Date.now() - new Date(ingestionTime).getTime()) / (1000 * 60);
+
+      // Hard expire at 180 minutes — remove minimized bar and full modal
+      if (minutesSinceDose >= 180) {
+        expireBooster();
+        return;
+      }
+
+      // Don't trigger new prompts if modal/bar is already showing
+      if (booster.isModalVisible) return;
+
+      // Expire silently if past 150min without any prior interaction
+      if (minutesSinceDose >= 150) {
+        expireBooster();
+        return;
+      }
+
+      // Check if we should show the prompt
+      if (shouldShowBooster(booster, substanceChecklist)) {
+        showBoosterModal();
+      }
+    };
+
+    // Check immediately
+    checkBooster();
+
+    // Then poll every 60 seconds
+    boosterCheckRef.current = setInterval(checkBooster, 60000);
+
+    return () => {
+      if (boosterCheckRef.current) {
+        clearInterval(boosterCheckRef.current);
+        boosterCheckRef.current = null;
+      }
+    };
+  }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, showBoosterModal, expireBooster]);
 
   // Auto-start next module when appropriate
   useEffect(() => {
@@ -213,6 +266,9 @@ export default function ActiveView() {
 
           {/* Check-in modal (minimized or expanded) */}
           {comeUpCheckIn.isVisible && <ComeUpCheckIn />}
+
+          {/* Booster consideration modal */}
+          {booster.isModalVisible && <BoosterConsiderationModal />}
         </div>
       );
     }
@@ -241,6 +297,9 @@ export default function ActiveView() {
             <OpenSpace phase={currentPhase} />
           )}
         </div>
+
+        {/* Booster consideration modal */}
+        {booster.isModalVisible && <BoosterConsiderationModal />}
       </div>
     );
   };

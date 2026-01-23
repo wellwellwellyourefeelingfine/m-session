@@ -37,6 +37,7 @@ export const MODULE_TYPES = {
   'check-in': { label: 'Check-In', intensity: 'gentle' },
   'open-space': { label: 'Open Space', intensity: 'gentle' },
   break: { label: 'Break', intensity: 'gentle' },
+  'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
 };
 
 // Phase restrictions for module intensities
@@ -649,6 +650,23 @@ export const moduleLibrary = [
       layout: { centered: true },
     },
     tags: ['break', 'rest', 'physical'],
+  },
+
+  // === BOOSTER CONSIDERATION ===
+  {
+    id: 'booster-consideration',
+    type: 'booster-consideration',
+    title: 'Booster Check-In',
+    description: 'A guided check-in at the 90-minute mark to consider whether a supplemental dose is right for you.',
+    defaultDuration: 5,
+    intensity: 'gentle',
+    allowedPhases: ['peak'],
+    recommendedPhases: ['peak'],
+    isBoosterModule: true,
+    content: {
+      instructions: 'This module will guide you through a brief check-in about taking a supplemental dose.',
+    },
+    tags: ['booster', 'check-in', 'supplemental'],
   },
 ];
 

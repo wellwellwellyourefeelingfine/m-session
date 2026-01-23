@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModuleById } from '../content/modules';
+import { useAppStore } from './useAppStore';
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -34,13 +35,17 @@ export function shouldShowBooster(booster, substanceChecklist) {
   const now = Date.now();
   const minutesSinceDose = (now - new Date(ingestionTime).getTime()) / (1000 * 60);
 
-  // Past the window entirely
-  if (minutesSinceDose >= 150) return false;
+  // Hard cutoff at 180 minutes - don't show at all
+  if (minutesSinceDose >= 180) return false;
 
   // If snoozed, check if we've passed the next prompt time
+  // (Allow showing past 150min so the "window closed" message can appear)
   if (booster.status === 'snoozed' && booster.nextPromptAt) {
     return now >= new Date(booster.nextPromptAt).getTime();
   }
+
+  // Past 150 minutes without prior interaction - silently expire
+  if (booster.status === 'pending' && minutesSinceDose >= 150) return false;
 
   // Initial trigger: 90 minutes post-ingestion
   if (booster.status === 'pending' && minutesSinceDose < 90) return false;
@@ -78,6 +83,7 @@ export const useSessionStore = create(
           // Section C: Session Preferences
           guidanceLevel: null,
           activityPreferences: [],
+          considerBooster: null,
           promptFormat: null,
           sessionDuration: null,
           startTime: null,
@@ -132,7 +138,6 @@ export const useSessionStore = create(
       timeline: {
         // Time configuration
         scheduledStartTime: null,     // From intake (optional)
-        actualStartTime: null,        // When session truly began (after substance checklist)
         targetDuration: 240,          // Total session in minutes (default 4 hours)
         minDuration: 120,             // 2 hours minimum
         maxDuration: 480,             // 8 hours maximum
@@ -197,7 +202,6 @@ export const useSessionStore = create(
         considerBooster: false,       // From intake: user wants to consider a booster
         boosterPrepared: null,        // From substance checklist: booster is ready
         status: 'pending',            // 'pending' | 'prompted' | 'taken' | 'skipped' | 'snoozed' | 'expired'
-        calculatedBoosterMg: null,    // Derived from initialDoseMg
         boosterTakenAt: null,         // Timestamp when booster was taken
         boosterDecisionAt: null,      // Timestamp when decision was made
         snoozeCount: 0,               // Number of times snoozed
@@ -208,6 +212,7 @@ export const useSessionStore = create(
           trajectory: null,
         },
         isModalVisible: false,        // Whether the booster modal is currently showing
+        isMinimized: false,           // Whether the booster modal is minimized (bar above footer)
       },
 
       // ============================================
@@ -288,6 +293,9 @@ export const useSessionStore = create(
         else if (responses.sessionDuration === '4-6h') targetDuration = 300;
         else if (responses.sessionDuration === '6+h') targetDuration = 420;
 
+        // Determine if user wants to consider a booster
+        const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
+
         set({
           intake: {
             ...state.intake,
@@ -300,6 +308,10 @@ export const useSessionStore = create(
             ...state.timeline,
             targetDuration,
             scheduledStartTime: responses.startTime,
+          },
+          booster: {
+            ...state.booster,
+            considerBooster,
           },
         });
 
@@ -319,10 +331,9 @@ export const useSessionStore = create(
         // Calculate phase durations
         const comeUpDuration = 45; // Max allocated
         const peakDuration = 90;
-        const integrationDuration = state.timeline.targetDuration - comeUpDuration - peakDuration;
 
         // Build default modules based on preferences and experience
-        const defaultModules = [];
+        let defaultModules = [];
         let moduleOrder = 0;
 
         // === COME-UP MODULES ===
@@ -429,6 +440,38 @@ export const useSessionStore = create(
           completedAt: null,
         });
 
+        // If user wants to consider a booster, add booster check-in module to timeline
+        const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
+        if (considerBooster) {
+          // Place booster after the first peak module as a visual indicator.
+          // The actual trigger is time-based (90 min from ingestion) regardless of position.
+          const peakModulesSoFar = defaultModules.filter(m => m.phase === 'peak');
+          const boosterInsertOrder = Math.min(1, peakModulesSoFar.length);
+
+          // Re-order peak modules to insert booster at the right position
+          defaultModules = defaultModules.map(m => {
+            if (m.phase === 'peak' && m.order >= boosterInsertOrder) {
+              return { ...m, order: m.order + 1 };
+            }
+            return m;
+          });
+
+          // Insert the booster module
+          defaultModules.push({
+            instanceId: generateId(),
+            libraryId: 'booster-consideration',
+            phase: 'peak',
+            title: 'Booster Check-In',
+            duration: 5,
+            status: 'upcoming',
+            order: boosterInsertOrder,
+            content: getModuleById('booster-consideration')?.content || {},
+            isBoosterModule: true,
+            startedAt: null,
+            completedAt: null,
+          });
+        }
+
         // === INTEGRATION MODULES ===
         moduleOrder = 0;
 
@@ -492,6 +535,9 @@ export const useSessionStore = create(
           completedAt: null,
         });
 
+        const adjustedPeakDuration = peakDuration;
+        const adjustedIntegrationDuration = state.timeline.targetDuration - comeUpDuration - adjustedPeakDuration;
+
         set({
           modules: {
             ...state.modules,
@@ -501,8 +547,8 @@ export const useSessionStore = create(
             ...state.timeline,
             phases: {
               comeUp: { ...state.timeline.phases.comeUp, allocatedDuration: comeUpDuration },
-              peak: { ...state.timeline.phases.peak, allocatedDuration: peakDuration },
-              integration: { ...state.timeline.phases.integration, allocatedDuration: integrationDuration },
+              peak: { ...state.timeline.phases.peak, allocatedDuration: adjustedPeakDuration },
+              integration: { ...state.timeline.phases.integration, allocatedDuration: adjustedIntegrationDuration },
             },
           },
         });
@@ -517,9 +563,25 @@ export const useSessionStore = create(
         const libraryModule = getModuleById(libraryId);
         if (!libraryModule) return { success: false, error: 'Module not found' };
 
+        // Prevent duplicate booster modules
+        if (libraryId === 'booster-consideration') {
+          const existingBooster = state.modules.items.find(m => m.libraryId === 'booster-consideration');
+          if (existingBooster) {
+            return { success: false, error: 'A Booster Check-In is already in your timeline.' };
+          }
+        }
+
         // Get modules in this phase to determine order
         const phaseModules = state.modules.items.filter((m) => m.phase === phase);
-        const newOrder = position !== null ? position : phaseModules.length;
+
+        // For booster modules, place after the first peak module as a visual indicator.
+        // The actual trigger is time-based (90 min from ingestion), independent of position.
+        let newOrder;
+        if (libraryId === 'booster-consideration' && position === null) {
+          newOrder = Math.min(1, phaseModules.length);
+        } else {
+          newOrder = position !== null ? position : phaseModules.length;
+        }
 
         // Reorder existing modules if inserting
         const updatedItems = state.modules.items.map((m) => {
@@ -538,16 +600,27 @@ export const useSessionStore = create(
           status: 'upcoming',
           order: newOrder,
           content: libraryModule.content,
+          isBoosterModule: libraryModule.isBoosterModule || false,
           startedAt: null,
           completedAt: null,
         };
 
-        set({
+        const updates = {
           modules: {
             ...state.modules,
             items: [...updatedItems, newModule],
           },
-        });
+        };
+
+        // If adding a booster module, also enable considerBooster
+        if (libraryId === 'booster-consideration') {
+          updates.booster = {
+            ...state.booster,
+            considerBooster: true,
+          };
+        }
+
+        set(updates);
 
         return { success: true, module: newModule };
       },
@@ -567,12 +640,22 @@ export const useSessionStore = create(
             return m;
           });
 
-        set({
+        const updates = {
           modules: {
             ...state.modules,
             items: updatedItems,
           },
-        });
+        };
+
+        // If removing the booster module, disable considerBooster
+        if (moduleToRemove.libraryId === 'booster-consideration') {
+          updates.booster = {
+            ...state.booster,
+            considerBooster: false,
+          };
+        }
+
+        set(updates);
       },
 
       reorderModule: (instanceId, newOrder) => {
@@ -727,6 +810,205 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // BOOSTER DOSE ACTIONS
+      // ============================================
+
+      updateBoosterPrepared: (value) => {
+        const state = get();
+        if (value === 'decided-not-to') {
+          set({
+            booster: {
+              ...state.booster,
+              considerBooster: false,
+              boosterPrepared: false,
+            },
+          });
+        } else {
+          set({
+            booster: {
+              ...state.booster,
+              boosterPrepared: value === 'yes',
+            },
+          });
+        }
+      },
+
+      showBoosterModal: () => {
+        const state = get();
+        // Pause active module timer when booster modal appears
+        if (state.meditationPlayback.isPlaying) {
+          get().pauseMeditationPlayback();
+        }
+        // Switch to Active tab so the modal is visible
+        useAppStore.getState().setCurrentTab('active');
+        // Send notification if app is not focused (user has phone locked or in background)
+        const { notificationsEnabled } = useAppStore.getState().preferences;
+        if (notificationsEnabled && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          try {
+            new Notification('Booster Check-In', {
+              body: 'It\'s been about 90 minutes. Would you like to consider a supplemental dose?',
+              tag: 'booster-check-in',
+              renotify: true,
+            });
+          } catch (e) {
+            // Notification may fail in some contexts; non-critical
+          }
+        }
+        set({
+          booster: {
+            ...get().booster,
+            isModalVisible: true,
+            isMinimized: false,
+            status: 'prompted',
+          },
+        });
+      },
+
+      hideBoosterModal: () => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            isModalVisible: false,
+          },
+        });
+        // Resume module timer when modal is dismissed
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      recordBoosterCheckIn: (field, value) => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            checkInResponses: {
+              ...state.booster.checkInResponses,
+              [field]: value,
+            },
+          },
+        });
+      },
+
+      takeBooster: (timestamp = new Date()) => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            status: 'taken',
+            boosterTakenAt: timestamp,
+            boosterDecisionAt: new Date(),
+            isModalVisible: false,
+          },
+        });
+        // Resume module timer
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      confirmBoosterTime: (adjustedTime) => {
+        if (adjustedTime) {
+          set({
+            booster: {
+              ...get().booster,
+              boosterTakenAt: adjustedTime,
+            },
+          });
+        }
+      },
+
+      skipBooster: () => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            status: 'skipped',
+            boosterDecisionAt: new Date(),
+            isModalVisible: false,
+          },
+        });
+        // Resume module timer
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      snoozeBooster: () => {
+        const state = get();
+        const newSnoozeCount = state.booster.snoozeCount + 1;
+        const nextPromptAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+
+        set({
+          booster: {
+            ...state.booster,
+            status: 'snoozed',
+            snoozeCount: newSnoozeCount,
+            nextPromptAt,
+            isModalVisible: true,
+            isMinimized: true,
+          },
+        });
+        // Resume module timer
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      minimizeBooster: () => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            isMinimized: true,
+          },
+        });
+      },
+
+      maximizeBooster: () => {
+        const state = get();
+        // Pause module timer when expanding
+        if (state.meditationPlayback.isPlaying) {
+          get().pauseMeditationPlayback();
+        }
+        set({
+          booster: {
+            ...state.booster,
+            isMinimized: false,
+          },
+        });
+      },
+
+      expireBooster: () => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            status: 'expired',
+            boosterDecisionAt: new Date(),
+            isModalVisible: false,
+            isMinimized: false,
+          },
+        });
+        // Resume module timer if it was paused by the booster modal
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      // Check if snooze would push past the window
+      isSnoozeAvailable: () => {
+        const state = get();
+        const ingestionTime = state.substanceChecklist.ingestionTime;
+        if (!ingestionTime) return false;
+
+        const nextPromptTime = Date.now() + 10 * 60 * 1000;
+        const windowEnd = new Date(ingestionTime).getTime() + 150 * 60 * 1000;
+        return nextPromptTime < windowEnd;
+      },
+
+      // ============================================
       // SESSION CONTROL
       // ============================================
 
@@ -743,7 +1025,6 @@ export const useSessionStore = create(
           sessionPhase: 'active',
           timeline: {
             ...state.timeline,
-            actualStartTime: now,
             currentPhase: 'come-up',
             phases: {
               ...state.timeline.phases,
@@ -1026,6 +1307,10 @@ export const useSessionStore = create(
 
       startModule: (instanceId) => {
         const state = get();
+        // Never start a booster module — it's purely a visual timeline indicator
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module || module.isBoosterModule) return;
+
         set({
           modules: {
             ...state.modules,
@@ -1064,9 +1349,9 @@ export const useSessionStore = create(
             : m
         );
 
-        // Find next module in current phase
+        // Find next module in current phase (skip booster - it's purely visual)
         const nextModule = updatedItems
-          .filter((m) => m.phase === currentPhase && m.status === 'upcoming')
+          .filter((m) => m.phase === currentPhase && m.status === 'upcoming' && !m.isBoosterModule)
           .sort((a, b) => a.order - b.order)[0];
 
         // If in come-up phase, show check-in modal before next module
@@ -1128,9 +1413,9 @@ export const useSessionStore = create(
             : m
         );
 
-        // Find next module in current phase
+        // Find next module in current phase (skip booster - it's purely visual)
         const nextModule = updatedItems
-          .filter((m) => m.phase === currentPhase && m.status === 'upcoming')
+          .filter((m) => m.phase === currentPhase && m.status === 'upcoming' && !m.isBoosterModule)
           .sort((a, b) => a.order - b.order)[0];
 
         const historyEntry = { ...module, status: 'skipped', completedAt: now };
@@ -1186,19 +1471,21 @@ export const useSessionStore = create(
         if (!currentPhase) return null;
 
         const phaseModules = state.modules.items
-          .filter((m) => m.phase === currentPhase && m.status === 'upcoming')
+          .filter((m) => m.phase === currentPhase && m.status === 'upcoming' && !m.isBoosterModule)
           .sort((a, b) => a.order - b.order);
 
         return phaseModules[0] || null;
       },
 
-      // Get current active module
+      // Get current active module (booster modules are never "active" — they're purely visual)
       getCurrentModule: () => {
         const state = get();
         if (!state.modules.currentModuleInstanceId) return null;
-        return state.modules.items.find(
+        const module = state.modules.items.find(
           (m) => m.instanceId === state.modules.currentModuleInstanceId
         );
+        if (module?.isBoosterModule) return null;
+        return module;
       },
 
       // ============================================
@@ -1267,14 +1554,6 @@ export const useSessionStore = create(
 
       getElapsedMinutes: () => {
         const state = get();
-        if (!state.timeline.actualStartTime) return 0;
-        return Math.floor(
-          (Date.now() - new Date(state.timeline.actualStartTime)) / (1000 * 60)
-        );
-      },
-
-      getMinutesSinceIngestion: () => {
-        const state = get();
         if (!state.substanceChecklist.ingestionTime) return 0;
         return Math.floor(
           (Date.now() - new Date(state.substanceChecklist.ingestionTime)) / (1000 * 60)
@@ -1319,6 +1598,7 @@ export const useSessionStore = create(
               emotionalState: null,
               guidanceLevel: null,
               activityPreferences: [],
+              considerBooster: null,
               promptFormat: null,
               sessionDuration: null,
               startTime: null,
@@ -1352,7 +1632,6 @@ export const useSessionStore = create(
           },
           timeline: {
             scheduledStartTime: null,
-            actualStartTime: null,
             targetDuration: 240,
             minDuration: 120,
             maxDuration: 480,
@@ -1398,12 +1677,28 @@ export const useSessionStore = create(
             activeTransition: null,
             transitionCompleted: false,
           },
+          booster: {
+            considerBooster: false,
+            boosterPrepared: null,
+            status: 'pending',
+            boosterTakenAt: null,
+            boosterDecisionAt: null,
+            snoozeCount: 0,
+            nextPromptAt: null,
+            checkInResponses: {
+              experienceQuality: null,
+              physicalState: null,
+              trajectory: null,
+            },
+            isModalVisible: false,
+            isMinimized: false,
+          },
         });
       },
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 3, // Increment this when schema changes to force reset
+      version: 4, // Increment this when schema changes to force reset
       migrate: (persistedState, version) => {
         // If coming from version 1 or no version, reset to fresh state
         if (version < 2) {
@@ -1419,6 +1714,28 @@ export const useSessionStore = create(
               touchstone: '',
               intentionJournalEntryId: null,
               focusJournalEntryId: null,
+            },
+          };
+        }
+        // Add booster state for version 3 → 4
+        if (version < 4) {
+          return {
+            ...persistedState,
+            booster: {
+              considerBooster: false,
+              boosterPrepared: null,
+              status: 'pending',
+              boosterTakenAt: null,
+              boosterDecisionAt: null,
+              snoozeCount: 0,
+              nextPromptAt: null,
+              checkInResponses: {
+                experienceQuality: null,
+                physicalState: null,
+                trajectory: null,
+              },
+              isModalVisible: false,
+              isMinimized: false,
             },
           };
         }
