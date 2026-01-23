@@ -73,6 +73,23 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // PRE-SUBSTANCE ACTIVITY STATE
+      // ============================================
+      preSubstanceActivity: {
+        // Sub-phase navigation within substance-checklist
+        // 'part1' | 'activity-menu' | 'intention' | 'centering-breath' | 'part2'
+        substanceChecklistSubPhase: 'part1',
+        // Track which activities have been completed
+        completedActivities: [],    // ['intention', 'centering-breath']
+        // Touchstone: word/phrase captured during intention review
+        touchstone: '',             // Available throughout session
+        // Journal entry ID for the persistent intention entry
+        intentionJournalEntryId: null,
+        // Journal entry ID for the session focus entry (separate)
+        focusJournalEntryId: null,
+      },
+
+      // ============================================
       // TIMELINE STATE
       // ============================================
       timeline: {
@@ -597,6 +614,59 @@ export const useSessionStore = create(
 
       startSubstanceChecklist: () => {
         set({ sessionPhase: 'substance-checklist' });
+      },
+
+      // ============================================
+      // PRE-SUBSTANCE ACTIVITY ACTIONS
+      // ============================================
+
+      setSubstanceChecklistSubPhase: (subPhase) => {
+        set({
+          preSubstanceActivity: {
+            ...get().preSubstanceActivity,
+            substanceChecklistSubPhase: subPhase,
+          },
+        });
+      },
+
+      completePreSubstanceActivity: (activityName) => {
+        const state = get();
+        const completed = state.preSubstanceActivity.completedActivities;
+        if (!completed.includes(activityName)) {
+          set({
+            preSubstanceActivity: {
+              ...state.preSubstanceActivity,
+              completedActivities: [...completed, activityName],
+            },
+          });
+        }
+      },
+
+      setTouchstone: (phrase) => {
+        set({
+          preSubstanceActivity: {
+            ...get().preSubstanceActivity,
+            touchstone: phrase,
+          },
+        });
+      },
+
+      setIntentionJournalEntryId: (id) => {
+        set({
+          preSubstanceActivity: {
+            ...get().preSubstanceActivity,
+            intentionJournalEntryId: id,
+          },
+        });
+      },
+
+      setFocusJournalEntryId: (id) => {
+        set({
+          preSubstanceActivity: {
+            ...get().preSubstanceActivity,
+            focusJournalEntryId: id,
+          },
+        });
       },
 
       // ============================================
@@ -1230,6 +1300,13 @@ export const useSessionStore = create(
             ingestionTime: null,
             ingestionTimeConfirmed: false,
           },
+          preSubstanceActivity: {
+            substanceChecklistSubPhase: 'part1',
+            completedActivities: [],
+            touchstone: '',
+            intentionJournalEntryId: null,
+            focusJournalEntryId: null,
+          },
           timeline: {
             scheduledStartTime: null,
             actualStartTime: null,
@@ -1283,11 +1360,24 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 2, // Increment this when schema changes to force reset
+      version: 3, // Increment this when schema changes to force reset
       migrate: (persistedState, version) => {
         // If coming from version 1 or no version, reset to fresh state
         if (version < 2) {
           return undefined; // Return undefined to use initial state
+        }
+        // Add preSubstanceActivity state for version 2 → 3
+        if (version < 3) {
+          return {
+            ...persistedState,
+            preSubstanceActivity: {
+              substanceChecklistSubPhase: 'part1',
+              completedActivities: [],
+              touchstone: '',
+              intentionJournalEntryId: null,
+              focusJournalEntryId: null,
+            },
+          };
         }
         return persistedState;
       },
