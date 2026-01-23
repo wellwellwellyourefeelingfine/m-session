@@ -133,8 +133,13 @@ export default function PeakTransition() {
   const transitionToPeak = useSessionStore((state) => state.transitionToPeak);
   const intake = useSessionStore((state) => state.intake);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
+  const preSubstanceIntentionEntryId = useSessionStore(
+    (state) => state.preSubstanceActivity.intentionJournalEntryId
+  );
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
   const addEntry = useJournalStore((state) => state.addEntry);
+  const updateEntry = useJournalStore((state) => state.updateEntry);
+  const getEntryById = useJournalStore((state) => state.getEntryById);
   const navigateToEditor = useJournalStore((state) => state.navigateToEditor);
 
   // Update elapsed time every minute
@@ -193,40 +198,41 @@ export default function PeakTransition() {
   }, [currentStepIndex, hasIntention]);
 
   const handleGoToJournal = useCallback(() => {
-    // Create a journal entry with the intention if we haven't already
-    if (!intentionJournalEntryId && hasIntention) {
-      const currentElapsedMinutes = getElapsedMinutes();
-      const elapsedTimeShort = formatElapsedTimeShort(currentElapsedMinutes);
+    const currentElapsedMinutes = getElapsedMinutes();
+    const elapsedTimeShort = formatElapsedTimeShort(currentElapsedMinutes);
 
-      const journalContent = `INTENTION:
-
-"${userIntention}"
-
----
-
-INSIGHTS (${elapsedTimeShort}):
-
-`;
+    if (preSubstanceIntentionEntryId) {
+      // Append INSIGHTS section to the existing pre-substance intention entry
+      const existingEntry = getEntryById(preSubstanceIntentionEntryId);
+      if (existingEntry) {
+        const appendedContent = `${existingEntry.content}\n\n---\n\nINSIGHTS (${elapsedTimeShort}):\n\n`;
+        updateEntry(preSubstanceIntentionEntryId, appendedContent);
+        navigateToEditor(preSubstanceIntentionEntryId);
+      } else {
+        navigateToEditor(null);
+      }
+    } else if (!intentionJournalEntryId && hasIntention) {
+      // Fallback: create new entry if PreSubstanceIntention was skipped
+      const journalContent = `INTENTION:\n\n"${userIntention}"\n\n---\n\nINSIGHTS (${elapsedTimeShort}):\n\n`;
 
       const newEntry = addEntry({
         content: journalContent,
         source: 'session',
         moduleTitle: 'Peak Transition - Intention Reflection',
-        isEdited: true, // Skip confirmation modal since user is intentionally opening to edit
+        isEdited: true,
       });
 
       setIntentionJournalEntryId(newEntry.id);
       navigateToEditor(newEntry.id);
     } else if (intentionJournalEntryId) {
-      // Already created an entry, just navigate to it
+      // Already created/appended, just navigate to it
       navigateToEditor(intentionJournalEntryId);
     } else {
-      // No intention, just open a blank entry
       navigateToEditor(null);
     }
 
     setCurrentTab('journal');
-  }, [setCurrentTab, intentionJournalEntryId, hasIntention, userIntention, getElapsedMinutes, addEntry, navigateToEditor]);
+  }, [setCurrentTab, intentionJournalEntryId, preSubstanceIntentionEntryId, hasIntention, userIntention, getElapsedMinutes, addEntry, updateEntry, getEntryById, navigateToEditor]);
 
   const handleSkip = useCallback(() => {
     transitionToPeak();

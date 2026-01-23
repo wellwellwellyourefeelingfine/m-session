@@ -10,6 +10,8 @@ import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
+import PreSubstanceActivity from '../session/PreSubstanceActivity';
+import PreSubstanceIntention from '../session/PreSubstanceIntention';
 import ComeUpIntro from '../session/ComeUpIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import PeakTransition from '../session/PeakTransition';
@@ -99,6 +101,24 @@ export default function ActiveView() {
     });
   }, []);
 
+  const substanceChecklistSubPhase = useSessionStore(
+    (state) => state.preSubstanceActivity.substanceChecklistSubPhase
+  );
+
+  const renderSubstanceChecklistRouter = () => {
+    switch (substanceChecklistSubPhase) {
+      case 'activity-menu':
+        return <PreSubstanceActivity />;
+      case 'intention':
+        return <PreSubstanceIntention />;
+      case 'part2':
+        return <SubstanceChecklist part="part2" />;
+      case 'part1':
+      default:
+        return <SubstanceChecklist part="part1" />;
+    }
+  };
+
   const renderContent = () => {
     switch (sessionPhase) {
       case 'not-started':
@@ -125,7 +145,7 @@ export default function ActiveView() {
       }
 
       case 'substance-checklist':
-        return <SubstanceChecklist />;
+        return renderSubstanceChecklistRouter();
 
       case 'active':
         return renderActiveSession();

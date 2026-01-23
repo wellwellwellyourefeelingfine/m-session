@@ -1,7 +1,10 @@
 /**
  * SubstanceChecklist Component
  * Pre-session questionnaire about substance readiness
- * Runs after user clicks "Begin Session" but before the actual session starts
+ * Split into two parts with a Pre-Substance Activity page between them
+ *
+ * Part 1 (steps 0-3): Preparation questions (substance ready, tested, dosage, prepare space)
+ * Part 2 (steps 0-2): Take substance, confirm time, begin session
  */
 
 import { useState } from 'react';
@@ -30,7 +33,7 @@ const DOSAGE_FEEDBACK = {
   },
 };
 
-export default function SubstanceChecklist() {
+export default function SubstanceChecklist({ part = 'part1' }) {
   const [step, setStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [showTimeEdit, setShowTimeEdit] = useState(false);
@@ -41,6 +44,9 @@ export default function SubstanceChecklist() {
   const recordIngestionTime = useSessionStore((state) => state.recordIngestionTime);
   const confirmIngestionTime = useSessionStore((state) => state.confirmIngestionTime);
   const startSession = useSessionStore((state) => state.startSession);
+  const setSubstanceChecklistSubPhase = useSessionStore((state) => state.setSubstanceChecklistSubPhase);
+
+  const totalSteps = part === 'part1' ? 4 : 3;
 
   const fadeTransition = (callback) => {
     setIsVisible(false);
@@ -55,12 +61,21 @@ export default function SubstanceChecklist() {
   };
 
   const handleBack = () => {
+    if (step === 0 && part === 'part2') {
+      // Go back to activity menu from Part 2
+      fadeTransition(() => setSubstanceChecklistSubPhase('activity-menu'));
+      return;
+    }
     fadeTransition(() => setStep(step - 1));
   };
 
   const handleTakeSubstance = () => {
     recordIngestionTime(new Date());
     handleNext();
+  };
+
+  const handleContinueToActivities = () => {
+    fadeTransition(() => setSubstanceChecklistSubPhase('activity-menu'));
   };
 
   const handleTimeConfirm = (isCorrect) => {
@@ -74,7 +89,6 @@ export default function SubstanceChecklist() {
 
   const handleTimeEdit = () => {
     if (editedTime) {
-      // Parse the edited time and create a new Date
       const [hours, minutes] = editedTime.split(':').map(Number);
       const newTime = new Date();
       newTime.setHours(hours, minutes, 0, 0);
@@ -95,7 +109,10 @@ export default function SubstanceChecklist() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const renderStep = () => {
+  // ============================================
+  // PART 1: Preparation (Steps 0-3)
+  // ============================================
+  const renderPart1Step = () => {
     switch (step) {
       // Step 0: Do you have your MDMA ready?
       case 0:
@@ -125,7 +142,6 @@ export default function SubstanceChecklist() {
                 <button
                   onClick={() => {
                     updateSubstanceChecklist('hasSubstance', false);
-                    // Could show a message or redirect
                   }}
                   className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
                 >
@@ -253,7 +269,7 @@ export default function SubstanceChecklist() {
           </div>
         );
 
-      // Step 3: Prepare setting
+      // Step 3: Prepare setting (no "I've Taken It" — just Continue to activities)
       case 3:
         return (
           <div className="space-y-8">
@@ -287,17 +303,50 @@ export default function SubstanceChecklist() {
               </div>
             </div>
 
-            <div className="pt-4">
-              <p className="text-[var(--color-text-primary)] mb-4">
-                When you're ready, take your substance.
-              </p>
+            <div className="flex justify-between pt-4">
               <button
-                onClick={handleTakeSubstance}
-                className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+                onClick={handleBack}
+                className="text-[var(--color-text-tertiary)] underline"
               >
-                I've Taken It
+                Back
+              </button>
+              <button
+                onClick={handleContinueToActivities}
+                className="px-6 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+              >
+                Continue
               </button>
             </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // ============================================
+  // PART 2: Take Substance + Begin (Steps 0-2)
+  // ============================================
+  const renderPart2Step = () => {
+    switch (step) {
+      // Step 0: Take your substance
+      case 0:
+        return (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-sm mb-4">Take Your Substance</h2>
+              <p className="text-[var(--color-text-secondary)] mb-6">
+                When you're ready, take your substance. There's no rush—take your time.
+              </p>
+            </div>
+
+            <button
+              onClick={handleTakeSubstance}
+              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+            >
+              I've Taken It
+            </button>
 
             <button
               onClick={handleBack}
@@ -308,8 +357,8 @@ export default function SubstanceChecklist() {
           </div>
         );
 
-      // Step 4: Confirm ingestion time
-      case 4:
+      // Step 1: Confirm ingestion time
+      case 1:
         return (
           <div className="space-y-8">
             <div>
@@ -372,8 +421,8 @@ export default function SubstanceChecklist() {
           </div>
         );
 
-      // Step 5: Ready to begin
-      case 5:
+      // Step 2: Ready to begin
+      case 2:
         return (
           <div className="space-y-8">
             <div>
@@ -403,6 +452,8 @@ export default function SubstanceChecklist() {
     }
   };
 
+  const renderStep = part === 'part1' ? renderPart1Step : renderPart2Step;
+
   return (
     <div className="max-w-md mx-auto px-6 py-8">
       {/* Progress indicator */}
@@ -412,13 +463,13 @@ export default function SubstanceChecklist() {
             Preparation
           </span>
           <span className="text-[var(--color-text-tertiary)]">
-            {step + 1} of 6
+            {step + 1} of {totalSteps}
           </span>
         </div>
         <div className="w-full bg-[var(--color-border)] h-px">
           <div
             className="bg-[var(--color-text-primary)] h-px transition-all duration-500"
-            style={{ width: `${((step + 1) / 6) * 100}%` }}
+            style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
           />
         </div>
       </div>
