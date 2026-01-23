@@ -11,6 +11,43 @@ import { getModuleById } from '../content/modules';
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
+/**
+ * Calculate recommended booster dose from initial dose
+ * Returns dose rounded to nearest 5mg, clamped between 30-75mg
+ */
+export function calculateBoosterDose(initialDoseMg) {
+  const raw = Number(initialDoseMg) * 0.5;
+  const rounded = Math.round(raw / 5) * 5;
+  return Math.max(30, Math.min(75, rounded));
+}
+
+/**
+ * Determine if the booster prompt should be shown based on current state
+ */
+export function shouldShowBooster(booster, substanceChecklist) {
+  if (!booster || !booster.considerBooster) return false;
+  if (booster.status === 'taken' || booster.status === 'skipped' || booster.status === 'expired') return false;
+
+  const ingestionTime = substanceChecklist?.ingestionTime;
+  if (!ingestionTime) return false;
+
+  const now = Date.now();
+  const minutesSinceDose = (now - new Date(ingestionTime).getTime()) / (1000 * 60);
+
+  // Past the window entirely
+  if (minutesSinceDose >= 150) return false;
+
+  // If snoozed, check if we've passed the next prompt time
+  if (booster.status === 'snoozed' && booster.nextPromptAt) {
+    return now >= new Date(booster.nextPromptAt).getTime();
+  }
+
+  // Initial trigger: 90 minutes post-ingestion
+  if (booster.status === 'pending' && minutesSinceDose < 90) return false;
+
+  return true;
+}
+
 export const useSessionStore = create(
   persist(
     (set, get) => ({
@@ -77,7 +114,7 @@ export const useSessionStore = create(
       // ============================================
       preSubstanceActivity: {
         // Sub-phase navigation within substance-checklist
-        // 'part1' | 'activity-menu' | 'intention' | 'centering-breath' | 'part2'
+        // 'part1' | 'pre-session-intro'
         substanceChecklistSubPhase: 'part1',
         // Track which activities have been completed
         completedActivities: [],    // ['intention', 'centering-breath']
@@ -149,8 +186,28 @@ export const useSessionStore = create(
         lastPromptAt: null,
         responses: [],                // History of responses with timestamps
         currentResponse: null,        // 'waiting' | 'starting' | 'fully-arrived'
-        introCompleted: false,        // Has the intro phase completed
+        introCompleted: true,         // No longer used for intro gating (PreSessionIntro handles pre-session)
         waitingForCheckIn: false,     // Is a module waiting for check-in before starting
+      },
+
+      // ============================================
+      // BOOSTER DOSE STATE
+      // ============================================
+      booster: {
+        considerBooster: false,       // From intake: user wants to consider a booster
+        boosterPrepared: null,        // From substance checklist: booster is ready
+        status: 'pending',            // 'pending' | 'prompted' | 'taken' | 'skipped' | 'snoozed' | 'expired'
+        calculatedBoosterMg: null,    // Derived from initialDoseMg
+        boosterTakenAt: null,         // Timestamp when booster was taken
+        boosterDecisionAt: null,      // Timestamp when decision was made
+        snoozeCount: 0,               // Number of times snoozed
+        nextPromptAt: null,           // When to re-prompt after snooze
+        checkInResponses: {           // Responses from booster check-in questions
+          experienceQuality: null,
+          physicalState: null,
+          trajectory: null,
+        },
+        isModalVisible: false,        // Whether the booster modal is currently showing
       },
 
       // ============================================
@@ -698,25 +755,11 @@ export const useSessionStore = create(
           },
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
-            isVisible: false,
-            isMinimized: true,
-            introCompleted: false,
-          },
-        });
-      },
-
-      // Complete the intro and show first check-in
-      completeIntro: () => {
-        const state = get();
-        set({
-          comeUpCheckIn: {
-            ...state.comeUpCheckIn,
-            introCompleted: true,
             isVisible: true,
             isMinimized: false,
-            // No waitingForCheckIn lock - the modal overlay naturally blocks interaction
+            introCompleted: true,
             promptCount: 1,
-            lastPromptAt: new Date(),
+            lastPromptAt: now,
           },
         });
       },

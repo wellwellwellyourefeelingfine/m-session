@@ -7,8 +7,33 @@ export default function SingleSelect({ question, value, onChange }) {
   return (
     <div className="space-y-3">
       <p style={{ color: 'var(--text-primary)' }}>{question.label}</p>
-      {question.description && (
+      {question.contentBlocks && question.contentBlocks.map((block, i) => {
+        if (block.type === 'spacer') {
+          return <div key={i} className="flex justify-center"><div className="circle-spacer" /></div>;
+        }
+        if (block.type === 'list') {
+          return (
+            <ul key={i} className="text-left space-y-1 pl-4" style={{ color: block.color === 'grey' ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>
+              {block.items.map((item) => (
+                <li key={item} className="list-disc">{item}</li>
+              ))}
+            </ul>
+          );
+        }
+        return <p key={i} style={{ color: block.color === 'grey' ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{block.text}</p>;
+      })}
+      {!question.contentBlocks && question.description && (
         <p style={{ color: 'var(--text-tertiary)' }}>{question.description}</p>
+      )}
+      {!question.contentBlocks && question.descriptionSecondary && (
+        <p style={{ color: 'var(--text-tertiary)' }}>{question.descriptionSecondary}</p>
+      )}
+      {!question.contentBlocks && question.contentList && (
+        <ul className="text-left space-y-1 pl-4" style={{ color: 'var(--text-primary)' }}>
+          {question.contentList.map((item) => (
+            <li key={item} className="list-disc">{item}</li>
+          ))}
+        </ul>
       )}
 
       <div className="space-y-2">

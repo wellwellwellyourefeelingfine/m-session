@@ -2,7 +2,7 @@
  * HomeView Component
  * Timeline and session overview
  * Shows intake → timeline editor → session progress
- * Note: Substance checklist and ComeUpIntro are shown in ActiveView
+ * Note: Substance checklist and PreSessionIntro are shown in ActiveView
  */
 
 import { useState, useEffect } from 'react';
@@ -10,6 +10,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
+import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
 
 export default function HomeView() {
   const [isVisible, setIsVisible] = useState(false);
@@ -37,11 +38,23 @@ export default function HomeView() {
       case 'not-started':
         return (
           <div className="max-w-md mx-auto px-6 py-8 text-center">
-            <h2 className="mb-6">Welcome</h2>
-            <p className="mb-8 leading-relaxed text-[var(--color-text-secondary)]">
-              This guide will help you create a personalized session focused on self-understanding and personal growth.
+            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none' }}>Welcome to Session</h2>
+            <div className="flex justify-center mb-8">
+              <AsciiDiamond />
+            </div>
+            <p className="mb-4 leading-relaxed">
+              This is an app to guide you through an MDMA session focused on personal growth.
             </p>
-            <p className="mb-8 text-[var(--color-text-tertiary)]">
+            <div className="flex justify-center mb-4">
+              <div className="circle-spacer" />
+            </div>
+            <p className="mb-4 text-[var(--color-text-tertiary)]">
+              Read more about our philosophy in the active tab or the toolbar.
+            </p>
+            <div className="flex justify-center mb-4">
+              <div className="circle-spacer" />
+            </div>
+            <p className="mb-8 leading-relaxed">
               We'll start with a brief questionnaire to understand your intentions and preferences.
             </p>
             <button

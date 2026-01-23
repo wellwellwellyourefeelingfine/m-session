@@ -25,15 +25,4 @@ export const sectionAQuestions = [
       { value: 'group', label: 'Group setting' },
     ],
   },
-  {
-    field: 'hasPreparation',
-    type: 'single-select',
-    label: 'Have you prepared for this session?',
-    description: 'This includes setting intentions, preparing your space, etc.',
-    options: [
-      { value: 'yes', label: 'Yes' },
-      { value: 'somewhat', label: 'Somewhat' },
-      { value: 'no', label: 'Not yet' },
-    ],
-  },
 ];
