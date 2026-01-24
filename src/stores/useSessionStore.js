@@ -193,6 +193,15 @@ export const useSessionStore = create(
         currentResponse: null,        // 'waiting' | 'starting' | 'fully-arrived'
         introCompleted: true,         // No longer used for intro gating (PreSessionIntro handles pre-session)
         waitingForCheckIn: false,     // Is a module waiting for check-in before starting
+        hasIndicatedFullyArrived: false, // User said fully-arrived but chose to remain in come-up
+        showEndOfPhaseChoice: false,  // Show the end-of-phase choice page
+      },
+
+      // ============================================
+      // PEAK PHASE CHECK-IN STATE
+      // ============================================
+      peakCheckIn: {
+        isVisible: false,               // Show the peak phase end-of-phase modal
       },
 
       // ============================================
@@ -1091,7 +1100,7 @@ export const useSessionStore = create(
         // If "fully-arrived" and less than 20 minutes, we'll need confirmation
         // This is handled by the component showing a follow-up question
 
-        set({
+        const updates = {
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
             currentResponse: response,
@@ -1102,12 +1111,15 @@ export const useSessionStore = create(
             // Don't auto-minimize here - let the component handle showing reassurance first
             // The component will call minimizeCheckIn() after the reassurance is dismissed
           },
-        });
+        };
 
-        // If fully arrived, begin the transition to peak phase
+        // If fully arrived, show end-of-phase choice instead of immediately transitioning
         if (response === 'fully-arrived') {
-          get().beginPeakTransition();
+          updates.comeUpCheckIn.hasIndicatedFullyArrived = true;
+          updates.comeUpCheckIn.showEndOfPhaseChoice = true;
         }
+
+        set(updates);
       },
 
       setWaitingForCheckIn: (waiting) => {
@@ -1117,6 +1129,28 @@ export const useSessionStore = create(
             waitingForCheckIn: waiting,
           },
         });
+      },
+
+      dismissEndOfPhaseChoice: () => {
+        set({
+          comeUpCheckIn: {
+            ...get().comeUpCheckIn,
+            showEndOfPhaseChoice: false,
+            isMinimized: true,
+          },
+        });
+      },
+
+      // ============================================
+      // PEAK PHASE CHECK-IN ACTIONS
+      // ============================================
+
+      showPeakCheckIn: () => {
+        set({ peakCheckIn: { isVisible: true } });
+      },
+
+      dismissPeakCheckIn: () => {
+        set({ peakCheckIn: { isVisible: false } });
       },
 
       // ============================================
@@ -1261,6 +1295,20 @@ export const useSessionStore = create(
         });
       },
 
+      // Begin the peak to integration transition (shows IntegrationTransition component)
+      beginIntegrationTransition: () => {
+        const state = get();
+        set({
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: 'peak-to-integration',
+            transitionCompleted: false,
+          },
+          peakCheckIn: { isVisible: false },
+        });
+      },
+
+      // Complete the peak to integration transition (called after IntegrationTransition finishes)
       transitionToIntegration: () => {
         const state = get();
         const now = new Date();
@@ -1286,6 +1334,11 @@ export const useSessionStore = create(
               },
             },
           },
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: null,
+            transitionCompleted: true,
+          },
           modules: {
             ...state.modules,
             // Auto-start first integration module if available
@@ -1298,6 +1351,7 @@ export const useSessionStore = create(
                 )
               : state.modules.items,
           },
+          peakCheckIn: { isVisible: false },
         });
       },
 
@@ -1354,23 +1408,40 @@ export const useSessionStore = create(
           .filter((m) => m.phase === currentPhase && m.status === 'upcoming' && !m.isBoosterModule)
           .sort((a, b) => a.order - b.order)[0];
 
-        // If in come-up phase, show check-in modal before next module
-        // The modal overlay naturally blocks interaction, no lock needed
+        // If in come-up phase, show check-in or end-of-phase choice
         if (currentPhase === 'come-up') {
-          set({
-            modules: {
-              ...state.modules,
-              currentModuleInstanceId: null,
-              items: updatedItems,
-              history: [...state.modules.history, historyEntry],
-            },
-            comeUpCheckIn: {
-              ...state.comeUpCheckIn,
-              isMinimized: false,
-              promptCount: state.comeUpCheckIn.promptCount + 1,
-              lastPromptAt: now,
-            },
-          });
+          if (state.comeUpCheckIn.hasIndicatedFullyArrived) {
+            // User already said fully-arrived: show end-of-phase choice
+            set({
+              modules: {
+                ...state.modules,
+                currentModuleInstanceId: null,
+                items: updatedItems,
+                history: [...state.modules.history, historyEntry],
+              },
+              comeUpCheckIn: {
+                ...state.comeUpCheckIn,
+                showEndOfPhaseChoice: true,
+                isMinimized: false,
+              },
+            });
+          } else {
+            // Normal check-in modal between modules
+            set({
+              modules: {
+                ...state.modules,
+                currentModuleInstanceId: null,
+                items: updatedItems,
+                history: [...state.modules.history, historyEntry],
+              },
+              comeUpCheckIn: {
+                ...state.comeUpCheckIn,
+                isMinimized: false,
+                promptCount: state.comeUpCheckIn.promptCount + 1,
+                lastPromptAt: now,
+              },
+            });
+          }
         } else if (nextModule) {
           // For peak/integration phases, auto-start next module
           set({
@@ -1387,14 +1458,21 @@ export const useSessionStore = create(
           });
         } else {
           // No more modules in this phase
-          set({
+          const updates = {
             modules: {
               ...state.modules,
               currentModuleInstanceId: null,
               items: updatedItems,
               history: [...state.modules.history, historyEntry],
             },
-          });
+          };
+
+          // Show peak check-in modal when peak phase has no more modules
+          if (currentPhase === 'peak') {
+            updates.peakCheckIn = { isVisible: true };
+          }
+
+          set(updates);
         }
       },
 
@@ -1420,23 +1498,40 @@ export const useSessionStore = create(
 
         const historyEntry = { ...module, status: 'skipped', completedAt: now };
 
-        // If in come-up phase, show check-in modal before next module
-        // The modal overlay naturally blocks interaction, no lock needed
+        // If in come-up phase, show check-in or end-of-phase choice
         if (currentPhase === 'come-up') {
-          set({
-            modules: {
-              ...state.modules,
-              currentModuleInstanceId: null,
-              items: updatedItems,
-              history: [...state.modules.history, historyEntry],
-            },
-            comeUpCheckIn: {
-              ...state.comeUpCheckIn,
-              isMinimized: false,
-              promptCount: state.comeUpCheckIn.promptCount + 1,
-              lastPromptAt: now,
-            },
-          });
+          if (state.comeUpCheckIn.hasIndicatedFullyArrived) {
+            // User already said fully-arrived: show end-of-phase choice
+            set({
+              modules: {
+                ...state.modules,
+                currentModuleInstanceId: null,
+                items: updatedItems,
+                history: [...state.modules.history, historyEntry],
+              },
+              comeUpCheckIn: {
+                ...state.comeUpCheckIn,
+                showEndOfPhaseChoice: true,
+                isMinimized: false,
+              },
+            });
+          } else {
+            // Normal check-in modal between modules
+            set({
+              modules: {
+                ...state.modules,
+                currentModuleInstanceId: null,
+                items: updatedItems,
+                history: [...state.modules.history, historyEntry],
+              },
+              comeUpCheckIn: {
+                ...state.comeUpCheckIn,
+                isMinimized: false,
+                promptCount: state.comeUpCheckIn.promptCount + 1,
+                lastPromptAt: now,
+              },
+            });
+          }
         } else if (nextModule) {
           // For peak/integration phases, auto-start next module
           set({
@@ -1453,14 +1548,21 @@ export const useSessionStore = create(
           });
         } else {
           // No more modules in this phase
-          set({
+          const updates = {
             modules: {
               ...state.modules,
               currentModuleInstanceId: null,
               items: updatedItems,
               history: [...state.modules.history, historyEntry],
             },
-          });
+          };
+
+          // Show peak check-in modal when peak phase has no more modules
+          if (currentPhase === 'peak') {
+            updates.peakCheckIn = { isVisible: true };
+          }
+
+          set(updates);
         }
       },
 
@@ -1569,10 +1671,10 @@ export const useSessionStore = create(
 
         if (phase === 'come-up' && totalDuration > state.timeline.phases.comeUp.maxDuration) {
           return {
-            valid: false,
+            valid: true,
+            warning: true,
             totalDuration,
             maxDuration: state.timeline.phases.comeUp.maxDuration,
-            error: `Come-up modules exceed the maximum ${state.timeline.phases.comeUp.maxDuration} minutes for this phase.`,
           };
         }
 
@@ -1672,6 +1774,11 @@ export const useSessionStore = create(
             currentResponse: null,
             introCompleted: false,
             waitingForCheckIn: false,
+            hasIndicatedFullyArrived: false,
+            showEndOfPhaseChoice: false,
+          },
+          peakCheckIn: {
+            isVisible: false,
           },
           phaseTransitions: {
             activeTransition: null,
