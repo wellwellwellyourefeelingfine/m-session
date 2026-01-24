@@ -13,7 +13,7 @@
 export default function MorphingShapes({
   className = '',
   size = 48,
-  strokeWidth = 1,
+  strokeWidth = 1.5,
   duration = 8, // seconds for full cycle
 }) {
   // Pulse uses a different duration so it drifts in/out of sync

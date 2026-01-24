@@ -339,7 +339,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
             </h2>
 
             <div className="mb-2">
-              <MorphingShapes size={80} strokeWidth={1} duration={10} />
+              <MorphingShapes size={80} duration={10} />
             </div>
 
             {/* Duration picker button */}
@@ -373,7 +373,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
             </h2>
 
             <div className="mb-4">
-              <MorphingShapes size={80} strokeWidth={1} duration={10} />
+              <MorphingShapes size={80} duration={10} />
             </div>
 
             <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-3">

@@ -90,15 +90,28 @@ export default function ModuleControlBar({
 
           {/* Center: Primary button */}
           <div className="flex-1 flex justify-center px-4">
-            {primary?.label && (
+            {primary?.label && !primary.disabled ? (
               <button
                 onClick={primary.onClick}
-                disabled={primary.disabled}
                 className="px-8 py-2.5 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                  uppercase tracking-wider text-[10px] hover:opacity-80 transition-opacity
-                  disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
+                  uppercase tracking-wider text-[10px] hover:opacity-80 transition-opacity min-w-[120px]"
               >
                 {primary.label}
+              </button>
+            ) : (
+              <button
+                disabled
+                className="px-8 py-2.5 border border-[var(--color-border)] text-[var(--color-text-tertiary)]
+                  uppercase tracking-wider text-[10px] cursor-not-allowed min-w-[120px] flex items-center justify-center"
+                style={{ backgroundColor: 'var(--color-border)', opacity: 0.4 }}
+              >
+                {primary?.label || (
+            <span className="flex items-center gap-2">
+              <span className="w-[6px] h-[6px] rounded-full border-[1.5px] border-[var(--color-text-secondary)]" />
+              <span className="w-[6px] h-[6px] rounded-full border-[1.5px] border-[var(--color-text-secondary)]" />
+              <span className="w-[6px] h-[6px] rounded-full border-[1.5px] border-[var(--color-text-secondary)]" />
+            </span>
+          )}
               </button>
             )}
           </div>
