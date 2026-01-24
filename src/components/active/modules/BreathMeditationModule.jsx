@@ -22,7 +22,7 @@ import {
   guidedBreathOrbMeditation,
   getMeditationById,
 } from '../../../content/meditations';
-import { useAppStore } from '../../../stores/useAppStore';
+import { useWakeLock } from '../../../hooks/useWakeLock';
 
 // Shared UI components
 import ModuleControlBar, { SlotButton, MuteButton } from '../capabilities/ModuleControlBar';
@@ -318,84 +318,8 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
     };
   }, []);
 
-  // Pause meditation when page/tab loses visibility (user switches apps or tabs)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && hasStarted && breathController.isRunning) {
-        breathController.pause();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [hasStarted, breathController]);
-
-  // Pause meditation when user navigates away from Active tab (within app)
-  const currentTab = useAppStore((state) => state.currentTab);
-
-  useEffect(() => {
-    if (currentTab !== 'active' && hasStarted && breathController.isRunning) {
-      breathController.pause();
-    }
-  }, [currentTab, hasStarted, breathController]);
-
-  // Keep screen awake during active meditation (prevents phone from sleeping)
-  const wakeLockRef = useRef(null);
-
-  useEffect(() => {
-    const requestWakeLock = async () => {
-      // Only request wake lock when meditation is running
-      if (hasStarted && breathController.isRunning && !breathController.isComplete) {
-        try {
-          if ('wakeLock' in navigator) {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-          }
-        } catch (err) {
-          // Wake lock request failed (e.g., low battery, or not supported)
-          // Silently fail - meditation will still work, just screen might dim
-          console.debug('Wake lock not available:', err.message);
-        }
-      } else {
-        // Release wake lock when paused or completed
-        if (wakeLockRef.current) {
-          wakeLockRef.current.release();
-          wakeLockRef.current = null;
-        }
-      }
-    };
-
-    requestWakeLock();
-
-    // Cleanup on unmount
-    return () => {
-      if (wakeLockRef.current) {
-        wakeLockRef.current.release();
-        wakeLockRef.current = null;
-      }
-    };
-  }, [hasStarted, breathController.isRunning, breathController.isComplete]);
-
-  // Re-acquire wake lock when page becomes visible again (iOS releases it on visibility change)
-  useEffect(() => {
-    const handleVisibilityForWakeLock = async () => {
-      if (!document.hidden && hasStarted && breathController.isRunning && !breathController.isComplete) {
-        try {
-          if ('wakeLock' in navigator && !wakeLockRef.current) {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-          }
-        } catch (err) {
-          console.debug('Wake lock re-acquire failed:', err.message);
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityForWakeLock);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityForWakeLock);
-    };
-  }, [hasStarted, breathController.isRunning, breathController.isComplete]);
+  // Keep screen awake during active meditation
+  useWakeLock(hasStarted && breathController.isRunning && !breathController.isComplete);
 
   // Handle pause/resume
   const handlePauseResume = useCallback(() => {
@@ -516,7 +440,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   return (
     <>
       {/* Fixed layout container - no scroll, fills available space */}
-      <div className="fixed inset-0 top-[125px] bottom-[120px] flex flex-col items-center px-6 overflow-hidden">
+      <div className="fixed inset-0 top-[125px] bottom-[104px] flex flex-col items-center px-6 overflow-hidden">
         {/* Sequence info above orb - shows cycle count and pattern */}
         <div className="flex-shrink-0 h-6 flex items-center justify-center">
           {hasStarted && !breathController.isComplete && getCurrentSequenceInfo() && (

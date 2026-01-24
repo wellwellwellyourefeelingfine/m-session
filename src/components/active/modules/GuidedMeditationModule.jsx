@@ -20,6 +20,7 @@ import {
   calculateSilenceMultiplier,
   generateTimedSequence,
 } from '../../../content/meditations';
+import { useWakeLock } from '../../../hooks/useWakeLock';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
@@ -42,6 +43,9 @@ export default function GuidedMeditationModule({ module, onComplete, onSkip, onT
   const isThisModule = meditationPlayback.moduleInstanceId === module.instanceId;
   const hasStarted = isThisModule && meditationPlayback.hasStarted;
   const isPlaying = isThisModule && meditationPlayback.isPlaying;
+
+  // Keep screen awake during active meditation
+  useWakeLock(hasStarted && isPlaying);
 
   // Local state for UI
   const [promptPhase, setPromptPhase] = useState('visible');

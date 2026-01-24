@@ -1,10 +1,10 @@
 /**
  * DurationPicker Component
- * iOS-style vertical scroll wheel for selecting meditation duration
- * Snaps to predefined duration steps (e.g., 10, 15, 20, 25, 30 minutes)
+ * Plus/minus stepper for selecting duration in minutes.
+ * Steps through predefined duration values (e.g., 10, 15, 20, 25, 30 minutes).
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 export default function DurationPicker({
   isOpen,
@@ -15,24 +15,29 @@ export default function DurationPicker({
   minDuration = 10,
   maxDuration = 30,
 }) {
-  const [selectedDuration, setSelectedDuration] = useState(currentDuration);
-  const wheelRef = useRef(null);
-  const itemHeight = 48; // Height of each item in pixels
-
   // Filter steps to only include valid ones
-  const validSteps = durationSteps.filter(
-    (step) => step >= minDuration && step <= maxDuration
+  const validSteps = useMemo(
+    () => durationSteps.filter((step) => step >= minDuration && step <= maxDuration),
+    [durationSteps, minDuration, maxDuration]
   );
 
-  // Find the index of the current/selected duration
-  const selectedIndex = validSteps.indexOf(selectedDuration);
+  // Track selected index into validSteps
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // Sync index when picker opens
+  useEffect(() => {
+    if (isOpen) {
+      const index = validSteps.indexOf(currentDuration);
+      setSelectedIndex(index >= 0 ? index : 0);
+    }
+  }, [isOpen, currentDuration, validSteps]);
 
   // Handle escape key
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
 
     document.addEventListener('keydown', handleEscape);
@@ -51,59 +56,23 @@ export default function DurationPicker({
     };
   }, [isOpen]);
 
-  // Scroll to selected item on mount
-  useEffect(() => {
-    if (isOpen && wheelRef.current && selectedIndex >= 0) {
-      const scrollTop = selectedIndex * itemHeight;
-      wheelRef.current.scrollTop = scrollTop;
-    }
-  }, [isOpen, selectedIndex]);
-
-  // Handle scroll with snap behavior
-  const handleScroll = () => {
-    if (!wheelRef.current) return;
-
-    const scrollTop = wheelRef.current.scrollTop;
-    const nearestIndex = Math.round(scrollTop / itemHeight);
-    const clampedIndex = Math.max(0, Math.min(nearestIndex, validSteps.length - 1));
-
-    if (validSteps[clampedIndex] !== selectedDuration) {
-      setSelectedDuration(validSteps[clampedIndex]);
-    }
+  const handleDecrement = () => {
+    setSelectedIndex((i) => Math.max(0, i - 1));
   };
 
-  // Snap to nearest on scroll end
-  const handleScrollEnd = () => {
-    if (!wheelRef.current) return;
-
-    const scrollTop = wheelRef.current.scrollTop;
-    const nearestIndex = Math.round(scrollTop / itemHeight);
-    const clampedIndex = Math.max(0, Math.min(nearestIndex, validSteps.length - 1));
-
-    wheelRef.current.scrollTo({
-      top: clampedIndex * itemHeight,
-      behavior: 'smooth',
-    });
+  const handleIncrement = () => {
+    setSelectedIndex((i) => Math.min(validSteps.length - 1, i + 1));
   };
 
-  // Handle item click
-  const handleItemClick = (duration, index) => {
-    setSelectedDuration(duration);
-    if (wheelRef.current) {
-      wheelRef.current.scrollTo({
-        top: index * itemHeight,
-        behavior: 'smooth',
-      });
-    }
-  };
-
-  // Handle confirm
   const handleConfirm = () => {
-    onSelect(selectedDuration);
+    onSelect(validSteps[selectedIndex]);
     onClose();
   };
 
   if (!isOpen) return null;
+
+  const isAtMin = selectedIndex === 0;
+  const isAtMax = selectedIndex === validSteps.length - 1;
 
   return (
     <div
@@ -119,58 +88,38 @@ export default function DurationPicker({
           <h3 className="text-center">Duration</h3>
         </div>
 
-        {/* Wheel container */}
-        <div className="relative h-48 overflow-hidden">
-          {/* Selection highlight bar */}
-          <div
-            className="absolute left-0 right-0 border-y border-[var(--color-text-primary)] pointer-events-none z-10"
-            style={{
-              top: '50%',
-              transform: 'translateY(-50%)',
-              height: `${itemHeight}px`,
-            }}
-          />
-
-          {/* Gradient overlays for fade effect */}
-          <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[var(--color-bg)] to-transparent pointer-events-none z-10" />
-          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[var(--color-bg)] to-transparent pointer-events-none z-10" />
-
-          {/* Scrollable wheel */}
-          <div
-            ref={wheelRef}
-            className="h-full overflow-y-auto scrollbar-hide"
-            onScroll={handleScroll}
-            onTouchEnd={handleScrollEnd}
-            onMouseUp={handleScrollEnd}
-            style={{
-              scrollSnapType: 'y mandatory',
-              paddingTop: `${itemHeight * 2}px`,
-              paddingBottom: `${itemHeight * 2}px`,
-            }}
+        {/* Stepper */}
+        <div className="flex items-center justify-center gap-6 py-10">
+          <button
+            onClick={handleDecrement}
+            disabled={isAtMin}
+            className={`w-12 h-12 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+              isAtMin ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
+            }`}
+            aria-label="Decrease duration"
           >
-            {validSteps.map((duration, index) => {
-              const isSelected = duration === selectedDuration;
-              return (
-                <div
-                  key={duration}
-                  className={`flex items-center justify-center cursor-pointer transition-all duration-150
-                    ${isSelected
-                      ? 'text-[var(--color-text-primary)] font-medium'
-                      : 'text-[var(--color-text-tertiary)]'
-                    }`}
-                  style={{
-                    height: `${itemHeight}px`,
-                    scrollSnapAlign: 'center',
-                  }}
-                  onClick={() => handleItemClick(duration, index)}
-                >
-                  <span className={`text-2xl tracking-wide ${isSelected ? 'scale-110' : 'scale-100'} transition-transform`}>
-                    {duration}m
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <line x1="4" y1="10" x2="16" y2="10" />
+            </svg>
+          </button>
+
+          <span className="text-4xl font-light tracking-wide min-w-[80px] text-center">
+            {validSteps[selectedIndex]}m
+          </span>
+
+          <button
+            onClick={handleIncrement}
+            disabled={isAtMax}
+            className={`w-12 h-12 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+              isAtMax ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
+            }`}
+            aria-label="Increase duration"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <line x1="10" y1="4" x2="10" y2="16" />
+              <line x1="4" y1="10" x2="16" y2="10" />
+            </svg>
+          </button>
         </div>
 
         {/* Footer with buttons */}

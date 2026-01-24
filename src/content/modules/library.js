@@ -22,21 +22,15 @@ export const MODULE_TYPES = {
   breathing: { label: 'Breathing', intensity: 'gentle' },
   'breath-meditation': { label: 'Breath Meditation', intensity: 'gentle' },
   'guided-meditation': { label: 'Guided Meditation', intensity: 'gentle' },
-  'body-scan-light': { label: 'Light Body Scan', intensity: 'gentle' },
   'music-listening': { label: 'Music Listening', intensity: 'gentle' },
-  'gentle-movement': { label: 'Gentle Movement', intensity: 'gentle' },
   'open-awareness': { label: 'Open Awareness', intensity: 'moderate' },
   'light-journaling': { label: 'Light Journaling', intensity: 'moderate' },
-  'body-scan-deep': { label: 'Deep Body Scan', intensity: 'moderate' },
-  'self-compassion': { label: 'Self Compassion', intensity: 'moderate' },
   'deep-journaling': { label: 'Deep Journaling', intensity: 'deep' },
   'therapy-exercise': { label: 'Therapy Exercise', intensity: 'deep' },
   'parts-work': { label: 'Parts Work', intensity: 'deep' },
   'letter-writing': { label: 'Letter Writing', intensity: 'deep' },
   'closing-ritual': { label: 'Closing Ritual', intensity: 'moderate' },
-  'check-in': { label: 'Check-In', intensity: 'gentle' },
   'open-space': { label: 'Open Space', intensity: 'gentle' },
-  break: { label: 'Break', intensity: 'gentle' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
 };
 
@@ -279,79 +273,24 @@ export const moduleLibrary = [
     tags: ['meditation', 'breath', 'mindfulness', 'guided'],
   },
   {
-    id: 'body-scan-light',
-    type: 'body-scan-light',
-    title: 'Light Body Scan',
-    description: 'A gentle scan through your body, noticing sensations without judgment.',
-    defaultDuration: 15,
-    minDuration: 10,
-    maxDuration: 25,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak'],
-    recommendedPhases: ['come-up', 'peak'],
-    content: {
-      instructions: 'Starting from the top of your head, slowly move your attention down through your body. Just notice what\'s there without trying to change anything.',
-      prompts: [
-        'What sensations do you notice in your head and face?',
-        'How does your chest feel? Your belly?',
-        'What do you notice in your hands and feet?',
-      ],
-    },
-    // Uses ModuleShell with simple capabilities
-    capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
-    },
-    tags: ['body', 'awareness', 'gentle'],
-  },
-  {
     id: 'music-listening',
     type: 'music-listening',
     title: 'Music Immersion',
     description: 'Simply listen to music and let it move through you.',
     defaultDuration: 20,
     minDuration: 10,
-    maxDuration: 45,
+    maxDuration: 60,
     intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak'],
     content: {
       instructions: 'Put on music that feels right for this moment. Close your eyes and let the music wash over you. There\'s nothing to do but listen and feel.',
     },
-    // Uses ModuleShell - simple open module
+    // Uses custom MusicListeningModule component
     capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
+      controls: { showSkipButton: true },
     },
     tags: ['music', 'passive', 'immersive'],
-  },
-  {
-    id: 'gentle-movement',
-    type: 'gentle-movement',
-    title: 'Gentle Movement',
-    description: 'Slow, intuitive movement to connect with your body.',
-    defaultDuration: 15,
-    minDuration: 10,
-    maxDuration: 30,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak'],
-    recommendedPhases: ['come-up'],
-    content: {
-      instructions: 'Stand or sit comfortably. Begin to move slowly, following what your body wants. There\'s no right way—just gentle exploration.',
-      prompts: [
-        'What movement does your body want right now?',
-        'Can you move even slower?',
-      ],
-    },
-    // Uses ModuleShell - simple open module
-    capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
-    },
-    tags: ['movement', 'body', 'intuitive'],
   },
 
   // === PEAK APPROPRIATE (Moderate) ===
@@ -406,60 +345,6 @@ export const moduleLibrary = [
       layout: { centered: false, maxWidth: 'lg' },
     },
     tags: ['journaling', 'expression', 'light'],
-  },
-  {
-    id: 'body-scan-deep',
-    type: 'body-scan-deep',
-    title: 'Deep Body Exploration',
-    description: 'A more thorough body scan, staying with sensations that call for attention.',
-    defaultDuration: 25,
-    minDuration: 15,
-    maxDuration: 40,
-    intensity: 'moderate',
-    allowedPhases: ['peak', 'integration'],
-    recommendedPhases: ['peak', 'integration'],
-    content: {
-      instructions: 'Scan through your body slowly. When you find an area that holds tension or asks for attention, stay there. Breathe into it. See what it has to tell you.',
-      prompts: [
-        'Where in your body do you feel most alive?',
-        'Is there anywhere holding tension or emotion?',
-        'What does this part of your body want you to know?',
-      ],
-    },
-    // Uses ModuleShell - simple meditation with prompts
-    capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
-    },
-    tags: ['body', 'somatic', 'exploration'],
-  },
-  {
-    id: 'self-compassion',
-    type: 'self-compassion',
-    title: 'Self-Compassion Practice',
-    description: 'Offering kindness and understanding to yourself.',
-    defaultDuration: 15,
-    minDuration: 10,
-    maxDuration: 25,
-    intensity: 'moderate',
-    allowedPhases: ['peak', 'integration'],
-    recommendedPhases: ['peak', 'integration'],
-    content: {
-      instructions: 'Place a hand on your heart. Acknowledge that this moment is difficult, or that you\'re doing hard work. Offer yourself the same kindness you would offer a dear friend.',
-      prompts: [
-        'What do I need to hear right now?',
-        'How can I be gentle with myself?',
-        'What would I say to a friend feeling this way?',
-      ],
-    },
-    // Uses ModuleShell - simple meditation with prompts
-    capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
-    },
-    tags: ['self-compassion', 'kindness', 'heart'],
   },
 
   // === INTEGRATION APPROPRIATE (Deep) ===
@@ -621,35 +506,13 @@ export const moduleLibrary = [
     content: {
       instructions: 'This is open time. Rest, move, listen to music, or simply be. Follow your inner guidance.',
     },
-    // Uses ModuleShell - simple open module
     capabilities: {
+      timer: { type: 'elapsed', autoComplete: true, awayFromScreen: true },
       prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
+      controls: { showBeginButton: true, showSkipButton: true },
       layout: { centered: true },
     },
     tags: ['open', 'flexible', 'unstructured'],
-  },
-  {
-    id: 'break',
-    type: 'break',
-    title: 'Break',
-    description: 'Time for bathroom, water, snacks, or stretching.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 20,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up', 'peak', 'integration'],
-    content: {
-      instructions: 'Take care of your physical needs. Stay hydrated. Stretch if your body wants to move.',
-    },
-    // Uses ModuleShell - simple open module
-    capabilities: {
-      prompts: { type: 'static' },
-      controls: { showBeginButton: false, showSkipButton: true },
-      layout: { centered: true },
-    },
-    tags: ['break', 'rest', 'physical'],
   },
 
   // === BOOSTER CONSIDERATION ===

@@ -12,13 +12,15 @@
  * Reports timer state to parent via onTimerUpdate for ModuleStatusBar display.
  */
 
-import { useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { getModuleById } from '../../../content/modules';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
   generateTimedSequence,
 } from '../../../content/meditations';
+import { useWakeLock } from '../../../hooks/useWakeLock';
+import AlarmPrompt from '../../shared/AlarmPrompt';
 
 // Capabilities
 import PromptsCapability from './PromptsCapability';
@@ -119,6 +121,15 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
     onComplete: () => moduleState.markCompleted(),
   });
 
+  // Wake lock: keep screen on for visual-attention modules (not away-from-screen modules)
+  const isAwayFromScreen = capabilities.timer?.awayFromScreen ?? false;
+  useWakeLock(
+    !isAwayFromScreen && !!capabilities.timer && timerState.hasStarted && timerState.isPlaying
+  );
+
+  // Alarm prompt state for away-from-screen modules
+  const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
+
   // Report timer state to parent for ModuleStatusBar
   useEffect(() => {
     if (!onTimerUpdate) return;
@@ -140,6 +151,19 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
 
   // Handle begin
   const handleBegin = useCallback(() => {
+    if (isAwayFromScreen) {
+      setShowAlarmPrompt(true);
+    } else {
+      moduleState.begin();
+      if (capabilities.timer) {
+        timerState.start();
+      }
+    }
+  }, [moduleState, capabilities.timer, timerState, isAwayFromScreen]);
+
+  // Handle alarm prompt dismissal (proceed into module)
+  const handleAlarmProceed = useCallback(() => {
+    setShowAlarmPrompt(false);
     moduleState.begin();
     if (capabilities.timer) {
       timerState.start();
@@ -336,6 +360,16 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
         backConfirmMessage="Go back to the previous step?"
         skipConfirmMessage="Skip this module?"
       />
+
+      {/* Alarm prompt for away-from-screen modules */}
+      {isAwayFromScreen && (
+        <AlarmPrompt
+          isOpen={showAlarmPrompt}
+          onProceed={handleAlarmProceed}
+          durationMinutes={module.duration || libraryModule?.defaultDuration || 10}
+          activityName={libraryModule?.title || module.title}
+        />
+      )}
     </>
   );
 }

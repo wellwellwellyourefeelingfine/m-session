@@ -23,7 +23,7 @@ import {
   calculateSilenceMultiplier,
 } from '../../../content/meditations';
 import { useAudioPlayback } from '../../../hooks/useAudioPlayback';
-import { useAppStore } from '../../../stores/useAppStore';
+import { useWakeLock } from '../../../hooks/useWakeLock';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
@@ -69,8 +69,8 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
   const textFadeTimeoutRef = useRef(null);
   const timerRef = useRef(null);
 
-  // Wake lock for keeping screen on
-  const wakeLockRef = useRef(null);
+  // Keep screen awake during active meditation
+  useWakeLock(hasStarted && isPlaying);
 
   // Audio playback hook
   const audio = useAudioPlayback({
@@ -275,59 +275,6 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     });
   }, [elapsedTime, totalDuration, hasStarted, isPlaying, onTimerUpdate]);
 
-  // Pause meditation when page/tab loses visibility
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && hasStarted && isPlaying) {
-        pauseMeditationPlayback();
-        audio.pause();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [hasStarted, isPlaying, pauseMeditationPlayback, audio]);
-
-  // Pause meditation when user navigates away from Active tab
-  const currentTab = useAppStore((state) => state.currentTab);
-
-  useEffect(() => {
-    if (currentTab !== 'active' && hasStarted && isPlaying) {
-      pauseMeditationPlayback();
-      audio.pause();
-    }
-  }, [currentTab, hasStarted, isPlaying, pauseMeditationPlayback, audio]);
-
-  // Wake lock management
-  useEffect(() => {
-    const requestWakeLock = async () => {
-      if (hasStarted && isPlaying) {
-        try {
-          if ('wakeLock' in navigator) {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-          }
-        } catch (err) {
-          console.debug('Wake lock not available:', err.message);
-        }
-      } else {
-        if (wakeLockRef.current) {
-          wakeLockRef.current.release();
-          wakeLockRef.current = null;
-        }
-      }
-    };
-
-    requestWakeLock();
-
-    return () => {
-      if (wakeLockRef.current) {
-        wakeLockRef.current.release();
-        wakeLockRef.current = null;
-      }
-    };
-  }, [hasStarted, isPlaying]);
 
   // Cleanup on unmount
   useEffect(() => {

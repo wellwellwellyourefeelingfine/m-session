@@ -68,7 +68,7 @@ export default function ModuleControlBar({
   return (
     <>
       {/* Fixed control bar - positioned above tab bar */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 bg-[var(--color-bg)] border-t border-[var(--color-border)]">
+      <div className="fixed bottom-12 left-0 right-0 z-30 bg-[var(--color-bg)] border-t border-[var(--color-border)]">
         <div className="h-14 flex items-center justify-between px-4">
           {/* Far left: Back button */}
           <div className="w-10 flex justify-start">
