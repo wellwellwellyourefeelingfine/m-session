@@ -118,6 +118,9 @@ export default function ComeUpCheckIn() {
   const minimizeCheckIn = useSessionStore((state) => state.minimizeCheckIn);
   const maximizeCheckIn = useSessionStore((state) => state.maximizeCheckIn);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
+  const beginPeakTransition = useSessionStore((state) => state.beginPeakTransition);
+  const dismissEndOfPhaseChoice = useSessionStore((state) => state.dismissEndOfPhaseChoice);
+  const modules = useSessionStore((state) => state.modules);
 
   const minutesSinceIngestion = getElapsedMinutes();
   const isMinimized = comeUpCheckIn.isMinimized;
@@ -267,9 +270,56 @@ export default function ComeUpCheckIn() {
     );
   }
 
+  // End-of-phase choice page - shown when user indicated fully-arrived
+  if (comeUpCheckIn.showEndOfPhaseChoice) {
+    return (
+      <div
+        className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn"
+        onClick={() => dismissEndOfPhaseChoice()}
+      >
+        <div
+          className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => dismissEndOfPhaseChoice()}
+              className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
+            >
+              <span className="text-xl">−</span>
+            </button>
+          </div>
+          <h3 className="mb-4">Ready for the Peak?</h3>
+          <p className="text-[var(--color-text-secondary)] mb-8 leading-relaxed">
+            You've indicated you're fully arrived. Would you like to continue to the peak phase?
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={() => beginPeakTransition()}
+              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
+            >
+              Continue to the Peak Phase
+            </button>
+            <button
+              onClick={() => dismissEndOfPhaseChoice()}
+              className="w-full py-3 text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs hover:text-[var(--color-text-secondary)] transition-colors"
+            >
+              Remain Here
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Minimized state - small bar directly above control bar (flush, no gap)
   // Control bar is at bottom-12 (48px) with h-14 (56px), so check-in bar is at bottom-[104px]
   // NOTE: This check comes AFTER local UI state checks (confirmation, reassurance)
+  // If user has already indicated fully-arrived, hide the bar entirely — the end-of-phase
+  // choice modal will reappear automatically when the next module completes.
+  if (isMinimized && comeUpCheckIn.hasIndicatedFullyArrived) {
+    return null;
+  }
   if (isMinimized) {
     return (
       <button

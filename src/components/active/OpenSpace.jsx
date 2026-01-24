@@ -27,7 +27,6 @@ const PHASE_MESSAGES = {
 export default function OpenSpace({ phase }) {
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
-  const transitionToIntegration = useSessionStore((state) => state.transitionToIntegration);
   const endSession = useSessionStore((state) => state.endSession);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
   const timeline = useSessionStore((state) => state.timeline);
@@ -42,12 +41,6 @@ export default function OpenSpace({ phase }) {
   const handleContinueToNext = () => {
     if (nextModule) {
       startModule(nextModule.instanceId);
-    }
-  };
-
-  const handleTransitionPhase = () => {
-    if (phase === 'peak') {
-      transitionToIntegration();
     }
   };
 
@@ -83,15 +76,7 @@ export default function OpenSpace({ phase }) {
             </button>
           )}
 
-          {/* Phase transition button */}
-          {phase === 'peak' && (
-            <button
-              onClick={handleTransitionPhase}
-              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors uppercase tracking-wider"
-            >
-              Move to Integration Phase
-            </button>
-          )}
+          {/* Peak→Integration transition is now handled by PeakPhaseCheckIn modal */}
 
           {/* End session button (only if minimum time reached) */}
           {phase === 'integration' && (

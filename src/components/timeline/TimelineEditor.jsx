@@ -6,6 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
@@ -22,7 +23,6 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const addModule = useSessionStore((state) => state.addModule);
   const removeModule = useSessionStore((state) => state.removeModule);
-  const validatePhaseModules = useSessionStore((state) => state.validatePhaseModules);
   const getPhaseDuration = useSessionStore((state) => state.getPhaseDuration);
   const getTotalDuration = useSessionStore((state) => state.getTotalDuration);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
@@ -102,18 +102,26 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
       return;
     }
 
+    // For come-up phase, check if adding this module would exceed 60 minutes
+    if (activePhase === 'come-up') {
+      const currentDuration = getPhaseDuration('come-up');
+      const libraryModule = getModuleById(libraryId);
+      const newTotal = currentDuration + (libraryModule?.defaultDuration || 0);
+      const maxDuration = timeline?.phases?.comeUp?.maxDuration || 60;
+
+      if (newTotal > maxDuration) {
+        setWarningModal({
+          libraryId,
+          phase: activePhase,
+          message: `Adding this activity will bring the Come-Up phase to ${newTotal} minutes, which exceeds the recommended ${maxDuration} minutes. The come-up phase should generally not exceed ${maxDuration} minutes. Are you sure you want to add this activity?`,
+        });
+        return;
+      }
+    }
+
     const result = addModule(libraryId, activePhase);
     if (!result.success) {
       setErrorModal({ message: result.error });
-      return;
-    }
-
-    // Validate phase after adding
-    const validation = validatePhaseModules(activePhase);
-    if (!validation.valid) {
-      // Remove the module we just added
-      removeModule(result.module.instanceId);
-      setErrorModal({ message: validation.error });
       return;
     }
 

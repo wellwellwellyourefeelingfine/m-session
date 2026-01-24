@@ -14,6 +14,8 @@ import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
 import PeakTransition from '../session/PeakTransition';
 import BoosterConsiderationModal from '../session/BoosterConsiderationModal';
+import PeakPhaseCheckIn from '../session/PeakPhaseCheckIn';
+import IntegrationTransition from '../session/IntegrationTransition';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import PhilosophyContent from '../shared/PhilosophyContent';
@@ -35,6 +37,7 @@ export default function ActiveView() {
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
   const phaseTransitions = useSessionStore((state) => state.phaseTransitions);
   const booster = useSessionStore((state) => state.booster);
+  const peakCheckIn = useSessionStore((state) => state.peakCheckIn);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
@@ -119,8 +122,10 @@ export default function ActiveView() {
     // Don't auto-start if:
     // - Not in active phase
     // - Already have a current module
+    // - Peak check-in modal is showing (user must dismiss it first)
     if (sessionPhase !== 'active') return;
     if (currentModule) return;
+    if (peakCheckIn.isVisible) return;
 
     // Start next module if available
     // Note: The check-in modal overlay naturally blocks user interaction,
@@ -128,7 +133,7 @@ export default function ActiveView() {
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
-  }, [sessionPhase, currentModule, nextModule, startModule]);
+  }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible]);
 
   // Handler to update module timer state (called by modules)
   // Memoized with useCallback to prevent infinite loops in child useEffects
@@ -237,6 +242,9 @@ export default function ActiveView() {
     if (activeTransition === 'come-up-to-peak') {
       return <PeakTransition />;
     }
+    if (activeTransition === 'peak-to-integration') {
+      return <IntegrationTransition />;
+    }
 
     // Come-up phase: modules with check-in
     if (currentPhase === 'come-up') {
@@ -297,6 +305,9 @@ export default function ActiveView() {
             <OpenSpace phase={currentPhase} />
           )}
         </div>
+
+        {/* Peak phase check-in modal */}
+        {peakCheckIn.isVisible && <PeakPhaseCheckIn />}
 
         {/* Booster consideration modal */}
         {booster.isModalVisible && <BoosterConsiderationModal />}
