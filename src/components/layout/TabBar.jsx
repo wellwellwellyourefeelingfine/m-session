@@ -18,13 +18,13 @@ export default function TabBar() {
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-app-gray-200 dark:border-app-gray-800" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <div className="flex">
+    <nav className="fixed bottom-0 left-0 right-0 h-12 border-t border-app-gray-200 dark:border-app-gray-800" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <div className="flex h-full">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setCurrentTab(tab.id)}
-            className={`flex-1 py-4 text-[12px] uppercase tracking-wider transition-opacity duration-300 touch-target
+            className={`flex-1 flex items-center justify-center text-[12px] uppercase tracking-wider transition-opacity duration-300 touch-target
               ${
                 currentTab === tab.id
                   ? 'text-app-black dark:text-app-white'

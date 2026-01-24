@@ -64,9 +64,9 @@ export default function ModuleLayout({
 
   return (
     <div
-      className={`flex flex-col min-h-[calc(100vh-120px)] ${getPaddingClass()} pt-4 pb-8`}
+      className={`flex flex-col ${centered ? 'min-h-[calc(100vh-104px)]' : ''} ${getPaddingClass()} pt-4 pb-8`}
       style={{
-        // Account for control bar (56px) + tab bar (64px) = 120px
+        // Account for control bar (56px) + tab bar (48px) = 104px
         paddingBottom: '2rem',
       }}
     >

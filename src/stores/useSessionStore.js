@@ -384,13 +384,13 @@ export const useSessionStore = create(
         } else {
           defaultModules.push({
             instanceId: generateId(),
-            libraryId: 'body-scan-light',
+            libraryId: 'open-space',
             phase: 'come-up',
-            title: 'Light Body Scan',
+            title: 'Open Space',
             duration: 15,
             status: 'upcoming',
             order: moduleOrder++,
-            content: getModuleById('body-scan-light')?.content || {},
+            content: getModuleById('open-space')?.content || {},
             startedAt: null,
             completedAt: null,
           });
@@ -429,13 +429,13 @@ export const useSessionStore = create(
 
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'self-compassion',
+          libraryId: 'open-space',
           phase: 'peak',
-          title: 'Self-Compassion Practice',
+          title: 'Open Space',
           duration: 15,
           status: 'upcoming',
           order: moduleOrder++,
-          content: getModuleById('self-compassion')?.content || {},
+          content: getModuleById('open-space')?.content || {},
           startedAt: null,
           completedAt: null,
         });
@@ -493,13 +493,13 @@ export const useSessionStore = create(
         if (preferences.includes('meditation')) {
           defaultModules.push({
             instanceId: generateId(),
-            libraryId: 'body-scan-deep',
+            libraryId: 'open-space',
             phase: 'integration',
-            title: 'Deep Body Exploration',
+            title: 'Open Space',
             duration: 25,
             status: 'upcoming',
             order: moduleOrder++,
-            content: getModuleById('body-scan-deep')?.content || {},
+            content: getModuleById('open-space')?.content || {},
             startedAt: null,
             completedAt: null,
           });

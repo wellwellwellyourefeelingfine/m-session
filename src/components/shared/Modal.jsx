@@ -41,12 +41,12 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-80"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
       onClick={onClose}
       {...props}
     >
       <div
-        className={`bg-app-white dark:bg-app-black border border-app-gray-200 dark:border-app-gray-800 p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto ${className}`}
+        className={`bg-[var(--color-bg)] border border-[var(--color-border)] p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}

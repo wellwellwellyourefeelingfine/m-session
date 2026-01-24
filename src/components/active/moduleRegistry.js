@@ -20,8 +20,9 @@ import BreathingModule from './modules/BreathingModule';
 import BreathMeditationModule from './modules/BreathMeditationModule';
 import JournalingModule from './modules/JournalingModule';
 import GuidedMeditationModule from './modules/GuidedMeditationModule';
-import CheckInModule from './modules/CheckInModule';
+
 import OpenAwarenessModule from './modules/OpenAwarenessModule';
+import MusicListeningModule from './modules/MusicListeningModule';
 
 // Import the generic shell
 import { ModuleShell } from './capabilities';
@@ -52,11 +53,11 @@ export const CUSTOM_MODULES = {
   // Guided meditation has complex timed prompt + playback logic
   'guided-meditation': GuidedMeditationModule,
 
-  // Check-in has specialized response collection
-  'check-in': CheckInModule,
-
   // Open awareness has audio-text sync with variable duration
   'open-awareness': OpenAwarenessModule,
+
+  // Music listening has duration picker, alarm prompt, and recommendations
+  'music-listening': MusicListeningModule,
 };
 
 /**
@@ -64,17 +65,8 @@ export const CUSTOM_MODULES = {
  * These modules are fully defined by their capabilities configuration
  */
 export const SHELL_MODULE_TYPES = [
-  // Meditation types (simple timer + prompts)
-  'meditation',
-  'body-scan-light',
-  'body-scan-deep',
-  'self-compassion',
-
   // Open/passive types (just content + continue/skip)
   'open-space',
-  'gentle-movement',
-  'music-listening',
-  'break',
 ];
 
 /**
@@ -127,12 +119,8 @@ export const MODULE_CATEGORIES = {
   grounding: ['grounding'],
   breathing: ['breathing', 'breath-meditation'],
   meditation: [
-    'meditation',
     'guided-meditation',
-    'body-scan-light',
-    'body-scan-deep',
     'open-awareness',
-    'self-compassion',
   ],
   journaling: [
     'journaling',
@@ -145,11 +133,8 @@ export const MODULE_CATEGORIES = {
   ],
   open: [
     'open-space',
-    'gentle-movement',
     'music-listening',
-    'break',
   ],
-  utility: ['check-in'],
 };
 
 /**

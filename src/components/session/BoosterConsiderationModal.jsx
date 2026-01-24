@@ -692,7 +692,7 @@ export default function BoosterConsiderationModal() {
     return (
       <button
         onClick={maximizeBooster}
-        className="fixed bottom-[120px] left-0 right-0 bg-[var(--accent-bg)] border-t border-b border-[var(--accent)] py-3 px-4 flex items-center justify-between z-40"
+        className="fixed bottom-[104px] left-0 right-0 bg-[var(--accent-bg)] border-t border-b border-[var(--accent)] py-3 px-4 flex items-center justify-between z-40"
       >
         <span
           className="text-[var(--color-text-primary)] text-sm"

@@ -268,13 +268,13 @@ export default function ComeUpCheckIn() {
   }
 
   // Minimized state - small bar directly above control bar (flush, no gap)
-  // Control bar is at bottom-16 (64px) with h-14 (56px), so check-in bar is at bottom-[120px]
+  // Control bar is at bottom-12 (48px) with h-14 (56px), so check-in bar is at bottom-[104px]
   // NOTE: This check comes AFTER local UI state checks (confirmation, reassurance)
   if (isMinimized) {
     return (
       <button
         onClick={handleMinimizedClick}
-        className="fixed bottom-[120px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
+        className="fixed bottom-[104px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
       >
         <div className="flex items-center space-x-3">
           <StatusIndicator status={currentResponse} />

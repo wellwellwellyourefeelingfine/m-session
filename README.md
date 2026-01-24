@@ -457,6 +457,74 @@ A reusable transition screen for smooth flow between sections:
 
 ---
 
+## Timer Strategy
+
+### PWA Limitation Context
+
+PWAs cannot reliably fire notifications or alarms when backgrounded or screen-locked. JavaScript execution is suspended, `setTimeout`/`setInterval` don't fire, and there is no Web Alarm API. This is a platform limitation, not a solvable code problem.
+
+### Two-Layer Approach
+
+#### Layer 1: Native Alarm Prompt (Primary)
+
+For timed modules (music breaks, extended meditations), prompt users to set a backup alarm using their phone's native clock app before beginning:
+
+> "Set an alarm for 20 minutes, then return here to begin."
+
+```
+[ Open Clock App ]      [ I've Set My Alarm ]
+```
+
+Deep links (best-effort, not universally supported):
+- **iOS**: `clock-alarm://` — opens Clock app
+- **Android**: Intent varies by device; fallback to instruction text
+
+#### Layer 2: Internal Timestamp Timer (Secondary)
+
+Track elapsed time using `Date.now()` comparisons, not intervals:
+
+```javascript
+const startTime = Date.now();
+const duration = 20 * 60 * 1000;
+
+// On visibility change or user return:
+const elapsed = Date.now() - startTime;
+const remaining = Math.max(0, duration - elapsed);
+const isComplete = elapsed >= duration;
+```
+
+This allows graceful reconciliation when the user returns—whether early, on time, or late.
+
+**Graceful Completion States:**
+- **Early return**: Show remaining time, option to continue waiting or proceed
+- **On-time return**: "Your rest is complete. Continue when ready."
+- **Late return**: "Welcome back. Take your time—continue when ready."
+
+### Wake Lock Usage
+
+Use the Screen Wake Lock API only for modules requiring continuous visual attention:
+
+| Module Type | Wake Lock | Rationale |
+|-------------|-----------|-----------|
+| Breathing exercises | Yes | User follows visual animation |
+| Audio meditations | Yes | Keeps audio session alive |
+| Music/rest breaks | No | User is away from screen |
+| Journaling | No | User interaction keeps screen awake |
+
+```javascript
+// Request wake lock for visual modules
+const wakeLock = await navigator.wakeLock.request('screen');
+
+// Release when module completes
+wakeLock.release();
+```
+
+### Philosophy Alignment
+
+This approach aligns with the app's non-directive philosophy. Rigid timing isn't essential—the app guides rather than dictates. Users are trusted to manage their own experience, with the app providing supportive structure that adapts to however they return.
+
+---
+
 ## Current Limitations
 
 - PWA offline mode not fully tested

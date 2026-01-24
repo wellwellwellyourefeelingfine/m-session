@@ -25,7 +25,7 @@ export default function AppShell({ children }) {
       <Header />
 
       {/* Main content area with padding for fixed header/footer */}
-      <main className="pt-16 pb-20 min-h-screen">
+      <main className="pt-16 pb-12 min-h-screen">
         {children}
       </main>
 
