@@ -337,7 +337,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
           </div>
 
           {/* Closing Ritual content */}
-          <div className="flex-1 pb-2">
+          <div className="flex-1">
             <h3
               className="font-serif text-lg"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}

@@ -3,16 +3,17 @@
  * A reusable transition screen between flow sections.
  *
  * Sequence:
- * 1. Blank screen
+ * 1. Blank screen (300ms)
  * 2. AsciiDiamond + random quote fade in (800ms)
- * 3. Hold for 2 seconds
+ * 3. Hold for holdDuration (default 2000ms)
  * 4. Fade out (800ms)
- * 5. Blank screen briefly, then calls onComplete
+ * 5. Blank screen briefly (300ms), then calls onComplete
  *
  * @param {function} onComplete - Called when the transition finishes
+ * @param {number} holdDuration - How long to hold the visible state in ms (default 2000)
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
 
 const QUOTES = [
@@ -46,7 +47,7 @@ const QUOTES = [
   },
 ];
 
-export default function TransitionBuffer({ onComplete }) {
+export default function TransitionBuffer({ onComplete, holdDuration = 2000 }) {
   const [phase, setPhase] = useState('blank'); // 'blank' | 'fading-in' | 'visible' | 'fading-out' | 'done'
   const quoteRef = useRef(null);
 
@@ -57,25 +58,41 @@ export default function TransitionBuffer({ onComplete }) {
 
   const quote = quoteRef.current;
 
+  // Calculate timing based on holdDuration - memoize to avoid recalculating
+  const timing = useMemo(() => {
+    const blankPause = 300;
+    const fadeInDuration = 800;
+    const fadeOutDuration = 800;
+    const finalBlank = 300;
+
+    return {
+      fadeInStart: blankPause,
+      fadeInEnd: blankPause + fadeInDuration,
+      fadeOutStart: blankPause + fadeInDuration + holdDuration,
+      fadeOutEnd: blankPause + fadeInDuration + holdDuration + fadeOutDuration,
+      complete: blankPause + fadeInDuration + holdDuration + fadeOutDuration + finalBlank,
+    };
+  }, [holdDuration]);
+
   useEffect(() => {
     // Initial blank pause
-    const t1 = setTimeout(() => setPhase('fading-in'), 300);
+    const t1 = setTimeout(() => setPhase('fading-in'), timing.fadeInStart);
 
     // Fully visible after fade-in
-    const t2 = setTimeout(() => setPhase('visible'), 1100); // 300 + 800ms fade
+    const t2 = setTimeout(() => setPhase('visible'), timing.fadeInEnd);
 
     // Start fading out after hold
-    const t3 = setTimeout(() => setPhase('fading-out'), 3100); // 1100 + 2000ms hold
+    const t3 = setTimeout(() => setPhase('fading-out'), timing.fadeOutStart);
 
     // Done after fade-out
     const t4 = setTimeout(() => {
       setPhase('done');
-    }, 3900); // 3100 + 800ms fade
+    }, timing.fadeOutEnd);
 
     // Call onComplete after brief blank
     const t5 = setTimeout(() => {
       if (onComplete) onComplete();
-    }, 4200); // 3900 + 300ms blank
+    }, timing.complete);
 
     return () => {
       clearTimeout(t1);
@@ -84,7 +101,7 @@ export default function TransitionBuffer({ onComplete }) {
       clearTimeout(t4);
       clearTimeout(t5);
     };
-  }, [onComplete]);
+  }, [onComplete, timing]);
 
   const getOpacity = () => {
     switch (phase) {

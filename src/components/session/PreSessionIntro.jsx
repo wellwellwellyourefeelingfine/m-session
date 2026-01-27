@@ -1,23 +1,24 @@
 /**
  * PreSessionIntro Component
- * Pre-session ritual flow after Substance Checklist Part 1
+ * Opening Ritual flow after Substance Checklist
  *
  * 6 main steps + embedded intention sub-flow (3 steps):
- * 0: Arrival (BreathOrb idle)
+ * 0: Arrival
  * 1: Intention menu (intention/breath/skip)
  *    → Intention sub-flow (3 steps): focus reminder, touchstone, intention text
- * 2: Letting Go (BreathOrb idle)
+ * 2: Letting Go
  * 3: Take substance ("I've Taken It")
  * 4: Confirm ingestion time
  * 5: Begin session → startSession()
+ *
+ * Layout: Fixed header + anchored AsciiMoon + fading text content + always-visible controls
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
-import BreathOrb from '../active/capabilities/animations/BreathOrb';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import TransitionBuffer from './TransitionBuffer';
 
@@ -33,7 +34,8 @@ const PRIMARY_FOCUS_LABELS = {
 
 export default function PreSessionIntro() {
   const [step, setStep] = useState(0);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); // Start hidden for entrance fade
+  const [hasEnteredView, setHasEnteredView] = useState(false); // Track initial entrance
   const [showTimeEdit, setShowTimeEdit] = useState(false);
   const [editedTime, setEditedTime] = useState('');
   const [timeConfirmed, setTimeConfirmed] = useState(false);
@@ -45,6 +47,18 @@ export default function PreSessionIntro() {
   const [intentionStep, setIntentionStep] = useState(0);
   const [touchstoneInput, setTouchstoneInput] = useState('');
   const [intentionText, setIntentionText] = useState(null);
+
+  // Initial entrance fade-in effect
+  useEffect(() => {
+    if (!hasEnteredView) {
+      // Small delay then fade in
+      const timer = setTimeout(() => {
+        setIsVisible(true);
+        setHasEnteredView(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [hasEnteredView]);
 
   // Store selectors
   const intake = useSessionStore((state) => state.intake);
@@ -88,7 +102,7 @@ export default function PreSessionIntro() {
     setTimeout(() => {
       callback();
       setIsVisible(true);
-    }, 300);
+    }, 400); // Slightly longer for smoother transitions
   };
 
   const goToStep = (newStep) => {
@@ -99,6 +113,39 @@ export default function PreSessionIntro() {
     if (!date) return '';
     const d = new Date(date);
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // ============================================
+  // BACK NAVIGATION
+  // ============================================
+
+  const handleBack = () => {
+    if (inIntentionFlow) {
+      // Handle intention sub-flow back
+      if (intentionStep === 0) {
+        fadeTransition(() => setInIntentionFlow(false));
+      } else {
+        fadeTransition(() => setIntentionStep(intentionStep - 1));
+      }
+    } else if (step > 0) {
+      // Reset time confirmation state when going back from step 5 to step 4
+      if (step === 5) {
+        setTimeConfirmed(false);
+        setShowTimeEdit(false);
+      }
+      fadeTransition(() => setStep(step - 1));
+    }
+  };
+
+  // ============================================
+  // SKIP TO END
+  // ============================================
+
+  const handleSkipToEnd = () => {
+    fadeTransition(() => {
+      setInIntentionFlow(false);
+      setStep(TOTAL_STEPS - 1);
+    });
   };
 
   // ============================================
@@ -119,22 +166,6 @@ export default function PreSessionIntro() {
   // ============================================
   // INTENTION SUB-FLOW LOGIC
   // ============================================
-
-  const handleIntentionBack = () => {
-    if (intentionStep === 0) {
-      fadeTransition(() => {
-        setInIntentionFlow(false);
-      });
-    } else {
-      fadeTransition(() => setIntentionStep(intentionStep - 1));
-    }
-  };
-
-  const handleIntentionSkip = () => {
-    fadeTransition(() => {
-      setInIntentionFlow(false);
-    });
-  };
 
   const handleIntentionStep0Continue = () => {
     fadeTransition(() => setIntentionStep(1));
@@ -222,11 +253,10 @@ export default function PreSessionIntro() {
 
   const handleBeginSession = () => {
     setIsExiting(true);
-    // Text fades over 700ms, moon holds then fades with 700ms delay + 700ms duration
-    // After ~2.4s, show the TransitionBuffer
+    // After exit animation, show the TransitionBuffer
     setTimeout(() => {
       setShowTransition(true);
-    }, 2400);
+    }, 1500);
   };
 
   const handleTransitionComplete = () => {
@@ -234,40 +264,35 @@ export default function PreSessionIntro() {
   };
 
   // ============================================
-  // STEP RENDERING
+  // STEP CONTENT RENDERING (Text only, no animation)
   // ============================================
 
-  const renderStep = () => {
+  const renderStepContent = () => {
     // Intention sub-flow takes over rendering
     if (inIntentionFlow) {
-      return renderIntentionStep();
+      return renderIntentionStepContent();
     }
 
     switch (step) {
-      case 0: return renderStep0();
-      case 1: return renderStep1();
-      case 2: return renderStep2();
-      case 3: return renderStep3();
-      case 4: return renderStep4();
-      case 5: return renderStep5();
+      case 0: return renderStep0Content();
+      case 1: return renderStep1Content();
+      case 2: return renderStep2Content();
+      case 3: return renderStep3Content();
+      case 4: return renderStep4Content();
+      case 5: return renderStep5Content();
       default: return null;
     }
   };
 
   // Step 0: Arrival
-  const renderStep0 = () => (
-    <div className="space-y-8 flex flex-col items-center text-center">
+  const renderStep0Content = () => (
+    <div className="space-y-6 text-center">
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         Close your eyes for a moment.
       </p>
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         Notice your breath. Notice where your body meets the surface beneath you.
       </p>
-
-      <div className="py-4">
-        <BreathOrb isIdle={true} size="medium" />
-      </div>
-
       <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
         There's nowhere else to be right now.
       </p>
@@ -275,20 +300,10 @@ export default function PreSessionIntro() {
   );
 
   // Step 1: Intention Menu
-  const renderStep1 = () => (
+  const renderStep1Content = () => (
     <div className="space-y-6">
-      {/* Header */}
-      <p className="uppercase tracking-wider text-[var(--color-text-tertiary)] text-xs">
-        Before You Begin
-      </p>
-
-      {/* ASCII Moon */}
-      <div className="flex justify-center">
-        <AsciiMoon />
-      </div>
-
       {/* Description */}
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
         Would you like to spend a few minutes with your intention before taking your substance?
       </p>
 
@@ -337,12 +352,8 @@ export default function PreSessionIntro() {
   );
 
   // Step 2: Letting Go
-  const renderStep2 = () => (
-    <div className="space-y-8 flex flex-col items-center text-center">
-      <div className="py-4">
-        <BreathOrb isIdle={true} size="medium" />
-      </div>
-
+  const renderStep2Content = () => (
+    <div className="space-y-6 text-center">
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         You've prepared. You've set your intention.
       </p>
@@ -362,19 +373,14 @@ export default function PreSessionIntro() {
   );
 
   // Step 3: Take Substance
-  const renderStep3 = () => (
-    <div className="space-y-6 flex flex-col items-center text-center">
+  const renderStep3Content = () => (
+    <div className="space-y-6 text-center">
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         When you're ready.
       </p>
       <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
         There's no rush.
       </p>
-
-      {/* ASCII Moon */}
-      <div className="py-4">
-        <AsciiMoon />
-      </div>
 
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         Find a comfortable position. Take your substance with a few sips of water.
@@ -390,14 +396,14 @@ export default function PreSessionIntro() {
   );
 
   // Step 4: Confirm Time
-  const renderStep4 = () => (
-    <div className="space-y-6 flex flex-col items-center text-center">
+  const renderStep4Content = () => (
+    <div className="space-y-6 text-center">
       <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         We've recorded your start time as:
       </p>
 
       {/* Time display */}
-      <div className="flex justify-center py-4">
+      <div className="flex justify-center py-2">
         <div className="px-6 py-3 border border-[var(--accent)] bg-[var(--accent-bg)]">
           <span
             className="text-2xl text-[var(--color-text-primary)]"
@@ -446,36 +452,36 @@ export default function PreSessionIntro() {
             Confirm
           </button>
         </div>
-      ) : null}
+      ) : (
+        <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+          Time confirmed. Continue when ready.
+        </p>
+      )}
     </div>
   );
 
   // Step 5: Begin Session
-  const renderStep5 = () => (
-    <div className="space-y-8 flex flex-col items-center text-center">
-      <p className={`text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
+  const renderStep5Content = () => (
+    <div className="space-y-6 text-center">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
         The session has begun.
       </p>
 
-      <div className={`py-4 transition-opacity duration-700 ${isExiting ? 'delay-700 opacity-0' : 'opacity-100'}`}>
-        <AsciiMoon />
-      </div>
-
-      <p className={`text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
+      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
         For the next 30-60 minutes, the MDMA will come on gradually. There's nothing you need to do.
       </p>
     </div>
   );
 
   // ============================================
-  // INTENTION SUB-FLOW RENDERING
+  // INTENTION SUB-FLOW CONTENT
   // ============================================
 
-  const renderIntentionStep = () => {
+  const renderIntentionStepContent = () => {
     switch (intentionStep) {
       case 0:
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 text-center">
             <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
               Your Focus
             </h2>
@@ -492,13 +498,13 @@ export default function PreSessionIntro() {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+            <h2 className="font-serif text-lg text-[var(--color-text-primary)] text-center">
               Touchstone
             </h2>
-            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
               Is there a word or phrase that captures what feels most important right now?
             </p>
-            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs text-center">
               This will be available as a touchstone you can return to throughout your session.
             </p>
 
@@ -510,25 +516,27 @@ export default function PreSessionIntro() {
               className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent focus:outline-none focus:border-[var(--accent)] text-[var(--color-text-primary)]"
             />
 
-            <button
-              onClick={handleIntentionStep1Skip}
-              className="text-[var(--color-text-tertiary)] underline text-xs uppercase tracking-wider"
-            >
-              Skip
-            </button>
+            <div className="text-center">
+              <button
+                onClick={handleIntentionStep1Skip}
+                className="text-[var(--color-text-tertiary)] underline text-xs uppercase tracking-wider"
+              >
+                Skip
+              </button>
+            </div>
           </div>
         );
 
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+            <h2 className="font-serif text-lg text-[var(--color-text-primary)] text-center">
               Your Intention
             </h2>
-            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
               Here is the intention you set during your preparation. Does this still hold true?
             </p>
-            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs text-center">
               You can edit or add to it if you like.
             </p>
 
@@ -548,67 +556,43 @@ export default function PreSessionIntro() {
   };
 
   // ============================================
-  // CONTROL BAR CONFIGURATION
+  // PRIMARY BUTTON CONFIGURATION
   // ============================================
 
-  const getControlBar = () => {
-    // Intention sub-flow controls
+  const getPrimaryButton = () => {
+    // Intention sub-flow
     if (inIntentionFlow) {
       const intentionPrimary = {
         0: { label: 'Continue', onClick: handleIntentionStep0Continue },
         1: { label: 'Continue', onClick: handleIntentionStep1Continue },
         2: { label: 'Continue', onClick: handleIntentionStep2Continue },
       };
-
-      return (
-        <ModuleControlBar
-          phase="active"
-          primary={intentionPrimary[intentionStep]}
-          showBack={true}
-          onBack={handleIntentionBack}
-          backConfirmMessage={intentionStep === 0 ? 'Return to the activity menu?' : 'Go back to the previous step?'}
-          showSkip={true}
-          onSkip={handleIntentionSkip}
-          skipConfirmMessage="Return to the activity menu?"
-        />
-      );
+      return intentionPrimary[intentionStep];
     }
 
-    // Steps that use ModuleControlBar
+    // Main flow
     switch (step) {
       case 0:
       case 2:
-        return (
-          <ModuleControlBar
-            phase="active"
-            primary={{ label: 'Continue', onClick: () => goToStep(step + 1) }}
-            showBack={step > 0}
-            onBack={() => goToStep(step - 1)}
-            showSkip={false}
-          />
-        );
+        return { label: 'Continue', onClick: () => goToStep(step + 1) };
+
+      case 1:
+        // Step 1 has inline buttons, but we still show a continue in control bar
+        return { label: 'Continue', onClick: handleSkipActivities };
+
+      case 3:
+        // Step 3 has inline "I've Taken It" button
+        return null;
 
       case 4:
-        return timeConfirmed ? (
-          <ModuleControlBar
-            phase="active"
-            primary={{ label: 'Continue', onClick: () => goToStep(5) }}
-            showBack={false}
-            showSkip={false}
-          />
-        ) : null;
+        if (timeConfirmed) {
+          return { label: 'Continue', onClick: () => goToStep(5) };
+        }
+        return null;
 
       case 5:
-        return isExiting ? null : (
-          <ModuleControlBar
-            phase="active"
-            primary={{ label: 'Begin', onClick: handleBeginSession }}
-            showBack={false}
-            showSkip={false}
-          />
-        );
+        return { label: 'Begin', onClick: handleBeginSession };
 
-      // Steps 1, 3: No ModuleControlBar (inline buttons)
       default:
         return null;
     }
@@ -635,6 +619,12 @@ export default function PreSessionIntro() {
     return <TransitionBuffer onComplete={handleTransitionComplete} />;
   }
 
+  // Determine if we can go back
+  const canGoBack = step > 0 || inIntentionFlow;
+
+  // Determine if we show skip (to jump to end)
+  const showSkip = step < TOTAL_STEPS - 1 && !isExiting;
+
   return (
     <>
       {/* Progress bar at top */}
@@ -644,17 +634,51 @@ export default function PreSessionIntro() {
         showTime={false}
       />
 
-      {/* Content area */}
-      <div className="max-w-md mx-auto px-6 pt-14 pb-24">
+      {/* Fixed layout container - fills space between progress bar and control bar */}
+      <div className={`fixed top-16 left-0 right-0 bottom-[104px] flex flex-col overflow-hidden transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
+        {/* Header - below progress bar with proper spacing */}
+        <div className="flex-shrink-0 px-6 pt-6 pb-2 flex justify-between items-center">
+          <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
+            Opening Ritual
+          </span>
+          <span className="text-[var(--color-text-tertiary)] text-xs">
+            {step + 1} of {TOTAL_STEPS}
+          </span>
+        </div>
+
+        {/* Animation container - fixed height, anchored */}
+        {/* Moon fades in on first page entrance, stays visible during transitions, fades out only on exit */}
         <div
-          className={`transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+          className={`flex-shrink-0 flex justify-center py-4 transition-opacity duration-700 ${hasEnteredView && !isExiting ? 'opacity-100' : 'opacity-0'}`}
         >
-          {renderStep()}
+          <AsciiMoon />
+        </div>
+
+        {/* Content area - scrollable, text fades */}
+        <div className="flex-1 overflow-auto px-6 pb-4">
+          <div className="max-w-md mx-auto">
+            <div
+              className={`transition-opacity duration-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+            >
+              {renderStepContent()}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Fixed control bar (conditional) */}
-      {getControlBar()}
+      {/* Control bar - always visible */}
+      {!isExiting && (
+        <ModuleControlBar
+          phase="active"
+          primary={getPrimaryButton()}
+          showBack={canGoBack}
+          onBack={handleBack}
+          backConfirmMessage={null}
+          showSkip={showSkip}
+          onSkip={handleSkipToEnd}
+          skipConfirmMessage="Skip to the final step?"
+        />
+      )}
     </>
   );
 }

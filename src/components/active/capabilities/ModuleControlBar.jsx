@@ -48,7 +48,12 @@ export default function ModuleControlBar({
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
 
   const handleBackClick = () => {
-    setShowBackConfirm(true);
+    // If no confirmation message provided, go back directly
+    if (!backConfirmMessage) {
+      onBack?.();
+    } else {
+      setShowBackConfirm(true);
+    }
   };
 
   const handleSkipClick = () => {
