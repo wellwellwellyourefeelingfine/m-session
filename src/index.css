@@ -108,6 +108,23 @@
     text-transform: uppercase;
   }
 
+  /* iOS Overscroll Prevention - removes rubber-band bounce effect */
+  html, body {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  /* Prevent pull-to-refresh and bounce on the main container */
+  #root {
+    overscroll-behavior: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+
   /* Typography Base - Azeret Mono uppercase for all text */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Azeret Mono', monospace;
@@ -216,6 +233,13 @@
   .touch-target {
     min-width: 44px;
     min-height: 44px;
+  }
+
+  /* Scrollable content container - use this for any scrollable area */
+  .scrollable {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -521,4 +545,10 @@
 
 .dark .journal-editor-scroll::-webkit-scrollbar-thumb:hover {
   background-color: rgba(200, 200, 200, 0.25);
+}
+
+/* AI Assistant inputs - 16px to prevent iOS zoom on focus */
+[aria-label="AI Assistant"] input,
+[aria-label="AI Assistant"] textarea {
+  font-size: 16px;
 }

@@ -3,6 +3,7 @@
  * Top bar with app title and AI Assistant tab
  */
 
+import { useState, useCallback } from 'react';
 import { useAIStore } from '../../stores/useAIStore';
 import AIAssistantTab from '../ai/AIAssistantTab';
 import AIAssistantModal from '../ai/AIAssistantModal';
@@ -10,7 +11,28 @@ import AIAssistantModal from '../ai/AIAssistantModal';
 export default function Header() {
   const isKeyValid = useAIStore((state) => state.isKeyValid);
   const isModalOpen = useAIStore((state) => state.isModalOpen);
-  const toggleModal = useAIStore((state) => state.toggleModal);
+  const openModal = useAIStore((state) => state.openModal);
+  const closeModal = useAIStore((state) => state.closeModal);
+
+  // Track closing state to keep modal mounted during exit animation
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleToggle = useCallback(() => {
+    if (isModalOpen && !isClosing) {
+      // Start close animation
+      setIsClosing(true);
+    } else if (!isModalOpen) {
+      openModal();
+    }
+  }, [isModalOpen, isClosing, openModal]);
+
+  const handleCloseComplete = useCallback(() => {
+    setIsClosing(false);
+    closeModal();
+  }, [closeModal]);
+
+  // Keep modal mounted during close animation
+  const showModal = isModalOpen || isClosing;
 
   return (
     <>
@@ -30,7 +52,7 @@ export default function Header() {
           {/* AI Assistant Tab (centered in remaining space, only visible when API key is configured) */}
           {isKeyValid && (
             <div className="flex-1 flex justify-center">
-              <AIAssistantTab isOpen={isModalOpen} onClick={toggleModal} />
+              <AIAssistantTab isOpen={isModalOpen} onClick={handleToggle} />
             </div>
           )}
 
@@ -39,9 +61,12 @@ export default function Header() {
         </div>
       </header>
 
-      {/* AI Assistant Modal (slides down from header) */}
-      {isKeyValid && isModalOpen && (
-        <AIAssistantModal onClose={toggleModal} />
+      {/* AI Assistant Modal (slides in from right) */}
+      {isKeyValid && showModal && (
+        <AIAssistantModal
+          onClose={handleCloseComplete}
+          isClosing={isClosing}
+        />
       )}
     </>
   );
