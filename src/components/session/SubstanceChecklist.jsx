@@ -15,6 +15,9 @@ import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { calculateBoosterDose } from '../../stores/useSessionStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import TransitionBuffer from './TransitionBuffer';
+import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 
 const DOSAGE_FEEDBACK = {
   light: {
@@ -39,9 +42,32 @@ const DOSAGE_FEEDBACK = {
   },
 };
 
+// Dosage safety thresholds
+const DOSAGE_THRESHOLDS = {
+  HEAVY: 151,      // Above therapeutic range - warning
+  DANGEROUS: 300,  // Potential for serious harm - blocked
+};
+
+const DOSAGE_WARNINGS = {
+  heavy: {
+    title: 'High Dose Warning',
+    message: 'Are you sure you have calculated this dose correctly? This is above the typical therapeutic range (75-150mg). Higher doses increase physical strain, neurotoxicity risk, and side effects without reliably improving outcomes. Clinical research uses doses of 75-125mg.',
+    confirmLabel: 'I understand, continue',
+    canProceed: true,
+  },
+  dangerous: {
+    title: 'Dangerous Dose',
+    message: 'This dose could cause serious harm including hyperthermia, serotonin syndrome, cardiac complications, or overdose. Doses this high have been associated with fatalities. Please recalculate your dose with therapeutic guidelines in mind.',
+    confirmLabel: null, // Cannot proceed
+    canProceed: false,
+  },
+};
+
 export default function SubstanceChecklist() {
   const [step, setStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [showTransition, setShowTransition] = useState(false);
+  const [showDosageWarning, setShowDosageWarning] = useState(null); // 'heavy' | 'dangerous' | null
 
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const updateSubstanceChecklist = useSessionStore((state) => state.updateSubstanceChecklist);
@@ -71,8 +97,18 @@ export default function SubstanceChecklist() {
   };
 
   const handleContinueToIntro = () => {
-    fadeTransition(() => setSubstanceChecklistSubPhase('pre-session-intro'));
+    // Show transition buffer before moving to PreSessionIntro
+    setShowTransition(true);
   };
+
+  const handleTransitionComplete = () => {
+    setSubstanceChecklistSubPhase('pre-session-intro');
+  };
+
+  // Show TransitionBuffer with extended hold time (~5.5s total)
+  if (showTransition) {
+    return <TransitionBuffer onComplete={handleTransitionComplete} holdDuration={3500} />;
+  }
 
   const renderStep = () => {
     // Booster prep step (inserted after dosage when applicable)
@@ -131,13 +167,6 @@ export default function SubstanceChecklist() {
               I've decided not to take a booster
             </button>
           </div>
-
-          <button
-            onClick={handleBack}
-            className="text-[var(--color-text-tertiary)] underline"
-          >
-            Back
-          </button>
         </div>
       );
     }
@@ -224,13 +253,6 @@ export default function SubstanceChecklist() {
             <p className="text-[var(--color-text-tertiary)] text-sm">
               Testing resources are available in the Tools tab.
             </p>
-
-            <button
-              onClick={handleBack}
-              className="text-[var(--color-text-tertiary)] underline"
-            >
-              Back
-            </button>
           </div>
         );
 
@@ -260,7 +282,20 @@ export default function SubstanceChecklist() {
                 <span className="text-[var(--color-text-secondary)]">mg</span>
               </div>
 
-              {substanceChecklist.dosageFeedback && (
+              {/* Dangerous dose warning - shown inline when dose >= 300mg */}
+              {parseInt(substanceChecklist.plannedDosageMg, 10) >= DOSAGE_THRESHOLDS.DANGEROUS && (
+                <div className="mt-6 p-4 border border-red-500/50 bg-red-500/10">
+                  <p className="font-medium mb-2 text-red-400">
+                    Dangerous Dose
+                  </p>
+                  <p className="text-[var(--color-text-secondary)] text-sm">
+                    This dose could cause serious harm. Please recalculate your dose with therapeutic guidelines in mind.
+                  </p>
+                </div>
+              )}
+
+              {/* Normal dosage feedback - shown when dose is not dangerous */}
+              {substanceChecklist.dosageFeedback && parseInt(substanceChecklist.plannedDosageMg, 10) < DOSAGE_THRESHOLDS.DANGEROUS && (
                 <div className="mt-6 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                   <p className="font-medium mb-2">
                     {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].range} — {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].label}
@@ -275,29 +310,6 @@ export default function SubstanceChecklist() {
             <p className="text-[var(--color-text-tertiary)] text-sm">
               Our dosage calculator is available in the Tools tab.
             </p>
-
-            <div className="flex justify-between">
-              <button
-                onClick={handleBack}
-                className="text-[var(--color-text-tertiary)] underline"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => {
-                  updateSubstanceChecklist('hasPreparedDosage', true);
-                  handleNext();
-                }}
-                disabled={!substanceChecklist.plannedDosageMg}
-                className={`px-6 py-3 uppercase tracking-wider transition-opacity ${
-                  substanceChecklist.plannedDosageMg
-                    ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)]'
-                    : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
-                }`}
-              >
-                Continue
-              </button>
-            </div>
           </div>
         );
 
@@ -334,21 +346,6 @@ export default function SubstanceChecklist() {
                 <p>Consider having light snacks available for later</p>
               </div>
             </div>
-
-            <div className="flex justify-between pt-4">
-              <button
-                onClick={handleBack}
-                className="text-[var(--color-text-tertiary)] underline"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleNext}
-                className="px-6 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
-              >
-                Continue
-              </button>
-            </div>
           </div>
         );
 
@@ -375,21 +372,6 @@ export default function SubstanceChecklist() {
                 You can access the Session Helper anytime by tapping the &#9786; button.
               </p>
             </div>
-
-            <div className="flex justify-between w-full pt-4">
-              <button
-                onClick={handleBack}
-                className="text-[var(--color-text-tertiary)] underline"
-              >
-                Back
-              </button>
-              <button
-                onClick={handleContinueToIntro}
-                className="px-6 py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
-              >
-                Continue
-              </button>
-            </div>
           </div>
         );
 
@@ -398,33 +380,162 @@ export default function SubstanceChecklist() {
     }
   };
 
+  const progress = ((step + 1) / totalSteps) * 100;
+
+  // Determine if this step has inline selection buttons (no primary button needed)
+  const hasInlineSelection = () => {
+    // Steps with yes/no or multi-choice buttons that auto-advance
+    if (showBoosterStep && step === BOOSTER_STEP) return true;
+    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
+    return displayStep === 0 || displayStep === 1;
+  };
+
+  // Check dosage level for warnings
+  const getDosageWarningLevel = () => {
+    const dose = parseInt(substanceChecklist.plannedDosageMg, 10);
+    if (!dose || isNaN(dose)) return null;
+    if (dose >= DOSAGE_THRESHOLDS.DANGEROUS) return 'dangerous';
+    if (dose >= DOSAGE_THRESHOLDS.HEAVY) return 'heavy';
+    return null;
+  };
+
+  // Handle dosage continue with safety checks
+  const handleDosageContinue = () => {
+    const warningLevel = getDosageWarningLevel();
+    if (warningLevel) {
+      setShowDosageWarning(warningLevel);
+    } else {
+      updateSubstanceChecklist('hasPreparedDosage', true);
+      handleNext();
+    }
+  };
+
+  // Handle dosage warning acknowledgment
+  const handleDosageWarningAcknowledge = () => {
+    setShowDosageWarning(null);
+    updateSubstanceChecklist('hasPreparedDosage', true);
+    handleNext();
+  };
+
+  // Get primary button configuration for each step
+  const getPrimaryButton = () => {
+    // Steps with inline selection don't need a primary button
+    if (hasInlineSelection()) {
+      return null;
+    }
+
+    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
+    const isLastStep = step === totalSteps - 1;
+    const dose = parseInt(substanceChecklist.plannedDosageMg, 10);
+    const isDangerousDose = dose >= DOSAGE_THRESHOLDS.DANGEROUS;
+
+    switch (displayStep) {
+      case 2: // Dosage - requires input, blocked if dangerous
+        return {
+          label: 'Continue',
+          onClick: handleDosageContinue,
+          disabled: !substanceChecklist.plannedDosageMg || isDangerousDose,
+        };
+      case 3: // Prepare space
+        return {
+          label: 'Continue',
+          onClick: handleNext,
+        };
+      case 4: // Trusted contact (last step)
+        return {
+          label: 'Continue',
+          onClick: handleContinueToIntro,
+        };
+      default:
+        return null;
+    }
+  };
+
+  const canGoBack = step > 0;
+
   return (
-    <div className="max-w-md mx-auto px-6 py-8">
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span className="uppercase tracking-wider text-[var(--color-text-tertiary)]">
-            Preparation
-          </span>
-          <span className="text-[var(--color-text-tertiary)]">
-            {step + 1} of {totalSteps}
-          </span>
-        </div>
-        <div className="w-full bg-[var(--color-border)] h-px">
+    <>
+      {/* Progress bar at top - lines up with header */}
+      <ModuleProgressBar
+        progress={progress}
+        visible={true}
+        showTime={false}
+      />
+
+      {/* Main content container - positioned below progress bar, above control bar */}
+      <div className="fixed top-16 left-0 right-0 bottom-[104px] overflow-auto">
+        <div className="max-w-md mx-auto px-6 py-6">
+          {/* Header - below progress bar */}
+          <div className="flex justify-between items-center mb-8">
+            <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
+              Preparation
+            </span>
+            <span className="text-[var(--color-text-tertiary)] text-xs">
+              {step + 1} of {totalSteps}
+            </span>
+          </div>
+
+          {/* Content with fade animation */}
           <div
-            className="bg-[var(--color-text-primary)] h-px transition-all duration-500"
-            style={{ width: `${((step + 1) / totalSteps) * 100}%` }}
-          />
+            className="transition-opacity duration-300"
+            style={{ opacity: isVisible ? 1 : 0 }}
+          >
+            {renderStep()}
+          </div>
         </div>
       </div>
 
-      {/* Content with fade animation */}
-      <div
-        className="transition-opacity duration-300"
-        style={{ opacity: isVisible ? 1 : 0 }}
-      >
-        {renderStep()}
-      </div>
-    </div>
+      {/* Control bar - no skip button for preparation */}
+      <ModuleControlBar
+        phase="active"
+        primary={getPrimaryButton()}
+        showBack={canGoBack}
+        onBack={handleBack}
+        backConfirmMessage={null}
+        showSkip={false}
+      />
+
+      {/* Dosage Warning Modal */}
+      {showDosageWarning && DOSAGE_WARNINGS[showDosageWarning] && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6">
+          <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6 animate-fadeIn">
+            <h3 className="text-[var(--color-text-primary)] mb-4 uppercase tracking-wider text-xs">
+              {DOSAGE_WARNINGS[showDosageWarning].title}
+            </h3>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
+              {DOSAGE_WARNINGS[showDosageWarning].message}
+            </p>
+            <div className="space-y-3">
+              {DOSAGE_WARNINGS[showDosageWarning].canProceed ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDosageWarningAcknowledge}
+                    className="w-full py-3 border border-[var(--color-border)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:bg-[var(--color-bg-secondary)] transition-colors"
+                  >
+                    {DOSAGE_WARNINGS[showDosageWarning].confirmLabel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowDosageWarning(null)}
+                    className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+                  >
+                    Adjust My Dose
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowDosageWarning(null)}
+                  className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+                >
+                  Adjust My Dose
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

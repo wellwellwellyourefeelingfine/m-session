@@ -1046,9 +1046,9 @@ export const useSessionStore = create(
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
             isVisible: true,
-            isMinimized: false,
+            isMinimized: true, // Start minimized; expands after first module completes
             introCompleted: true,
-            promptCount: 1,
+            promptCount: 0, // Don't count initial minimized state as a prompt
             lastPromptAt: now,
           },
         });

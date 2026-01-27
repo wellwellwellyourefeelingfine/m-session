@@ -7,7 +7,6 @@
 import { useState, useEffect } from 'react';
 import { useToolsStore } from '../../stores/useToolsStore';
 import ToolPanel from './ToolPanel';
-import TimerTool from './TimerTool';
 import DosageTool from './DosageTool';
 import ResourcesTool from './ResourcesTool';
 import FAQTool from './FAQTool';
@@ -19,7 +18,6 @@ import PhilosophyTool from './PhilosophyTool';
 const tools = [
   { id: 'help', label: 'I NEED HELP', component: HelpTool },
   { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
-  { id: 'timer', label: 'TIMER', component: TimerTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'faq', label: 'FAQ', component: FAQTool },
@@ -48,21 +46,32 @@ export default function ToolsView() {
     <div className={`max-w-2xl mx-auto px-6 py-8 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       {/* Tool Menu Box */}
       <div className="bg-app-black dark:bg-app-white border border-app-black dark:border-app-white">
-        {tools.map((tool, index) => (
-          <button
-            key={tool.id}
-            onClick={() => handleToolClick(tool.id)}
-            className={`
-              w-full text-left px-6 py-4
-              text-app-white dark:text-app-black
-              hover:opacity-70 transition-opacity
-              ${index < tools.length - 1 ? 'border-b border-app-white dark:border-app-black' : ''}
-              ${openTools.includes(tool.id) ? 'font-medium' : ''}
-            `}
-          >
-            <span className="text-sm tracking-wider">{tool.label}</span>
-          </button>
-        ))}
+        {tools.map((tool, index) => {
+          const isOpen = openTools.includes(tool.id);
+          return (
+            <button
+              key={tool.id}
+              onClick={() => handleToolClick(tool.id)}
+              className={`
+                w-full text-left pl-3 pr-6 py-4
+                text-app-white dark:text-app-black
+                hover:opacity-70 transition-opacity
+                ${index < tools.length - 1 ? 'border-b border-app-white dark:border-app-black' : ''}
+                ${isOpen ? 'font-medium' : ''}
+              `}
+            >
+              <span className="flex items-center gap-2">
+                {/* Accent dot indicator - fades in/out based on open state */}
+                <span
+                  className={`w-2 h-2 rounded-full bg-[var(--accent)] transition-opacity duration-300 flex-shrink-0 ${
+                    isOpen ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+                <span className="text-sm tracking-wider">{tool.label}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Individual Tool Panels - Each tool gets its own expandable panel */}

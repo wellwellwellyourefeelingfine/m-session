@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import SafetyWarning from './SafetyWarning';
+import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
 
 // Import question configurations
 import { sectionAQuestions } from '../../content/intake/sectionA';
@@ -268,88 +269,88 @@ export default function IntakeFlow() {
     );
   }
 
+  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+
   return (
-    <div className="max-w-md mx-auto px-6 py-8">
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-2">
-          <span
-            className="uppercase tracking-wider"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            {currentQuestion?.sectionTitle}
-          </span>
-          <span style={{ color: 'var(--text-tertiary)' }}>
-            {currentQuestionIndex + 1} of {totalQuestions}
-          </span>
-        </div>
-        <div className="w-full h-px" style={{ backgroundColor: 'var(--border)' }}>
+    <>
+      {/* Progress bar at top - lines up with header */}
+      <ModuleProgressBar
+        progress={progress}
+        visible={true}
+        showTime={false}
+      />
+
+      {/* Main content container - positioned below progress bar */}
+      <div className="fixed top-16 left-0 right-0 bottom-0 overflow-auto">
+        <div className="max-w-md mx-auto px-6 py-6">
+          {/* Header - below progress bar */}
+          <div className="flex justify-between items-center mb-8">
+            <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
+              {currentQuestion?.sectionTitle}
+            </span>
+            <span className="text-[var(--color-text-tertiary)] text-xs">
+              {currentQuestionIndex + 1} of {totalQuestions}
+            </span>
+          </div>
+
+          {/* Current question with fade animation */}
           <div
-            className="h-px transition-all duration-500"
-            style={{
-              backgroundColor: 'var(--text-primary)',
-              width: `${((currentQuestionIndex + 1) / totalQuestions) * 100}%`
-            }}
-          />
+            className="transition-opacity duration-300 min-h-[300px]"
+            style={{ opacity: isVisible ? 1 : 0 }}
+          >
+            {renderQuestion()}
+          </div>
+
+          {/* Navigation - only show for non-single-select or when showing continue button */}
+          <div className="mt-12 space-y-4">
+            {/* Continue button for multi-select, text, and time inputs */}
+            {currentQuestion?.type !== 'single-select' && (
+              <button
+                type="button"
+                onClick={goToNextQuestion}
+                disabled={!isCurrentAnswered() && currentQuestion?.required !== false}
+                className="w-full py-4 uppercase tracking-wider transition-opacity duration-300"
+                style={{
+                  backgroundColor: (isCurrentAnswered() || currentQuestion?.required === false)
+                    ? 'var(--text-primary)'
+                    : 'var(--border)',
+                  color: (isCurrentAnswered() || currentQuestion?.required === false)
+                    ? 'var(--bg-primary)'
+                    : 'var(--text-tertiary)',
+                  cursor: (isCurrentAnswered() || currentQuestion?.required === false)
+                    ? 'pointer'
+                    : 'not-allowed',
+                }}
+              >
+                {currentQuestionIndex === totalQuestions - 1 ? 'Review & Continue' : 'Continue'}
+              </button>
+            )}
+
+            {/* Back button */}
+            {currentQuestionIndex > 0 && (
+              <button
+                type="button"
+                onClick={goToPreviousQuestion}
+                className="w-full py-2 underline"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Back
+              </button>
+            )}
+
+            {/* Skip button for optional questions */}
+            {currentQuestion?.required === false && currentQuestion?.type === 'single-select' && (
+              <button
+                type="button"
+                onClick={goToNextQuestion}
+                className="w-full py-2 underline"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Skip
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Current question with fade animation */}
-      <div
-        className="transition-opacity duration-300 min-h-[300px]"
-        style={{ opacity: isVisible ? 1 : 0 }}
-      >
-        {renderQuestion()}
-      </div>
-
-      {/* Navigation - only show for non-single-select or when showing continue button */}
-      <div className="mt-12 space-y-4">
-        {/* Continue button for multi-select, text, and time inputs */}
-        {currentQuestion?.type !== 'single-select' && (
-          <button
-            type="button"
-            onClick={goToNextQuestion}
-            disabled={!isCurrentAnswered() && currentQuestion?.required !== false}
-            className="w-full py-4 uppercase tracking-wider transition-opacity duration-300"
-            style={{
-              backgroundColor: (isCurrentAnswered() || currentQuestion?.required === false)
-                ? 'var(--text-primary)'
-                : 'var(--border)',
-              color: (isCurrentAnswered() || currentQuestion?.required === false)
-                ? 'var(--bg-primary)'
-                : 'var(--text-tertiary)',
-              cursor: (isCurrentAnswered() || currentQuestion?.required === false)
-                ? 'pointer'
-                : 'not-allowed',
-            }}
-          >
-            {currentQuestionIndex === totalQuestions - 1 ? 'Review & Continue' : 'Continue'}
-          </button>
-        )}
-
-        {/* Back button */}
-        {currentQuestionIndex > 0 && (
-          <button
-            type="button"
-            onClick={goToPreviousQuestion}
-            className="w-full py-2 underline"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            Back
-          </button>
-        )}
-
-        {/* Skip button for optional questions */}
-        {currentQuestion?.required === false && currentQuestion?.type === 'single-select' && (
-          <button
-            type="button"
-            onClick={goToNextQuestion}
-            className="w-full py-2 underline"
-            style={{ color: 'var(--text-tertiary)' }}
-          >
-            Skip
-          </button>
-        )}
       </div>
 
       {/* Health Warning Modal */}
@@ -385,6 +386,6 @@ export default function IntakeFlow() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

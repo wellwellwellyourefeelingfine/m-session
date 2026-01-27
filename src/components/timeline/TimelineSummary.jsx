@@ -14,7 +14,7 @@ export default function TimelineSummary({ totalDuration, targetDuration, moduleC
   };
 
   return (
-    <div className="mt-8 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+    <div className="mt-4 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
       <div className="flex justify-between items-center">
         <div>
           <p className="text-[var(--color-text-tertiary)] text-sm">Total Activities</p>
