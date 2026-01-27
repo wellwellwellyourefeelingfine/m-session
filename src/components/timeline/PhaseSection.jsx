@@ -1,41 +1,77 @@
 /**
  * PhaseSection Component
  * Renders a single phase of the timeline with its modules
- * Shows bracket/claw UI to delineate phases
+ * Includes timeline node on the left that stays aligned with the phase header
  * Supports both pre-session editing and active session display
  */
 
+import { forwardRef } from 'react';
 import ModuleCard from './ModuleCard';
 
-export default function PhaseSection({
-  phase,
-  title,
-  subtitle,
-  description,
-  modules,
-  duration,
-  maxDuration,
-  onAddModule,
-  onRemoveModule,
-  isFirst = false,
-  isLast = false,
-  isActiveSession = false,
-  phaseStatus = 'upcoming',
-  currentModuleId = null,
-  canRemoveModule = () => true,
-  isEditable = true,
-}) {
-  const formatDuration = (minutes) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
-    return `${mins}m`;
-  };
+// Phase descriptions - static text for each phase
+const PHASE_DESCRIPTIONS = {
+  'come-up': "This is a time to settle in, breathe, and let your body adjust. There's nothing to do yet but wait and receive.",
+  'peak': "The door is open. Whatever you came here to explore, this is the time. Follow what feels important.",
+  'integration': "Ease into the afterglow. The mind is still open, but clearer now — a good time to write, ask questions, and hold onto what matters.",
+};
 
+// Phase numbers
+const PHASE_NUMBERS = {
+  'come-up': 'Phase 1',
+  'peak': 'Phase 2',
+  'integration': 'Phase 3',
+};
+
+// Phase names (displayed in Azeret Mono)
+const PHASE_NAMES = {
+  'come-up': 'Come-Up',
+  'peak': 'Peak',
+  'integration': 'Integration',
+};
+
+/**
+ * Format minutes into readable time label
+ * 0 → "0 min", 45 → "45 min", 60 → "1H", 90 → "1H 30M"
+ */
+function formatTimeLabel(minutes) {
+  if (minutes === 0) return '0 min';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours}H`;
+  return `${hours}H ${mins}M`;
+}
+
+const PhaseSection = forwardRef(function PhaseSection(
+  {
+    phase,
+    modules,
+    duration,
+    maxDuration,
+    onAddModule,
+    onRemoveModule,
+    isActiveSession = false,
+    phaseStatus = 'upcoming',
+    currentModuleId = null,
+    canRemoveModule = () => true,
+    isEditable = true,
+    cumulativeStartTime = 0,
+    isLast = false,
+  },
+  ref
+) {
   const progressPercent = maxDuration ? Math.min((duration / maxDuration) * 100, 100) : 0;
   const isOverLimit = phase === 'come-up' && duration > maxDuration;
+
+  // Format duration for the total display (e.g., "20M", "1H 30M")
+  const formatTotalDuration = (minutes) => {
+    if (minutes === 0) return '0M';
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours === 0) return `${mins}M`;
+    if (mins === 0) return `${hours}H`;
+    return `${hours}H ${mins}M`;
+  };
 
   // Get phase styling based on status
   const getPhaseOpacity = () => {
@@ -44,46 +80,52 @@ export default function PhaseSection({
     return 'opacity-100';
   };
 
-  const getBracketColor = () => {
-    if (!isActiveSession) return 'border-[var(--color-border)]';
-    if (phaseStatus === 'active') return 'border-[var(--color-text-primary)]';
-    if (phaseStatus === 'completed') return 'border-[var(--color-border)]';
-    return 'border-[var(--color-border)]';
-  };
+  // Determine if this phase's node should be filled (active or completed)
+  const isNodeFilled = isActiveSession && (phaseStatus === 'active' || phaseStatus === 'completed');
 
   return (
-    <div className={`relative pl-6 ${getPhaseOpacity()}`}>
-      {/* Phase bracket - minimalist corner markers only */}
-      <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between">
-        {/* Top corner */}
-        <div className={`w-3 h-3 border-t border-l ${isFirst ? 'rounded-tl-md' : ''} ${getBracketColor()}`} />
-        {/* Bottom corner */}
-        <div className={`w-3 h-3 border-b border-l ${isLast ? 'rounded-bl-md' : ''} ${getBracketColor()}`} />
+    <div ref={ref} className={`relative flex ${getPhaseOpacity()}`}>
+      {/* Timeline node and vertical bar segment */}
+      <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+        {/* Node circle - aligned with phase header */}
+        <div
+          className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+            isNodeFilled
+              ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+              : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
+          }`}
+        />
+        {/* Vertical bar extending down - no gap */}
+        {!isLast && (
+          <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+        )}
       </div>
 
       {/* Phase content */}
-      <div className="pb-4">
-        {/* Phase header */}
+      <div className="flex-1 pb-6">
+        {/* Phase header - new design with DM Serif font */}
         <div className="mb-4">
-          <div className="flex items-baseline justify-between">
-            <div>
-              <h3 className={`${phaseStatus === 'active' ? 'text-[var(--color-text-primary)]' : ''}`}>
-                {title}
-                {isActiveSession && phaseStatus === 'active' && (
-                  <span className="ml-2 text-xs text-[var(--accent)] uppercase tracking-wider">Active</span>
-                )}
-              </h3>
-              <p className="text-[var(--color-text-tertiary)] text-sm">{subtitle}</p>
-            </div>
-            <span className={`text-sm ${isOverLimit ? 'text-[var(--accent)]' : 'text-[var(--color-text-tertiary)]'}`}>
-              {formatDuration(duration)}
-              {maxDuration && phase === 'come-up' && ` / ${formatDuration(maxDuration)}`}
+          <h3
+            className="flex items-baseline gap-2"
+            style={{ lineHeight: 1, marginBottom: '8px' }}
+          >
+            <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+              {PHASE_NUMBERS[phase]}
             </span>
-          </div>
+            <span className="text-[var(--color-text-primary)]">-</span>
+            <span className="text-[var(--color-text-primary)] text-[13px]">
+              {PHASE_NAMES[phase]}
+            </span>
+          </h3>
+
+          {/* Cumulative start time - tightly beneath header */}
+          <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
+            {cumulativeStartTime === 0 ? 'Start of session' : `Starts at ${formatTimeLabel(cumulativeStartTime)}`}
+          </p>
 
           {/* Duration progress bar for come-up phase */}
           {phase === 'come-up' && maxDuration && (
-            <div className="mt-2 w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
+            <div className="mb-1 w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 ${isOverLimit ? 'bg-[var(--accent)]' : 'bg-[var(--color-text-primary)]'}`}
                 style={{ width: `${progressPercent}%` }}
@@ -91,8 +133,9 @@ export default function PhaseSection({
             </div>
           )}
 
-          <p className="text-[var(--color-text-secondary)] text-sm mt-2">
-            {description}
+          {/* Phase description - compact styling */}
+          <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
+            {PHASE_DESCRIPTIONS[phase] || ''}
           </p>
         </div>
 
@@ -118,16 +161,21 @@ export default function PhaseSection({
           )}
         </div>
 
-        {/* Add module button - only show if phase is editable */}
+        {/* Add module button with total time - only show if phase is editable */}
         {isEditable && (
           <button
             onClick={onAddModule}
-            className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm"
+            className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-between px-4"
           >
-            + Add Activity
+            <span>+ Add Activity</span>
+            <span className={`text-xs ${isOverLimit ? 'text-[var(--accent)]' : ''}`}>
+              Total: {formatTotalDuration(duration)}
+            </span>
           </button>
         )}
       </div>
     </div>
   );
-}
+});
+
+export default PhaseSection;
