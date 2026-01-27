@@ -15,8 +15,7 @@ import ChatWindow from './ChatWindow';
 import ChatInput from './ChatInput';
 import AISettingsPanel from './AISettingsPanel';
 
-export default function AIAssistantModal({ onClose }) {
-  const [isClosing, setIsClosing] = useState(false);
+export default function AIAssistantModal({ onClose, isClosing = false }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [settingsPanelOpen, setSettingsPanelOpen] = useState(false);
@@ -82,13 +81,20 @@ export default function AIAssistantModal({ onClose }) {
     };
   }, []);
 
-  // Handle close with animation
+  // Handle close - notify parent to start close animation
   const handleClose = useCallback(() => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 300); // Match animation duration
+    onClose();
   }, [onClose]);
+
+  // When isClosing becomes true, wait for animation then call onClose to complete
+  useEffect(() => {
+    if (isClosing) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 300); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isClosing, onClose]);
 
   // Keep ref updated for ESC handler
   useEffect(() => {

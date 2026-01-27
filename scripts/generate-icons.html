@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PWA Icon Generator</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    h1 { color: #9D8CD9; }
+    .icon-preview {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .icon-item {
+      text-align: center;
+    }
+    .icon-item canvas {
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+    .icon-item p {
+      margin: 8px 0;
+      font-size: 12px;
+      color: #888;
+    }
+    button {
+      background: #9D8CD9;
+      color: #1a1a1a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #B8A9E8;
+    }
+    .instructions {
+      background: #2a2a2a;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+    .instructions code {
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>PWA Icon Generator</h1>
+
+  <div class="instructions">
+    <h3>Instructions:</h3>
+    <ol>
+      <li>Click "Generate All Icons" to create the icons</li>
+      <li>Click each "Download" button to save the PNG files</li>
+      <li>Move the downloaded files to your <code>public/</code> folder</li>
+    </ol>
+  </div>
+
+  <button onclick="generateAllIcons()">Generate All Icons</button>
+
+  <div class="icon-preview" id="preview"></div>
+
+  <script>
+    const sizes = [
+      { name: 'favicon-16x16.png', size: 16 },
+      { name: 'favicon-32x32.png', size: 32 },
+      { name: 'pwa-192x192.png', size: 192 },
+      { name: 'pwa-512x512.png', size: 512 },
+      { name: 'apple-touch-icon.png', size: 180 },
+    ];
+
+    const splashScreens = [
+      { name: 'splash-1170x2532.png', width: 1170, height: 2532 },
+      { name: 'splash-1284x2778.png', width: 1284, height: 2778 },
+      { name: 'splash-1179x2556.png', width: 1179, height: 2556 },
+      { name: 'splash-1290x2796.png', width: 1290, height: 2796 },
+    ];
+
+    function drawIcon(ctx, size) {
+      const scale = size / 512;
+
+      // Background gradient
+      const bgGrad = ctx.createLinearGradient(0, 0, size, size);
+      bgGrad.addColorStop(0, '#1A1A1A');
+      bgGrad.addColorStop(1, '#2D2D2D');
+
+      // Accent gradient
+      const accentGrad = ctx.createLinearGradient(0, 0, size, size);
+      accentGrad.addColorStop(0, '#9D8CD9');
+      accentGrad.addColorStop(1, '#B8A9E8');
+
+      // Background with rounded corners
+      const radius = 96 * scale;
+      ctx.beginPath();
+      ctx.roundRect(0, 0, size, size, radius);
+      ctx.fillStyle = bgGrad;
+      ctx.fill();
+
+      const cx = size / 2;
+      const cy = size / 2;
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 160 * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = '#9D8CD9';
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 8 * scale;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Inner breathing orb layers
+      const layers = [
+        { r: 100, opacity: 0.15 },
+        { r: 80, opacity: 0.25 },
+        { r: 60, opacity: 0.4 },
+        { r: 40, opacity: 0.7 },
+      ];
+
+      layers.forEach(layer => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, layer.r * scale, 0, Math.PI * 2);
+        ctx.fillStyle = accentGrad;
+        ctx.globalAlpha = layer.opacity;
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
+
+      // Moon marker on orbit
+      ctx.beginPath();
+      ctx.arc(cx, cy - 160 * scale, 16 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = accentGrad;
+      ctx.fill();
+    }
+
+    function drawSplashScreen(ctx, width, height) {
+      // Background
+      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+      bgGrad.addColorStop(0, '#1A1A1A');
+      bgGrad.addColorStop(1, '#2D2D2D');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      // Center icon (scaled appropriately)
+      const iconSize = Math.min(width, height) * 0.3;
+      ctx.save();
+      ctx.translate((width - iconSize) / 2, (height - iconSize) / 2 - height * 0.1);
+
+      // Draw a simplified icon
+      const scale = iconSize / 512;
+      const cx = iconSize / 2;
+      const cy = iconSize / 2;
+
+      // Accent gradient
+      const accentGrad = ctx.createLinearGradient(0, 0, iconSize, iconSize);
+      accentGrad.addColorStop(0, '#9D8CD9');
+      accentGrad.addColorStop(1, '#B8A9E8');
+
+      // Outer ring
+      ctx.beginPath();
+      ctx.arc(cx, cy, 160 * scale, 0, Math.PI * 2);
+      ctx.strokeStyle = '#9D8CD9';
+      ctx.globalAlpha = 0.3;
+      ctx.lineWidth = 8 * scale;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Inner orb
+      const layers = [
+        { r: 100, opacity: 0.15 },
+        { r: 80, opacity: 0.25 },
+        { r: 60, opacity: 0.4 },
+        { r: 40, opacity: 0.7 },
+      ];
+
+      layers.forEach(layer => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, layer.r * scale, 0, Math.PI * 2);
+        ctx.fillStyle = accentGrad;
+        ctx.globalAlpha = layer.opacity;
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
+
+      // Moon marker
+      ctx.beginPath();
+      ctx.arc(cx, cy - 160 * scale, 16 * scale, 0, Math.PI * 2);
+      ctx.fillStyle = accentGrad;
+      ctx.fill();
+
+      ctx.restore();
+
+      // App name text
+      ctx.fillStyle = '#9D8CD9';
+      ctx.font = `${Math.floor(width * 0.04)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('Session Guide', width / 2, height * 0.65);
+    }
+
+    function generateAllIcons() {
+      const preview = document.getElementById('preview');
+      preview.innerHTML = '';
+
+      // Generate app icons
+      sizes.forEach(({ name, size }) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        drawIcon(ctx, size);
+
+        const div = document.createElement('div');
+        div.className = 'icon-item';
+
+        const displayCanvas = document.createElement('canvas');
+        const displaySize = Math.min(size, 128);
+        displayCanvas.width = displaySize;
+        displayCanvas.height = displaySize;
+        const displayCtx = displayCanvas.getContext('2d');
+        displayCtx.drawImage(canvas, 0, 0, displaySize, displaySize);
+
+        const btn = document.createElement('button');
+        btn.textContent = `Download ${name}`;
+        btn.onclick = () => downloadCanvas(canvas, name);
+
+        div.appendChild(displayCanvas);
+        div.innerHTML += `<p>${name} (${size}x${size})</p>`;
+        div.appendChild(btn);
+        preview.appendChild(div);
+      });
+
+      // Generate splash screens
+      splashScreens.forEach(({ name, width, height }) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        drawSplashScreen(ctx, width, height);
+
+        const div = document.createElement('div');
+        div.className = 'icon-item';
+
+        // Preview at smaller size
+        const displayCanvas = document.createElement('canvas');
+        const scale = 100 / height;
+        displayCanvas.width = width * scale;
+        displayCanvas.height = 100;
+        const displayCtx = displayCanvas.getContext('2d');
+        displayCtx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+
+        const btn = document.createElement('button');
+        btn.textContent = `Download`;
+        btn.onclick = () => downloadCanvas(canvas, name);
+
+        div.appendChild(displayCanvas);
+        div.innerHTML += `<p>${name}</p>`;
+        div.appendChild(btn);
+        preview.appendChild(div);
+      });
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    // Auto-generate on load
+    window.onload = generateAllIcons;
+  </script>
+</body>
+</html>
