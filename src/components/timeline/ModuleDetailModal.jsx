@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { getModuleById, MODULE_TYPES } from '../../content/modules';
 
 // Generate duration steps if not provided (5-minute increments)
@@ -124,9 +125,10 @@ export default function ModuleDetailModal({
     return intensity.charAt(0).toUpperCase() + intensity.slice(1);
   };
 
-  return (
+  // Use portal to render modal at document body level for proper z-index stacking
+  return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleClose}
     >
       <div
@@ -250,6 +252,7 @@ export default function ModuleDetailModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

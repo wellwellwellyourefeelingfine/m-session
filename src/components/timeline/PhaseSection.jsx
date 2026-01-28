@@ -5,7 +5,7 @@
  * Supports both pre-session editing and active session display
  */
 
-import { forwardRef } from 'react';
+import { forwardRef, useState, useRef } from 'react';
 import ModuleCard from './ModuleCard';
 
 // Phase descriptions - static text for each phase
@@ -57,11 +57,53 @@ const PhaseSection = forwardRef(function PhaseSection(
     isEditable = true,
     cumulativeStartTime = 0,
     isLast = false,
+    isEditMode = false,
+    onMoveModuleUp,
+    onMoveModuleDown,
   },
   ref
 ) {
+  // Track modules being deleted for fade-out animation
+  const [deletingModuleId, setDeletingModuleId] = useState(null);
+  // Track modules being swapped for smooth animation
+  const [swappingModules, setSwappingModules] = useState(null); // { movingId, direction }
+  // Refs for measuring module positions for FLIP animation
+  const moduleRefs = useRef({});
+
+  // Find the index of the current module (for preventing moves above it)
+  const currentModuleIndex = modules.findIndex((m) => m.instanceId === currentModuleId);
+
+  // Handle move with animation
+  const handleMoveWithAnimation = (instanceId, direction) => {
+    // Set swapping state to trigger animation
+    setSwappingModules({ movingId: instanceId, direction });
+
+    // Perform the actual move after a brief delay to let animation start
+    setTimeout(() => {
+      if (direction === 'up') {
+        onMoveModuleUp(instanceId);
+      } else {
+        onMoveModuleDown(instanceId);
+      }
+      // Clear swapping state after move completes
+      setTimeout(() => {
+        setSwappingModules(null);
+      }, 50);
+    }, 150);
+  };
+
   const progressPercent = maxDuration ? Math.min((duration / maxDuration) * 100, 100) : 0;
   const isOverLimit = phase === 'come-up' && duration > maxDuration;
+
+  // Handle delete with animation
+  const handleDeleteWithAnimation = (instanceId) => {
+    setDeletingModuleId(instanceId);
+    // Wait for animation to complete before actually removing
+    setTimeout(() => {
+      onRemoveModule(instanceId);
+      setDeletingModuleId(null);
+    }, 200);
+  };
 
   // Format duration for the total display (e.g., "20M", "1H 30M")
   const formatTotalDuration = (minutes) => {
@@ -148,16 +190,108 @@ const PhaseSection = forwardRef(function PhaseSection(
               </p>
             </div>
           ) : (
-            modules.map((module) => (
-              <ModuleCard
-                key={module.instanceId}
-                module={module}
-                onRemove={() => onRemoveModule(module.instanceId)}
-                isActiveSession={isActiveSession}
-                isCurrentModule={module.instanceId === currentModuleId}
-                canRemove={canRemoveModule(module)}
-              />
-            ))
+            modules.map((module, index) => {
+              // Check if this is a booster module (should never show reorder buttons)
+              const isBooster = module.isBoosterModule || module.libraryId === 'booster-consideration';
+
+              // Check if this is the current module (should not be editable during active session)
+              const isCurrentModuleItem = module.instanceId === currentModuleId;
+
+              // Determine if this module can be edited (reordered/deleted)
+              // Booster modules can never be reordered
+              // Current module and completed/skipped modules cannot be edited during active session
+              const canEditModule = isEditMode && !isBooster && (
+                !isActiveSession || (module.status === 'upcoming' && !isCurrentModuleItem)
+              );
+
+              // Check position constraints
+              const isFirst = index === 0;
+              const isLastModule = index === modules.length - 1;
+
+              // During active session, can't move modules above the current module
+              // currentModuleIndex is -1 if current module is not in this phase
+              const canMoveUp = isFirst ? false : (
+                isActiveSession && currentModuleIndex >= 0
+                  ? index > currentModuleIndex + 1 // Can only move up if we're at least 2 positions below current
+                  : true
+              );
+              const canMoveDown = isLastModule ? false : true;
+
+              // Count editable modules (non-booster, and upcoming during active session) to determine if arrows should show
+              const editableModules = modules.filter((m) => {
+                const mIsBooster = m.isBoosterModule || m.libraryId === 'booster-consideration';
+                const mIsCurrentModule = m.instanceId === currentModuleId;
+                if (mIsBooster) return false;
+                if (isActiveSession) {
+                  return m.status === 'upcoming' && !mIsCurrentModule;
+                }
+                return true;
+              });
+              const hasMultipleEditableModules = editableModules.length > 1;
+
+              const isDeleting = deletingModuleId === module.instanceId;
+
+              // Check if this module is involved in a swap animation
+              const isSwapping = swappingModules?.movingId === module.instanceId;
+              const swapDirection = isSwapping ? swappingModules.direction : null;
+
+              // Get animation class for swapping
+              const getSwapAnimationClass = () => {
+                if (!isSwapping) return '';
+                return swapDirection === 'up' ? 'animate-swap-up' : 'animate-swap-down';
+              };
+
+              return (
+                <div
+                  key={module.instanceId}
+                  ref={(el) => { moduleRefs.current[module.instanceId] = el; }}
+                  className={`relative flex items-start group/reorder transition-all duration-200 ${
+                    isDeleting ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100'
+                  } ${getSwapAnimationClass()}`}
+                >
+                  {/* Reorder arrows - only in edit mode and when module can be edited */}
+                  {canEditModule && hasMultipleEditableModules && !isDeleting && !swappingModules && (
+                    <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveWithAnimation(module.instanceId, 'up')}
+                        disabled={!canMoveUp}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
+                          !canMoveUp
+                            ? 'opacity-30 cursor-not-allowed text-[var(--color-text-tertiary)]'
+                            : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-95'
+                        }`}
+                        title="Move up"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveWithAnimation(module.instanceId, 'down')}
+                        disabled={!canMoveDown}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
+                          !canMoveDown
+                            ? 'opacity-30 cursor-not-allowed text-[var(--color-text-tertiary)]'
+                            : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-95'
+                        }`}
+                        title="Move down"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                  )}
+
+                  <ModuleCard
+                    module={module}
+                    onRemove={() => handleDeleteWithAnimation(module.instanceId)}
+                    isActiveSession={isActiveSession}
+                    isCurrentModule={module.instanceId === currentModuleId}
+                    canRemove={canRemoveModule(module)}
+                    isEditMode={canEditModule}
+                  />
+                </div>
+              );
+            })
           )}
         </div>
 

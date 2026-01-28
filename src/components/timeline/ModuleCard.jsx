@@ -18,6 +18,7 @@ export default function ModuleCard({
   isActiveSession = false,
   isCurrentModule = false,
   canRemove = true,
+  isEditMode = false,
 }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -61,6 +62,10 @@ export default function ModuleCard({
   };
 
   const getBorderClass = () => {
+    // Edit mode styling takes precedence (except for booster and current module)
+    if (isEditMode && !isBooster && !isCurrentModule) {
+      return 'border-2 border-dashed border-[var(--accent)]';
+    }
     if (isCurrentModule) return 'border-2 border-[var(--accent)]';
     if (isBooster && isGrayedOut) return 'border-2 border-[var(--accent)] opacity-80';
     if (isGrayedOut) return 'border border-[var(--color-border)] opacity-50';
@@ -82,7 +87,7 @@ export default function ModuleCard({
 
   return (
     <div
-      className={`group relative bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors cursor-pointer ${getBorderClass()} ${isBooster ? 'rounded-3xl' : ''}`}
+      className={`group relative bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-all duration-200 cursor-pointer flex-1 ${getBorderClass()} ${isBooster ? 'rounded-3xl' : ''}`}
       onClick={handleCardClick}
     >
       <div className={`${isBooster ? 'px-6 pt-2 pb-1' : 'pl-3 pr-2 py-3'}`}>
@@ -152,14 +157,16 @@ export default function ModuleCard({
                   </span>
                 )}
 
-                {/* Remove button */}
-                {canRemove && (
+                {/* Remove button - visible in edit mode, hidden otherwise (hover to show) */}
+                {canRemove && isEditMode && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onRemove();
                     }}
-                    className="p-1 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors opacity-0 group-hover:opacity-100"
+                    className="ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm
+                               bg-[var(--color-bg)] border border-[var(--accent)] text-[var(--accent)]
+                               hover:bg-[var(--accent)] hover:text-white transition-colors"
                     title="Remove"
                   >
                     ×
