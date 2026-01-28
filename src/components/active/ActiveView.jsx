@@ -16,9 +16,14 @@ import PeakTransition from '../session/PeakTransition';
 import BoosterConsiderationModal from '../session/BoosterConsiderationModal';
 import PeakPhaseCheckIn from '../session/PeakPhaseCheckIn';
 import IntegrationTransition from '../session/IntegrationTransition';
+import ClosingCheckIn from '../session/ClosingCheckIn';
+import ClosingRitual from '../session/ClosingRitual';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import PhilosophyContent from '../shared/PhilosophyContent';
+import FollowUpCheckIn from '../followup/FollowUpCheckIn';
+import FollowUpRevisit from '../followup/FollowUpRevisit';
+import FollowUpIntegration from '../followup/FollowUpIntegration';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
@@ -38,7 +43,9 @@ export default function ActiveView() {
   const phaseTransitions = useSessionStore((state) => state.phaseTransitions);
   const booster = useSessionStore((state) => state.booster);
   const peakCheckIn = useSessionStore((state) => state.peakCheckIn);
+  const closingCheckIn = useSessionStore((state) => state.closingCheckIn);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
+  const activeFollowUpModule = useSessionStore((state) => state.activeFollowUpModule);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
@@ -168,6 +175,11 @@ export default function ActiveView() {
   };
 
   const renderContent = () => {
+    // Check for active follow-up modules first (rendered in Active tab)
+    if (activeFollowUpModule === 'checkIn') return <FollowUpCheckIn />;
+    if (activeFollowUpModule === 'revisit') return <FollowUpRevisit />;
+    if (activeFollowUpModule === 'integration') return <FollowUpIntegration />;
+
     switch (sessionPhase) {
       case 'not-started':
       case 'intake':
@@ -245,6 +257,9 @@ export default function ActiveView() {
     if (activeTransition === 'peak-to-integration') {
       return <IntegrationTransition />;
     }
+    if (activeTransition === 'session-closing') {
+      return <ClosingRitual />;
+    }
 
     // Come-up phase: modules with check-in
     if (currentPhase === 'come-up') {
@@ -308,6 +323,9 @@ export default function ActiveView() {
 
         {/* Peak phase check-in modal */}
         {peakCheckIn.isVisible && <PeakPhaseCheckIn />}
+
+        {/* Closing check-in modal (integration phase) */}
+        {closingCheckIn.isVisible && <ClosingCheckIn />}
 
         {/* Booster consideration modal */}
         {booster.isModalVisible && <BoosterConsiderationModal />}

@@ -12,4 +12,5 @@ export {
   getRecommendedModulesForPhase,
   canAddModuleToPhase,
   getModulesGroupedByIntensity,
+  getFollowUpModules,
 } from './library';

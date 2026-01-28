@@ -235,6 +235,86 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // TRANSITION CAPTURES STATE
+      // ============================================
+      transitionCaptures: {
+        // Peak Transition captures
+        peak: {
+          bodySensations: [],      // ['warmth', 'openness', ...]
+          oneWord: '',             // 30 char max
+          completedAt: null,
+        },
+        // Integration Transition captures
+        integration: {
+          intentionEdited: false,
+          editedIntention: '',
+          focusChanged: false,
+          newFocus: null,
+          newRelationshipType: null,  // If focus changed to relationship
+          tailoredActivityFocus: null,
+          tailoredActivityResponse: {},  // Object with activity-specific fields
+          completedAt: null,
+        },
+        // Closing Ritual captures
+        closing: {
+          selfGratitude: '',
+          futureMessage: '',
+          commitment: '',
+          completedAt: null,
+        },
+      },
+
+      // ============================================
+      // CLOSING CHECK-IN STATE
+      // ============================================
+      closingCheckIn: {
+        isVisible: false,           // Show the closing check-in modal
+      },
+
+      // ============================================
+      // SESSION COMPLETION STATE
+      // ============================================
+      session: {
+        closedAt: null,                // Timestamp when session was closed
+        finalDurationSeconds: null,    // Final session duration in seconds
+      },
+
+      // ============================================
+      // FOLLOW-UP SESSION STATE
+      // ============================================
+      followUp: {
+        // Unlock times calculated from session.closedAt
+        unlockTimes: {
+          checkIn: null,      // closedAt + 24 hours
+          revisit: null,      // closedAt + 24 hours
+          integration: null,  // closedAt + 48 hours
+        },
+        modules: {
+          checkIn: {
+            status: 'locked', // 'locked' | 'available' | 'completed'
+            completedAt: null,
+            feeling: null,    // 'settled' | 'processing' | 'low' | 'tender' | 'energized' | 'mixed'
+            note: null,
+          },
+          revisit: {
+            status: 'locked',
+            completedAt: null,
+            reflection: null,
+          },
+          integration: {
+            status: 'locked',
+            completedAt: null,
+            emerged: null,
+            commitmentStatus: null,  // 'following' | 'trying' | 'not-started' | 'reconsidered' | 'forgot'
+            commitmentResponse: null,
+          },
+        },
+      },
+
+      // Active follow-up module (renders in Active tab)
+      activeFollowUpModule: null, // 'checkIn' | 'revisit' | 'integration' | null
+
+      // ============================================
       // MEDITATION PLAYBACK STATE
       // ============================================
       meditationPlayback: {
@@ -530,19 +610,8 @@ export const useSessionStore = create(
           });
         }
 
-        // Always end with closing ritual
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'closing-ritual',
-          phase: 'integration',
-          title: 'Closing Ritual',
-          duration: 15,
-          status: 'upcoming',
-          order: moduleOrder++,
-          content: getModuleById('closing-ritual')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
+        // NOTE: Closing ritual is now handled as a transition flow (ClosingCheckIn + ClosingRitual)
+        // triggered automatically when all integration modules complete
 
         const adjustedPeakDuration = peakDuration;
         const adjustedIntegrationDuration = state.timeline.targetDuration - comeUpDuration - adjustedPeakDuration;
@@ -1356,6 +1425,219 @@ export const useSessionStore = create(
       },
 
       // ============================================
+      // TRANSITION CAPTURE ACTIONS
+      // ============================================
+
+      updatePeakCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            peak: {
+              ...state.transitionCaptures.peak,
+              [field]: value,
+            },
+          },
+        });
+      },
+
+      updateIntegrationCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            integration: {
+              ...state.transitionCaptures.integration,
+              [field]: value,
+            },
+          },
+        });
+      },
+
+      updateClosingCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            closing: {
+              ...state.transitionCaptures.closing,
+              [field]: value,
+            },
+          },
+        });
+      },
+
+      // ============================================
+      // CLOSING RITUAL ACTIONS
+      // ============================================
+
+      showClosingCheckIn: () => {
+        set({
+          closingCheckIn: { isVisible: true },
+        });
+      },
+
+      dismissClosingCheckIn: () => {
+        set({
+          closingCheckIn: { isVisible: false },
+        });
+      },
+
+      beginClosingRitual: () => {
+        const state = get();
+        set({
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: 'session-closing',
+            transitionCompleted: false,
+          },
+          closingCheckIn: { isVisible: false },
+        });
+      },
+
+      completeSession: () => {
+        const state = get();
+        const now = new Date();
+        const closedAt = now.getTime();
+        const DAY_MS = 24 * 60 * 60 * 1000;
+
+        // Calculate elapsed seconds
+        const ingestionTime = state.substanceChecklist?.ingestionTime;
+        const finalDurationSeconds = ingestionTime
+          ? Math.floor((closedAt - new Date(ingestionTime).getTime()) / 1000)
+          : null;
+
+        set({
+          sessionPhase: 'completed',
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: null,
+            transitionCompleted: true,
+          },
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            closing: {
+              ...state.transitionCaptures.closing,
+              completedAt: now,
+            },
+          },
+          timeline: {
+            ...state.timeline,
+            phases: {
+              ...state.timeline.phases,
+              integration: {
+                ...state.timeline.phases.integration,
+                endedAt: now,
+              },
+            },
+          },
+          // Session completion data
+          session: {
+            closedAt: now,
+            finalDurationSeconds,
+          },
+          // Follow-up unlock times
+          followUp: {
+            ...state.followUp,
+            unlockTimes: {
+              checkIn: new Date(closedAt + DAY_MS),
+              revisit: new Date(closedAt + DAY_MS),
+              integration: new Date(closedAt + 2 * DAY_MS),
+            },
+          },
+        });
+      },
+
+      // ============================================
+      // FOLLOW-UP SESSION ACTIONS
+      // ============================================
+
+      // Check and update follow-up module availability based on current time
+      checkFollowUpAvailability: () => {
+        const state = get();
+        const now = Date.now();
+        const { unlockTimes, modules } = state.followUp;
+
+        if (!unlockTimes.checkIn) return; // No unlock times set
+
+        const updates = {};
+
+        // Check each module's unlock status
+        ['checkIn', 'revisit', 'integration'].forEach((moduleId) => {
+          const unlockTime = unlockTimes[moduleId];
+          const module = modules[moduleId];
+
+          if (module.status === 'locked' && unlockTime && now >= new Date(unlockTime).getTime()) {
+            updates[moduleId] = { ...module, status: 'available' };
+          }
+        });
+
+        // Only update if there are changes
+        if (Object.keys(updates).length > 0) {
+          set({
+            followUp: {
+              ...state.followUp,
+              modules: {
+                ...state.followUp.modules,
+                ...updates,
+              },
+            },
+          });
+        }
+      },
+
+      // Update a follow-up module's data
+      updateFollowUpModule: (moduleId, data) => {
+        const state = get();
+        set({
+          followUp: {
+            ...state.followUp,
+            modules: {
+              ...state.followUp.modules,
+              [moduleId]: {
+                ...state.followUp.modules[moduleId],
+                ...data,
+              },
+            },
+          },
+        });
+      },
+
+      // Complete a follow-up module
+      completeFollowUpModule: (moduleId, data) => {
+        const state = get();
+        set({
+          followUp: {
+            ...state.followUp,
+            modules: {
+              ...state.followUp.modules,
+              [moduleId]: {
+                ...state.followUp.modules[moduleId],
+                ...data,
+                status: 'completed',
+                completedAt: new Date(),
+              },
+            },
+          },
+          activeFollowUpModule: null,
+        });
+        // Navigate back to home
+        useAppStore.getState().setCurrentTab('home');
+      },
+
+      // Start a follow-up module (renders in Active tab)
+      startFollowUpModule: (moduleId) => {
+        set({ activeFollowUpModule: moduleId });
+        useAppStore.getState().setCurrentTab('active');
+      },
+
+      // Exit follow-up module without completing (return to Home)
+      exitFollowUpModule: () => {
+        set({ activeFollowUpModule: null });
+        useAppStore.getState().setCurrentTab('home');
+      },
+
+      // ============================================
       // MODULE RUNTIME
       // ============================================
 
@@ -1467,9 +1749,11 @@ export const useSessionStore = create(
             },
           };
 
-          // Show peak check-in modal when peak phase has no more modules
+          // Show phase check-in modal when phase has no more modules
           if (currentPhase === 'peak') {
             updates.peakCheckIn = { isVisible: true };
+          } else if (currentPhase === 'integration') {
+            updates.closingCheckIn = { isVisible: true };
           }
 
           set(updates);
@@ -1557,9 +1841,11 @@ export const useSessionStore = create(
             },
           };
 
-          // Show peak check-in modal when peak phase has no more modules
+          // Show phase check-in modal when phase has no more modules
           if (currentPhase === 'peak') {
             updates.peakCheckIn = { isVisible: true };
+          } else if (currentPhase === 'integration') {
+            updates.closingCheckIn = { isVisible: true };
           }
 
           set(updates);
@@ -1805,7 +2091,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 4, // Increment this when schema changes to force reset
+      version: 5, // Increment this when schema changes to force reset
       migrate: (persistedState, version) => {
         // If coming from version 1 or no version, reset to fresh state
         if (version < 2) {
@@ -1843,6 +2129,38 @@ export const useSessionStore = create(
               },
               isModalVisible: false,
               isMinimized: false,
+            },
+          };
+        }
+        // Add transitionCaptures and closingCheckIn for version 4 → 5
+        if (version < 5) {
+          return {
+            ...persistedState,
+            transitionCaptures: {
+              peak: {
+                bodySensations: [],
+                oneWord: '',
+                completedAt: null,
+              },
+              integration: {
+                intentionEdited: false,
+                editedIntention: '',
+                focusChanged: false,
+                newFocus: null,
+                newRelationshipType: null,
+                tailoredActivityFocus: null,
+                tailoredActivityResponse: {},
+                completedAt: null,
+              },
+              closing: {
+                selfGratitude: '',
+                futureMessage: '',
+                commitment: '',
+                completedAt: null,
+              },
+            },
+            closingCheckIn: {
+              isVisible: false,
             },
           };
         }
