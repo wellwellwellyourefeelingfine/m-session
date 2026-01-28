@@ -772,6 +772,44 @@ export const useSessionStore = create(
         });
       },
 
+      /**
+       * Swap module order with an adjacent module (for up/down reordering UI)
+       * This is a simple swap between two adjacent positions
+       */
+      swapModuleOrder: (instanceId, newOrder) => {
+        const state = get();
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module) return;
+
+        const phase = module.phase;
+        const oldOrder = module.order;
+
+        // Find the module at the target position
+        const targetModule = state.modules.items.find(
+          (m) => m.phase === phase && m.order === newOrder
+        );
+
+        if (!targetModule) return;
+
+        // Swap the orders
+        const updatedItems = state.modules.items.map((m) => {
+          if (m.instanceId === instanceId) {
+            return { ...m, order: newOrder };
+          }
+          if (m.instanceId === targetModule.instanceId) {
+            return { ...m, order: oldOrder };
+          }
+          return m;
+        });
+
+        set({
+          modules: {
+            ...state.modules,
+            items: updatedItems,
+          },
+        });
+      },
+
       updateModuleDuration: (instanceId, duration) => {
         const state = get();
         set({

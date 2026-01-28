@@ -562,3 +562,42 @@
 [aria-label="AI Assistant"] textarea {
   font-size: 16px;
 }
+
+/* Module reorder swap animations */
+@keyframes swapUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-50%);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes swapDown {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(50%);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-swap-up {
+  animation: swapUp 0.2s ease-out;
+}
+
+.animate-swap-down {
+  animation: swapDown 0.2s ease-out;
+}

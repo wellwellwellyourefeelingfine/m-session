@@ -5,9 +5,10 @@
  * Shows three phases with module editing capabilities
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
+import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
@@ -24,6 +25,38 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [selectedFollowUpModule, setSelectedFollowUpModule] = useState(null);
   const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
   const [followUpCountdown, setFollowUpCountdown] = useState({});
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  // Get current tab to detect tab switches
+  const currentTab = useAppStore((state) => state.currentTab);
+
+  // Exit edit mode when switching away from home tab
+  useEffect(() => {
+    if (currentTab !== 'home' && isEditMode) {
+      setIsEditMode(false);
+    }
+  }, [currentTab, isEditMode]);
+
+  // Exit edit mode when app goes to background (page visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && isEditMode) {
+        setIsEditMode(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isEditMode]);
+
+  // Function to enter edit mode (can be called from ModuleLibraryDrawer)
+  const enterEditMode = useCallback(() => {
+    setIsEditMode(true);
+    setDrawerOpen(false);
+    setActivePhase(null);
+  }, []);
 
   // Refs for phase sections (for potential future use)
   const phase1Ref = useRef(null);
@@ -42,6 +75,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const getEntryById = useJournalStore((state) => state.getEntryById);
   const addModule = useSessionStore((state) => state.addModule);
   const removeModule = useSessionStore((state) => state.removeModule);
+  const swapModuleOrder = useSessionStore((state) => state.swapModuleOrder);
   const getPhaseDuration = useSessionStore((state) => state.getPhaseDuration);
   const getTotalDuration = useSessionStore((state) => state.getTotalDuration);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
@@ -191,10 +225,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     return targetPhaseOrder >= currentPhaseOrder;
   };
 
-  // Check if a specific module can be removed (must be upcoming, not active or completed)
+  // Check if a specific module can be removed (must be upcoming, not active or completed, and not current)
   const canRemoveModule = (module) => {
     if (!isActiveSession) return true;
-    return module.status === 'upcoming';
+    // During active session: must be upcoming AND not the current module
+    const isCurrentModuleItem = module.instanceId === currentModule?.instanceId;
+    return module.status === 'upcoming' && !isCurrentModuleItem;
   };
 
   const handleAddModuleClick = (phase) => {
@@ -255,6 +291,50 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     }
   };
 
+  // Move module up (decrease order) within its phase
+  const handleMoveModuleUp = (instanceId) => {
+    const module = moduleItems.find((m) => m.instanceId === instanceId);
+    if (!module) return;
+
+    // Get all modules in this phase, sorted by order
+    const phaseModules = moduleItems
+      .filter((m) => m.phase === module.phase)
+      .sort((a, b) => a.order - b.order);
+
+    // Find current index in sorted array
+    const currentIndex = phaseModules.findIndex((m) => m.instanceId === instanceId);
+    if (currentIndex <= 0) return; // Already first
+
+    // Get the module above (lower index = lower order)
+    const targetModule = phaseModules[currentIndex - 1];
+    if (!targetModule) return;
+
+    // Swap their order values
+    swapModuleOrder(instanceId, targetModule.order);
+  };
+
+  // Move module down (increase order) within its phase
+  const handleMoveModuleDown = (instanceId) => {
+    const module = moduleItems.find((m) => m.instanceId === instanceId);
+    if (!module) return;
+
+    // Get all modules in this phase, sorted by order
+    const phaseModules = moduleItems
+      .filter((m) => m.phase === module.phase)
+      .sort((a, b) => a.order - b.order);
+
+    // Find current index in sorted array
+    const currentIndex = phaseModules.findIndex((m) => m.instanceId === instanceId);
+    if (currentIndex >= phaseModules.length - 1) return; // Already last
+
+    // Get the module below (higher index = higher order)
+    const targetModule = phaseModules[currentIndex + 1];
+    if (!targetModule) return;
+
+    // Swap their order values
+    swapModuleOrder(instanceId, targetModule.order);
+  };
+
   // Get phase status for visual styling
   const getPhaseStatus = (phase) => {
     // Completed sessions show all phases as completed
@@ -280,13 +360,29 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   return (
     <div className="max-w-md mx-auto px-6 pt-4 pb-8">
       {/* Header */}
-      <div className="mb-4">
-        <h2
-          className="mb-2 font-serif text-2xl"
-          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-        >
-          My Timeline
-        </h2>
+      <div className="mb-4 relative">
+        <div className="flex items-start justify-between">
+          <h2
+            className="mb-2 font-serif text-2xl"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+          >
+            My Timeline
+          </h2>
+
+          {/* Edit mode toggle - only show for pre-session or active session (not completed) */}
+          {!isCompletedSession && (
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${
+                isEditMode
+                  ? 'bg-[var(--accent)] text-white'
+                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+              }`}
+            >
+              {isEditMode ? 'Done' : 'Edit'}
+            </button>
+          )}
+        </div>
 
         {isActiveSession || isCompletedSession ? (
           <div className="space-y-1">
@@ -357,6 +453,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('come-up')}
           cumulativeStartTime={phase1StartTime}
+          isEditMode={isEditMode}
+          onMoveModuleUp={handleMoveModuleUp}
+          onMoveModuleDown={handleMoveModuleDown}
         />
 
         {/* Peak Phase */}
@@ -374,6 +473,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('peak')}
           cumulativeStartTime={phase2StartTime}
+          isEditMode={isEditMode}
+          onMoveModuleUp={handleMoveModuleUp}
+          onMoveModuleDown={handleMoveModuleDown}
         />
 
         {/* Integration Phase */}
@@ -391,6 +493,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('integration')}
           cumulativeStartTime={phase3StartTime}
+          isEditMode={isEditMode}
+          onMoveModuleUp={handleMoveModuleUp}
+          onMoveModuleDown={handleMoveModuleDown}
         />
 
         {/* Closing Ritual - final node on the main session timeline */}
@@ -657,6 +762,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             setDrawerOpen(false);
             setActivePhase(null);
           }}
+          onEnterEditMode={enterEditMode}
+          isCompletedSession={isCompletedSession}
         />
       )}
 
@@ -718,6 +825,18 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           module={selectedAddedFollowUpModule}
           onClose={() => setSelectedAddedFollowUpModule(null)}
         />
+      )}
+
+      {/* Floating Done Button - shown in edit mode, positioned above footer */}
+      {isEditMode && (
+        <div className="fixed bottom-14 left-0 right-0 flex justify-center z-40 pointer-events-none">
+          <button
+            onClick={() => setIsEditMode(false)}
+            className="pointer-events-auto px-8 py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-xs rounded-full shadow-lg hover:bg-[var(--accent-hover)] active:scale-95 transition-all"
+          >
+            Done
+          </button>
+        </div>
       )}
     </div>
   );

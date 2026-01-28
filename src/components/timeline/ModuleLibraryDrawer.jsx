@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_TYPES } from '../../content/modules';
 
-export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
+export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterEditMode, isCompletedSession = false }) {
   const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | intensity
 
   // Get modules that can be added to this phase
@@ -96,6 +96,25 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
 
       {/* Drawer */}
       <div className="absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl max-h-[80vh] flex flex-col animate-slideUp shadow-lg">
+        {/* Close button - positioned in top-right corner of drawer */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-4 w-8 h-8 flex items-center justify-center text-xl text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors z-10"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+        {/* Edit Timeline button - below close button (only for non-completed sessions and non-follow-up phases) */}
+        {onEnterEditMode && !isCompletedSession && phase !== 'follow-up' && (
+          <button
+            onClick={onEnterEditMode}
+            className="absolute top-12 right-4 px-3 py-1.5 text-[10px] uppercase tracking-wider border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)] transition-colors z-10"
+          >
+            Edit Timeline
+          </button>
+        )}
+
         {/* Handle */}
         <div className="flex justify-center py-3">
           <div className="w-10 h-1 bg-[var(--color-border)] rounded-full" />
@@ -103,19 +122,11 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
 
         {/* Header */}
         <div className="px-6 pb-4 border-b border-[var(--color-border)]">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3>Add Activity</h3>
-              <p className="text-[var(--color-text-tertiary)] text-sm">
-                Adding to {getPhaseName(phase)} phase
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"
-            >
-              ×
-            </button>
+          <div className="mb-4 pr-24">
+            <h3>Add Activity</h3>
+            <p className="text-[var(--color-text-tertiary)] text-sm">
+              Adding to {getPhaseName(phase)} phase
+            </p>
           </div>
 
           {/* Filter buttons */}
