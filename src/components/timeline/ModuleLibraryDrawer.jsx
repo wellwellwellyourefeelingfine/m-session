@@ -79,6 +79,8 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose }) {
         return 'Peak';
       case 'integration':
         return 'Integration';
+      case 'follow-up':
+        return 'Follow-Up';
       default:
         return p;
     }

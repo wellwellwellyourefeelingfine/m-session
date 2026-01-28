@@ -29,9 +29,11 @@ export const MODULE_TYPES = {
   'therapy-exercise': { label: 'Therapy Exercise', intensity: 'deep' },
   'parts-work': { label: 'Parts Work', intensity: 'deep' },
   'letter-writing': { label: 'Letter Writing', intensity: 'deep' },
-  'closing-ritual': { label: 'Closing Ritual', intensity: 'moderate' },
+  // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
   'open-space': { label: 'Open Space', intensity: 'gentle' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
+  // Follow-up phase modules (time-locked, available 24-48h after session)
+  'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
 
 // Phase restrictions for module intensities
@@ -50,6 +52,11 @@ export const PHASE_INTENSITY_RULES = {
     allowed: ['gentle', 'moderate', 'deep'],
     warning: [],
     blocked: [],
+  },
+  'follow-up': {
+    allowed: ['gentle'],
+    warning: [],
+    blocked: ['moderate', 'deep'],
   },
 };
 
@@ -462,34 +469,7 @@ export const moduleLibrary = [
     },
     tags: ['gratitude', 'appreciation', 'positive'],
   },
-  {
-    id: 'closing-ritual',
-    type: 'closing-ritual',
-    title: 'Closing Ritual',
-    description: 'A gentle way to close your session and honor the experience.',
-    defaultDuration: 15,
-    minDuration: 10,
-    maxDuration: 20,
-    intensity: 'moderate',
-    allowedPhases: ['integration'],
-    recommendedPhases: ['integration'],
-    content: {
-      instructions: 'Take a moment to honor this experience. Acknowledge what you\'ve explored, what you\'ve learned, what you want to carry forward.',
-      prompts: [
-        'What am I taking away from this session?',
-        'What do I want to remember?',
-        'How do I want to be in the days ahead?',
-      ],
-    },
-    // Uses custom JournalingModule (journal store integration)
-    capabilities: {
-      prompts: { type: 'static' },
-      input: { type: 'journal', saveToJournal: true, placeholder: 'As I close this session...' },
-      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
-      layout: { centered: false, maxWidth: 'lg' },
-    },
-    tags: ['closing', 'integration', 'completion'],
-  },
+  // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
 
   // === UTILITY MODULES (Any phase) ===
   {
@@ -530,6 +510,86 @@ export const moduleLibrary = [
       instructions: 'This module will guide you through a brief check-in about taking a supplemental dose.',
     },
     tags: ['booster', 'check-in', 'supplemental'],
+  },
+
+  // === FOLLOW-UP MODULES (Time-locked, 24-48h after session) ===
+  {
+    id: 'followup-check-in',
+    type: 'follow-up',
+    title: 'Check-In',
+    description: 'A brief check-in on how you are feeling since your session.',
+    defaultDuration: 5,
+    intensity: 'gentle',
+    allowedPhases: ['follow-up'],
+    recommendedPhases: ['follow-up'],
+    isFollowUpModule: true,
+    followUpModuleId: 'checkIn',
+    unlockDelay: 24, // hours after session close
+    content: {
+      instructions: 'Take a moment to notice how you are feeling today.',
+    },
+    tags: ['follow-up', 'check-in', 'reflection'],
+  },
+  {
+    id: 'followup-revisit',
+    type: 'follow-up',
+    title: 'Revisit',
+    description: 'Read back what you wrote during your session.',
+    defaultDuration: 10,
+    intensity: 'gentle',
+    allowedPhases: ['follow-up'],
+    recommendedPhases: ['follow-up'],
+    isFollowUpModule: true,
+    followUpModuleId: 'revisit',
+    unlockDelay: 24, // hours after session close
+    content: {
+      instructions: 'Revisit the intentions and messages you wrote during your session.',
+    },
+    tags: ['follow-up', 'revisit', 'reflection'],
+  },
+  {
+    id: 'followup-integration',
+    type: 'follow-up',
+    title: 'Integration Reflection',
+    description: 'Deeper reflection on how insights are integrating into your life.',
+    defaultDuration: 10,
+    intensity: 'gentle',
+    allowedPhases: ['follow-up'],
+    recommendedPhases: ['follow-up'],
+    isFollowUpModule: true,
+    followUpModuleId: 'integration',
+    unlockDelay: 48, // hours after session close
+    content: {
+      instructions: 'Reflect on what has emerged since your session and how your commitment is taking shape.',
+    },
+    tags: ['follow-up', 'integration', 'commitment'],
+  },
+  {
+    id: 'followup-journaling',
+    type: 'follow-up',
+    title: 'Follow-Up Journaling',
+    description: 'Open journaling space to continue processing your experience.',
+    defaultDuration: 15,
+    intensity: 'gentle',
+    allowedPhases: ['follow-up'],
+    recommendedPhases: ['follow-up'],
+    isFollowUpModule: true,
+    unlockDelay: 24, // hours after session close
+    content: {
+      instructions: 'Write freely about what has been arising since your session. What are you noticing? What feels different?',
+      prompts: [
+        'What has been on my mind since the session?',
+        'What insights are becoming clearer?',
+        'What do I want to remember?',
+      ],
+    },
+    capabilities: {
+      prompts: { type: 'static' },
+      input: { type: 'journal', saveToJournal: true, placeholder: 'Continue processing...' },
+      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
+      layout: { centered: false, maxWidth: 'lg' },
+    },
+    tags: ['follow-up', 'journaling', 'processing'],
   },
 ];
 
@@ -604,4 +664,11 @@ export function getModulesGroupedByIntensity() {
     moderate: moduleLibrary.filter((m) => m.intensity === 'moderate'),
     deep: moduleLibrary.filter((m) => m.intensity === 'deep'),
   };
+}
+
+/**
+ * Get follow-up modules (time-locked modules for post-session)
+ */
+export function getFollowUpModules() {
+  return moduleLibrary.filter((m) => m.isFollowUpModule);
 }

@@ -47,8 +47,8 @@ export const CUSTOM_MODULES = {
   'deep-journaling': JournalingModule,
   'letter-writing': JournalingModule,
   'parts-work': JournalingModule,
-  'closing-ritual': JournalingModule,
   'therapy-exercise': JournalingModule,
+  // Note: 'closing-ritual' is now a transition flow, not a module
 
   // Guided meditation has complex timed prompt + playback logic
   'guided-meditation': GuidedMeditationModule,
@@ -128,7 +128,6 @@ export const MODULE_CATEGORIES = {
     'deep-journaling',
     'letter-writing',
     'parts-work',
-    'closing-ritual',
     'therapy-exercise',
   ],
   open: [

@@ -3,25 +3,33 @@
  * Supportive transition experience from come-up to peak phase
  *
  * Flow:
- * 1. Congratulates user on completing come-up
- * 2. Sets expectations for peak (1-2 hours, trust intuition, no forcing)
- * 3. Reminds about timeline customization
- * 4. Prompts hydration
- * 5. Offers to show intention from intake (optional)
- * 6. If yes: displays intention, asks for insights, offers journal access
- * 7. Continue to peak phase
+ * 1. "You've Arrived" - Acknowledgment
+ * 2. "One Word" - Single word/phrase capture (optional)
+ * 3. "What's Present in Your Body?" - Body sensation multi-select grid
+ * 4. "Tune In" - Reassurance after body check-in
+ * 5. "Let It Unfold" - Permission & physical prompt
+ * 6. "Begin Next Phase" - Final step with button
+ *
+ * Post-transition uses TransitionBuffer (diamond animation + quote)
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
-import { useAppStore } from '../../stores/useAppStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
+import TransitionBuffer from './TransitionBuffer';
 
-// Helper to format elapsed time nicely (for display)
+import { BodySensationGrid, OneWordInput } from './transitions/shared';
+import {
+  PEAK_TRANSITION_STEPS,
+  BODY_SENSATIONS,
+  UNNAMED_SENSATION,
+} from './transitions/content/peakTransitionContent';
+
+// Helper to format elapsed time nicely
 const formatElapsedTime = (minutes) => {
   if (minutes < 60) {
     return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
@@ -34,113 +42,25 @@ const formatElapsedTime = (minutes) => {
   return `${hours} hour${hours !== 1 ? 's' : ''} and ${mins} minute${mins !== 1 ? 's' : ''}`;
 };
 
-// Helper to format elapsed time as HH:MM (for journal)
-const formatElapsedTimeShort = (minutes) => {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
-};
-
-const TRANSITION_STEPS = [
-  {
-    id: 'congratulations',
-    duration: 0, // User clicks to continue
-    content: {
-      label: 'Transition',
-      title: 'Well Done',
-      body: "You've moved through the come-up phase. This initial period can sometimes feel intense or uncertain. You handled it beautifully.",
-    },
-  },
-  {
-    id: 'whats-ahead',
-    duration: 0,
-    content: {
-      label: 'What\'s Ahead',
-      title: 'The Peak',
-      body: "For the next hour or two, you'll be in a heightened state of openness and connection. There's no need to force anything or make anything happen.",
-    },
-  },
-  {
-    id: 'trust-intuition',
-    duration: 0,
-    content: {
-      label: 'Guidance',
-      title: 'Trust Yourself',
-      body: "Go with your intuition and how you feel. If something calls to you, follow it. If you need rest, rest. Your inner wisdom knows what it needs.",
-    },
-  },
-  {
-    id: 'flexibility',
-    duration: 0,
-    content: {
-      label: 'Flexibility',
-      title: 'Your Session, Your Way',
-      body: "Remember: you can adjust your session anytime. On the Home tab, you can add, remove, or reorder activities to match what feels right in the moment.",
-    },
-  },
-  {
-    id: 'hydration',
-    duration: 0,
-    content: {
-      label: 'Care',
-      title: 'Hydrate',
-      body: "Take a moment now to drink some water. Small sips are best. Staying hydrated helps your body process the experience smoothly.",
-      isHydration: true,
-    },
-  },
-  {
-    id: 'intention-prompt',
-    duration: 0,
-    content: {
-      label: 'Intention',
-      title: 'Your Intention',
-      body: "Before your session, you set an intention. Would you like to be reminded of what you wrote?",
-      isIntentionPrompt: true,
-    },
-  },
-  // The next steps are conditional based on user choice
-];
-
-const INTENTION_REFLECTION_STEP = {
-  id: 'intention-reflection',
-  duration: 0,
-  content: {
-    label: 'Reflection',
-    title: 'Your Intention',
-    isIntentionReflection: true,
-  },
-};
-
-const READY_STEP = {
-  id: 'ready',
-  duration: 0,
-  content: {
-    label: 'Ready',
-    title: 'Begin the Peak',
-    body: "When you're ready, we'll move into the peak phase of your journey. Take your time.",
-    isReady: true,
-  },
-};
-
 export default function PeakTransition() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [showIntentionReflection, setShowIntentionReflection] = useState(false);
-  const [steps, setSteps] = useState(TRANSITION_STEPS);
-  const [intentionJournalEntryId, setIntentionJournalEntryId] = useState(null);
   const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [isFadingToBuffer, setIsFadingToBuffer] = useState(false);
+  const [showPostBuffer, setShowPostBuffer] = useState(false);
 
+  // Navigation history for back button
+  const [stepHistory, setStepHistory] = useState([0]);
+
+  // Local state for captures (synced to store on completion)
+  const [bodySensations, setBodySensations] = useState([]);
+  const [oneWord, setOneWord] = useState('');
+
+  // Store selectors
   const transitionToPeak = useSessionStore((state) => state.transitionToPeak);
-  const intake = useSessionStore((state) => state.intake);
+  const updatePeakCapture = useSessionStore((state) => state.updatePeakCapture);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
-  const preSubstanceIntentionEntryId = useSessionStore(
-    (state) => state.preSubstanceActivity.intentionJournalEntryId
-  );
-  const setCurrentTab = useAppStore((state) => state.setCurrentTab);
   const addEntry = useJournalStore((state) => state.addEntry);
-  const updateEntry = useJournalStore((state) => state.updateEntry);
-  const getEntryById = useJournalStore((state) => state.getEntryById);
-  const navigateToEditor = useJournalStore((state) => state.navigateToEditor);
 
   // Update elapsed time every minute
   useEffect(() => {
@@ -151,90 +71,88 @@ export default function PeakTransition() {
     return () => clearInterval(interval);
   }, [getElapsedMinutes]);
 
-  // Get the user's intention from intake responses
-  const userIntention = intake.responses?.holdingQuestion || '';
-  const hasIntention = userIntention.trim().length > 0;
-
-  const currentStep = steps[currentStepIndex];
-  const isLastStep = currentStepIndex === steps.length - 1;
-  const totalSteps = steps.length;
+  const currentStep = PEAK_TRANSITION_STEPS[currentStepIndex];
+  const isLastStep = currentStepIndex === PEAK_TRANSITION_STEPS.length - 1;
+  const totalSteps = PEAK_TRANSITION_STEPS.length;
 
   // Progress percentage
   const progress = ((currentStepIndex + 1) / totalSteps) * 100;
 
+  // Save captures and create journal entry
+  const saveCaptures = useCallback(() => {
+    // Update store
+    updatePeakCapture('bodySensations', bodySensations);
+    updatePeakCapture('oneWord', oneWord);
+    updatePeakCapture('completedAt', new Date());
+
+    // Create journal entry
+    const sensationLabels = bodySensations
+      .map((id) => {
+        if (id === 'unnamed') return UNNAMED_SENSATION.label;
+        const sensation = BODY_SENSATIONS.find((s) => s.id === id);
+        return sensation?.label;
+      })
+      .filter(Boolean);
+
+    const journalContent = `PEAK ARRIVAL
+
+Body Sensations: ${sensationLabels.length > 0 ? sensationLabels.join(', ') : 'None selected'}
+
+One Word: ${oneWord || 'Not captured'}
+`;
+
+    addEntry({
+      content: journalContent,
+      source: 'session',
+      moduleTitle: 'Peak Transition',
+    });
+  }, [bodySensations, oneWord, updatePeakCapture, addEntry]);
+
   const handleNext = useCallback(() => {
     if (isLastStep) {
-      transitionToPeak();
+      // Save captures, then fade out entire screen before showing buffer
+      saveCaptures();
+      setIsFadingToBuffer(true);
+      // Wait for fade-out animation to complete before showing buffer
+      setTimeout(() => {
+        setShowPostBuffer(true);
+      }, 500);
       return;
     }
 
     setIsVisible(false);
     setTimeout(() => {
-      setCurrentStepIndex((prev) => prev + 1);
+      setCurrentStepIndex((prev) => {
+        const nextIndex = prev + 1;
+        setStepHistory((history) => [...history, nextIndex]);
+        return nextIndex;
+      });
       setIsVisible(true);
     }, 400);
-  }, [isLastStep, transitionToPeak]);
+  }, [isLastStep, saveCaptures]);
 
-  const handleIntentionChoice = useCallback((wantsToSee) => {
+  const handleBack = useCallback(() => {
+    if (currentStepIndex === 0) return;
+
     setIsVisible(false);
     setTimeout(() => {
-      if (wantsToSee && hasIntention) {
-        // Insert the intention reflection step and ready step
-        setSteps((prev) => {
-          const baseSteps = prev.slice(0, currentStepIndex + 1);
-          return [...baseSteps, INTENTION_REFLECTION_STEP, READY_STEP];
-        });
-        setShowIntentionReflection(true);
-      } else {
-        // Just add the ready step
-        setSteps((prev) => {
-          const baseSteps = prev.slice(0, currentStepIndex + 1);
-          return [...baseSteps, READY_STEP];
-        });
-      }
-      setCurrentStepIndex((prev) => prev + 1);
+      setStepHistory((history) => {
+        if (history.length <= 1) return history;
+        return history.slice(0, -1);
+      });
+      setCurrentStepIndex((prev) => Math.max(0, prev - 1));
       setIsVisible(true);
     }, 400);
-  }, [currentStepIndex, hasIntention]);
-
-  const handleGoToJournal = useCallback(() => {
-    const currentElapsedMinutes = getElapsedMinutes();
-    const elapsedTimeShort = formatElapsedTimeShort(currentElapsedMinutes);
-
-    if (preSubstanceIntentionEntryId) {
-      // Append INSIGHTS section to the existing pre-substance intention entry
-      const existingEntry = getEntryById(preSubstanceIntentionEntryId);
-      if (existingEntry) {
-        const appendedContent = `${existingEntry.content}\n\n---\n\nINSIGHTS (${elapsedTimeShort}):\n\n`;
-        updateEntry(preSubstanceIntentionEntryId, appendedContent);
-        navigateToEditor(preSubstanceIntentionEntryId);
-      } else {
-        navigateToEditor(null);
-      }
-    } else if (!intentionJournalEntryId && hasIntention) {
-      // Fallback: create new entry if PreSubstanceIntention was skipped
-      const journalContent = `INTENTION:\n\n"${userIntention}"\n\n---\n\nINSIGHTS (${elapsedTimeShort}):\n\n`;
-
-      const newEntry = addEntry({
-        content: journalContent,
-        source: 'session',
-        moduleTitle: 'Peak Transition - Intention Reflection',
-        isEdited: true,
-      });
-
-      setIntentionJournalEntryId(newEntry.id);
-      navigateToEditor(newEntry.id);
-    } else if (intentionJournalEntryId) {
-      // Already created/appended, just navigate to it
-      navigateToEditor(intentionJournalEntryId);
-    } else {
-      navigateToEditor(null);
-    }
-
-    setCurrentTab('journal');
-  }, [setCurrentTab, intentionJournalEntryId, preSubstanceIntentionEntryId, hasIntention, userIntention, getElapsedMinutes, addEntry, updateEntry, getEntryById, navigateToEditor]);
+  }, [currentStepIndex]);
 
   const handleSkip = useCallback(() => {
+    // Save whatever we have, then transition
+    saveCaptures();
+    transitionToPeak();
+  }, [saveCaptures, transitionToPeak]);
+
+  // Called when TransitionBuffer completes
+  const handleBufferComplete = useCallback(() => {
     transitionToPeak();
   }, [transitionToPeak]);
 
@@ -242,148 +160,124 @@ export default function PeakTransition() {
   const renderContent = () => {
     const { content } = currentStep;
 
-    // Intention prompt - show yes/no buttons (only if user has an intention)
-    if (content.isIntentionPrompt) {
-      // If no intention was set, skip this step automatically
-      if (!hasIntention) {
-        return (
-          <div className="text-center space-y-6 animate-fadeIn">
-            <h2 className="text-[var(--color-text-primary)]">
-              Ready to Continue
+    // Body sensation step
+    if (content.isBodySensation) {
+      return (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+              {content.title}
             </h2>
-            <p className="leading-relaxed text-[var(--color-text-secondary)]">
-              Take a moment to check in with yourself. When you're ready, we'll move into the peak phase.
-            </p>
-          </div>
-        );
-      }
-
-      return (
-        <div className="text-center space-y-6 animate-fadeIn">
-          <h2 className="text-[var(--color-text-primary)]">
-            {content.title}
-          </h2>
-          <p className="leading-relaxed text-[var(--color-text-secondary)]">
-            {content.body}
-          </p>
-          <div className="space-y-3 pt-4">
-            <button
-              onClick={() => handleIntentionChoice(true)}
-              className="w-full py-4 border border-[var(--color-border)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:bg-[var(--color-bg-secondary)] transition-colors"
-            >
-              Yes, remind me
-            </button>
-            <button
-              onClick={() => handleIntentionChoice(false)}
-              className="w-full py-3 text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs hover:text-[var(--color-text-secondary)] transition-colors"
-            >
-              No, continue without
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // Intention reflection - show their intention and ask for insights
-    if (content.isIntentionReflection) {
-      return (
-        <div className="text-center space-y-6 animate-fadeIn">
-          <h2 className="text-[var(--color-text-primary)]">
-            {content.title}
-          </h2>
-
-          {/* Display the user's intention */}
-          <div className="border border-[var(--accent)] p-6 bg-[var(--accent-bg)]">
-            <p className="text-[var(--color-text-primary)] leading-relaxed italic">
-              "{userIntention}"
-            </p>
-          </div>
-
-          <div className="space-y-4 pt-2">
-            <p className="text-[var(--color-text-secondary)] leading-relaxed">
-              How does this intention feel to you now? Do you notice any new insights or feelings arising around it?
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.body}
             </p>
             <p className="text-[var(--color-text-tertiary)] text-xs">
-              If you'd like to write about it, you can access your journal anytime.
+              {content.instruction}
             </p>
           </div>
 
-          <button
-            onClick={handleGoToJournal}
-            className="inline-block px-6 py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase tracking-wider text-xs hover:bg-[var(--color-bg-secondary)] transition-colors"
-          >
-            Open Journal
-          </button>
+          <BodySensationGrid
+            selected={bodySensations}
+            onChange={setBodySensations}
+          />
         </div>
       );
     }
 
-    // Hydration step - gentle reminder
-    if (content.isHydration) {
+    // One word step
+    if (content.isOneWord) {
       return (
-        <div className="text-center space-y-6 animate-fadeIn">
-          <h2 className="text-[var(--color-text-primary)]">
-            {content.title}
-          </h2>
-          <p className="leading-relaxed text-[var(--color-text-secondary)]">
-            {content.body}
-          </p>
-          <div className="py-4">
-            <p className="text-[var(--color-text-tertiary)] text-xs">
-              Take your time. Continue when ready.
+        <div className="space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+              {content.title}
+            </h2>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.body}
             </p>
           </div>
+
+          <OneWordInput
+            value={oneWord}
+            onChange={setOneWord}
+          />
+
+          <p className="text-center text-[var(--color-text-tertiary)] text-xs">
+            {content.footer}
+          </p>
         </div>
       );
     }
 
-    // Ready step - final step before peak
+    // Ready step (final "Begin Next Phase" step)
     if (content.isReady) {
       return (
-        <div className="text-center space-y-6 animate-fadeIn">
-          <h2 className="text-[var(--color-text-primary)]">
+        <div className="text-center space-y-4 animate-fadeIn">
+          <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
             {content.title}
           </h2>
-          <p className="leading-relaxed text-[var(--color-text-secondary)]">
+          <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
             {content.body}
           </p>
+          {content.bodySecondary && (
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.bodySecondary}
+            </p>
+          )}
         </div>
       );
     }
 
-    // Regular informational step
+    // Informational steps (arrived, reassurance, unfold)
+    // Use gray color for extra lines if useGrayForExtras is set
+    const extraColor = content.useGrayForExtras
+      ? 'text-[var(--color-text-tertiary)]'
+      : 'text-[var(--color-text-secondary)]';
+
     return (
-      <div className="text-center space-y-6 animate-fadeIn">
-        <h2 className="text-[var(--color-text-primary)]">
+      <div className="text-center space-y-4 animate-fadeIn">
+        <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
           {content.title}
         </h2>
-        <p className="leading-relaxed text-[var(--color-text-secondary)]">
+        <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
           {content.body}
         </p>
+        {content.bodySecondary && (
+          <p className={`${extraColor} text-sm leading-relaxed`}>
+            {content.bodySecondary}
+          </p>
+        )}
+        {content.bodyTertiary && (
+          <p className={`${extraColor} text-sm leading-relaxed`}>
+            {content.bodyTertiary}
+          </p>
+        )}
+        {content.bodyQuaternary && (
+          <p className={`${extraColor} text-sm leading-relaxed`}>
+            {content.bodyQuaternary}
+          </p>
+        )}
       </div>
     );
   };
 
   // Get primary button config
   const getPrimaryButton = () => {
-    const { content } = currentStep;
+    // If showing post-buffer, no button
+    if (showPostBuffer) return null;
 
-    // Intention prompt step - no primary button if user has intention (uses custom buttons)
-    // But show Continue if no intention was set
-    if (content.isIntentionPrompt) {
-      if (!hasIntention) {
-        return {
-          label: 'Continue',
-          onClick: () => handleIntentionChoice(false),
-        };
-      }
-      return null;
+    // One word step - show Skip option inline
+    if (currentStep.content.isOneWord) {
+      return {
+        label: 'Continue',
+        onClick: handleNext,
+      };
     }
 
-    // Last step - "Begin Peak"
+    // Last step - "Begin"
     if (isLastStep) {
       return {
-        label: 'Begin Peak',
+        label: 'Begin',
         onClick: handleNext,
       };
     }
@@ -395,8 +289,26 @@ export default function PeakTransition() {
     };
   };
 
+  // Determine if back button should be shown
+  const showBackButton = () => {
+    return currentStepIndex > 0;
+  };
+
+  // Post-transition buffer screen using TransitionBuffer component
+  if (showPostBuffer) {
+    return (
+      <div className="fixed inset-0 bg-[var(--color-bg-primary)]">
+        <TransitionBuffer onComplete={handleBufferComplete} holdDuration={2500} />
+      </div>
+    );
+  }
+
   return (
-    <>
+    <div
+      className={`transition-opacity duration-500 ${
+        isFadingToBuffer ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       {/* Progress bar at top */}
       <ModuleProgressBar
         progress={progress}
@@ -407,7 +319,7 @@ export default function PeakTransition() {
       {/* Fixed layout container - fills space between header and control bar */}
       <div className="fixed top-16 left-0 right-0 bottom-[68px] flex flex-col overflow-hidden">
         {/* Anchored header section - doesn't scroll */}
-        <div className="flex-shrink-0 pt-8 pb-4">
+        <div className="flex-shrink-0 pt-4 pb-4">
           {/* Header: Transition + elapsed time */}
           <div className="text-center mb-4">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
@@ -427,7 +339,7 @@ export default function PeakTransition() {
         {/* Content area - directly below animation, scrollable if needed */}
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto transition-opacity duration-400 ${
+            className={`w-full max-w-md mx-auto pb-6 transition-opacity duration-400 ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -440,11 +352,15 @@ export default function PeakTransition() {
       <ModuleControlBar
         phase={isLastStep ? 'completed' : 'active'}
         primary={getPrimaryButton()}
-        showBack={false}
-        showSkip={!isLastStep}
+        showBack={showBackButton()}
+        onBack={handleBack}
+        backConfirmMessage={null}
+        showSkip={!isLastStep && !currentStep.content.isOneWord}
         onSkip={handleSkip}
         skipConfirmMessage="Skip the transition and go directly to peak?"
+        secondaryText={currentStep.content.isOneWord ? 'Skip' : null}
+        onSecondary={currentStep.content.isOneWord ? handleNext : null}
       />
-    </>
+    </div>
   );
 }

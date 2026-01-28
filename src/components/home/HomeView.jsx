@@ -2,6 +2,7 @@
  * HomeView Component
  * Timeline and session overview
  * Shows intake → timeline editor → session progress
+ * After completion: Shows frozen timeline + follow-up section
  * Note: Substance checklist and PreSessionIntro are shown in ActiveView
  */
 
@@ -12,9 +13,41 @@ import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
 
+/**
+ * Format date nicely
+ */
+function formatDate(date) {
+  if (!date) return '';
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(date));
+}
+
+/**
+ * Format duration in seconds to human-readable string
+ */
+function formatDuration(seconds) {
+  if (!seconds) return '';
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours === 0) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  }
+  if (minutes === 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+  return `${hours}h ${minutes}m`;
+}
+
 export default function HomeView() {
   const [isVisible, setIsVisible] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
+  const session = useSessionStore((state) => state.session);
+  const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const startIntake = useSessionStore((state) => state.startIntake);
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
   const resetSession = useSessionStore((state) => state.resetSession);
@@ -24,6 +57,20 @@ export default function HomeView() {
   const handleBeginSession = () => {
     startSubstanceChecklist();
     setCurrentTab('active');
+  };
+
+  // Handle reset with confirmation
+  const handleResetClick = () => {
+    setShowResetConfirm(true);
+  };
+
+  const handleResetConfirm = () => {
+    setShowResetConfirm(false);
+    resetSession();
+  };
+
+  const handleResetCancel = () => {
+    setShowResetConfirm(false);
   };
 
   // Trigger fade-in when component mounts
@@ -100,18 +147,63 @@ export default function HomeView() {
 
       case 'completed':
         return (
-          <div className="max-w-md mx-auto px-6 py-8 text-center">
-            <h2 className="mb-6">Session Complete</h2>
-            <p className="mb-8 text-[var(--color-text-secondary)]">
-              Take some time to rest and integrate your experience. Your journal entries are available in the Journal tab.
-            </p>
-            <button
-              type="button"
-              onClick={resetSession}
-              className="w-full py-2 underline text-[var(--color-text-tertiary)]"
-            >
-              Start New Session
-            </button>
+          <div className="max-w-md mx-auto px-6 pb-8">
+            {/* Session Complete Header */}
+            <div className="pt-6 pb-4 text-center border-b border-[var(--color-border)]">
+              <h2 className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)] mb-2">
+                Session Complete
+              </h2>
+              <p className="text-[var(--color-text-secondary)] text-sm">
+                {formatDate(substanceChecklist?.ingestionTime || session?.closedAt)}
+              </p>
+              {session?.finalDurationSeconds && (
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
+                  Duration: {formatDuration(session.finalDurationSeconds)}
+                </p>
+              )}
+            </div>
+
+            {/* Frozen Timeline with integrated Phase 4 Follow-Up */}
+            <TimelineEditor isActiveSession={false} isCompletedSession={true} />
+
+            {/* Start New Session - smaller button */}
+            <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-center">
+              <button
+                type="button"
+                onClick={handleResetClick}
+                className="px-4 py-2 text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider hover:text-[var(--color-text-secondary)] transition-colors"
+              >
+                Start New Session
+              </button>
+            </div>
+
+            {/* Reset Confirmation Modal */}
+            {showResetConfirm && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
+                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
+                  <h3 className="mb-4 text-[var(--color-text-primary)]">Start New Session?</h3>
+                  <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+                    This will clear your current session data. Make sure you've downloaded any data you want to keep.
+                  </p>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={handleResetConfirm}
+                      className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
+                    >
+                      Yes, Start New Session
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetCancel}
+                      className="w-full py-2 text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider hover:text-[var(--color-text-secondary)]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
 

@@ -6,19 +6,24 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { useSessionStore } from '../../stores/useSessionStore';
+import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
+import FollowUpModuleModal from '../home/FollowUpModuleModal';
+import AddedFollowUpModuleModal from '../home/AddedFollowUpModuleModal';
 
-export default function TimelineEditor({ isActiveSession = false, onBeginSession }) {
+export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(null);
   const [warningModal, setWarningModal] = useState(null);
   const [errorModal, setErrorModal] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [selectedFollowUpModule, setSelectedFollowUpModule] = useState(null);
+  const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
+  const [followUpCountdown, setFollowUpCountdown] = useState({});
 
   // Refs for phase sections (for potential future use)
   const phase1Ref = useRef(null);
@@ -28,8 +33,12 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
   const modules = useSessionStore((state) => state.modules);
   const timeline = useSessionStore((state) => state.timeline);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
+  const booster = useSessionStore((state) => state.booster);
   const intake = useSessionStore((state) => state.intake);
   const preSubstanceActivity = useSessionStore((state) => state.preSubstanceActivity);
+  const session = useSessionStore((state) => state.session);
+  const followUp = useSessionStore((state) => state.followUp);
+  const checkFollowUpAvailability = useSessionStore((state) => state.checkFollowUpAvailability);
   const getEntryById = useJournalStore((state) => state.getEntryById);
   const addModule = useSessionStore((state) => state.addModule);
   const removeModule = useSessionStore((state) => state.removeModule);
@@ -43,6 +52,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
   const moduleItems = modules?.items || [];
   const comeUpModules = moduleItems.filter((m) => m.phase === 'come-up').sort((a, b) => a.order - b.order);
   const integrationModules = moduleItems.filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order);
+  const followUpModules = moduleItems.filter((m) => m.phase === 'follow-up').sort((a, b) => a.order - b.order);
 
   const comeUpDuration = getPhaseDuration('come-up');
   const peakDuration = getPhaseDuration('peak');
@@ -98,7 +108,16 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
   const targetDuration = timeline?.targetDuration || 240;
 
   // Update elapsed time every second during active session (for HH:MM:SS clock)
+  // For completed sessions, use the frozen final duration
   useEffect(() => {
+    // For completed sessions, use the final frozen duration
+    if (isCompletedSession) {
+      if (session?.finalDurationSeconds) {
+        setElapsedSeconds(session.finalDurationSeconds);
+      }
+      return;
+    }
+
     if (!isActiveSession) return;
 
     const updateElapsed = () => {
@@ -112,7 +131,36 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
     updateElapsed();
     const interval = setInterval(updateElapsed, 1000);
     return () => clearInterval(interval);
-  }, [isActiveSession, substanceChecklist?.ingestionTime]);
+  }, [isActiveSession, isCompletedSession, substanceChecklist?.ingestionTime, session?.finalDurationSeconds]);
+
+  // Update follow-up countdowns for completed sessions
+  useEffect(() => {
+    if (!isCompletedSession) return;
+
+    const formatCountdown = (unlockTime) => {
+      if (!unlockTime) return '';
+      const now = Date.now();
+      const remaining = new Date(unlockTime).getTime() - now;
+      if (remaining <= 0) return 'Available now';
+      const hours = Math.floor(remaining / (60 * 60 * 1000));
+      const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+      if (hours > 0) return `Available in ${hours}h ${minutes}m`;
+      return `Available in ${minutes}m`;
+    };
+
+    const updateCountdowns = () => {
+      checkFollowUpAvailability();
+      setFollowUpCountdown({
+        checkIn: formatCountdown(followUp?.unlockTimes?.checkIn),
+        revisit: formatCountdown(followUp?.unlockTimes?.revisit),
+        integration: formatCountdown(followUp?.unlockTimes?.integration),
+      });
+    };
+
+    updateCountdowns();
+    const interval = setInterval(updateCountdowns, 60000);
+    return () => clearInterval(interval);
+  }, [isCompletedSession, followUp?.unlockTimes, checkFollowUpAvailability]);
 
   // Format elapsed time as HH:MM:SS
   const formatElapsedClock = (totalSeconds) => {
@@ -124,6 +172,14 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
 
   // Determine if a phase is editable (can add/remove modules)
   const isPhaseEditable = (phase) => {
+    // Follow-up phase is always editable for completed sessions
+    if (phase === 'follow-up') {
+      return isCompletedSession;
+    }
+
+    // Completed sessions are not editable (except follow-up)
+    if (isCompletedSession) return false;
+
     if (!isActiveSession) return true; // Pre-session: all phases editable
 
     // During session: only future phases are editable
@@ -201,6 +257,9 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
 
   // Get phase status for visual styling
   const getPhaseStatus = (phase) => {
+    // Completed sessions show all phases as completed
+    if (isCompletedSession) return 'completed';
+
     if (!isActiveSession) return 'upcoming';
 
     const phaseOrder = { 'come-up': 0, peak: 1, integration: 2 };
@@ -229,7 +288,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
           My Timeline
         </h2>
 
-        {isActiveSession ? (
+        {isActiveSession || isCompletedSession ? (
           <div className="space-y-1">
             <p className="text-[var(--color-text-secondary)]">
               Started at {formatTime(substanceChecklist?.ingestionTime)}
@@ -237,6 +296,11 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
             <p className="text-[var(--color-text-secondary)]">
               Dosage: {substanceChecklist?.plannedDosageMg || '—'}mg
             </p>
+            {booster?.status === 'taken' && booster?.boosterTakenAt && (
+              <p className="text-[var(--color-text-secondary)]">
+                Booster: +{calculateBoosterDose(substanceChecklist?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
+              </p>
+            )}
             {(() => {
               // Try to get the intention from the journal entry (which may have been edited)
               // Fall back to intake.holdingQuestion if no journal entry exists
@@ -261,7 +325,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
                 </p>
               ) : null;
             })()}
-            {/* Large elapsed time clock */}
+            {/* Large elapsed time clock - frozen for completed sessions */}
             <p
               className="text-4xl tracking-wide"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
@@ -329,11 +393,15 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
           cumulativeStartTime={phase3StartTime}
         />
 
-        {/* Closing Ritual - final node on the timeline */}
+        {/* Closing Ritual - final node on the main session timeline */}
         <div className="relative flex">
-          {/* Timeline node - final endpoint */}
+          {/* Timeline node - no vertical bar extending down (this is the end of the main timeline) */}
           <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-            <div className="w-3 h-3 rounded-full border-2 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+            <div className={`w-3 h-3 rounded-full border-2 ${
+              isCompletedSession
+                ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+                : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
+            }`} />
           </div>
 
           {/* Closing Ritual content */}
@@ -342,28 +410,225 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
               className="font-serif text-lg"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
             >
-              Closing Ritual
+              Closing Ritual {isCompletedSession && <span className="text-[var(--color-text-tertiary)]">✓</span>}
             </h3>
             <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-              End of session
+              {isCompletedSession ? 'Completed' : 'End of session'}
             </p>
-            <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
-              A gentle way to mark the end of your journey and honor the experience.
-            </p>
+            {!isCompletedSession && (
+              <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
+                A gentle way to mark the end of your journey and honor the experience.
+              </p>
+            )}
           </div>
         </div>
+
+        {/* Phase 4: Follow-Up - only shown for completed sessions */}
+        {/* Separated from main timeline with a visual gap */}
+        {isCompletedSession && (
+          <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
+            <div className="relative flex">
+              {/* Timeline node and vertical bar for Phase 4 */}
+              <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+                {/* Starting node */}
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                {/* Vertical bar extending down to modules */}
+                <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+              </div>
+
+              {/* Phase 4 content */}
+              <div className="flex-1 pb-4">
+                {/* Phase header - matching PhaseSection styling */}
+                <div className="mb-4">
+                  <h3
+                    className="flex items-baseline gap-2"
+                    style={{ lineHeight: 1, marginBottom: '8px' }}
+                  >
+                    <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                      Phase 4
+                    </span>
+                    <span className="text-[var(--color-text-primary)]">-</span>
+                    <span className="text-[var(--color-text-primary)] text-[13px]">
+                      Follow-Up
+                    </span>
+                  </h3>
+
+                  {/* Timing info */}
+                  <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
+                    Available 24-48 hours after session
+                  </p>
+
+                  {/* Phase description */}
+                  <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
+                    Short reflections to help you integrate what you experienced.
+                  </p>
+                </div>
+
+                {/* Follow-up module cards - styled like ModuleCard */}
+                <div className="space-y-2">
+                  {['checkIn', 'revisit', 'integration'].map((moduleId) => {
+                    const moduleState = followUp?.modules?.[moduleId];
+                    const status = moduleState?.status || 'locked';
+                    const isModuleCompleted = status === 'completed';
+                    const isLocked = status === 'locked';
+                    const isAvailable = status === 'available';
+
+                    const moduleInfo = {
+                      checkIn: { title: 'Check-In', description: 'A brief check-in on how you are feeling since your session.', duration: '5m' },
+                      revisit: { title: 'Revisit', description: 'Read back what you wrote during your session.', duration: '10m' },
+                      integration: { title: 'Integration Reflection', description: 'Deeper reflection on how insights are integrating into your life.', duration: '10m' },
+                    };
+
+                    const info = moduleInfo[moduleId];
+
+                    return (
+                      <button
+                        key={moduleId}
+                        type="button"
+                        onClick={() => setSelectedFollowUpModule(moduleId)}
+                        className={`group w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${
+                          isModuleCompleted ? 'opacity-50' : ''
+                        }`}
+                      >
+                        <div className="pl-3 pr-2 py-3">
+                          {/* Top row: Title, Duration */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start flex-1 min-w-0">
+                              {/* Status indicator */}
+                              <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
+                                {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
+                                {isLocked && <span className="text-[var(--color-text-tertiary)]">🔒</span>}
+                                {isAvailable && <span className="text-[var(--color-text-tertiary)]">○</span>}
+                              </div>
+                              {/* Title */}
+                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                                {info.title}
+                              </p>
+                            </div>
+                            {/* Duration */}
+                            <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
+                              {info.duration}
+                            </span>
+                          </div>
+                          {/* Description */}
+                          <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
+                            {isLocked && followUpCountdown[moduleId]
+                              ? followUpCountdown[moduleId]
+                              : isAvailable
+                                ? 'Available now'
+                                : isModuleCompleted
+                                  ? 'Completed'
+                                  : info.description}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Added follow-up modules from library */}
+                {followUpModules.length > 0 && (
+                  <div className="space-y-2 mt-2">
+                    {followUpModules.map((module) => {
+                      const libraryModule = getModuleById(module.libraryId);
+                      const unlockDelayHours = libraryModule?.unlockDelay || 24;
+                      const closedAt = session?.closedAt;
+                      const unlockTime = closedAt
+                        ? new Date(new Date(closedAt).getTime() + unlockDelayHours * 60 * 60 * 1000)
+                        : null;
+                      const isUnlocked = unlockTime ? Date.now() >= unlockTime.getTime() : true;
+                      const isModuleCompleted = module.status === 'completed';
+
+                      // Calculate countdown for locked modules
+                      let countdownText = '';
+                      if (unlockTime && !isUnlocked) {
+                        const remaining = unlockTime.getTime() - Date.now();
+                        const hours = Math.floor(remaining / (60 * 60 * 1000));
+                        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                        countdownText = hours > 0 ? `Available in ${hours}h ${minutes}m` : `Available in ${minutes}m`;
+                      }
+
+                      return (
+                        <button
+                          key={module.instanceId}
+                          type="button"
+                          onClick={() => setSelectedAddedFollowUpModule(module)}
+                          className={`group w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${
+                            isModuleCompleted ? 'opacity-50' : ''
+                          }`}
+                        >
+                          <div className="pl-3 pr-2 py-3">
+                            {/* Top row: Title, Duration */}
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start flex-1 min-w-0">
+                                {/* Status indicator */}
+                                <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
+                                  {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
+                                  {!isUnlocked && !isModuleCompleted && <span className="text-[var(--color-text-tertiary)]">🔒</span>}
+                                  {isUnlocked && !isModuleCompleted && <span className="text-[var(--color-text-tertiary)]">○</span>}
+                                </div>
+                                {/* Title */}
+                                <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                                  {module.title}
+                                </p>
+                              </div>
+                              {/* Duration */}
+                              <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
+                                {module.duration}m
+                              </span>
+                            </div>
+                            {/* Description/Status */}
+                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
+                              {!isUnlocked && !isModuleCompleted
+                                ? countdownText
+                                : isUnlocked && !isModuleCompleted
+                                  ? 'Available now'
+                                  : 'Completed'}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Add Activity button for follow-up phase */}
+                <button
+                  onClick={() => handleAddModuleClick('follow-up')}
+                  className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
+                >
+                  + Add Activity
+                </button>
+              </div>
+            </div>
+
+            {/* Ending node for Phase 4 timeline */}
+            <div className="relative flex">
+              <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1 }}>
+                  End of follow-up
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Summary */}
-      <TimelineSummary
-        totalDuration={totalDuration}
-        targetDuration={targetDuration}
-        moduleCount={moduleItems.length}
-        isActiveSession={isActiveSession}
-      />
+      {/* Summary - hide for completed sessions */}
+      {!isCompletedSession && (
+        <TimelineSummary
+          totalDuration={totalDuration}
+          targetDuration={targetDuration}
+          moduleCount={moduleItems.length}
+          isActiveSession={isActiveSession}
+        />
+      )}
 
       {/* Begin Session Button (only show pre-session) */}
-      {!isActiveSession && onBeginSession && (
+      {!isActiveSession && !isCompletedSession && onBeginSession && (
         <div className="mt-8 space-y-4">
           <button
             onClick={onBeginSession}
@@ -375,7 +640,7 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
       )}
 
       {/* Active session: Go to Active tab prompt */}
-      {isActiveSession && (
+      {isActiveSession && !isCompletedSession && (
         <div className="mt-8 pt-6 border-t border-[var(--color-border)]">
           <p className="text-[var(--color-text-tertiary)] text-center">
             Go to the Active tab to engage with your current module
@@ -437,6 +702,22 @@ export default function TimelineEditor({ isActiveSession = false, onBeginSession
             </button>
           </div>
         </div>
+      )}
+
+      {/* Follow-Up Module Modal (built-in modules) */}
+      {selectedFollowUpModule && (
+        <FollowUpModuleModal
+          moduleId={selectedFollowUpModule}
+          onClose={() => setSelectedFollowUpModule(null)}
+        />
+      )}
+
+      {/* Added Follow-Up Module Modal (library modules) */}
+      {selectedAddedFollowUpModule && (
+        <AddedFollowUpModuleModal
+          module={selectedAddedFollowUpModule}
+          onClose={() => setSelectedAddedFollowUpModule(null)}
+        />
       )}
     </div>
   );
