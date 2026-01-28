@@ -179,6 +179,10 @@ export const useSessionStore = create(
         currentModuleInstanceId: null,
         // Completed/skipped modules history
         history: [],
+        // Flag to prevent auto-starting next module when in open space
+        // Set to true when user is intentionally in open space (between modules)
+        // Set to false when user explicitly clicks "Continue to Activity"
+        inOpenSpace: false,
       },
 
       // ============================================
@@ -1391,6 +1395,8 @@ export const useSessionStore = create(
             ...state.modules,
             // Auto-start first peak module if available
             currentModuleInstanceId: firstPeakModule?.instanceId || null,
+            // Clear open space flag when transitioning to new phase
+            inOpenSpace: false,
             items: firstPeakModule
               ? state.modules.items.map((m) =>
                   m.instanceId === firstPeakModule.instanceId
@@ -1450,6 +1456,8 @@ export const useSessionStore = create(
             ...state.modules,
             // Auto-start first integration module if available
             currentModuleInstanceId: firstIntegrationModule?.instanceId || null,
+            // Clear open space flag when transitioning to new phase
+            inOpenSpace: false,
             items: firstIntegrationModule
               ? state.modules.items.map((m) =>
                   m.instanceId === firstIntegrationModule.instanceId
@@ -1689,6 +1697,7 @@ export const useSessionStore = create(
           modules: {
             ...state.modules,
             currentModuleInstanceId: instanceId,
+            inOpenSpace: false, // Clear open space when user explicitly starts a module
             items: state.modules.items.map((m) =>
               m.instanceId === instanceId
                 ? { ...m, status: 'active', startedAt: new Date() }
@@ -1768,6 +1777,7 @@ export const useSessionStore = create(
             modules: {
               ...state.modules,
               currentModuleInstanceId: nextModule.instanceId,
+              inOpenSpace: false, // Clear open space when starting a module
               items: updatedItems.map((m) =>
                 m.instanceId === nextModule.instanceId
                   ? { ...m, status: 'active', startedAt: now }
@@ -1777,11 +1787,12 @@ export const useSessionStore = create(
             },
           });
         } else {
-          // No more modules in this phase
+          // No more modules in this phase - enter open space
           const updates = {
             modules: {
               ...state.modules,
               currentModuleInstanceId: null,
+              inOpenSpace: true, // User is now in open space mode
               items: updatedItems,
               history: [...state.modules.history, historyEntry],
             },
@@ -1860,6 +1871,7 @@ export const useSessionStore = create(
             modules: {
               ...state.modules,
               currentModuleInstanceId: nextModule.instanceId,
+              inOpenSpace: false, // Clear open space when starting a module
               items: updatedItems.map((m) =>
                 m.instanceId === nextModule.instanceId
                   ? { ...m, status: 'active', startedAt: now }
@@ -1869,11 +1881,12 @@ export const useSessionStore = create(
             },
           });
         } else {
-          // No more modules in this phase
+          // No more modules in this phase - enter open space
           const updates = {
             modules: {
               ...state.modules,
               currentModuleInstanceId: null,
+              inOpenSpace: true, // User is now in open space mode
               items: updatedItems,
               history: [...state.modules.history, historyEntry],
             },
@@ -1912,6 +1925,20 @@ export const useSessionStore = create(
         );
         if (module?.isBoosterModule) return null;
         return module;
+      },
+
+      // Set open space mode (called when OpenSpace component mounts)
+      // This prevents auto-starting modules when user is intentionally resting
+      enterOpenSpace: () => {
+        const state = get();
+        if (!state.modules.inOpenSpace) {
+          set({
+            modules: {
+              ...state.modules,
+              inOpenSpace: true,
+            },
+          });
+        }
       },
 
       // ============================================
