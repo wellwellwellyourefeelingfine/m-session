@@ -24,8 +24,16 @@ export function calculateBoosterDose(initialDoseMg) {
 
 /**
  * Determine if the booster prompt should be shown based on current state
+ *
+ * Timing logic: The booster prompt appears at whichever comes FIRST:
+ * 1. 30 minutes after user reports "fully arrived"
+ * 2. 90 minutes post-ingestion (floor)
+ *
+ * This accounts for individual variation while maintaining a sensible minimum.
+ * Example: If user reports fully arrived at 30min, prompt appears at 60min.
+ * If they report at 70min, prompt still appears at 90min (the floor).
  */
-export function shouldShowBooster(booster, substanceChecklist) {
+export function shouldShowBooster(booster, substanceChecklist, comeUpCheckIn) {
   if (!booster || !booster.considerBooster) return false;
   if (booster.status === 'taken' || booster.status === 'skipped' || booster.status === 'expired') return false;
 
@@ -47,8 +55,22 @@ export function shouldShowBooster(booster, substanceChecklist) {
   // Past 150 minutes without prior interaction - silently expire
   if (booster.status === 'pending' && minutesSinceDose >= 150) return false;
 
-  // Initial trigger: 90 minutes post-ingestion
-  if (booster.status === 'pending' && minutesSinceDose < 90) return false;
+  // Calculate trigger time: 30 min after "fully arrived" OR 90 min floor, whichever is first
+  let triggerMinutes = 90; // default floor
+
+  if (comeUpCheckIn?.responses) {
+    const fullyArrivedResponse = comeUpCheckIn.responses.find(
+      r => r.response === 'fully-arrived'
+    );
+    if (fullyArrivedResponse) {
+      // 30 minutes after they reported fully arrived
+      const arrivedBasedTrigger = fullyArrivedResponse.minutesSinceIngestion + 30;
+      triggerMinutes = Math.min(arrivedBasedTrigger, 90);
+    }
+  }
+
+  // Initial trigger: dynamic based on fully-arrived timing or 90-min floor
+  if (booster.status === 'pending' && minutesSinceDose < triggerMinutes) return false;
 
   return true;
 }

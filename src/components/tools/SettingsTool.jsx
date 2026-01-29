@@ -518,6 +518,204 @@ export default function SettingsTool() {
           </button>
         </div>
 
+        {/* Debug: Early Booster Test - Tests 30-min-after-fully-arrived logic */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Early Booster (59 min)</span>
+          <button
+            onClick={() => {
+              const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+              const now = new Date();
+              // 59 minutes since ingestion - user reported fully arrived at 29 min
+              // So booster should trigger at 59 min (29 + 30 = 59)
+              const ingestionTime = new Date(now.getTime() - 59 * 60 * 1000);
+              const sessionStart = ingestionTime;
+
+              // Build a minimal peak-phase timeline
+              const peakModule1Id = generateId();
+              const peakModule2Id = generateId();
+
+              const modules = [
+                // Come-up modules (completed)
+                {
+                  instanceId: generateId(),
+                  libraryId: 'grounding-basic',
+                  phase: 'come-up',
+                  title: 'Grounding Meditation',
+                  duration: 10,
+                  status: 'completed',
+                  order: 0,
+                  content: getModuleById('grounding-basic')?.content || {},
+                  startedAt: new Date(sessionStart.getTime() + 1000),
+                  completedAt: new Date(sessionStart.getTime() + 10 * 60 * 1000),
+                },
+                {
+                  instanceId: generateId(),
+                  libraryId: 'breathing-4-7-8',
+                  phase: 'come-up',
+                  title: '4-7-8 Breathing',
+                  duration: 10,
+                  status: 'completed',
+                  order: 1,
+                  content: getModuleById('breathing-4-7-8')?.content || {},
+                  startedAt: new Date(sessionStart.getTime() + 10 * 60 * 1000),
+                  completedAt: new Date(sessionStart.getTime() + 20 * 60 * 1000),
+                },
+                // Peak modules
+                {
+                  instanceId: peakModule1Id,
+                  libraryId: 'open-awareness',
+                  phase: 'peak',
+                  title: 'Open Awareness',
+                  duration: 30,
+                  status: 'completed',
+                  order: 0,
+                  content: getModuleById('open-awareness')?.content || {},
+                  startedAt: new Date(sessionStart.getTime() + 29 * 60 * 1000),
+                  completedAt: new Date(now.getTime() - 5 * 60 * 1000),
+                },
+                {
+                  instanceId: peakModule2Id,
+                  libraryId: 'open-space',
+                  phase: 'peak',
+                  title: 'Open Space',
+                  duration: 15,
+                  status: 'active',
+                  order: 1,
+                  content: getModuleById('open-space')?.content || {},
+                  startedAt: new Date(now.getTime() - 5 * 60 * 1000),
+                  completedAt: null,
+                },
+              ];
+
+              useSessionStore.setState({
+                sessionPhase: 'active',
+                intake: {
+                  currentSection: 'D',
+                  currentQuestionIndex: 0,
+                  responses: {
+                    experienceLevel: 'some',
+                    sessionMode: 'solo',
+                    hasPreparation: 'yes',
+                    primaryFocus: 'self-exploration',
+                    relationshipType: null,
+                    holdingQuestion: '',
+                    emotionalState: 'open',
+                    guidanceLevel: 'moderate',
+                    activityPreferences: ['meditation', 'breathing'],
+                    considerBooster: 'yes',
+                    promptFormat: null,
+                    sessionDuration: '4-6h',
+                    startTime: null,
+                    safeSpace: 'yes',
+                    hasWaterSnacks: 'yes',
+                    emergencyContact: 'yes',
+                    medications: { taking: false, details: '' },
+                    heartConditions: 'no',
+                    psychiatricHistory: 'no',
+                  },
+                  isComplete: true,
+                  showSafetyWarnings: false,
+                  showMedicationWarning: false,
+                },
+                substanceChecklist: {
+                  hasSubstance: true,
+                  hasTestedSubstance: true,
+                  hasPreparedDosage: true,
+                  plannedDosageMg: 120,
+                  dosageFeedback: 'moderate',
+                  hasTakenSubstance: true,
+                  ingestionTime: ingestionTime,
+                  ingestionTimeConfirmed: true,
+                },
+                preSubstanceActivity: {
+                  substanceChecklistSubPhase: 'pre-session-intro',
+                  completedActivities: ['intention', 'centering-breath'],
+                  touchstone: 'openness',
+                  intentionJournalEntryId: null,
+                  focusJournalEntryId: null,
+                },
+                timeline: {
+                  scheduledStartTime: null,
+                  targetDuration: 300,
+                  minDuration: 120,
+                  maxDuration: 480,
+                  currentPhase: 'peak',
+                  phases: {
+                    comeUp: {
+                      minDuration: 20,
+                      maxDuration: 60,
+                      allocatedDuration: 29,
+                      startedAt: sessionStart,
+                      endedAt: new Date(sessionStart.getTime() + 29 * 60 * 1000),
+                      endedBy: 'user-checkin',
+                    },
+                    peak: {
+                      estimatedDuration: 90,
+                      allocatedDuration: 90,
+                      startedAt: new Date(sessionStart.getTime() + 29 * 60 * 1000),
+                      endedAt: null,
+                    },
+                    integration: {
+                      allocatedDuration: 165,
+                      startedAt: null,
+                      endedAt: null,
+                    },
+                  },
+                },
+                modules: {
+                  items: modules,
+                  currentModuleInstanceId: peakModule2Id,
+                  history: [],
+                },
+                comeUpCheckIn: {
+                  isVisible: false,
+                  isMinimized: true,
+                  promptCount: 3,
+                  lastPromptAt: new Date(sessionStart.getTime() + 29 * 60 * 1000),
+                  responses: [
+                    { response: 'waiting', timestamp: sessionStart, minutesSinceIngestion: 3 },
+                    { response: 'starting', timestamp: new Date(sessionStart.getTime() + 15 * 60 * 1000), minutesSinceIngestion: 15 },
+                    // Key: fully-arrived at 29 minutes, so booster triggers at 59 min (29 + 30)
+                    { response: 'fully-arrived', timestamp: new Date(sessionStart.getTime() + 29 * 60 * 1000), minutesSinceIngestion: 29 },
+                  ],
+                  currentResponse: 'fully-arrived',
+                  introCompleted: true,
+                  waitingForCheckIn: false,
+                  hasIndicatedFullyArrived: true,
+                  showEndOfPhaseChoice: false,
+                },
+                phaseTransitions: {
+                  activeTransition: null,
+                  transitionCompleted: true,
+                },
+                booster: {
+                  considerBooster: true,
+                  boosterPrepared: true,
+                  status: 'pending',
+                  boosterTakenAt: null,
+                  boosterDecisionAt: null,
+                  snoozeCount: 0,
+                  nextPromptAt: null,
+                  checkInResponses: {
+                    experienceQuality: null,
+                    physicalState: null,
+                    trajectory: null,
+                  },
+                  isModalVisible: false,
+                  isMinimized: false,
+                },
+              });
+
+              // Switch to Active tab
+              useAppStore.getState().setCurrentTab('active');
+            }}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace', color: 'var(--accent)' }}
+          >
+            GO
+          </button>
+        </div>
+
         {/* Debug: Integration Test */}
         <div className="flex items-center justify-between py-3">
           <span className="text-[12px] uppercase tracking-wider">Integration Test (2 hr)</span>

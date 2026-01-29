@@ -386,7 +386,7 @@ export default function FollowUpIntegration() {
     <>
       <ModuleProgressBar progress={progress} visible={true} showTime={false} />
 
-      <div className="fixed top-16 left-0 right-0 bottom-[68px] flex flex-col overflow-hidden">
+      <div className="fixed top-16 left-0 right-0 bottom-12 flex flex-col overflow-hidden">
         <div className="flex-shrink-0 pt-4 pb-4">
           <div className="text-center mb-4">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
