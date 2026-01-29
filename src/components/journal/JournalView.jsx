@@ -116,7 +116,7 @@ export default function JournalView() {
   };
 
   return (
-    <div className="fixed top-16 left-0 right-0 bottom-[52px] overflow-hidden">
+    <div className="fixed top-16 left-0 right-0 bottom-12 overflow-hidden">
       {/* Editor View */}
       {(currentView === VIEW_EDITOR || isAnimating) && (
         <div

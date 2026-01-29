@@ -108,7 +108,7 @@ export default function ActiveView() {
       }
 
       // Check if we should show the prompt
-      if (shouldShowBooster(booster, substanceChecklist)) {
+      if (shouldShowBooster(booster, substanceChecklist, comeUpCheckIn)) {
         showBoosterModal();
       }
     };
@@ -125,7 +125,7 @@ export default function ActiveView() {
         boosterCheckRef.current = null;
       }
     };
-  }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, showBoosterModal, expireBooster]);
+  }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, comeUpCheckIn, showBoosterModal, expireBooster]);
 
   // Auto-start next module when appropriate
   useEffect(() => {

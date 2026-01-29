@@ -430,8 +430,8 @@ export default function ClosingRitual() {
         showTime={false}
       />
 
-      {/* Fixed layout container - fills space between header and control bar */}
-      <div className="fixed top-16 left-0 right-0 bottom-[68px] flex flex-col overflow-hidden">
+      {/* Fixed layout container - fills space between header and tab bar */}
+      <div className="fixed top-16 left-0 right-0 bottom-12 flex flex-col overflow-hidden">
         {/* Anchored header section - doesn't scroll */}
         <div className="flex-shrink-0 pt-4 pb-4">
           {/* Header: Closing + elapsed time */}

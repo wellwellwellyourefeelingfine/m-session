@@ -46,6 +46,7 @@ export default function ModuleControlBar({
 }) {
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [isPrimaryPressed, setIsPrimaryPressed] = useState(false);
 
   const handleBackClick = () => {
     // If no confirmation message provided, go back directly
@@ -73,14 +74,16 @@ export default function ModuleControlBar({
   return (
     <>
       {/* Fixed control bar - positioned above tab bar */}
-      <div className="fixed bottom-12 left-0 right-0 z-30 bg-[var(--color-bg)] border-t border-[var(--color-border)]">
-        <div className="h-14 flex items-center justify-between px-4">
+      {/* pointer-events-none allows clicks to pass through transparent areas */}
+      <div className="fixed bottom-12 left-0 right-0 h-14 z-30 pointer-events-none">
+        <div className="h-full flex items-center justify-between px-4">
           {/* Far left: Back button */}
           <div className="w-10 flex justify-start">
             {showBack && (
               <button
                 onClick={handleBackClick}
-                className="p-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+                className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
+                  text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
                 aria-label="Go back"
               >
                 <BackIcon />
@@ -98,8 +101,19 @@ export default function ModuleControlBar({
             {primary?.label && !primary.disabled ? (
               <button
                 onClick={primary.onClick}
-                className="px-8 py-2.5 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                  uppercase tracking-wider text-[10px] hover:opacity-80 transition-opacity min-w-[120px]"
+                onTouchStart={() => setIsPrimaryPressed(true)}
+                onTouchEnd={() => setIsPrimaryPressed(false)}
+                onMouseDown={() => setIsPrimaryPressed(true)}
+                onMouseUp={() => setIsPrimaryPressed(false)}
+                onMouseLeave={() => setIsPrimaryPressed(false)}
+                className={`px-8 py-2.5 bg-[var(--color-text-primary)] text-[var(--color-bg)]
+                  uppercase tracking-wider text-[10px] min-w-[120px] rounded-sm
+                  transition-all duration-100 ease-out pointer-events-auto
+                  ${isPrimaryPressed
+                    ? 'translate-x-[1px] translate-y-[1px] shadow-[1px_1px_0_rgba(0,0,0,0.2)]'
+                    : 'translate-x-0 translate-y-0 shadow-[2px_2px_0_rgba(0,0,0,0.2)]'
+                  }`}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
                 {primary.label}
               </button>
@@ -107,7 +121,7 @@ export default function ModuleControlBar({
               <button
                 disabled
                 className="px-8 py-2.5 border border-[var(--color-border)] text-[var(--color-text-tertiary)]
-                  uppercase tracking-wider text-[10px] cursor-not-allowed min-w-[120px] flex items-center justify-center"
+                  uppercase tracking-wider text-[10px] cursor-not-allowed min-w-[120px] flex items-center justify-center pointer-events-auto"
                 style={{ backgroundColor: 'var(--color-border)', opacity: 0.4 }}
               >
                 {primary?.label || (
@@ -131,7 +145,8 @@ export default function ModuleControlBar({
             {showSkip && (
               <button
                 onClick={handleSkipClick}
-                className="p-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+                className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
+                  text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
                 aria-label="Skip module"
               >
                 <SkipIcon />
@@ -264,10 +279,10 @@ export function SlotButton({ icon, label, onClick, active = false, disabled = fa
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`p-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed pointer-events-auto
         ${active
-          ? 'text-[var(--color-text-primary)]'
-          : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+          ? 'text-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+          : 'text-[var(--color-text-tertiary)] border-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)]'
         }`}
       aria-label={label}
     >

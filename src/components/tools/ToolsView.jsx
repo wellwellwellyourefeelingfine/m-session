@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { useToolsStore } from '../../stores/useToolsStore';
 import ToolPanel from './ToolPanel';
 import DosageTool from './DosageTool';
+import TestingTool from './TestingTool';
 import ResourcesTool from './ResourcesTool';
 import FAQTool from './FAQTool';
 import SettingsTool from './SettingsTool';
@@ -19,6 +20,7 @@ const tools = [
   { id: 'help', label: 'I NEED HELP', component: HelpTool },
   { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
+  { id: 'testing', label: 'SUBSTANCE TESTING', component: TestingTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'faq', label: 'FAQ', component: FAQTool },
   { id: 'ai', label: 'AI ASSISTANT', component: AISettingsTool },
