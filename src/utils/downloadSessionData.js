@@ -51,11 +51,15 @@ function getSessionData() {
     transitionCaptures,
     session,
     booster,
+    comeUpCheckIn,
+    followUp,
+    modules,
   } = sessionState;
 
-  // Get session journal entries
-  const journalEntries = journalState.entries.filter(
-    (entry) => entry.source === 'session'
+  // Get ALL journal entries (both session-created and manual)
+  // Sort by creation time, oldest first
+  const allJournalEntries = [...journalState.entries].sort(
+    (a, b) => a.createdAt - b.createdAt
   );
 
   return {
@@ -74,18 +78,55 @@ function getSessionData() {
     booster: booster?.status !== 'pending' ? {
       status: booster?.status,
       takenAt: booster?.boosterTakenAt,
+      checkInResponses: booster?.checkInResponses || null,
     } : null,
     intention: {
       original: intake?.responses?.holdingQuestion || '',
       touchstone: preSubstanceActivity?.touchstone || '',
     },
+    comeUpCheckIn: comeUpCheckIn?.responses?.length > 0 ? {
+      responses: comeUpCheckIn.responses,
+    } : null,
     transitionCaptures,
-    journalEntries: journalEntries.map((entry) => ({
+    // Include module completion history
+    moduleHistory: modules?.history?.length > 0 ? modules.history.map((item) => ({
+      instanceId: item.instanceId,
+      libraryId: item.libraryId,
+      title: item.title,
+      phase: item.phase,
+      duration: item.duration,
+      status: item.status,
+      startedAt: item.startedAt,
+      completedAt: item.completedAt,
+    })) : null,
+    // Include follow-up module responses
+    followUp: followUp?.modules ? {
+      checkIn: followUp.modules.checkIn?.status === 'completed' ? {
+        completedAt: followUp.modules.checkIn.completedAt,
+        feeling: followUp.modules.checkIn.feeling,
+        note: followUp.modules.checkIn.note,
+      } : null,
+      revisit: followUp.modules.revisit?.status === 'completed' ? {
+        completedAt: followUp.modules.revisit.completedAt,
+        reflection: followUp.modules.revisit.reflection,
+      } : null,
+      integration: followUp.modules.integration?.status === 'completed' ? {
+        completedAt: followUp.modules.integration.completedAt,
+        emerged: followUp.modules.integration.emerged,
+        commitmentStatus: followUp.modules.integration.commitmentStatus,
+        commitmentResponse: followUp.modules.integration.commitmentResponse,
+      } : null,
+    } : null,
+    // Include ALL journal entries (session + manual)
+    journalEntries: allJournalEntries.map((entry) => ({
       id: entry.id,
       timestamp: entry.createdAt,
+      updatedAt: entry.updatedAt,
       title: entry.title,
       content: entry.content,
+      source: entry.source, // 'session' or 'manual'
       moduleTitle: entry.moduleTitle,
+      tags: entry.tags,
     })),
   };
 }
@@ -192,7 +233,104 @@ ${subDivider}
     }
   }
 
-  // Journal Entries
+  // Come-Up Check-In Responses
+  if (data.comeUpCheckIn?.responses?.length > 0) {
+    text += `\n\n${subDivider}
+COME-UP CHECK-INS
+${subDivider}
+`;
+    data.comeUpCheckIn.responses.forEach((response) => {
+      const responseLabels = {
+        'waiting': 'Still waiting',
+        'starting': 'Starting to feel it',
+        'fully-arrived': 'Fully arrived',
+      };
+      text += `\n[${response.minutesSinceIngestion} min]: ${responseLabels[response.response] || response.response}`;
+    });
+  }
+
+  // Booster Check-In Responses
+  if (data.booster?.checkInResponses) {
+    const responses = data.booster.checkInResponses;
+    const hasResponses = responses.experienceQuality || responses.physicalState || responses.trajectory;
+    if (hasResponses) {
+      text += `\n\nBooster Check-In Responses:`;
+      if (responses.experienceQuality) {
+        text += `\n  Experience Quality: ${responses.experienceQuality}`;
+      }
+      if (responses.physicalState) {
+        text += `\n  Physical State: ${responses.physicalState}`;
+      }
+      if (responses.trajectory) {
+        text += `\n  Trajectory: ${responses.trajectory}`;
+      }
+    }
+  }
+
+  // Module History
+  if (data.moduleHistory?.length > 0) {
+    text += `\n\n${subDivider}
+COMPLETED ACTIVITIES
+${subDivider}
+`;
+    data.moduleHistory.forEach((module) => {
+      text += `\n• ${module.title}`;
+      if (module.phase) {
+        text += ` (${module.phase})`;
+      }
+      if (module.status === 'skipped') {
+        text += ' [skipped]';
+      }
+      if (module.completedAt) {
+        text += `\n  Completed: ${formatDate(module.completedAt)}`;
+      }
+    });
+  }
+
+  // Follow-Up Module Responses
+  const hasFollowUpData = data.followUp?.checkIn || data.followUp?.revisit || data.followUp?.integration;
+  if (hasFollowUpData) {
+    text += `\n\n${subDivider}
+FOLLOW-UP REFLECTIONS
+${subDivider}
+`;
+    if (data.followUp.checkIn) {
+      text += `\n[Check-In — ${formatDate(data.followUp.checkIn.completedAt)}]`;
+      if (data.followUp.checkIn.feeling) {
+        text += `\nFeeling: ${data.followUp.checkIn.feeling}`;
+      }
+      if (data.followUp.checkIn.note) {
+        text += `\nNote: ${data.followUp.checkIn.note}`;
+      }
+    }
+    if (data.followUp.revisit) {
+      text += `\n\n[Revisit — ${formatDate(data.followUp.revisit.completedAt)}]`;
+      if (data.followUp.revisit.reflection) {
+        text += `\nReflection: ${data.followUp.revisit.reflection}`;
+      }
+    }
+    if (data.followUp.integration) {
+      text += `\n\n[Integration — ${formatDate(data.followUp.integration.completedAt)}]`;
+      if (data.followUp.integration.emerged) {
+        text += `\nWhat's Emerged: ${data.followUp.integration.emerged}`;
+      }
+      if (data.followUp.integration.commitmentStatus) {
+        const statusLabels = {
+          'following': 'Following through',
+          'trying': 'Trying to follow through',
+          'not-started': 'Haven\'t started yet',
+          'reconsidered': 'Reconsidered the commitment',
+          'forgot': 'Forgot about it',
+        };
+        text += `\nCommitment Status: ${statusLabels[data.followUp.integration.commitmentStatus] || data.followUp.integration.commitmentStatus}`;
+      }
+      if (data.followUp.integration.commitmentResponse) {
+        text += `\nCommitment Response: ${data.followUp.integration.commitmentResponse}`;
+      }
+    }
+  }
+
+  // Journal Entries (ALL - session + manual)
   if (data.journalEntries?.length > 0) {
     text += `\n\n${subDivider}
 JOURNAL ENTRIES
@@ -202,6 +340,8 @@ ${subDivider}
       text += `\n[${formatDate(entry.timestamp)}]`;
       if (entry.moduleTitle) {
         text += ` — ${entry.moduleTitle}`;
+      } else if (entry.source === 'manual') {
+        text += ` — Personal Entry`;
       }
       text += `\n${entry.content}\n`;
     });
