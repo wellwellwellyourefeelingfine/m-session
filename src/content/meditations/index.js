@@ -11,6 +11,9 @@ import {
 } from './guided-breath-orb';
 import { calmingBreath15Min } from './calming-breath-15min';
 import { openAwarenessMeditation } from './open-awareness';
+import { bodyScanMeditation } from './body-scan';
+import { selfCompassionMeditation } from './self-compassion';
+import { simpleGroundingMeditation } from './simple-grounding';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -18,6 +21,9 @@ export const meditationLibrary = {
   'guided-breath-orb': guidedBreathOrbMeditation,
   'calming-breath-15min': calmingBreath15Min,
   'open-awareness': openAwarenessMeditation,
+  'body-scan': bodyScanMeditation,
+  'self-compassion': selfCompassionMeditation,
+  'simple-grounding': simpleGroundingMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -28,6 +34,15 @@ export { calmingBreath15Min };
 
 // Re-export open awareness meditation
 export { openAwarenessMeditation };
+
+// Re-export body scan meditation
+export { bodyScanMeditation };
+
+// Re-export self-compassion meditation
+export { selfCompassionMeditation };
+
+// Re-export simple grounding meditation
+export { simpleGroundingMeditation };
 
 /**
  * Get a meditation by its ID
@@ -44,23 +59,24 @@ export function getAllMeditations() {
 }
 
 /**
- * Constants for duration calculation
+ * Default speaking rate for duration estimation (words per minute)
  */
-const AVERAGE_SPEAKING_RATE = 150; // words per minute
+const DEFAULT_SPEAKING_RATE = 150;
 
 /**
  * Calculate the total duration of a meditation given a silence multiplier
- * @param {Array} prompts - Array of prompt objects
+ * @param {Array} prompts - Array of prompt objects with baseSilenceAfter
  * @param {number} silenceMultiplier - Multiplier for expandable silence (1.0 = base)
+ * @param {number} speakingRate - Words per minute (default 150)
  * @returns {number} Total duration in seconds
  */
-export function calculateMeditationDuration(prompts, silenceMultiplier = 1.0) {
+export function calculateMeditationDuration(prompts, silenceMultiplier = 1.0, speakingRate = DEFAULT_SPEAKING_RATE) {
   let totalSeconds = 0;
 
   prompts.forEach((prompt) => {
     // Estimate speaking time (words / rate * 60)
     const wordCount = prompt.text.split(' ').length;
-    const speakingTime = (wordCount / AVERAGE_SPEAKING_RATE) * 60;
+    const speakingTime = (wordCount / speakingRate) * 60;
 
     // Calculate silence
     let silence = prompt.baseSilenceAfter;
@@ -128,18 +144,21 @@ export function calculateSilenceMultiplier(prompts, targetDurationSeconds) {
 
 /**
  * Generate a timed prompt sequence for playback
- * @param {Array} prompts - Array of prompt objects
+ * @param {Array} prompts - Array of prompt objects with baseSilenceAfter
  * @param {number} silenceMultiplier - Multiplier for expandable silence
- * @returns {Array} Array of { prompt, speakingDuration, silenceDuration, totalDuration, startTime }
+ * @param {Object} options
+ * @param {number} options.speakingRate - Words per minute (default 150)
+ * @param {Object} options.audioConfig - Audio config with basePath and format, or null
+ * @returns {Array} Array of { id, text, speakingDuration, silenceDuration, startTime, endTime, audioSrc }
  */
-export function generateTimedSequence(prompts, silenceMultiplier = 1.0) {
+export function generateTimedSequence(prompts, silenceMultiplier = 1.0, { speakingRate = DEFAULT_SPEAKING_RATE, audioConfig = null } = {}) {
   const sequence = [];
   let currentTime = 0;
 
   prompts.forEach((prompt) => {
     // Calculate speaking time
     const wordCount = prompt.text.split(' ').length;
-    const speakingDuration = (wordCount / AVERAGE_SPEAKING_RATE) * 60;
+    const speakingDuration = (wordCount / speakingRate) * 60;
 
     // Calculate silence duration
     let silenceDuration = prompt.baseSilenceAfter;
@@ -155,9 +174,11 @@ export function generateTimedSequence(prompts, silenceMultiplier = 1.0) {
       text: prompt.text,
       speakingDuration,
       silenceDuration,
-      totalDuration,
       startTime: currentTime,
       endTime: currentTime + totalDuration,
+      audioSrc: audioConfig
+        ? `${audioConfig.basePath}${prompt.id}.${audioConfig.format}`
+        : null,
     });
 
     currentTime += totalDuration;

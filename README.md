@@ -42,33 +42,46 @@ This app follows a **modular, capability-based architecture** where:
 src/
 ├── components/
 │   ├── active/                    # Active session (meditation playback)
-│   │   ├── modules/               # Custom module components (7 types)
+│   │   ├── modules/               # Custom module components (9 types)
 │   │   ├── capabilities/          # Composable UI building blocks
-│   │   │   ├── animations/        # BreathOrb, AsciiMoon, AsciiDiamond
+│   │   │   ├── animations/        # BreathOrb, AsciiMoon, AsciiDiamond, MorphingShapes
 │   │   │   ├── hooks/             # useBreathController
 │   │   │   ├── ModuleLayout.jsx   # Consistent layout wrapper
 │   │   │   ├── ModuleControlBar.jsx
 │   │   │   └── ModuleShell.jsx    # Generic capability-based renderer
 │   │   ├── moduleRegistry.js      # Module type → component mapping
 │   │   └── ActiveView.jsx         # Main orchestrator
-│   ├── session/                   # Session flow components
+│   ├── session/                   # Session flow & transition components
 │   │   ├── SubstanceChecklist.jsx  # Pre-session preparation (5 steps)
 │   │   ├── PreSessionIntro.jsx     # Pre-session ritual (6 steps + intention sub-flow)
 │   │   ├── TransitionBuffer.jsx    # Reusable transition screen (quote + animation)
 │   │   ├── ComeUpCheckIn.jsx       # Come-up phase check-in modal
-│   │   └── PeakTransition.jsx      # Phase transition experience
+│   │   ├── PeakTransition.jsx      # Come-up → peak transition (6 steps)
+│   │   ├── PeakPhaseCheckIn.jsx    # Peak phase end-of-phase check-in
+│   │   ├── BoosterConsiderationModal.jsx # Optional booster dose check-in
+│   │   ├── IntegrationTransition.jsx # Peak → integration transition (5-9 steps)
+│   │   ├── ClosingCheckIn.jsx      # Prompts user to begin closing ritual
+│   │   ├── ClosingRitual.jsx       # 8-step closing ritual
+│   │   ├── DataDownloadModal.jsx   # Session data download (text/JSON)
+│   │   ├── PostCloseScreen.jsx     # Post-session animation
+│   │   └── transitions/           # Transition step content & shared components
+│   ├── followup/                  # Follow-up modules (24-48h post-session)
+│   │   ├── FollowUpCheckIn.jsx    # How-are-you check-in (24h)
+│   │   ├── FollowUpRevisit.jsx    # Revisit session writings (24h)
+│   │   ├── FollowUpIntegration.jsx # Integration reflection (48h)
+│   │   └── content/              # Follow-up step content
 │   ├── ai/                        # AI Assistant components
 │   │   ├── AIAssistantModal.jsx   # Main chat interface
 │   │   ├── ChatWindow.jsx
 │   │   └── ChatSidebar.jsx
 │   ├── home/                      # Intake, timeline editor
 │   ├── journal/                   # Entry list + editor
-│   ├── tools/                     # FAQ, dosage, settings, philosophy
+│   ├── tools/                     # FAQ, dosage, settings, data download
 │   ├── intake/                    # Questionnaire components
 │   ├── timeline/                  # Timeline editor components
 │   └── layout/                    # AppShell, Header, TabBar
 ├── stores/
-│   ├── useSessionStore.js         # Core session logic (~1250 lines)
+│   ├── useSessionStore.js         # Core session logic (~2250 lines)
 │   ├── useAppStore.js             # Global state (tabs, dark mode)
 │   ├── useJournalStore.js         # Journal entries
 │   ├── useAIStore.js              # AI assistant state + conversations
@@ -77,19 +90,24 @@ src/
 │   ├── aiService.js               # AI provider API integration
 │   └── cryptoService.js           # API key encryption
 ├── hooks/
-│   └── useAudioPlayback.js        # Audio playback management
+│   ├── useAudioPlayback.js        # Audio playback management
+│   ├── useMeditationPlayback.js   # Shared meditation playback orchestration
+│   └── useWakeLock.js             # Screen Wake Lock API wrapper
 ├── content/
 │   ├── modules/library.js         # All module definitions
 │   ├── meditations/               # Meditation content + audio mappings
 │   └── intake/                    # 4-section questionnaire
 ├── utils/
-│   └── buildSystemPrompt.js       # AI context builder
+│   ├── buildSystemPrompt.js       # AI context builder
+│   └── downloadSessionData.js     # Session data export (text + JSON)
 └── App.jsx                        # Tab routing (views kept mounted)
 
 public/
 └── audio/
     └── meditations/
-        └── open-awareness/        # Pre-recorded TTS audio files
+        ├── open-awareness/        # 26 TTS audio files
+        ├── body-scan/             # 54 TTS audio files
+        └── self-compassion/       # 70 TTS audio files
 ```
 
 ---
@@ -97,40 +115,76 @@ public/
 ## Session Flow
 
 ```
-1. INTAKE (4 sections)
-   └── Generates timeline preferences based on user responses
+1. INTAKE (4 sections: Experience, Intention, Preferences, Safety)
+   └── Generates personalized module timeline based on responses
 
-2. PRE-SESSION
+2. PRE-SESSION (Timeline Editor)
    └── User customizes module order, durations, adds/removes activities
 
-3. SUBSTANCE CHECKLIST & PRE-SESSION INTRO
-   ├── SubstanceChecklist — Part 1: Preparation (5 steps)
-   │   ├── Substance ready
-   │   ├── Substance testing
-   │   ├── Dosage input (with real-time feedback)
-   │   ├── Prepare your space (checklist)
-   │   └── Trusted contact & session helper
-   └── PreSessionIntro — Part 2: Pre-Session Ritual (6 steps + intention sub-flow)
-       ├── Arrival (BreathOrb idle)
-       ├── Intention menu (review intention / centering breath / skip)
-       │   └── Intention sub-flow: focus reminder → touchstone → intention text
-       ├── Letting Go (BreathOrb idle)
-       ├── Take substance ("I've Taken It")
-       ├── Confirm ingestion time
-       └── Begin session (AsciiMoon fade-out → TransitionBuffer → startSession())
+3. SUBSTANCE CHECKLIST (5 steps)
+   ├── Substance ready
+   ├── Substance testing
+   ├── Dosage input (real-time feedback with safety gates at 151mg+ and 300mg+)
+   ├── Prepare your space (checklist)
+   ├── Supplemental dose prep (conditional — if booster selected in intake)
+   └── Trusted contact & session helper
 
-4. ACTIVE SESSION
-   ├── Come-Up Phase
-   │   ├── First module starts immediately with check-in overlay
-   │   ├── Check-in prompts between modules (non-blocking)
-   │   └── "Fully arrived" → PeakTransition component
-   ├── Peak Phase
-   │   ├── Transition shows intention, hydration reminder
-   │   └── Modules auto-advance (no check-ins)
-   └── Integration Phase
-       └── Journaling, closing rituals
+4. PRE-SESSION INTRO (6 steps + intention sub-flow)
+   ├── Arrival
+   ├── Intention menu (review intention / centering breath / skip)
+   │   └── Intention sub-flow: focus reminder → touchstone → intention text
+   ├── Letting Go
+   ├── Take substance → records ingestion time
+   ├── Confirm ingestion time (with adjustment option)
+   └── Begin session → TransitionBuffer → startSession()
 
-5. SESSION COMPLETE
+5. ACTIVE SESSION — COME-UP PHASE
+   ├── Modules begin (grounding, breathing, music, etc.)
+   ├── Come-up check-in overlay (minimizable, non-blocking)
+   │   └── "Nothing yet" / "Starting to feel something" / "Fully arrived"
+   └── "Fully arrived" → end-of-phase choice → PeakTransition
+
+6. PEAK TRANSITION (6 steps)
+   ├── "You've Arrived" — acknowledgment
+   ├── One Word — capture current experience (text input)
+   ├── Body Sensations — multi-select grid (8 options)
+   ├── Tune In — reassurance
+   ├── Let It Unfold — permission statement
+   └── Begin → TransitionBuffer → enter peak phase
+
+7. ACTIVE SESSION — PEAK PHASE
+   ├── Peak-appropriate modules (meditation, music, journaling, open awareness)
+   ├── Booster check-in (conditional — triggers 30 min after "fully arrived" or 90 min floor)
+   │   └── Take / Skip / Snooze — expires silently at 150 min, hard cutoff at 180 min
+   └── Peak phase check-in → IntegrationTransition
+
+8. INTEGRATION TRANSITION (5-9 steps, dynamic)
+   ├── "The Peak Is Softening" — acknowledgment
+   ├── Intention check-in — revisit + optional edit
+   ├── Focus confirmation — keep or change primary focus
+   │   └── (conditional) Focus selector + relationship sub-type
+   ├── Tailored activity offer — journaling/compassion/reflection based on focus
+   ├── Hydration reminder
+   └── Begin → TransitionBuffer → enter integration phase
+
+9. ACTIVE SESSION — INTEGRATION PHASE
+   ├── Integration modules (deep journaling, parts work, letter writing, etc.)
+   └── Closing check-in → ClosingRitual
+
+10. CLOSING RITUAL (8 steps)
+    ├── "Honoring This Experience" — acknowledgment
+    ├── Self-gratitude — textarea capture
+    ├── Message to future self — textarea capture
+    ├── Commitment — textarea capture (with collapsible examples)
+    ├── "This Session Is Complete"
+    ├── "Before You Go" — data download prompt (text / JSON)
+    ├── "Integration Takes Time" — encouragement to return for follow-up
+    └── "Take Care" → Close Session → PostCloseScreen animation → Home
+
+11. FOLLOW-UP (time-locked, available on Home screen)
+    ├── Check-In (24h) — feeling selector + optional note
+    ├── Revisit (24h) — re-read intention, future message, commitment + reflection
+    └── Integration Reflection (48h) — what's emerged + commitment status check
 ```
 
 ---
@@ -142,16 +196,18 @@ public/
 **1. Custom Components** (for complex logic):
 - `BreathingModule` - Phase-based breathing animation
 - `BreathMeditationModule` - BreathOrb + breath sequences
-- `OpenAwarenessModule` - Audio-synced guided meditation
-- `JournalingModule` - Journal store integration
+- `OpenAwarenessModule` - Audio-synced guided meditation (shared `useMeditationPlayback` hook)
+- `BodyScanModule` - Audio-synced body scan (shared `useMeditationPlayback` hook)
+- `SelfCompassionModule` - Audio-synced self-compassion with variation selector (shared `useMeditationPlayback` hook)
+- `GuidedMeditationModule` - Timed prompts with playback
+- `JournalingModule` - Journal store integration (handles all journaling types: light, deep, letter-writing, parts-work, therapy-exercise)
 - `GroundingModule` - Sequential step flow
-- `GuidedMeditationModule` - Timed prompts
-- `CheckInModule` - User check-ins
+- `MusicListeningModule` - Duration picker, alarm prompt, recommendations
 
 **2. ModuleShell** (capability-driven, no custom code):
 - Reads module's `capabilities` config
 - Composes: timer, prompts, animation, controls
-- Used for: meditation, body-scan, self-compassion, break modules
+- Used for: open-space, and any future capability-only modules
 
 ### Adding a New Module
 
@@ -197,19 +253,337 @@ import MyModule from './modules/MyModule';
 export const CUSTOM_MODULES = { ...existing, 'my-type': MyModule };
 ```
 
+### Adding a Meditation Module (with Audio)
+
+For modules that use the shared `useMeditationPlayback` hook with pre-recorded TTS audio:
+
+**Step 1: Define the content** in `src/content/meditations/<name>.js`:
+
+```javascript
+export const myMeditation = {
+  id: 'my-meditation',
+  title: 'My Meditation',
+  description: 'Brief description for the idle screen.',
+  speakingRate: 150,          // words per minute (use 90 for slower-paced scripts)
+  minDuration: 600,           // 10 min in seconds (for variable-duration)
+  maxDuration: 1800,          // 30 min in seconds
+  durationSteps: [10, 15, 20, 25, 30],  // minutes
+  defaultDuration: 10,
+  audio: {
+    basePath: '/audio/meditations/my-meditation/',
+    format: 'mp3',
+  },
+  prompts: [
+    {
+      id: 'intro-1',                // also the audio filename: intro-1.mp3
+      text: 'Begin by finding a comfortable position.',
+      baseSilenceAfter: 5,          // 5 seconds of silence after this prompt
+      silenceExpandable: true,      // silence scales with longer durations
+      silenceMax: 15,               // never exceed 15 seconds even at max duration
+    },
+    {
+      id: 'core-1',
+      text: 'Bring awareness to your breath.',
+      baseSilenceAfter: 8,
+      silenceExpandable: true,
+      silenceMax: 30,
+    },
+    // ... more prompts
+  ],
+};
+```
+
+**Step 2: Register in the meditation library** in `src/content/meditations/index.js`:
+
+```javascript
+import { myMeditation } from './my-meditation';
+
+export const meditationLibrary = {
+  ...existing,
+  'my-meditation': myMeditation,
+};
+
+export { myMeditation };
+```
+
+**Step 3: Create the component** in `src/components/active/modules/MyMeditationModule.jsx`:
+
+```javascript
+import { useState, useMemo } from 'react';
+import { getModuleById } from '../../../content/modules';
+import {
+  getMeditationById,
+  calculateSilenceMultiplier,
+  generateTimedSequence,
+} from '../../../content/meditations';
+import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
+import ModuleControlBar, { MuteButton } from '../capabilities/ModuleControlBar';
+import DurationPicker from '../../shared/DurationPicker';
+
+export default function MyMeditationModule({ module, onComplete, onSkip, onTimerUpdate }) {
+  const libraryModule = getModuleById(module.libraryId);
+  const meditation = getMeditationById('my-meditation');
+
+  const [selectedDuration, setSelectedDuration] = useState(
+    module.duration || libraryModule?.defaultDuration || 10
+  );
+  const [showDurationPicker, setShowDurationPicker] = useState(false);
+
+  // Build timed sequence — this is the only part unique to each meditation
+  const [timedSequence, totalDuration] = useMemo(() => {
+    if (!meditation) return [[], 0];
+    const durationSeconds = selectedDuration * 60;
+    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds);
+    const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
+      speakingRate: meditation.speakingRate || 150,
+      audioConfig: meditation.audio,
+    });
+    const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
+    return [sequence, total];
+  }, [meditation, selectedDuration]);
+
+  // Shared hook handles timer, audio-text sync, prompt progression, etc.
+  const playback = useMeditationPlayback({
+    meditationId: 'my-meditation',
+    moduleInstanceId: module.instanceId,
+    timedSequence,
+    totalDuration,
+    onComplete,
+    onSkip,
+    onTimerUpdate,
+  });
+
+  if (!meditation) {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] text-center">
+            Meditation content not found.
+          </p>
+        </ModuleLayout>
+        <ModuleControlBar
+          phase="completed"
+          primary={{ label: 'Continue', onClick: onComplete }}
+          showSkip={false}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+        {!playback.hasStarted && (
+          <div className="text-center animate-fadeIn">
+            <IdleScreen title={meditation.title} description={meditation.description} />
+            <button
+              onClick={() => setShowDurationPicker(true)}
+              className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
+                hover:border-[var(--color-text-tertiary)] transition-colors"
+            >
+              <span className="text-2xl font-light">{selectedDuration}</span>
+              <span className="text-sm ml-1">min</span>
+            </button>
+          </div>
+        )}
+        {playback.hasStarted && !playback.isComplete && (
+          <div className="text-center px-4">
+            {!playback.isPlaying && (
+              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-4 animate-pulse">
+                Paused
+              </p>
+            )}
+            <p className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
+              playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
+            }`}>
+              {playback.currentPrompt?.text || ''}
+            </p>
+          </div>
+        )}
+        {playback.isComplete && <CompletionScreen />}
+      </ModuleLayout>
+      <ModuleControlBar
+        phase={playback.getPhase()}
+        primary={playback.getPrimaryButton()}
+        showSkip={!playback.isComplete}
+        onSkip={playback.handleSkip}
+        skipConfirmMessage="Skip this meditation?"
+        rightSlot={
+          playback.hasStarted && !playback.isComplete ? (
+            <MuteButton isMuted={playback.audio.isMuted} onToggle={playback.audio.toggleMute} />
+          ) : null
+        }
+      />
+      <DurationPicker
+        isOpen={showDurationPicker}
+        onClose={() => setShowDurationPicker(false)}
+        onSelect={setSelectedDuration}
+        currentDuration={selectedDuration}
+        durationSteps={meditation.durationSteps}
+        minDuration={meditation.minDuration / 60}
+        maxDuration={meditation.maxDuration / 60}
+      />
+    </>
+  );
+}
+```
+
+**Step 4: Register the component** in `src/components/active/moduleRegistry.js`:
+
+```javascript
+import MyMeditationModule from './modules/MyMeditationModule';
+export const CUSTOM_MODULES = { ...existing, 'my-meditation': MyMeditationModule };
+```
+
+**Step 5: Add to the module library** in `src/content/modules/library.js`:
+
+```javascript
+{
+  id: 'my-meditation',
+  type: 'my-meditation',    // matches moduleRegistry key
+  title: 'My Meditation',
+  defaultDuration: 10,
+  allowedPhases: ['peak', 'integration'],
+}
+```
+
+**Step 6: Generate audio** — create `scripts/generate-my-meditation-audio.mjs` following the pattern of existing scripts. Use `--dry-run` first, then generate with `ELEVENLABS_API_KEY`.
+
+**Step 7: Build and test** — `npm run build`, then verify the full flow: idle screen → begin → prompts with audio → pause/resume → mute toggle → completion.
+
 ---
 
-## Audio System
+## Audio Meditation System
 
-### Open Awareness Meditation
+Three meditation modules use pre-recorded TTS audio with synchronized text display, all sharing a unified playback architecture.
 
-The app includes pre-recorded TTS audio for the Open Awareness guided meditation:
+### Meditations
 
-- **Location**: `public/audio/meditations/open-awareness/`
-- **Segments**: body-space, core, expansion, closing (multiple variations each)
-- **Sync**: Audio leads text by 200ms; text fades in after audio starts
-- **Fallback**: Graceful text-only mode if audio unavailable
-- **Hook**: `useAudioPlayback.js` manages playback state
+| Meditation | Audio Files | Duration | Unique Feature |
+|------------|:-----------:|----------|----------------|
+| Open Awareness | 26 | 10-30 min (variable) | Conditional prompts for longer sessions (20+ min) |
+| Body Scan | 54 | 10-15 min (variable) | Silence expansion concentrated in later body regions |
+| Self-Compassion | 70 | ~11-15 min (fixed per variation) | 3 variations assembled from shared core + variation clips |
+
+### Architecture
+
+```
+Content Definition (src/content/meditations/<name>.js)
+  ↓ prompts[] with baseSilenceAfter, silenceExpandable, silenceMax
+  ↓
+Component useMemo → builds [timedSequence, totalDuration]
+  ↓ uses generateTimedSequence() from content/meditations/index.js
+  ↓
+useMeditationPlayback hook (src/hooks/useMeditationPlayback.js)
+  ↓ orchestrates timer, audio-text sync, prompt progression, pause/resume
+  ↓
+useAudioPlayback hook (src/hooks/useAudioPlayback.js)
+  ↓ manages HTMLAudioElement lifecycle
+  ↓
+Audio files (public/audio/meditations/<name>/<promptId>.<format>)
+```
+
+### Audio-Text Sync
+
+- Audio leads text by **200ms** — text fades in after audio starts
+- Text fades out **2s into silence** after audio finishes
+- **Fallback**: If audio fails or is muted, text displays for 8s then fades out
+- Prompt phases: `hidden` → `fading-in` → `visible` → `fading-out`
+
+### Content Property Reference
+
+Every meditation prompt uses these properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | string | Yes | Unique prompt ID, also used as audio filename |
+| `text` | string | Yes | Display text shown to user |
+| `baseSilenceAfter` | number | Yes | Base silence duration in seconds after this prompt |
+| `silenceExpandable` | boolean | No | Whether silence can scale with duration selection |
+| `silenceMax` | number | No | Maximum silence in seconds (caps expansion) |
+| `conditional` | object | No | e.g. `{ minDuration: 20 }` — only include for sessions >= 20 min |
+
+### Meditation-Level Properties
+
+Each meditation object in `src/content/meditations/<name>.js` exports:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | string | Unique meditation ID (matches registry key) |
+| `title` | string | Display title |
+| `description` | string | Brief description shown on idle screen |
+| `speakingRate` | number | Words per minute for duration estimation (e.g. 150 or 90) |
+| `prompts` | array | Array of prompt objects (see above) |
+| `audio` | object | `{ basePath: '/audio/meditations/<name>/', format: 'mp3' }` |
+| `minDuration` | number | Minimum duration in seconds (for variable-duration meditations) |
+| `maxDuration` | number | Maximum duration in seconds |
+| `durationSteps` | array | Available duration steps in minutes (e.g. `[10, 15, 20, 25, 30]`) |
+
+Self-Compassion also uses: `variations`, `defaultVariation`, `assembleVariation()`, and shared clip segments instead of a flat `prompts` array.
+
+### Shared Hook: `useMeditationPlayback`
+
+All meditation components delegate playback to this shared hook. It handles:
+
+1. Session store integration (start/pause/resume/reset via Zustand)
+2. Timestamp-based timer (accurate across tab switches)
+3. Prompt progression based on elapsed time
+4. Audio-text synchronization (play audio, fade text in/out)
+5. Audio preloading (first 3 files on mount, next file on each transition)
+6. Screen Wake Lock during active playback
+7. Timer reporting to parent via `onTimerUpdate`
+8. Phase derivation (`idle` / `active` / `completed`) and primary button state
+
+**Parameters:**
+```javascript
+useMeditationPlayback({
+  meditationId,       // 'open-awareness' | 'body-scan' | 'self-compassion'
+  moduleInstanceId,   // module.instanceId
+  timedSequence,      // pre-computed by component's useMemo
+  totalDuration,      // total duration in seconds
+  onComplete,         // callback when user clicks Continue after completion
+  onSkip,             // callback when user confirms skip
+  onTimerUpdate,      // optional callback for ModuleStatusBar
+})
+```
+
+**Returns:**
+```javascript
+{
+  hasStarted, isPlaying, isComplete,    // state booleans
+  elapsedTime, currentPrompt,           // playback position
+  promptPhase,                          // 'hidden' | 'fading-in' | 'visible' | 'fading-out'
+  audio,                                // useAudioPlayback instance (isMuted, toggleMute)
+  handleStart, handlePauseResume,       // control handlers
+  handleComplete, handleSkip,
+  getPhase, getPrimaryButton,           // UI helpers
+}
+```
+
+### Audio Generation
+
+Audio files are generated using ElevenLabs TTS via scripts in `scripts/`:
+
+| Script | Meditation | Prompts |
+|--------|-----------|:-------:|
+| `generate-open-awareness-audio.mjs` | Open Awareness | 26 |
+| `generate-body-scan-audio.mjs` | Body Scan | 54 |
+| `generate-self-compassion-audio.mjs` | Self-Compassion | 70 |
+
+**Voice settings** (shared across all scripts):
+- **Voice**: Oliver Silk (ElevenLabs)
+- **Model**: `eleven_multilingual_v2`
+- **Settings**: stability 0.88, similarity_boost 0.88, speed 0.70
+
+**Usage:**
+```bash
+# Dry run (shows what would be generated, no API calls)
+node scripts/generate-<name>-audio.mjs --dry-run
+
+# Generate all audio files (requires ELEVENLABS_API_KEY env var)
+node scripts/generate-<name>-audio.mjs
+```
 
 ---
 
@@ -257,19 +631,47 @@ All stores use Zustand with `persist` middleware for localStorage backup.
   sessionPhase: 'not-started' | 'intake' | 'pre-session' |
                 'substance-checklist' | 'active' | 'paused' | 'completed',
 
+  intake: { currentSection, currentQuestionIndex, responses, isComplete },
+  substanceChecklist: { plannedDosageMg, ingestionTime, ... },
+  preSubstanceActivity: { touchstone, completedActivities, ... },
+
   timeline: {
     currentPhase: 'come-up' | 'peak' | 'integration',
-    actualStartTime: Date,
-    phases: { comeUp: {...}, peak: {...}, integration: {...} }
+    targetDuration, phases: { comeUp, peak, integration }
   },
 
   modules: {
     items: [/* module instances */],
-    currentModuleInstanceId: string | null
+    currentModuleInstanceId: string | null,
+    history: [/* completed/skipped modules */]
+  },
+
+  comeUpCheckIn: { responses, currentResponse, hasIndicatedFullyArrived, ... },
+
+  booster: {
+    considerBooster, status: 'pending' | 'prompted' | 'taken' | 'skipped' | 'snoozed' | 'expired',
+    checkInResponses: { experienceQuality, physicalState, trajectory }
   },
 
   phaseTransitions: {
-    activeTransition: 'come-up-to-peak' | 'peak-to-integration' | null
+    activeTransition: 'come-up-to-peak' | 'peak-to-integration' | 'session-closing' | null
+  },
+
+  transitionCaptures: {
+    peak: { bodySensations, oneWord },
+    integration: { editedIntention, newFocus, tailoredActivityResponse },
+    closing: { selfGratitude, futureMessage, commitment }
+  },
+
+  session: { closedAt, finalDurationSeconds },
+
+  followUp: {
+    unlockTimes: { checkIn, revisit, integration },
+    modules: {
+      checkIn: { status, feeling, note },
+      revisit: { status, reflection },
+      integration: { status, emerged, commitmentStatus, commitmentResponse }
+    }
   }
 }
 ```
@@ -279,6 +681,8 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 - `beginPeakTransition()`, `transitionToPeak()`, `transitionToIntegration()`
 - `recordCheckInResponse()`, `recordIngestionTime()`, `confirmIngestionTime()`
 - `setSubstanceChecklistSubPhase()`, `completePreSubstanceActivity()`
+- `updateTransitionCapture()`, `updateClosingCapture()`, `completeSession()`
+- `completeFollowUpModule()`, `updateFollowUpModule()`
 
 ### localStorage Keys
 
@@ -408,10 +812,22 @@ A reusable transition screen for smooth flow between sections:
 | ASCII diamond | `src/components/active/capabilities/animations/AsciiDiamond.jsx` |
 | Transition buffer | `src/components/session/TransitionBuffer.jsx` |
 | Audio playback | `src/hooks/useAudioPlayback.js` |
+| Meditation playback | `src/hooks/useMeditationPlayback.js` |
+| Meditation content registry | `src/content/meditations/index.js` |
 | Design tokens | `src/index.css` |
 | Pre-session flow | `src/components/session/PreSessionIntro.jsx` |
 | Substance checklist | `src/components/session/SubstanceChecklist.jsx` |
-| Phase transitions | `src/components/session/PeakTransition.jsx` |
+| Come-up check-in | `src/components/session/ComeUpCheckIn.jsx` |
+| Peak transition | `src/components/session/PeakTransition.jsx` |
+| Booster check-in | `src/components/session/BoosterConsiderationModal.jsx` |
+| Integration transition | `src/components/session/IntegrationTransition.jsx` |
+| Closing ritual | `src/components/session/ClosingRitual.jsx` |
+| Closing ritual content | `src/components/session/transitions/content/closingRitualContent.js` |
+| Data download modal | `src/components/session/DataDownloadModal.jsx` |
+| Data export utility | `src/utils/downloadSessionData.js` |
+| Follow-up: Check-in | `src/components/followup/FollowUpCheckIn.jsx` |
+| Follow-up: Revisit | `src/components/followup/FollowUpRevisit.jsx` |
+| Follow-up: Integration | `src/components/followup/FollowUpIntegration.jsx` |
 | AI assistant | `src/components/ai/AIAssistantModal.jsx` |
 
 ---
@@ -438,13 +854,47 @@ A reusable transition screen for smooth flow between sections:
 
 ---
 
+## Data Export
+
+Session data can be downloaded in two places:
+1. **Closing Ritual** (Step 6: "Before You Go") — via `DataDownloadModal`
+2. **Settings tool** (Tools tab) — via download buttons with confirmation
+
+### Formats
+
+- **Text (.txt)**: Human-readable session record with divider-separated sections
+- **JSON (.json)**: Structured data for backup or import
+
+### Data Included
+
+| Section | Source |
+|---------|--------|
+| Session metadata | Timestamps, duration, dosage, booster status |
+| Intention & touchstone | Intake + pre-session intro |
+| Peak transition captures | One-word, body sensations |
+| Integration transition captures | Edited intention, focus changes, tailored activity |
+| Closing reflections | Self-gratitude, future message, commitment |
+| Come-up check-in responses | Timestamped feeling responses |
+| Booster check-in responses | Experience quality, physical state, trajectory |
+| Module completion history | All completed/skipped activities with timestamps |
+| Follow-up reflections | Check-in, revisit, integration (if completed) |
+| All journal entries | Both session-created and personal/manual entries |
+
+Follow-up data is included only if those modules have been completed. Downloads during the closing ritual will gracefully omit follow-up sections since they unlock 24-48 hours later.
+
+### Implementation
+
+`src/utils/downloadSessionData.js` reads directly from Zustand stores via `getState()` (no React hooks needed) and generates the export at download time.
+
+---
+
 ## Architecture Decisions
 
 1. **All views kept mounted** (hidden with CSS, not unmounted)
    - Why: Meditation timers must survive tab switches
 
-2. **Phase transitions as components** (PeakTransition)
-   - Why: Supportive, personalized experience between phases
+2. **Phase transitions as components** (PeakTransition, IntegrationTransition, ClosingRitual)
+   - Why: Supportive, personalized experience between phases with user captures
 
 3. **Capability system for modules**
    - Why: 80% of modules need no custom code
@@ -454,6 +904,12 @@ A reusable transition screen for smooth flow between sections:
 
 5. **Audio-text sync with audio leading**
    - Why: More natural experience; text confirms what user hears
+
+6. **Time-locked follow-up modules**
+   - Why: Integration benefits from distance; 24-48h delay encourages reflection
+
+7. **Local-only data with export**
+   - Why: Privacy-first; no accounts or cloud sync; user owns their data via download
 
 ---
 

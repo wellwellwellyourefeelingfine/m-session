@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModuleById } from '../content/modules';
 import { useAppStore } from './useAppStore';
+import { precacheAudioForModule, precacheAudioForTimeline } from '../services/audioCacheService';
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -656,6 +657,9 @@ export const useSessionStore = create(
             },
           },
         });
+
+        // Precache audio for all modules in the generated timeline (non-blocking)
+        precacheAudioForTimeline(defaultModules);
       },
 
       // ============================================
@@ -725,6 +729,9 @@ export const useSessionStore = create(
         }
 
         set(updates);
+
+        // Precache audio for the newly added module (non-blocking)
+        precacheAudioForModule(libraryId);
 
         return { success: true, module: newModule };
       },

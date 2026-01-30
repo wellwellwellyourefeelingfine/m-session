@@ -1,10 +1,11 @@
 /**
  * MorphingShapes Component
  *
- * Three overlapping shapes (stroke only) that slowly morph:
+ * Four overlapping shapes (stroke only) that slowly morph:
  * - Shape A: circle → square → circle
  * - Shape B: square → circle → square
- * - Shape C: center point → full circle → center point (SVG for constant stroke)
+ * - Shape C: center point → full circle → center point (synced with outer shapes)
+ * - Shape D: same as C, but phase-shifted by 90°
  *
  * Creates a contemplative, layered animation.
  * Designed for the Co-Star inspired aesthetic.
@@ -16,10 +17,6 @@ export default function MorphingShapes({
   strokeWidth = 1.5,
   duration = 8, // seconds for full cycle
 }) {
-  // Pulse uses a different duration so it drifts in/out of sync
-  // Using 2/3 ratio creates a polyrhythm where patterns align every 3 pulse cycles
-  const pulseDuration = duration * (2 / 3);
-
   // SVG circle needs radius that accounts for stroke
   const maxRadius = (size / 2) - (strokeWidth / 2);
 
@@ -79,7 +76,28 @@ export default function MorphingShapes({
           stroke="currentColor"
           strokeWidth={strokeWidth}
           style={{
-            animation: `pulse-radius ${pulseDuration}s ease-in-out infinite`,
+            animation: `pulse-radius ${duration}s ease-in-out infinite`,
+          }}
+        />
+      </svg>
+
+      {/* Shape 4: Second pulsing circle, offset by 90° phase */}
+      <svg
+        className="absolute inset-0"
+        width={size}
+        height={size}
+        style={{ overflow: 'visible' }}
+      >
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r="0.3"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          style={{
+            animation: `pulse-radius ${duration}s ease-in-out infinite`,
+            animationDelay: `${duration / 4}s`,
           }}
         />
       </svg>
