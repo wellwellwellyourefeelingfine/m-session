@@ -473,8 +473,21 @@ export default function FAQTool() {
       <Question q="Do I need internet during my session?">
         <p>
           No. This is a Progressive Web App (PWA), which means it can work fully
-          offline once loaded. The first time you visit, your browser downloads
-          everything needed to run the app independently.
+          offline once loaded. The app itself downloads on your first visit, and
+          guided meditation audio is downloaded automatically when you finalize
+          your session timeline after completing the intake form.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">When to go offline:</span> Complete
+          the intake questionnaire and review your session timeline while you
+          have an internet connection. Once your timeline is set, all audio for
+          your scheduled modules is cached to your device. You can then safely
+          go into airplane mode or disconnect for the duration of your session.
+        </p>
+        <p>
+          If you add a meditation module to your timeline later (via the timeline
+          editor), its audio will download at that point — so make any changes
+          while you still have a connection.
         </p>
         <p>
           <span className="text-[var(--color-text-primary)]">For the best experience on iPhone:</span> Open

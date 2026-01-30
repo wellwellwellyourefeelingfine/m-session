@@ -3,109 +3,47 @@
  *
  * A Vipassana-inspired guided meditation with:
  * - Pre-recorded TTS audio for each prompt
- * - Text that fades in shortly after audio begins
  * - Variable duration support (10-30 minutes)
  * - Conditional prompts for longer sessions (20+ min)
- * - Graceful fallback to text-only if audio unavailable
- *
- * Audio-Text Synchronization:
- * - Audio starts immediately when prompt triggers
- * - Text fades in 200ms after audio starts (audio "leads")
- * - Text fades out 2 seconds into silence period
- * - Falls back to estimated timing if audio unavailable
+ * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { getModuleById } from '../../../content/modules';
-import { useSessionStore } from '../../../stores/useSessionStore';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
+  generateTimedSequence,
 } from '../../../content/meditations';
-import { useAudioPlayback } from '../../../hooks/useAudioPlayback';
-import { useWakeLock } from '../../../hooks/useWakeLock';
+import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
+import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import DurationPicker from '../../shared/DurationPicker';
 
-// Constants
-const TEXT_FADE_IN_DELAY = 200;           // ms after audio starts before text fades in
-const TEXT_FADE_OUT_INTO_SILENCE = 2000;  // ms into silence before text fades out
-const SPEAKING_RATE = 150;                // words per minute (fallback timing)
-const PROMPT_DISPLAY_DURATION = 8000;     // ms to show text if no audio (fallback)
-
 export default function OpenAwarenessModule({ module, onComplete, onSkip, onTimerUpdate }) {
-  // Get meditation content
   const libraryModule = getModuleById(module.libraryId);
   const meditation = getMeditationById('open-awareness');
-
-  // Session store for persistent playback state
-  const meditationPlayback = useSessionStore(state => state.meditationPlayback);
-  const startMeditationPlayback = useSessionStore(state => state.startMeditationPlayback);
-  const pauseMeditationPlayback = useSessionStore(state => state.pauseMeditationPlayback);
-  const resumeMeditationPlayback = useSessionStore(state => state.resumeMeditationPlayback);
-  const resetMeditationPlayback = useSessionStore(state => state.resetMeditationPlayback);
 
   // Duration selection
   const [selectedDuration, setSelectedDuration] = useState(
     module.duration || libraryModule?.defaultDuration || 10
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(true);
 
-  // Check if this module's playback is active
-  const isThisModule = meditationPlayback.moduleInstanceId === module.instanceId;
-  const hasStarted = isThisModule && meditationPlayback.hasStarted;
-  const isPlaying = isThisModule && meditationPlayback.isPlaying;
-
-  // Prompt display state
-  const [currentPromptIndex, setCurrentPromptIndex] = useState(-1);
-  const [promptPhase, setPromptPhase] = useState('hidden'); // 'hidden' | 'fading-in' | 'visible' | 'fading-out'
-  const [elapsedTime, setElapsedTime] = useState(0);
-
-  // Refs for tracking
-  const lastAudioPromptRef = useRef(-1);
-  const textFadeTimeoutRef = useRef(null);
-  const timerRef = useRef(null);
-
-  // Keep screen awake during active meditation
-  useWakeLock(hasStarted && isPlaying);
-
-  // Audio playback hook
-  const audio = useAudioPlayback({
-    onEnded: () => {
-      // Audio finished - fade out text after delay into silence
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current);
-      }
-      textFadeTimeoutRef.current = setTimeout(() => {
-        setPromptPhase('fading-out');
-      }, TEXT_FADE_OUT_INTO_SILENCE);
-    },
-    onError: (e) => {
-      console.warn('Audio playback error:', e);
-      // Continue with text-only fallback - fade out after estimated duration
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current);
-      }
-      textFadeTimeoutRef.current = setTimeout(() => {
-        setPromptPhase('fading-out');
-      }, PROMPT_DISPLAY_DURATION);
-    },
-  });
-
-  // Filter prompts based on selected duration and generate timed sequence
+  // Build timed sequence (unique to this module: conditional filtering + silence expansion)
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
-    const durationMinutes = selectedDuration;
-    const durationSeconds = durationMinutes * 60;
+    const durationSeconds = selectedDuration * 60;
 
     // Filter out conditional prompts that don't meet duration requirements
     const filteredPrompts = meditation.prompts.filter(prompt => {
       if (!prompt.conditional) return true;
-      if (prompt.conditional.minDuration && durationMinutes < prompt.conditional.minDuration) {
+      if (prompt.conditional.minDuration && selectedDuration < prompt.conditional.minDuration) {
         return false;
       }
       return true;
@@ -115,241 +53,25 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds);
 
     // Generate timed sequence
-    let currentTime = 0;
-    const sequence = filteredPrompts.map(prompt => {
-      const wordCount = prompt.text.split(' ').length;
-      const speakingDuration = (wordCount / SPEAKING_RATE) * 60;
-
-      let silenceDuration = prompt.baseSilenceAfter;
-      if (prompt.silenceExpandable) {
-        const expanded = prompt.baseSilenceAfter * silenceMultiplier;
-        silenceDuration = Math.min(expanded, prompt.silenceMax || expanded);
-      }
-
-      const entry = {
-        id: prompt.id,
-        text: prompt.text,
-        startTime: currentTime,
-        speakingDuration,
-        silenceDuration,
-        endTime: currentTime + speakingDuration + silenceDuration,
-        audioSrc: meditation.audio
-          ? `${meditation.audio.basePath}${prompt.id}.${meditation.audio.format}`
-          : null,
-      };
-
-      currentTime = entry.endTime;
-      return entry;
+    const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {
+      speakingRate: meditation.speakingRate || 150,
+      audioConfig: meditation.audio,
     });
 
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
-
     return [sequence, total];
   }, [meditation, selectedDuration]);
 
-  // Preload first few audio files on mount/duration change
-  useEffect(() => {
-    if (timedSequence.length > 0 && meditation?.audio) {
-      const firstFewSrcs = timedSequence.slice(0, 3)
-        .map(p => p.audioSrc)
-        .filter(Boolean);
-      audio.preload(firstFewSrcs);
-    }
-  }, [timedSequence, meditation?.audio, audio]);
-
-  // Timer update effect (timestamp-based for accuracy)
-  useEffect(() => {
-    if (!isPlaying || !meditationPlayback.startedAt) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
-
-    const updateTimer = () => {
-      const now = Date.now();
-      const currentSegment = (now - meditationPlayback.startedAt) / 1000;
-      const newElapsed = (meditationPlayback.accumulatedTime || 0) + currentSegment;
-      setElapsedTime(newElapsed);
-
-      // Check for completion
-      if (newElapsed >= totalDuration && totalDuration > 0) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-        pauseMeditationPlayback();
-      }
-    };
-
-    updateTimer();
-    timerRef.current = setInterval(updateTimer, 100);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [isPlaying, meditationPlayback.startedAt, meditationPlayback.accumulatedTime, totalDuration, pauseMeditationPlayback]);
-
-  // Recalculate elapsed on resume (when returning to tab)
-  useEffect(() => {
-    if (!isThisModule || !meditationPlayback.hasStarted) return;
-
-    const { startedAt, accumulatedTime } = meditationPlayback;
-
-    if (!startedAt) {
-      // Paused - use accumulated time
-      setElapsedTime(accumulatedTime || 0);
-    }
-  }, [isThisModule, meditationPlayback.hasStarted, meditationPlayback.startedAt, meditationPlayback.accumulatedTime]);
-
-  // Prompt progression based on elapsed time
-  useEffect(() => {
-    if (!hasStarted || timedSequence.length === 0) return;
-
-    // Find which prompt should be active
-    let targetIndex = -1;
-    for (let i = 0; i < timedSequence.length; i++) {
-      if (elapsedTime >= timedSequence[i].startTime) {
-        targetIndex = i;
-      }
-    }
-
-    // If we've moved to a new prompt
-    if (targetIndex !== currentPromptIndex && targetIndex >= 0) {
-      setCurrentPromptIndex(targetIndex);
-
-      // Start audio for new prompt (if not already played)
-      if (targetIndex !== lastAudioPromptRef.current) {
-        lastAudioPromptRef.current = targetIndex;
-        const prompt = timedSequence[targetIndex];
-
-        // Clear any pending fade timeout
-        if (textFadeTimeoutRef.current) {
-          clearTimeout(textFadeTimeoutRef.current);
-          textFadeTimeoutRef.current = null;
-        }
-
-        // Try to play audio
-        if (prompt.audioSrc && !audio.isMuted) {
-          audio.loadAndPlay(prompt.audioSrc);
-        }
-
-        // Fade in text after slight delay (audio leads)
-        setPromptPhase('hidden');
-        setTimeout(() => {
-          setPromptPhase('fading-in');
-          setTimeout(() => setPromptPhase('visible'), 300);
-        }, TEXT_FADE_IN_DELAY);
-
-        // If no audio or muted, set fallback fade-out timer
-        if (!prompt.audioSrc || audio.isMuted) {
-          textFadeTimeoutRef.current = setTimeout(() => {
-            setPromptPhase('fading-out');
-          }, PROMPT_DISPLAY_DURATION);
-        }
-
-        // Preload next audio
-        if (targetIndex + 1 < timedSequence.length) {
-          const nextSrc = timedSequence[targetIndex + 1].audioSrc;
-          if (nextSrc) audio.preload([nextSrc]);
-        }
-      }
-    }
-  }, [elapsedTime, hasStarted, timedSequence, currentPromptIndex, audio]);
-
-  // Report timer state to parent for ModuleStatusBar
-  useEffect(() => {
-    if (!onTimerUpdate) return;
-
-    const progress = totalDuration > 0 ? Math.min((elapsedTime / totalDuration) * 100, 100) : 0;
-    const isComplete = elapsedTime >= totalDuration && totalDuration > 0 && hasStarted;
-
-    onTimerUpdate({
-      progress,
-      elapsed: elapsedTime,
-      total: totalDuration,
-      showTimer: hasStarted && !isComplete,
-      isPaused: !isPlaying,
-    });
-  }, [elapsedTime, totalDuration, hasStarted, isPlaying, onTimerUpdate]);
-
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current);
-      }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, []);
-
-  // Handlers
-  const handleStart = useCallback(() => {
-    startMeditationPlayback(module.instanceId);
-    setElapsedTime(0);
-    setCurrentPromptIndex(-1);
-    lastAudioPromptRef.current = -1;
-    setPromptPhase('hidden');
-  }, [module.instanceId, startMeditationPlayback]);
-
-  const handlePauseResume = useCallback(() => {
-    if (isPlaying) {
-      pauseMeditationPlayback();
-      audio.pause();
-    } else {
-      resumeMeditationPlayback();
-      // Resume audio if it was playing
-      if (audio.currentSrc && !audio.isMuted) {
-        audio.resume();
-      }
-    }
-  }, [isPlaying, pauseMeditationPlayback, resumeMeditationPlayback, audio]);
-
-  const handleComplete = useCallback(() => {
-    resetMeditationPlayback();
-    audio.stop();
-    onComplete();
-  }, [resetMeditationPlayback, audio, onComplete]);
-
-  const handleSkip = useCallback(() => {
-    resetMeditationPlayback();
-    audio.stop();
-    onSkip();
-  }, [resetMeditationPlayback, audio, onSkip]);
-
-  const handleDurationChange = useCallback((newDuration) => {
-    setSelectedDuration(newDuration);
-  }, []);
-
-  // Determine phases
-  const isComplete = elapsedTime >= totalDuration && totalDuration > 0 && hasStarted;
-  const currentPrompt = timedSequence[currentPromptIndex];
-
-  const getPhase = () => {
-    if (!hasStarted) return 'idle';
-    if (isComplete) return 'completed';
-    return 'active';
-  };
-
-  const getPrimaryButton = () => {
-    const phase = getPhase();
-
-    if (phase === 'idle') {
-      return { label: 'Begin', onClick: handleStart };
-    }
-    if (phase === 'active') {
-      return { label: isPlaying ? 'Pause' : 'Resume', onClick: handlePauseResume };
-    }
-    if (phase === 'completed') {
-      return { label: 'Continue', onClick: handleComplete };
-    }
-    return null;
-  };
+  // Shared playback hook handles timer, audio-text sync, prompt progression, etc.
+  const playback = useMeditationPlayback({
+    meditationId: 'open-awareness',
+    moduleInstanceId: module.instanceId,
+    timedSequence,
+    totalDuration,
+    onComplete,
+    onSkip,
+    onTimerUpdate,
+  });
 
   // Fallback if no meditation found
   if (!meditation) {
@@ -369,12 +91,11 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     );
   }
 
-  // Render
   return (
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
-        {!hasStarted && (
+        {!playback.hasStarted && (
           <div className="text-center animate-fadeIn">
             <IdleScreen
               title={meditation.title}
@@ -393,43 +114,69 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
           </div>
         )}
 
-        {/* Active state - prompt display */}
-        {hasStarted && !isComplete && (
-          <div className="text-center px-4">
-            {/* Paused indicator */}
-            {!isPlaying && (
-              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-4 animate-pulse">
-                Paused
-              </p>
+        {/* Active state - title, animation, prompt display */}
+        {playback.hasStarted && !playback.isComplete && (
+          <div className="flex flex-col items-center text-center px-4 pt-8">
+            {/* Fixed top section: title + animation */}
+            <h2 className="text-[var(--color-text-primary)] mb-6">
+              {meditation.title}
+            </h2>
+
+            {showAnimation && (
+              <div className="mb-8 animate-fadeIn">
+                <MorphingShapes size={64} strokeWidth={1} duration={8} />
+              </div>
             )}
 
-            {/* Prompt text */}
-            <p
-              className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
-                promptPhase === 'visible' || promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
-              }`}
-            >
-              {currentPrompt?.text || ''}
-            </p>
+            {/* Spacer to push prompt text down */}
+            <div className="flex-1 min-h-[80px]" />
+
+            {/* Prompt text area - fixed position, doesn't affect layout above */}
+            <div className="w-full">
+              {/* Paused indicator */}
+              {!playback.isPlaying && (
+                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-4 animate-pulse">
+                  Paused
+                </p>
+              )}
+
+              <p
+                className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
+                  playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
+                }`}
+              >
+                {playback.currentPrompt?.text || ''}
+              </p>
+            </div>
           </div>
         )}
 
         {/* Completed state */}
-        {isComplete && <CompletionScreen />}
+        {playback.isComplete && <CompletionScreen />}
       </ModuleLayout>
 
       {/* Control bar */}
       <ModuleControlBar
-        phase={getPhase()}
-        primary={getPrimaryButton()}
-        showSkip={!isComplete}
-        onSkip={handleSkip}
+        phase={playback.getPhase()}
+        primary={playback.getPrimaryButton()}
+        showSkip={!playback.isComplete}
+        onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"
+        leftSlot={
+          playback.hasStarted && !playback.isComplete ? (
+            <SlotButton
+              icon={<AnimationIcon visible={showAnimation} />}
+              label={showAnimation ? 'Hide animation' : 'Show animation'}
+              onClick={() => setShowAnimation(!showAnimation)}
+              active={showAnimation}
+            />
+          ) : null
+        }
         rightSlot={
-          hasStarted && !isComplete ? (
+          playback.hasStarted && !playback.isComplete ? (
             <MuteButton
-              isMuted={audio.isMuted}
-              onToggle={audio.toggleMute}
+              isMuted={playback.audio.isMuted}
+              onToggle={playback.audio.toggleMute}
             />
           ) : null
         }
@@ -439,12 +186,42 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
       <DurationPicker
         isOpen={showDurationPicker}
         onClose={() => setShowDurationPicker(false)}
-        onSelect={handleDurationChange}
+        onSelect={setSelectedDuration}
         currentDuration={selectedDuration}
         durationSteps={meditation.durationSteps}
         minDuration={meditation.minDuration / 60}
         maxDuration={meditation.maxDuration / 60}
       />
     </>
+  );
+}
+
+/**
+ * Animation toggle icon (eye open/closed)
+ */
+function AnimationIcon({ visible }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {visible ? (
+        <>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+        </>
+      ) : (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      )}
+    </svg>
   );
 }

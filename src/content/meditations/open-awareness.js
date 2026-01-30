@@ -29,6 +29,9 @@ export const openAwarenessMeditation = {
     format: 'mp3',
   },
 
+  // Speaking rate for duration estimation (words per minute)
+  speakingRate: 150,
+
   prompts: [
     // === OPENING (Fixed Duration) ===
     {

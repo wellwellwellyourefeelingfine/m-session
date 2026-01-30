@@ -10,9 +10,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon-16x16.png', 'favicon-32x32.png', 'apple-touch-icon.png', 'mask-icon.svg', 'icon.svg'],
       manifest: {
-        name: 'MDMA Session Guide',
-        short_name: 'Session Guide',
-        description: 'A therapeutic session guide with meditation, breathing exercises, and journaling',
+        name: 'm-session',
+        short_name: 'm-session',
+        description: 'Guided meditation, breathwork, and journaling for intentional experiences',
         theme_color: '#1A1A1A',
         background_color: '#1A1A1A',
         display: 'standalone',
@@ -39,7 +39,7 @@ export default defineConfig({
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,mp3,wav,ogg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -76,7 +76,7 @@ export default defineConfig({
             options: {
               cacheName: 'audio-cache',
               expiration: {
-                maxEntries: 50,
+                maxEntries: 200,
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
               },
               cacheableResponse: {

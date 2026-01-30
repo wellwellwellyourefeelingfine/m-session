@@ -22,6 +22,9 @@ import JournalingModule from './modules/JournalingModule';
 import GuidedMeditationModule from './modules/GuidedMeditationModule';
 
 import OpenAwarenessModule from './modules/OpenAwarenessModule';
+import BodyScanModule from './modules/BodyScanModule';
+import SelfCompassionModule from './modules/SelfCompassionModule';
+import SimpleGroundingModule from './modules/SimpleGroundingModule';
 import MusicListeningModule from './modules/MusicListeningModule';
 
 // Import the generic shell
@@ -55,6 +58,15 @@ export const CUSTOM_MODULES = {
 
   // Open awareness has audio-text sync with variable duration
   'open-awareness': OpenAwarenessModule,
+
+  // Body scan has audio-text sync with progressive body region scanning
+  'body-scan': BodyScanModule,
+
+  // Self-compassion has variation selection + audio-text sync
+  'self-compassion': SelfCompassionModule,
+
+  // Simple grounding has fixed-duration audio-text sync
+  'simple-grounding': SimpleGroundingModule,
 
   // Music listening has duration picker, alarm prompt, and recommendations
   'music-listening': MusicListeningModule,
@@ -121,6 +133,9 @@ export const MODULE_CATEGORIES = {
   meditation: [
     'guided-meditation',
     'open-awareness',
+    'body-scan',
+    'self-compassion',
+    'simple-grounding',
   ],
   journaling: [
     'journaling',
