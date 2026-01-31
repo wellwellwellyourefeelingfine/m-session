@@ -65,8 +65,8 @@ function renderToPng(size) {
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
 
-  // Background: match app theme
-  ctx.fillStyle = '#1A1A1A';
+  // Background: light theme
+  ctx.fillStyle = '#F5F5F0';
   ctx.fillRect(0, 0, size, size);
 
   // Render moon at phase 0.35 (waxing crescent — distinctive shape)
@@ -84,8 +84,8 @@ function renderToPng(size) {
   ctx.font = `${fontSize}px monospace`;
   ctx.textBaseline = 'top';
 
-  // Accent color from the app (purple)
-  const accentColor = '#9D8CD9';
+  // Light mode accent: warm pastel orange
+  const accentColor = '#E8A87C';
 
   for (let y = 0; y < rows.length; y++) {
     for (let x = 0; x < rows[y].length; x++) {
@@ -102,10 +102,10 @@ function renderToPng(size) {
       if (inCircle) {
         // Moon body — lit chars slightly brighter
         const isLit = SPARSE.includes(ch);
-        ctx.globalAlpha = isLit ? 0.85 : 0.6;
+        ctx.globalAlpha = isLit ? 0.9 : 0.65;
       } else {
         // Background
-        ctx.globalAlpha = 0.25;
+        ctx.globalAlpha = 0.2;
       }
 
       ctx.fillStyle = accentColor;
@@ -117,8 +117,74 @@ function renderToPng(size) {
   return canvas.toBuffer('image/png');
 }
 
+// ── Splash screen generation (portrait, moon centered) ──
+
+function renderSplashPng(width, height) {
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Background: light theme (#F5F5F0)
+  ctx.fillStyle = '#F5F5F0';
+  ctx.fillRect(0, 0, width, height);
+
+  // Render moon at phase 0.35 (same as icons)
+  const rows = renderMoon(0.35);
+
+  // Moon should be a reasonable size — use ~40% of the shorter dimension (width)
+  const moonSize = Math.floor(width * 0.4);
+  const charWidth = moonSize / SIZE;
+  const charHeight = moonSize / SIZE;
+  const fontSize = Math.floor(charHeight * 1.1);
+
+  // Center the moon in the canvas (slightly above center for visual balance)
+  const offsetX = (width - moonSize) / 2;
+  const offsetY = (height - moonSize) / 2 - height * 0.05;
+
+  ctx.font = `${fontSize}px monospace`;
+  ctx.textBaseline = 'top';
+
+  // Light mode accent: warm pastel orange
+  const accentColor = '#E8A87C';
+
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < rows[y].length; x++) {
+      const ch = rows[y][x];
+      const px = offsetX + x * charWidth;
+      const py = offsetY + y * charHeight;
+
+      const dx = x - CENTER_X + 0.5;
+      const dy = y - CENTER_Y + 0.5;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const inCircle = dist <= RADIUS;
+
+      if (inCircle) {
+        const isLit = SPARSE.includes(ch);
+        ctx.globalAlpha = isLit ? 0.9 : 0.65;
+      } else {
+        ctx.globalAlpha = 0.2;
+      }
+
+      ctx.fillStyle = accentColor;
+      ctx.fillText(ch, px, py);
+    }
+  }
+
+  // Add "m-session" text below the moon
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = accentColor;
+  const titleFontSize = Math.floor(width * 0.045);
+  ctx.font = `${titleFontSize}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText('m-session', width / 2, offsetY + moonSize + height * 0.04);
+
+  ctx.globalAlpha = 1.0;
+  return canvas.toBuffer('image/png');
+}
+
 // ── Generate all sizes ──
 
+console.log('Icons:');
 const sizes = [
   { name: 'pwa-512x512.png', size: 512 },
   { name: 'pwa-192x192.png', size: 192 },
@@ -134,4 +200,19 @@ for (const { name, size } of sizes) {
   console.log(`  ${name} (${size}x${size})`);
 }
 
-console.log('\nAll icons generated in public/');
+console.log('\nSplash screens:');
+const splashes = [
+  { name: 'splash-1170x2532.png', width: 1170, height: 2532 },
+  { name: 'splash-1284x2778.png', width: 1284, height: 2778 },
+  { name: 'splash-1179x2556.png', width: 1179, height: 2556 },
+  { name: 'splash-1290x2796.png', width: 1290, height: 2796 },
+];
+
+for (const { name, width, height } of splashes) {
+  const buf = renderSplashPng(width, height);
+  const path = join(PUBLIC_DIR, name);
+  writeFileSync(path, buf);
+  console.log(`  ${name} (${width}x${height})`);
+}
+
+console.log('\nAll icons and splash screens generated in public/');

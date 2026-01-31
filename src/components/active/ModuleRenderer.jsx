@@ -14,6 +14,7 @@
  * - If it needs custom logic: Create component and add to moduleRegistry.js
  */
 
+import { Suspense } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { getModuleById } from '../../content/modules';
 import { getModuleComponent } from './moduleRegistry';
@@ -47,5 +48,9 @@ export default function ModuleRenderer({ module, onTimerUpdate }) {
     onTimerUpdate, // Pass timer update callback to modules
   };
 
-  return <ModuleComponent {...commonProps} />;
+  return (
+    <Suspense fallback={null}>
+      <ModuleComponent {...commonProps} />
+    </Suspense>
+  );
 }
