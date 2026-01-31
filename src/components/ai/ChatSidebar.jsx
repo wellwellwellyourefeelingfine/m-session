@@ -285,18 +285,20 @@ export function MobileSidebar({ isOpen, onClose, onOpenSettings }) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 top-16 bg-black/50 z-[76] md:hidden ${isClosing ? 'animate-fadeOut pointer-events-none' : 'animate-fadeIn'}`}
+        className={`fixed inset-0 bg-black/50 z-[76] md:hidden ${isClosing ? 'animate-fadeOut pointer-events-none' : 'animate-fadeIn'}`}
+        style={{ top: 'var(--header-height)' }}
         onClick={handleClose}
       />
 
-      {/* Sidebar panel - aligned with header bottom (top-16 = 64px = header height) */}
+      {/* Sidebar panel - aligned with header bottom */}
       <div
         className={`
-          fixed top-16 left-0 bottom-0 w-64
+          fixed left-0 bottom-0 w-64
           bg-[var(--bg-primary)] z-[77] md:hidden
           border-r border-[var(--border)]
           ${isClosing ? 'animate-slideOutToLeft pointer-events-none' : 'animate-slideInFromLeft'}
         `}
+        style={{ top: 'var(--header-height)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
@@ -313,7 +315,7 @@ export function MobileSidebar({ isOpen, onClose, onOpenSettings }) {
         </div>
 
         {/* Conversation list */}
-        <div className="flex-1 overflow-y-auto py-2" style={{ maxHeight: 'calc(100vh - 64px - 140px)' }}>
+        <div className="flex-1 overflow-y-auto py-2" style={{ maxHeight: 'calc(100vh - var(--header-height) - 140px)' }}>
           {conversations.length === 0 ? (
             <div className="px-4 py-4 text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider text-center">
               No conversations yet

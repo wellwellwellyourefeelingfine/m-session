@@ -684,7 +684,7 @@ export default function IntegrationTransition() {
       />
 
       {/* Fixed layout container - fills space between header and tab bar */}
-      <div className="fixed top-16 left-0 right-0 bottom-12 flex flex-col overflow-hidden">
+      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
         {/* Anchored header section - doesn't scroll */}
         <div className="flex-shrink-0 pt-4 pb-4">
           {/* Header: Transition + elapsed time */}
@@ -708,7 +708,7 @@ export default function IntegrationTransition() {
         {/* Content area - directly below animation, scrollable if needed */}
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto pb-6 transition-opacity duration-400 ${
+            className={`w-full max-w-md mx-auto pb-6 transition-opacity duration-[400ms] ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >

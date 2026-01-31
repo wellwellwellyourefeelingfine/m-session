@@ -116,7 +116,7 @@ export default function JournalView() {
   };
 
   return (
-    <div className="fixed top-16 left-0 right-0 bottom-12 overflow-hidden">
+    <div className="fixed left-0 right-0 overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
       {/* Editor View */}
       {(currentView === VIEW_EDITOR || isAnimating) && (
         <div
@@ -151,7 +151,8 @@ export default function JournalView() {
       {currentView === VIEW_LIST && !isAnimating && (
         <button
           onClick={handleNewEntry}
-          className="fixed bottom-[68px] right-4 w-12 h-12 rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg)] flex items-center justify-center shadow-lg z-20 hover:opacity-80 transition-opacity"
+          className="fixed right-4 w-12 h-12 rounded-full bg-[var(--color-text-primary)] text-[var(--color-bg)] flex items-center justify-center shadow-lg z-20 hover:opacity-80 transition-opacity"
+          style={{ bottom: 'calc(var(--tabbar-height) + 1.25rem)' }}
           aria-label="New entry"
         >
           <span className="text-2xl font-light">+</span>

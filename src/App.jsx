@@ -14,6 +14,7 @@ import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
 import PrivacyNotice from './components/shared/PrivacyNotice';
 import IOSInstallPrompt from './components/shared/IOSInstallPrompt';
+import ErrorBoundary from './components/shared/ErrorBoundary';
 
 // Lazy-load non-Home views — only downloaded when their tab is first opened
 const ActiveView = lazy(() => import('./components/active/ActiveView'));
@@ -60,23 +61,25 @@ function App() {
       </div>
 
       {/* Other views: lazy-loaded on first visit, then kept mounted */}
-      <Suspense fallback={null}>
-        {mountedTabs.active && (
-          <div className={currentTab === 'active' ? '' : 'hidden'}>
-            <ActiveView />
-          </div>
-        )}
-        {mountedTabs.journal && (
-          <div className={currentTab === 'journal' ? '' : 'hidden'}>
-            <JournalView />
-          </div>
-        )}
-        {mountedTabs.tools && (
-          <div className={currentTab === 'tools' ? '' : 'hidden'}>
-            <ToolsView />
-          </div>
-        )}
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={null}>
+          {mountedTabs.active && (
+            <div className={currentTab === 'active' ? '' : 'hidden'}>
+              <ActiveView />
+            </div>
+          )}
+          {mountedTabs.journal && (
+            <div className={currentTab === 'journal' ? '' : 'hidden'}>
+              <JournalView />
+            </div>
+          )}
+          {mountedTabs.tools && (
+            <div className={currentTab === 'tools' ? '' : 'hidden'}>
+              <ToolsView />
+            </div>
+          )}
+        </Suspense>
+      </ErrorBoundary>
       {/* Global banners */}
       <PrivacyNotice />
       <IOSInstallPrompt />

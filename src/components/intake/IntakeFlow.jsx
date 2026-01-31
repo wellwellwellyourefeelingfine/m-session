@@ -281,7 +281,7 @@ export default function IntakeFlow() {
       />
 
       {/* Main content container - positioned below progress bar */}
-      <div className="fixed top-16 left-0 right-0 bottom-0 overflow-auto">
+      <div className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
         <div className="max-w-md mx-auto px-6 py-6">
           {/* Header - below progress bar */}
           <div className="flex justify-between items-center mb-8">

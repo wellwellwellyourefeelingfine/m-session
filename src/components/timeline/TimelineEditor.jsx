@@ -157,7 +157,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     const updateElapsed = () => {
       const ingestionTime = substanceChecklist?.ingestionTime;
       if (ingestionTime) {
-        const seconds = Math.floor((Date.now() - new Date(ingestionTime).getTime()) / 1000);
+        const seconds = Math.floor((Date.now() - ingestionTime) / 1000);
         setElapsedSeconds(Math.max(0, seconds));
       }
     };
@@ -174,7 +174,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     const formatCountdown = (unlockTime) => {
       if (!unlockTime) return '';
       const now = Date.now();
-      const remaining = new Date(unlockTime).getTime() - now;
+      const remaining = unlockTime - now;
       if (remaining <= 0) return 'Available now';
       const hours = Math.floor(remaining / (60 * 60 * 1000));
       const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
@@ -639,15 +639,15 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                       const unlockDelayHours = libraryModule?.unlockDelay || 24;
                       const closedAt = session?.closedAt;
                       const unlockTime = closedAt
-                        ? new Date(new Date(closedAt).getTime() + unlockDelayHours * 60 * 60 * 1000)
+                        ? closedAt + unlockDelayHours * 60 * 60 * 1000
                         : null;
-                      const isUnlocked = unlockTime ? Date.now() >= unlockTime.getTime() : true;
+                      const isUnlocked = unlockTime ? Date.now() >= unlockTime : true;
                       const isModuleCompleted = module.status === 'completed';
 
                       // Calculate countdown for locked modules
                       let countdownText = '';
                       if (unlockTime && !isUnlocked) {
-                        const remaining = unlockTime.getTime() - Date.now();
+                        const remaining = unlockTime - Date.now();
                         const hours = Math.floor(remaining / (60 * 60 * 1000));
                         const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
                         countdownText = hours > 0 ? `Available in ${hours}h ${minutes}m` : `Available in ${minutes}m`;

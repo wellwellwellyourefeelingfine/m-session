@@ -92,7 +92,8 @@ export default function AISettingsPanel({ isOpen, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 top-16 z-[80] flex items-start justify-center bg-black/50 animate-fadeIn"
+      className="fixed inset-0 z-[80] flex items-start justify-center bg-black/50 animate-fadeIn"
+      style={{ top: 'var(--header-height)' }}
       onClick={handleBackdropClick}
     >
       <div

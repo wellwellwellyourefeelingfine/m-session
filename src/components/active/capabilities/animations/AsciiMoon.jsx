@@ -12,7 +12,7 @@
  * - Brief pause at new
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
 
 // Character sets for rendering
 const DENSE = ['M', 'D', 'M', 'A'];
@@ -36,7 +36,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
  * @param {Object} props
  * @param {string} props.className - Additional CSS classes
  */
-export default function AsciiMoon({ className = '' }) {
+export default memo(function AsciiMoon({ className = '' }) {
   const [output, setOutput] = useState('');
   const animationRef = useRef(null);
   const lastRenderRef = useRef(0);
@@ -153,4 +153,4 @@ export default function AsciiMoon({ className = '' }) {
       {output}
     </pre>
   );
-}
+});

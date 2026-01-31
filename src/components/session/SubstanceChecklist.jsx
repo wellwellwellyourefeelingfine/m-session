@@ -463,7 +463,7 @@ export default function SubstanceChecklist() {
       />
 
       {/* Main content container - positioned below progress bar, above control bar */}
-      <div className="fixed top-16 left-0 right-0 bottom-[104px] overflow-auto">
+      <div className="fixed left-0 right-0 overflow-auto" style={{ top: 'var(--header-height)', bottom: 'var(--bottom-chrome)' }}>
         <div className="max-w-md mx-auto px-6 py-6">
           {/* Header - below progress bar */}
           <div className="flex justify-between items-center mb-8">

@@ -91,7 +91,7 @@ export default function ModuleStatusBar({
   const phaseConfig = PHASE_CONFIG[phase] || PHASE_CONFIG['come-up'];
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-30 bg-[var(--color-bg)]">
+    <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
       {/* Progress bar at the very top of this component - uses text-primary color (dark in light mode, light in dark mode) */}
       <div className="h-0.5 bg-[var(--color-border)]">
         <div

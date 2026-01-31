@@ -113,8 +113,7 @@ export function buildSystemPrompt(sessionState, journalState, contextSettings = 
   // Calculate time since ingestion
   let minutesSinceIngestion = null;
   if (substanceChecklist.ingestionTime) {
-    const ingestionTime = new Date(substanceChecklist.ingestionTime);
-    minutesSinceIngestion = Math.floor((Date.now() - ingestionTime) / (1000 * 60));
+    minutesSinceIngestion = Math.floor((Date.now() - substanceChecklist.ingestionTime) / (1000 * 60));
   }
 
   // Get current module

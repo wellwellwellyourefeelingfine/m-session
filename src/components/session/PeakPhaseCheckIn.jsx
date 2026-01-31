@@ -35,7 +35,7 @@ export default function PeakPhaseCheckIn() {
   const elapsedMinutes = getElapsedMinutes();
   const boosterTaken = booster.status === 'taken';
   const minutesSinceBooster = boosterTaken && booster.boosterTakenAt
-    ? Math.floor((Date.now() - new Date(booster.boosterTakenAt).getTime()) / (1000 * 60))
+    ? Math.floor((Date.now() - booster.boosterTakenAt) / (1000 * 60))
     : null;
   const showBoosterWarning = boosterTaken && minutesSinceBooster !== null && minutesSinceBooster < 45;
 

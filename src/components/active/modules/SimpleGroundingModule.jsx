@@ -86,29 +86,39 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
 
         {/* Active state — title, animation, prompt display */}
         {playback.hasStarted && !playback.isComplete && (
-          <div className="flex flex-col items-center text-center px-4 pt-8">
-            {/* Fixed top section: title + animation */}
-            <h2 className="text-[var(--color-text-primary)] mb-6">
-              {meditation.title}
-            </h2>
+          <div
+            className="relative w-full px-4"
+            style={{
+              alignSelf: 'stretch',
+              minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
+            }}
+          >
+            {/* Anchored top section: title + animation — absolutely positioned, never shifts */}
+            <div className="flex flex-col items-center text-center">
+              <h2
+                className="text-[var(--color-text-primary)] mb-4"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
+              >
+                {meditation.title}
+              </h2>
 
-            {showAnimation && (
-              <div className="mb-8 animate-fadeIn">
-                <MorphingShapes size={64} strokeWidth={1} duration={8} />
-              </div>
-            )}
-
-            {/* Spacer to push prompt text down */}
-            <div className="flex-1 min-h-[80px]" />
-
-            {/* Prompt text area - fixed position, doesn't affect layout above */}
-            <div className="w-full">
-              {/* Paused indicator */}
-              {!playback.isPlaying && (
-                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-4 animate-pulse">
-                  Paused
-                </p>
+              {showAnimation && (
+                <div className="animate-fadeIn">
+                  <MorphingShapes size={128} duration={8} />
+                </div>
               )}
+            </div>
+
+            {/* Prompt text area — centered in remaining space, doesn't affect top elements */}
+            <div className="absolute left-0 right-0 px-4 text-center" style={{ top: '55%', transform: 'translateY(-50%)' }}>
+              {/* Paused indicator — fixed height so it doesn't shift layout */}
+              <div className="h-6 flex items-center justify-center mb-2">
+                {!playback.isPlaying && (
+                  <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
+                    Paused
+                  </p>
+                )}
+              </div>
 
               <p
                 className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
