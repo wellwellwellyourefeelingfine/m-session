@@ -75,7 +75,7 @@ export default function ModuleControlBar({
     <>
       {/* Fixed control bar - positioned above tab bar */}
       {/* pointer-events-none allows clicks to pass through transparent areas */}
-      <div className="fixed bottom-12 left-0 right-0 h-14 z-30 pointer-events-none">
+      <div className="fixed left-0 right-0 h-14 z-30 pointer-events-none" style={{ bottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
         <div className="h-full flex items-center justify-between px-4">
           {/* Far left: Back button */}
           <div className="w-10 flex justify-start">

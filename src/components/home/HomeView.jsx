@@ -85,7 +85,7 @@ export default function HomeView() {
       case 'not-started':
         return (
           <div className="max-w-md mx-auto px-6 py-8 text-center">
-            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none' }}>Welcome to Session</h2>
+            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none' }}>welcome to m-session</h2>
             <div className="flex justify-center mb-8">
               <AsciiDiamond />
             </div>

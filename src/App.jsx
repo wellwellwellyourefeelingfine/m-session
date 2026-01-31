@@ -12,6 +12,8 @@ import { useAppStore } from './stores/useAppStore';
 import { useAIStore } from './stores/useAIStore';
 import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
+import PrivacyNotice from './components/shared/PrivacyNotice';
+import IOSInstallPrompt from './components/shared/IOSInstallPrompt';
 
 // Lazy-load non-Home views — only downloaded when their tab is first opened
 const ActiveView = lazy(() => import('./components/active/ActiveView'));
@@ -75,6 +77,9 @@ function App() {
           </div>
         )}
       </Suspense>
+      {/* Global banners */}
+      <PrivacyNotice />
+      <IOSInstallPrompt />
     </AppShell>
   );
 }

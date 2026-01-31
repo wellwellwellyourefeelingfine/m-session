@@ -442,137 +442,106 @@ export const useSessionStore = create(
       generateTimelineFromIntake: () => {
         const state = get();
         const responses = state.intake.responses;
-        const preferences = responses.activityPreferences || [];
 
         // Calculate phase durations
         const comeUpDuration = 45; // Max allocated
         const peakDuration = 90;
 
-        // Build default modules based on preferences and experience
+        // Fixed default timeline — same for all intake responses.
+        // Intake preferences are collected for future use when more modules are available.
         let defaultModules = [];
-        let moduleOrder = 0;
 
         // === COME-UP MODULES ===
-        // Always start with grounding
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'grounding-basic',
+          libraryId: 'simple-grounding',
           phase: 'come-up',
-          title: 'Grounding Meditation',
-          duration: 10,
+          title: 'Simple Grounding',
+          duration: 5,
           status: 'upcoming',
-          order: moduleOrder++,
-          content: getModuleById('grounding-basic')?.content || {},
+          order: 0,
+          content: getModuleById('simple-grounding')?.content || {},
           startedAt: null,
           completedAt: null,
         });
 
-        // Add breathing if user likes it
-        if (preferences.includes('breathing') || preferences.length === 0) {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'breathing-4-7-8',
-            phase: 'come-up',
-            title: '4-7-8 Breathing',
-            duration: 10,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('breathing-4-7-8')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
-
-        // Add music or body scan
-        if (preferences.includes('music')) {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'music-listening',
-            phase: 'come-up',
-            title: 'Music Immersion',
-            duration: 15,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('music-listening')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        } else {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'open-space',
-            phase: 'come-up',
-            title: 'Open Space',
-            duration: 15,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('open-space')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
-
-        // === PEAK MODULES ===
-        moduleOrder = 0; // Reset for new phase
-
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'open-awareness',
-          phase: 'peak',
-          title: 'Open Awareness',
-          duration: 30,
-          status: 'upcoming',
-          order: moduleOrder++,
-          content: getModuleById('open-awareness')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        if (preferences.includes('journaling')) {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'light-journaling',
-            phase: 'peak',
-            title: 'Light Journaling',
-            duration: 20,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('light-journaling')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'open-space',
-          phase: 'peak',
-          title: 'Open Space',
+          libraryId: 'breath-meditation-calm',
+          phase: 'come-up',
+          title: 'Calming Breath',
           duration: 15,
           status: 'upcoming',
-          order: moduleOrder++,
-          content: getModuleById('open-space')?.content || {},
+          order: 1,
+          content: getModuleById('breath-meditation-calm')?.content || {},
           startedAt: null,
           completedAt: null,
         });
 
-        // If user wants to consider a booster, add booster check-in module to timeline
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'music-listening',
+          phase: 'come-up',
+          title: 'Music Immersion',
+          duration: 20,
+          status: 'upcoming',
+          order: 2,
+          content: getModuleById('music-listening')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
+
+        // === PEAK MODULES ===
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'body-scan',
+          phase: 'peak',
+          title: 'Body Scan',
+          duration: 10,
+          status: 'upcoming',
+          order: 0,
+          content: getModuleById('body-scan')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
+
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'self-compassion',
+          phase: 'peak',
+          title: 'Self-Compassion',
+          duration: 11,
+          status: 'upcoming',
+          order: 1,
+          content: getModuleById('self-compassion')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
+
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'music-listening',
+          phase: 'peak',
+          title: 'Music Immersion',
+          duration: 20,
+          status: 'upcoming',
+          order: 2,
+          content: getModuleById('music-listening')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
+
+        // Booster check-in — independent of other preferences
         const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
         if (considerBooster) {
-          // Place booster after the first peak module as a visual indicator.
-          // The actual trigger is time-based (90 min from ingestion) regardless of position.
-          const peakModulesSoFar = defaultModules.filter(m => m.phase === 'peak');
-          const boosterInsertOrder = Math.min(1, peakModulesSoFar.length);
-
-          // Re-order peak modules to insert booster at the right position
+          // Re-order peak modules to insert booster after the first module
           defaultModules = defaultModules.map(m => {
-            if (m.phase === 'peak' && m.order >= boosterInsertOrder) {
+            if (m.phase === 'peak' && m.order >= 1) {
               return { ...m, order: m.order + 1 };
             }
             return m;
           });
 
-          // Insert the booster module
           defaultModules.push({
             instanceId: generateId(),
             libraryId: 'booster-consideration',
@@ -580,7 +549,7 @@ export const useSessionStore = create(
             title: 'Booster Check-In',
             duration: 5,
             status: 'upcoming',
-            order: boosterInsertOrder,
+            order: 1,
             content: getModuleById('booster-consideration')?.content || {},
             isBoosterModule: true,
             startedAt: null,
@@ -589,53 +558,44 @@ export const useSessionStore = create(
         }
 
         // === INTEGRATION MODULES ===
-        moduleOrder = 0;
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'open-awareness',
+          phase: 'integration',
+          title: 'Open Awareness',
+          duration: 15,
+          status: 'upcoming',
+          order: 0,
+          content: getModuleById('open-awareness')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
 
-        if (preferences.includes('journaling')) {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'deep-journaling',
-            phase: 'integration',
-            title: 'Deep Journaling',
-            duration: 30,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('deep-journaling')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'light-journaling',
+          phase: 'integration',
+          title: 'Journaling',
+          duration: 15,
+          status: 'upcoming',
+          order: 1,
+          content: getModuleById('light-journaling')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
 
-        if (preferences.includes('meditation')) {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'open-space',
-            phase: 'integration',
-            title: 'Open Space',
-            duration: 25,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('open-space')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
-
-        // Add letter writing for relationship focus
-        if (responses.primaryFocus === 'relationship') {
-          defaultModules.push({
-            instanceId: generateId(),
-            libraryId: 'letter-writing',
-            phase: 'integration',
-            title: 'Letter Writing',
-            duration: 25,
-            status: 'upcoming',
-            order: moduleOrder++,
-            content: getModuleById('letter-writing')?.content || {},
-            startedAt: null,
-            completedAt: null,
-          });
-        }
+        defaultModules.push({
+          instanceId: generateId(),
+          libraryId: 'letter-writing',
+          phase: 'integration',
+          title: 'Letter Writing',
+          duration: 25,
+          status: 'upcoming',
+          order: 2,
+          content: getModuleById('letter-writing')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
 
         // NOTE: Closing ritual is now handled as a transition flow (ClosingCheckIn + ClosingRitual)
         // triggered automatically when all integration modules complete
