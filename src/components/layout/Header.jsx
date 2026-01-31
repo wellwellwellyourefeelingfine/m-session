@@ -38,16 +38,18 @@ export default function Header() {
     <>
       <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}>
         <div className="h-full flex items-end px-4">
-          {/* App Title - DM Serif Text (left-aligned, sits just above border) */}
+          {/* App Title - DM Serif Text (left-aligned, flush above border) */}
           <h1
-            className="font-serif text-3xl leading-none -ml-2"
+            className="text-3xl leading-none"
             style={{
               fontFamily: 'DM Serif Text, serif',
               textTransform: 'none',
-              marginBottom: '2px'
+              marginBottom: '4px',
+              marginLeft: '-10px',
             }}
           >
-            m-session
+            <span style={{ color: 'var(--accent)', opacity: 0.7, marginRight: '2px' }}>m-</span>
+            <span>session</span>
           </h1>
 
           {/* AI Assistant Tab (centered in remaining space, only visible when API key is configured) */}
