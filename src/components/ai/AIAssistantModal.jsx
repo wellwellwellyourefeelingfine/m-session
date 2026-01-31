@@ -210,10 +210,11 @@ export default function AIAssistantModal({ onClose, isClosing = false }) {
   return (
     <div
       className={`
-        fixed inset-0 top-16 z-[75]
+        fixed inset-0 z-[75]
         bg-[var(--bg-primary)]
         ${isClosing ? 'animate-slideOutToRightFull' : 'animate-slideInFromRightFull'}
       `}
+      style={{ top: 'var(--header-height)' }}
       role="dialog"
       aria-modal="true"
       aria-label="AI Assistant"

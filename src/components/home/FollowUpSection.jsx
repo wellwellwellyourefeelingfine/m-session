@@ -17,7 +17,7 @@ function formatCountdown(unlockTime) {
   if (!unlockTime) return '';
 
   const now = Date.now();
-  const remaining = new Date(unlockTime).getTime() - now;
+  const remaining = unlockTime - now;
 
   if (remaining <= 0) {
     return 'Available now';

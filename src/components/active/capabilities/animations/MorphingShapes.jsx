@@ -9,38 +9,62 @@
  *
  * Creates a contemplative, layered animation.
  * Designed for the Co-Star inspired aesthetic.
+ *
+ * Wrapped in React.memo — parent re-renders (from timer ticks) won't
+ * cascade into this component since props are static.
  */
 
-export default function MorphingShapes({
+import { memo, useMemo, useRef, useEffect } from 'react';
+
+export default memo(function MorphingShapes({
   className = '',
   size = 48,
-  strokeWidth = 1.5,
+  strokeWidth = 3,
   duration = 8, // seconds for full cycle
 }) {
-  // SVG circle needs radius that accounts for stroke
   const maxRadius = (size / 2) - (strokeWidth / 2);
+  const styleRef = useRef(null);
+
+  // Build keyframe CSS once per prop set, inject via a persistent <style> element
+  // so the browser doesn't re-parse keyframes on every render.
+  const keyframeCSS = useMemo(() => `
+    @keyframes morph-circle-to-square {
+      0%, 100% { border-radius: 50%; }
+      50% { border-radius: 4%; }
+    }
+    @keyframes morph-square-to-circle {
+      0%, 100% { border-radius: 4%; }
+      50% { border-radius: 50%; }
+    }
+    @keyframes pulse-radius {
+      0%, 100% { r: 0.3px; }
+      50% { r: ${maxRadius}px; }
+    }
+  `, [maxRadius]);
+
+  // Inject/update the <style> element imperatively so React doesn't
+  // tear it down and recreate it on re-render.
+  useEffect(() => {
+    if (!styleRef.current) {
+      styleRef.current = document.createElement('style');
+      styleRef.current.setAttribute('data-morphing-shapes', '');
+      document.head.appendChild(styleRef.current);
+    }
+    styleRef.current.textContent = keyframeCSS;
+
+    return () => {
+      if (styleRef.current) {
+        styleRef.current.remove();
+        styleRef.current = null;
+      }
+    };
+  }, [keyframeCSS]);
 
   return (
     <div
       className={`relative ${className}`}
       style={{ width: size, height: size, color: 'var(--accent)' }}
     >
-      {/* Keyframes defined inline for self-contained component */}
-      <style>{`
-        @keyframes morph-circle-to-square {
-          0%, 100% { border-radius: 50%; }
-          50% { border-radius: 4%; }
-        }
-        @keyframes morph-square-to-circle {
-          0%, 100% { border-radius: 4%; }
-          50% { border-radius: 50%; }
-        }
-        @keyframes pulse-radius {
-          0%, 100% { r: 0.3px; }
-          50% { r: ${maxRadius}px; }
-        }
-      `}</style>
-
       {/* Shape 1: Starts as circle */}
       <div
         className="absolute inset-0 border-current"
@@ -103,4 +127,4 @@ export default function MorphingShapes({
       </svg>
     </div>
   );
-}
+});

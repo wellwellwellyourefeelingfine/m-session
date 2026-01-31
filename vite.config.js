@@ -13,7 +13,7 @@ export default defineConfig({
         name: 'm-session',
         short_name: 'm-session',
         description: 'Guided meditation, breathwork, and journaling for intentional experiences',
-        theme_color: '#1A1A1A',
+        theme_color: '#F5F5F0',
         background_color: '#1A1A1A',
         display: 'standalone',
         orientation: 'portrait',

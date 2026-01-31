@@ -19,7 +19,7 @@
  * - Hold after exhale: stays at 180° (bottom)
  */
 
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 /**
  * @param {Object} props
@@ -32,7 +32,7 @@ import { useMemo } from 'react';
  * @param {boolean} props.isIdle - Whether in idle state (gentle pulse animation)
  * @param {string} props.size - Size variant: 'small' | 'medium' | 'large'
  */
-export default function BreathOrb({
+export default memo(function BreathOrb({
   phase = 'inhale',
   phaseProgress = 0,
   phaseDuration = 4,
@@ -134,6 +134,16 @@ export default function BreathOrb({
   const orbScale = getOrbScale();
   const orbSize = sizeConfig.orbExpandedSize;
 
+  // Gradient only uses CSS variables — never changes, so memoize once
+  const orbGradient = useMemo(() =>
+    `radial-gradient(circle at center,
+      var(--accent) 0%,
+      var(--accent) 20%,
+      color-mix(in srgb, var(--accent) 60%, transparent) 50%,
+      color-mix(in srgb, var(--accent) 30%, transparent) 70%,
+      transparent 100%
+    )`, []);
+
   return (
     <div
       className="relative flex items-center justify-center"
@@ -210,13 +220,7 @@ export default function BreathOrb({
         style={{
           width: orbSize,
           height: orbSize,
-          background: `radial-gradient(circle at center,
-            var(--accent) 0%,
-            var(--accent) 20%,
-            color-mix(in srgb, var(--accent) 60%, transparent) 50%,
-            color-mix(in srgb, var(--accent) 30%, transparent) 70%,
-            transparent 100%
-          )`,
+          background: orbGradient,
           transform: `scale(${orbScale})`,
           transition: isIdle
             ? 'transform 2s ease-in-out'
@@ -258,7 +262,18 @@ export default function BreathOrb({
       </div>
     </div>
   );
-}
+}, (prev, next) => {
+  // Custom comparator: skip re-renders when visual change is imperceptible.
+  // The 25ms timer (40fps) fires constantly — we only need ~20fps visually.
+  if (prev.phase !== next.phase) return false;
+  if (prev.isActive !== next.isActive) return false;
+  if (prev.isIdle !== next.isIdle) return false;
+  if (prev.size !== next.size) return false;
+  if (prev.phaseSecondsRemaining !== next.phaseSecondsRemaining) return false;
+  if (Math.abs(prev.phaseProgress - next.phaseProgress) > 0.01) return false;
+  if (Math.abs(prev.moonAngle - next.moonAngle) > 1.5) return false;
+  return true;
+});
 
 /**
  * CSS for idle breathing animation (add to index.css):

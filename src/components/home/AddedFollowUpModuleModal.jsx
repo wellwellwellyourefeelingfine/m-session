@@ -17,8 +17,8 @@ function formatCountdownDetailed(unlockTime) {
   if (!unlockTime) return { countdown: '', dateTime: '', isUnlocked: true };
 
   const now = Date.now();
+  const remaining = unlockTime - now;
   const unlockDate = new Date(unlockTime);
-  const remaining = unlockDate.getTime() - now;
 
   if (remaining <= 0) {
     return { countdown: 'Available now', dateTime: '', isUnlocked: true };
@@ -56,7 +56,7 @@ export default function AddedFollowUpModuleModal({ module, onClose }) {
   const unlockDelayHours = libraryModule?.unlockDelay || 24;
   const closedAt = session?.closedAt;
   const unlockTime = closedAt
-    ? new Date(new Date(closedAt).getTime() + unlockDelayHours * 60 * 60 * 1000)
+    ? closedAt + unlockDelayHours * 60 * 60 * 1000
     : null;
 
   const { countdown, dateTime, isUnlocked } = formatCountdownDetailed(unlockTime);

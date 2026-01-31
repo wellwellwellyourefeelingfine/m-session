@@ -313,7 +313,7 @@ export default function ComeUpCheckIn() {
   }
 
   // Minimized state - small bar directly above control bar (flush, no gap)
-  // Control bar is at bottom-12 (48px) with h-14 (56px), so check-in bar is at bottom-[104px]
+  // Positioned at bottom: var(--bottom-chrome) = tabbar + control bar height
   // NOTE: This check comes AFTER local UI state checks (confirmation, reassurance)
   // If user has already indicated fully-arrived, hide the bar entirely — the end-of-phase
   // choice modal will reappear automatically when the next module completes.
@@ -324,7 +324,8 @@ export default function ComeUpCheckIn() {
     return (
       <button
         onClick={handleMinimizedClick}
-        className="fixed bottom-[104px] left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
+        className="fixed left-0 right-0 bg-[var(--color-bg-secondary)] border-t border-[var(--color-border)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
+        style={{ bottom: 'var(--bottom-chrome)' }}
       >
         <div className="flex items-center space-x-3">
           <StatusIndicator status={currentResponse} />

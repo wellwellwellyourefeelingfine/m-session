@@ -7,7 +7,8 @@ import { useState } from 'react';
 
 /**
  * Simple markdown-like formatting for assistant messages
- * Supports: **bold**, *italic*, `code`, - lists
+ * Supports: **bold**, *italic*, `code`, line breaks
+ * Uses React elements instead of dangerouslySetInnerHTML to prevent XSS.
  */
 function formatContent(content) {
   if (!content) return null;
@@ -28,31 +29,66 @@ function formatContent(content) {
       );
     }
 
-    // Process other formatting
-    let formatted = part;
-
-    // Bold
-    formatted = formatted.replace(
-      /\*\*([^*]+)\*\*/g,
-      '<strong>$1</strong>'
-    );
-
-    // Italic
-    formatted = formatted.replace(
-      /\*([^*]+)\*/g,
-      '<em>$1</em>'
-    );
-
-    // Line breaks
-    formatted = formatted.replace(/\n/g, '<br/>');
-
-    return (
-      <span
-        key={index}
-        dangerouslySetInnerHTML={{ __html: formatted }}
-      />
-    );
+    // Parse inline formatting into React elements
+    return <span key={index}>{parseInlineFormatting(part)}</span>;
   });
+}
+
+/**
+ * Parse bold, italic, and line breaks into React elements.
+ * Pattern: split on **bold** and *italic* markers, nest as needed.
+ */
+function parseInlineFormatting(text) {
+  // Split on bold markers first: **text**
+  const boldParts = text.split(/\*\*([^*]+)\*\*/g);
+  const elements = [];
+
+  boldParts.forEach((segment, i) => {
+    if (i % 2 === 1) {
+      // Odd indices are bold content
+      elements.push(<strong key={`b${i}`}>{parseItalicsAndBreaks(segment)}</strong>);
+    } else if (segment) {
+      // Even indices are plain text — parse for italics
+      elements.push(...parseItalicsAndBreaks(segment, `p${i}`));
+    }
+  });
+
+  return elements;
+}
+
+/**
+ * Parse *italic* markers and \n line breaks into React elements.
+ * Returns an array of elements/strings.
+ */
+function parseItalicsAndBreaks(text, keyPrefix = '') {
+  const italicParts = text.split(/\*([^*]+)\*/g);
+  const elements = [];
+
+  italicParts.forEach((segment, i) => {
+    if (i % 2 === 1) {
+      // Odd indices are italic content
+      elements.push(<em key={`${keyPrefix}i${i}`}>{insertLineBreaks(segment, `${keyPrefix}i${i}`)}</em>);
+    } else if (segment) {
+      elements.push(...insertLineBreaks(segment, `${keyPrefix}t${i}`));
+    }
+  });
+
+  return elements;
+}
+
+/**
+ * Replace \n with <br/> elements. Returns an array of strings and <br/> elements.
+ */
+function insertLineBreaks(text, keyPrefix = '') {
+  const lines = text.split('\n');
+  if (lines.length === 1) return [text];
+
+  const result = [];
+  lines.forEach((line, i) => {
+    if (i > 0) result.push(<br key={`${keyPrefix}br${i}`} />);
+    if (line) result.push(line);
+  });
+  return result;
 }
 
 /**

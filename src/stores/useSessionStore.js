@@ -42,7 +42,7 @@ export function shouldShowBooster(booster, substanceChecklist, comeUpCheckIn) {
   if (!ingestionTime) return false;
 
   const now = Date.now();
-  const minutesSinceDose = (now - new Date(ingestionTime).getTime()) / (1000 * 60);
+  const minutesSinceDose = (now - ingestionTime) / (1000 * 60);
 
   // Hard cutoff at 180 minutes - don't show at all
   if (minutesSinceDose >= 180) return false;
@@ -50,7 +50,7 @@ export function shouldShowBooster(booster, substanceChecklist, comeUpCheckIn) {
   // If snoozed, check if we've passed the next prompt time
   // (Allow showing past 150min so the "window closed" message can appear)
   if (booster.status === 'snoozed' && booster.nextPromptAt) {
-    return now >= new Date(booster.nextPromptAt).getTime();
+    return now >= booster.nextPromptAt;
   }
 
   // Past 150 minutes without prior interaction - silently expire
@@ -842,7 +842,7 @@ export const useSessionStore = create(
         });
       },
 
-      recordIngestionTime: (time = new Date()) => {
+      recordIngestionTime: (time = Date.now()) => {
         set({
           substanceChecklist: {
             ...get().substanceChecklist,
@@ -1000,14 +1000,14 @@ export const useSessionStore = create(
         });
       },
 
-      takeBooster: (timestamp = new Date()) => {
+      takeBooster: (timestamp = Date.now()) => {
         const state = get();
         set({
           booster: {
             ...state.booster,
             status: 'taken',
             boosterTakenAt: timestamp,
-            boosterDecisionAt: new Date(),
+            boosterDecisionAt: Date.now(),
             isModalVisible: false,
           },
         });
@@ -1034,7 +1034,7 @@ export const useSessionStore = create(
           booster: {
             ...state.booster,
             status: 'skipped',
-            boosterDecisionAt: new Date(),
+            boosterDecisionAt: Date.now(),
             isModalVisible: false,
           },
         });
@@ -1047,7 +1047,7 @@ export const useSessionStore = create(
       snoozeBooster: () => {
         const state = get();
         const newSnoozeCount = state.booster.snoozeCount + 1;
-        const nextPromptAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+        const nextPromptAt = Date.now() + 10 * 60 * 1000; // 10 minutes from now
 
         set({
           booster: {
@@ -1095,7 +1095,7 @@ export const useSessionStore = create(
           booster: {
             ...state.booster,
             status: 'expired',
-            boosterDecisionAt: new Date(),
+            boosterDecisionAt: Date.now(),
             isModalVisible: false,
             isMinimized: false,
           },
@@ -1113,7 +1113,7 @@ export const useSessionStore = create(
         if (!ingestionTime) return false;
 
         const nextPromptTime = Date.now() + 10 * 60 * 1000;
-        const windowEnd = new Date(ingestionTime).getTime() + 150 * 60 * 1000;
+        const windowEnd = ingestionTime + 150 * 60 * 1000;
         return nextPromptTime < windowEnd;
       },
 
@@ -1128,7 +1128,7 @@ export const useSessionStore = create(
           return;
         }
 
-        const now = new Date();
+        const now = Date.now();
 
         set({
           sessionPhase: 'active',
@@ -1166,7 +1166,7 @@ export const useSessionStore = create(
             isVisible: true,
             isMinimized: false,
             promptCount: state.comeUpCheckIn.promptCount + 1,
-            lastPromptAt: new Date(),
+            lastPromptAt: Date.now(),
           },
         });
       },
@@ -1191,10 +1191,10 @@ export const useSessionStore = create(
 
       recordCheckInResponse: (response) => {
         const state = get();
-        const now = new Date();
+        const now = Date.now();
         const ingestionTime = state.substanceChecklist.ingestionTime;
         const minutesSinceIngestion = ingestionTime
-          ? Math.floor((now - new Date(ingestionTime)) / (1000 * 60))
+          ? Math.floor((now - ingestionTime) / (1000 * 60))
           : 0;
 
         // If "fully-arrived" and less than 20 minutes, we'll need confirmation
@@ -1351,7 +1351,7 @@ export const useSessionStore = create(
       // Complete the come-up to peak transition (called after transition component finishes)
       transitionToPeak: () => {
         const state = get();
-        const now = new Date();
+        const now = Date.now();
 
         // Find the first peak module to auto-start
         const firstPeakModule = state.modules.items
@@ -1413,7 +1413,7 @@ export const useSessionStore = create(
       // Complete the peak to integration transition (called after IntegrationTransition finishes)
       transitionToIntegration: () => {
         const state = get();
-        const now = new Date();
+        const now = Date.now();
 
         // Find the first integration module to auto-start
         const firstIntegrationModule = state.modules.items
@@ -1532,14 +1532,13 @@ export const useSessionStore = create(
 
       completeSession: () => {
         const state = get();
-        const now = new Date();
-        const closedAt = now.getTime();
+        const now = Date.now();
         const DAY_MS = 24 * 60 * 60 * 1000;
 
         // Calculate elapsed seconds
         const ingestionTime = state.substanceChecklist?.ingestionTime;
         const finalDurationSeconds = ingestionTime
-          ? Math.floor((closedAt - new Date(ingestionTime).getTime()) / 1000)
+          ? Math.floor((now - ingestionTime) / 1000)
           : null;
 
         set({
@@ -1571,13 +1570,13 @@ export const useSessionStore = create(
             closedAt: now,
             finalDurationSeconds,
           },
-          // Follow-up unlock times
+          // Follow-up unlock times (millisecond timestamps)
           followUp: {
             ...state.followUp,
             unlockTimes: {
-              checkIn: new Date(closedAt + DAY_MS),
-              revisit: new Date(closedAt + DAY_MS),
-              integration: new Date(closedAt + 2 * DAY_MS),
+              checkIn: now + DAY_MS,
+              revisit: now + DAY_MS,
+              integration: now + 2 * DAY_MS,
             },
           },
         });
@@ -1602,7 +1601,7 @@ export const useSessionStore = create(
           const unlockTime = unlockTimes[moduleId];
           const module = modules[moduleId];
 
-          if (module.status === 'locked' && unlockTime && now >= new Date(unlockTime).getTime()) {
+          if (module.status === 'locked' && unlockTime && now >= unlockTime) {
             updates[moduleId] = { ...module, status: 'available' };
           }
         });
@@ -1650,7 +1649,7 @@ export const useSessionStore = create(
                 ...state.followUp.modules[moduleId],
                 ...data,
                 status: 'completed',
-                completedAt: new Date(),
+                completedAt: Date.now(),
               },
             },
           },
@@ -1689,7 +1688,7 @@ export const useSessionStore = create(
             inOpenSpace: false, // Clear open space when user explicitly starts a module
             items: state.modules.items.map((m) =>
               m.instanceId === instanceId
-                ? { ...m, status: 'active', startedAt: new Date() }
+                ? { ...m, status: 'active', startedAt: Date.now() }
                 : m
             ),
           },
@@ -1701,7 +1700,7 @@ export const useSessionStore = create(
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module) return;
 
-        const now = new Date();
+        const now = Date.now();
         const currentPhase = state.timeline.currentPhase;
 
         // Add to history
@@ -1710,7 +1709,7 @@ export const useSessionStore = create(
           status: 'completed',
           completedAt: now,
           actualDuration: module.startedAt
-            ? Math.floor((now - new Date(module.startedAt)) / 1000)
+            ? Math.floor((now - module.startedAt) / 1000)
             : module.duration * 60,
         };
 
@@ -1803,7 +1802,7 @@ export const useSessionStore = create(
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module) return;
 
-        const now = new Date();
+        const now = Date.now();
         const currentPhase = state.timeline.currentPhase;
 
         // Update the module items first (mark as skipped)
@@ -1956,7 +1955,7 @@ export const useSessionStore = create(
               ...state.timeline.phases,
               integration: {
                 ...state.timeline.phases.integration,
-                endedAt: new Date(),
+                endedAt: Date.now(),
               },
             },
           },
@@ -1998,7 +1997,7 @@ export const useSessionStore = create(
         const state = get();
         if (!state.substanceChecklist.ingestionTime) return 0;
         return Math.floor(
-          (Date.now() - new Date(state.substanceChecklist.ingestionTime)) / (1000 * 60)
+          (Date.now() - state.substanceChecklist.ingestionTime) / (1000 * 60)
         );
       },
 
@@ -2104,6 +2103,7 @@ export const useSessionStore = create(
             items: [],
             currentModuleInstanceId: null,
             history: [],
+            inOpenSpace: false,
           },
           comeUpCheckIn: {
             isVisible: false,
@@ -2140,85 +2140,299 @@ export const useSessionStore = create(
             isModalVisible: false,
             isMinimized: false,
           },
+          transitionCaptures: {
+            peak: {
+              bodySensations: [],
+              oneWord: '',
+              completedAt: null,
+            },
+            integration: {
+              intentionEdited: false,
+              editedIntention: '',
+              focusChanged: false,
+              newFocus: null,
+              newRelationshipType: null,
+              tailoredActivityFocus: null,
+              tailoredActivityResponse: {},
+              completedAt: null,
+            },
+            closing: {
+              selfGratitude: '',
+              futureMessage: '',
+              commitment: '',
+              completedAt: null,
+            },
+          },
+          closingCheckIn: {
+            isVisible: false,
+          },
+          session: {
+            closedAt: null,
+            finalDurationSeconds: null,
+          },
+          followUp: {
+            unlockTimes: {
+              checkIn: null,
+              revisit: null,
+              integration: null,
+            },
+            modules: {
+              checkIn: {
+                status: 'locked',
+                completedAt: null,
+                feeling: null,
+                note: null,
+              },
+              revisit: {
+                status: 'locked',
+                completedAt: null,
+                reflection: null,
+              },
+              integration: {
+                status: 'locked',
+                completedAt: null,
+                emerged: null,
+                commitmentStatus: null,
+                commitmentResponse: null,
+              },
+            },
+          },
+          activeFollowUpModule: null,
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            pausedAt: null,
+            accumulatedTime: 0,
+            currentPromptIndex: 0,
+          },
         });
       },
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 5, // Increment this when schema changes to force reset
+      version: 6, // Increment this when schema changes to force reset
+      partialize: (state) => {
+        // Exclude transient UI state and runtime playback from persistence
+        const { meditationPlayback, activeFollowUpModule, ...rest } = state;
+        return {
+          ...rest,
+          // Reset transient flags within nested objects
+          comeUpCheckIn: {
+            ...state.comeUpCheckIn,
+            isVisible: false,
+            isMinimized: true,
+            currentResponse: null,
+            waitingForCheckIn: false,
+            showEndOfPhaseChoice: false,
+          },
+          peakCheckIn: { isVisible: false },
+          closingCheckIn: { isVisible: false },
+          booster: {
+            ...state.booster,
+            isModalVisible: false,
+            isMinimized: false,
+          },
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: null,
+            transitionCompleted: false,
+          },
+          modules: {
+            ...state.modules,
+            inOpenSpace: false,
+          },
+        };
+      },
       migrate: (persistedState, version) => {
         // If coming from version 1 or no version, reset to fresh state
         if (version < 2) {
           return undefined; // Return undefined to use initial state
         }
-        // Add preSubstanceActivity state for version 2 → 3
+
+        // Apply each migration step cumulatively (no early returns)
+        let state = { ...persistedState };
+
+        // Version 2 → 3: Add preSubstanceActivity
         if (version < 3) {
-          return {
-            ...persistedState,
-            preSubstanceActivity: {
-              substanceChecklistSubPhase: 'part1',
-              completedActivities: [],
-              touchstone: '',
-              intentionJournalEntryId: null,
-              focusJournalEntryId: null,
-            },
+          state.preSubstanceActivity = {
+            substanceChecklistSubPhase: 'part1',
+            completedActivities: [],
+            touchstone: '',
+            intentionJournalEntryId: null,
+            focusJournalEntryId: null,
           };
         }
-        // Add booster state for version 3 → 4
+
+        // Version 3 → 4: Add booster state
         if (version < 4) {
-          return {
-            ...persistedState,
-            booster: {
-              considerBooster: false,
-              boosterPrepared: null,
-              status: 'pending',
-              boosterTakenAt: null,
-              boosterDecisionAt: null,
-              snoozeCount: 0,
-              nextPromptAt: null,
-              checkInResponses: {
-                experienceQuality: null,
-                physicalState: null,
-                trajectory: null,
-              },
-              isModalVisible: false,
-              isMinimized: false,
+          state.booster = {
+            considerBooster: false,
+            boosterPrepared: null,
+            status: 'pending',
+            boosterTakenAt: null,
+            boosterDecisionAt: null,
+            snoozeCount: 0,
+            nextPromptAt: null,
+            checkInResponses: {
+              experienceQuality: null,
+              physicalState: null,
+              trajectory: null,
             },
+            isModalVisible: false,
+            isMinimized: false,
           };
         }
-        // Add transitionCaptures and closingCheckIn for version 4 → 5
+
+        // Version 4 → 5: Add transitionCaptures and closingCheckIn
         if (version < 5) {
-          return {
-            ...persistedState,
-            transitionCaptures: {
-              peak: {
-                bodySensations: [],
-                oneWord: '',
-                completedAt: null,
-              },
-              integration: {
-                intentionEdited: false,
-                editedIntention: '',
-                focusChanged: false,
-                newFocus: null,
-                newRelationshipType: null,
-                tailoredActivityFocus: null,
-                tailoredActivityResponse: {},
-                completedAt: null,
-              },
-              closing: {
-                selfGratitude: '',
-                futureMessage: '',
-                commitment: '',
-                completedAt: null,
-              },
+          state.transitionCaptures = {
+            peak: {
+              bodySensations: [],
+              oneWord: '',
+              completedAt: null,
             },
-            closingCheckIn: {
-              isVisible: false,
+            integration: {
+              intentionEdited: false,
+              editedIntention: '',
+              focusChanged: false,
+              newFocus: null,
+              newRelationshipType: null,
+              tailoredActivityFocus: null,
+              tailoredActivityResponse: {},
+              completedAt: null,
+            },
+            closing: {
+              selfGratitude: '',
+              futureMessage: '',
+              commitment: '',
+              completedAt: null,
             },
           };
+          state.closingCheckIn = {
+            isVisible: false,
+          };
         }
-        return persistedState;
+
+        // Version 5 → 6: Convert all Date/ISO-string timestamps to milliseconds
+        if (version < 6) {
+          const toMs = (v) => {
+            if (v == null) return null;
+            if (typeof v === 'number') return v;
+            const ms = new Date(v).getTime();
+            return isNaN(ms) ? null : ms;
+          };
+
+          // substanceChecklist
+          if (state.substanceChecklist) {
+            state.substanceChecklist = {
+              ...state.substanceChecklist,
+              ingestionTime: toMs(state.substanceChecklist.ingestionTime),
+            };
+          }
+
+          // timeline phases
+          if (state.timeline?.phases) {
+            const phases = { ...state.timeline.phases };
+            for (const key of Object.keys(phases)) {
+              if (phases[key]) {
+                phases[key] = {
+                  ...phases[key],
+                  startedAt: toMs(phases[key].startedAt),
+                  endedAt: toMs(phases[key].endedAt),
+                };
+              }
+            }
+            state.timeline = { ...state.timeline, phases };
+          }
+
+          // booster
+          if (state.booster) {
+            state.booster = {
+              ...state.booster,
+              boosterTakenAt: toMs(state.booster.boosterTakenAt),
+              boosterDecisionAt: toMs(state.booster.boosterDecisionAt),
+              nextPromptAt: toMs(state.booster.nextPromptAt),
+            };
+          }
+
+          // comeUpCheckIn
+          if (state.comeUpCheckIn) {
+            state.comeUpCheckIn = {
+              ...state.comeUpCheckIn,
+              lastPromptAt: toMs(state.comeUpCheckIn.lastPromptAt),
+            };
+          }
+
+          // session
+          if (state.session) {
+            state.session = {
+              ...state.session,
+              closedAt: toMs(state.session.closedAt),
+            };
+          }
+
+          // followUp.unlockTimes
+          if (state.followUp?.unlockTimes) {
+            state.followUp = {
+              ...state.followUp,
+              unlockTimes: {
+                checkIn: toMs(state.followUp.unlockTimes.checkIn),
+                revisit: toMs(state.followUp.unlockTimes.revisit),
+                integration: toMs(state.followUp.unlockTimes.integration),
+              },
+            };
+          }
+
+          // followUp.modules completedAt
+          if (state.followUp?.modules) {
+            const modules = { ...state.followUp.modules };
+            for (const key of Object.keys(modules)) {
+              if (modules[key]?.completedAt) {
+                modules[key] = { ...modules[key], completedAt: toMs(modules[key].completedAt) };
+              }
+            }
+            state.followUp = { ...state.followUp, modules };
+          }
+
+          // transitionCaptures completedAt
+          if (state.transitionCaptures) {
+            const tc = { ...state.transitionCaptures };
+            for (const key of Object.keys(tc)) {
+              if (tc[key]?.completedAt) {
+                tc[key] = { ...tc[key], completedAt: toMs(tc[key].completedAt) };
+              }
+            }
+            state.transitionCaptures = tc;
+          }
+
+          // modules.items (startedAt, completedAt)
+          if (state.modules?.items) {
+            state.modules = {
+              ...state.modules,
+              items: state.modules.items.map((m) => ({
+                ...m,
+                startedAt: toMs(m.startedAt),
+                completedAt: toMs(m.completedAt),
+              })),
+            };
+          }
+
+          // modules.history (startedAt, completedAt)
+          if (state.modules?.history) {
+            state.modules = {
+              ...state.modules,
+              history: state.modules.history.map((m) => ({
+                ...m,
+                startedAt: toMs(m.startedAt),
+                completedAt: toMs(m.completedAt),
+              })),
+            };
+          }
+        }
+
+        return state;
       },
     }
   )

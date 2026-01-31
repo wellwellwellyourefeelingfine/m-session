@@ -440,7 +440,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   return (
     <>
       {/* Fixed layout container - no scroll, fills available space */}
-      <div className="fixed inset-0 top-[125px] bottom-[104px] flex flex-col items-center px-6 overflow-hidden">
+      <div className="fixed inset-0 flex flex-col items-center px-6 overflow-hidden" style={{ top: 'calc(var(--header-plus-status) + 25px)', bottom: 'var(--bottom-chrome)' }}>
         {/* Sequence info above orb - shows cycle count and pattern */}
         <div className="flex-shrink-0 h-6 flex items-center justify-center">
           {hasStarted && !breathController.isComplete && getCurrentSequenceInfo() && (

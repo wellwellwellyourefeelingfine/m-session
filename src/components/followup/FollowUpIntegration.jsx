@@ -386,7 +386,7 @@ export default function FollowUpIntegration() {
     <>
       <ModuleProgressBar progress={progress} visible={true} showTime={false} />
 
-      <div className="fixed top-16 left-0 right-0 bottom-12 flex flex-col overflow-hidden">
+      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
         <div className="flex-shrink-0 pt-4 pb-4">
           <div className="text-center mb-4">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
@@ -400,7 +400,7 @@ export default function FollowUpIntegration() {
 
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto transition-opacity duration-400 pb-6 ${
+            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] pb-6 ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >

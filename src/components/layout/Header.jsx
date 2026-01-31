@@ -36,7 +36,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top)', height: 'calc(4rem + env(safe-area-inset-top))' }}>
+      <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
         <div className="h-full flex items-end px-4">
           {/* App Title - DM Serif Text (left-aligned, flush above border) */}
           <h1
@@ -48,7 +48,8 @@ export default function Header() {
               marginLeft: '-10px',
             }}
           >
-            <span style={{ color: 'var(--accent)', opacity: 0.7, marginRight: '2px' }}>m-</span>
+            <span style={{ color: 'var(--accent)', opacity: 0.7 }}>m</span>
+            <span style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>-</span>
             <span>session</span>
           </h1>
 

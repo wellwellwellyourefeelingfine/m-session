@@ -33,7 +33,7 @@ export default function ModuleProgressBar({
   if (!visible) return null;
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-40">
+    <div className="fixed left-0 right-0 z-40" style={{ top: 'var(--header-height)' }}>
       {/* Progress bar track - positioned below header */}
       <div className="h-0.5 bg-[var(--color-border)]">
         {/* Progress bar fill */}

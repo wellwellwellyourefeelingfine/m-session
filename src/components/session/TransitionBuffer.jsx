@@ -122,7 +122,7 @@ export default function TransitionBuffer({ onComplete, holdDuration = 2000 }) {
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-6">
       <div
-        className="flex flex-col items-center text-center space-y-8 transition-opacity duration-800"
+        className="flex flex-col items-center text-center space-y-8 transition-opacity duration-[800ms]"
         style={{ opacity: getOpacity() }}
       >
         <AsciiDiamond />

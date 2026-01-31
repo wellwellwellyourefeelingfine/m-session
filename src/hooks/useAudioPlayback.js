@@ -25,76 +25,81 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 
 export function useAudioPlayback({ onEnded, onError, onPlay } = {}) {
   const audioRef = useRef(null);
+  const preloadCacheRef = useRef(new Map());
+  const pendingPlayRef = useRef(0); // incremented to cancel pending loadAndPlay attempts
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [error, setError] = useState(null);
   const [currentSrc, setCurrentSrc] = useState(null);
 
-  // Initialize audio element
-  useEffect(() => {
-    audioRef.current = new Audio();
-    audioRef.current.preload = 'auto';
+  // Store callbacks in refs so event listeners don't churn on every render
+  const onEndedRef = useRef(onEnded);
+  const onErrorRef = useRef(onError);
+  const onPlayRef = useRef(onPlay);
+  useEffect(() => { onEndedRef.current = onEnded; }, [onEnded]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+  useEffect(() => { onPlayRef.current = onPlay; }, [onPlay]);
 
+  // Lazily create the Audio element (avoids connecting to audio output until needed)
+  const getAudio = useCallback(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.preload = 'auto';
+    }
+    return audioRef.current;
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
       }
+      preloadCacheRef.current.clear();
     };
   }, []);
 
-  // Set up event listeners
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  // Set up event listeners once (using refs for callbacks to avoid re-attachment)
+  const listenersAttachedRef = useRef(false);
 
-    const handleEnded = () => {
+  const attachListeners = useCallback((audio) => {
+    if (listenersAttachedRef.current) return;
+    listenersAttachedRef.current = true;
+
+    audio.addEventListener('ended', () => {
       setIsPlaying(false);
-      onEnded?.();
-    };
+      onEndedRef.current?.();
+    });
 
-    const handleError = (e) => {
+    audio.addEventListener('error', () => {
       const errorInfo = {
         code: audio.error?.code,
         message: audio.error?.message || 'Unknown audio error',
-        src: currentSrc,
+        src: audioRef.current?.src || null,
       };
       setError(errorInfo);
       setIsPlaying(false);
       setIsLoaded(false);
-      onError?.(errorInfo);
-    };
+      onErrorRef.current?.(errorInfo);
+    });
 
-    const handleCanPlayThrough = () => {
+    audio.addEventListener('canplaythrough', () => {
       setIsLoaded(true);
       setError(null);
-    };
+    });
 
-    const handlePlay = () => {
+    audio.addEventListener('play', () => {
       setIsPlaying(true);
-      onPlay?.();
-    };
+      onPlayRef.current?.();
+    });
 
-    const handlePause = () => {
+    audio.addEventListener('pause', () => {
       setIsPlaying(false);
-    };
-
-    audio.addEventListener('ended', handleEnded);
-    audio.addEventListener('error', handleError);
-    audio.addEventListener('canplaythrough', handleCanPlayThrough);
-    audio.addEventListener('play', handlePlay);
-    audio.addEventListener('pause', handlePause);
-
-    return () => {
-      audio.removeEventListener('ended', handleEnded);
-      audio.removeEventListener('error', handleError);
-      audio.removeEventListener('canplaythrough', handleCanPlayThrough);
-      audio.removeEventListener('play', handlePlay);
-      audio.removeEventListener('pause', handlePause);
-    };
-  }, [currentSrc, onEnded, onError, onPlay]);
+    });
+  }, []);
 
   // Update mute state on audio element
   useEffect(() => {
@@ -105,26 +110,38 @@ export function useAudioPlayback({ onEnded, onError, onPlay } = {}) {
 
   // Load a new audio source
   const load = useCallback((src) => {
-    if (!audioRef.current || !src) return;
+    if (!src) return;
+    const audio = getAudio();
+    attachListeners(audio);
 
     setIsLoaded(false);
     setError(null);
     setCurrentSrc(src);
-    audioRef.current.src = src;
-    audioRef.current.load();
-  }, []);
+    audio.src = src;
+    audio.load();
+  }, [getAudio, attachListeners]);
 
-  // Preload multiple audio files (creates temporary Audio objects)
+  // Preload audio files using fetch to warm the HTTP/SW cache.
+  // This avoids creating Audio elements (which can produce click artifacts
+  // on some browsers when they connect to the audio output during decode).
   const preload = useCallback((srcs) => {
     if (!srcs || !Array.isArray(srcs)) return;
+    const cache = preloadCacheRef.current;
+    const MAX_CACHE = 5;
 
     srcs.forEach(src => {
-      if (src) {
-        const preloadAudio = new Audio();
-        preloadAudio.preload = 'auto';
-        preloadAudio.src = src;
-        // The browser will cache these
+      if (!src || cache.has(src)) return;
+
+      // Evict oldest entry if at capacity
+      if (cache.size >= MAX_CACHE) {
+        const oldest = cache.keys().next().value;
+        cache.delete(oldest);
       }
+
+      // Use fetch to pull the file into the browser/SW cache
+      // without creating an Audio element or decoding audio data
+      fetch(src).catch(() => {});
+      cache.set(src, true);
     });
   }, []);
 
@@ -143,54 +160,67 @@ export function useAudioPlayback({ onEnded, onError, onPlay } = {}) {
         src: currentSrc,
       };
       setError(errorInfo);
-      onError?.(errorInfo);
+      onErrorRef.current?.(errorInfo);
       return false;
     }
-  }, [currentSrc, onError]);
+  }, [currentSrc]);
 
-  // Load and play in one step
+  // Load and play in one step (cancellable via pendingPlayRef generation counter)
   const loadAndPlay = useCallback(async (src) => {
-    if (!audioRef.current || !src) return false;
+    if (!src) return false;
+
+    // Bump the generation so any previous pending loadAndPlay is stale
+    const generation = ++pendingPlayRef.current;
 
     load(src);
 
-    // Wait a brief moment for load to start, then try to play
-    // The 'canplaythrough' event will handle full loading
     return new Promise((resolve) => {
       const audio = audioRef.current;
+      if (!audio) { resolve(false); return; }
+
+      let settled = false;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
 
       const attemptPlay = async () => {
+        // Cancel if a newer loadAndPlay was issued or component unmounted
+        if (pendingPlayRef.current !== generation || !audioRef.current) {
+          settle(false);
+          return;
+        }
         try {
-          await audio.play();
-          resolve(true);
-        } catch (e) {
-          // May need user interaction first on mobile
-          resolve(false);
+          await audioRef.current.play();
+          settle(true);
+        } catch {
+          settle(false);
         }
       };
 
-      // Try immediately if already loaded enough
+      // Try immediately if already buffered
       if (audio.readyState >= 3) {
         attemptPlay();
       } else {
-        // Wait for enough data
         const onCanPlay = () => {
           audio.removeEventListener('canplay', onCanPlay);
           attemptPlay();
         };
         audio.addEventListener('canplay', onCanPlay);
 
-        // Timeout fallback
+        // Longer timeout for mobile networks
         setTimeout(() => {
           audio.removeEventListener('canplay', onCanPlay);
           attemptPlay();
-        }, 500);
+        }, 3000);
       }
     });
   }, [load]);
 
-  // Pause audio
+  // Pause audio (also cancels any pending loadAndPlay)
   const pause = useCallback(() => {
+    pendingPlayRef.current++;
     if (audioRef.current) {
       audioRef.current.pause();
     }
@@ -208,8 +238,9 @@ export function useAudioPlayback({ onEnded, onError, onPlay } = {}) {
     }
   }, []);
 
-  // Stop and reset
+  // Stop and reset (also cancels any pending loadAndPlay)
   const stop = useCallback(() => {
+    pendingPlayRef.current++;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;

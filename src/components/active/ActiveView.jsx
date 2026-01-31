@@ -90,7 +90,7 @@ export default function ActiveView() {
       const ingestionTime = substanceChecklist.ingestionTime;
       if (!ingestionTime) return;
 
-      const minutesSinceDose = (Date.now() - new Date(ingestionTime).getTime()) / (1000 * 60);
+      const minutesSinceDose = (Date.now() - ingestionTime) / (1000 * 60);
 
       // Hard expire at 180 minutes — remove minimized bar and full modal
       if (minutesSinceDose >= 180) {

@@ -18,7 +18,7 @@ export default function TabBar() {
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-app-gray-200 dark:border-app-gray-800" style={{ backgroundColor: 'var(--bg-primary)', paddingBottom: 'env(safe-area-inset-bottom)', height: 'calc(3rem + env(safe-area-inset-bottom))' }}>
+    <nav className="fixed bottom-0 left-0 right-0 border-t border-app-gray-200 dark:border-app-gray-800" style={{ backgroundColor: 'var(--bg-primary)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', height: 'var(--tabbar-height)' }}>
       <div className="flex h-12">
         {tabs.map((tab) => (
           <button

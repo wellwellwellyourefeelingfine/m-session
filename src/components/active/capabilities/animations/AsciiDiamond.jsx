@@ -12,7 +12,7 @@
  * - Brief pause at empty
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { memo, useState, useEffect, useRef, useMemo } from 'react';
 
 // Character sets for rendering
 const DENSE = ['L', 'O', 'V', 'E'];
@@ -35,7 +35,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
  * @param {Object} props
  * @param {string} props.className - Additional CSS classes
  */
-export default function AsciiDiamond({ className = '' }) {
+export default memo(function AsciiDiamond({ className = '' }) {
   const [output, setOutput] = useState('');
   const animationRef = useRef(null);
   const lastRenderRef = useRef(0);
@@ -152,4 +152,4 @@ export default function AsciiDiamond({ className = '' }) {
       {output}
     </pre>
   );
-}
+});

@@ -138,17 +138,6 @@ export default function PreSessionIntro() {
   };
 
   // ============================================
-  // SKIP TO END
-  // ============================================
-
-  const handleSkipToEnd = () => {
-    fadeTransition(() => {
-      setInIntentionFlow(false);
-      setStep(TOTAL_STEPS - 1);
-    });
-  };
-
-  // ============================================
   // ACTIVITY MENU LOGIC (Step 1)
   // ============================================
 
@@ -226,7 +215,7 @@ export default function PreSessionIntro() {
   // ============================================
 
   const handleTakeSubstance = () => {
-    recordIngestionTime(new Date());
+    recordIngestionTime(Date.now());
     goToStep(4);
   };
 
@@ -244,7 +233,7 @@ export default function PreSessionIntro() {
       const [hours, minutes] = editedTime.split(':').map(Number);
       const newTime = new Date();
       newTime.setHours(hours, minutes, 0, 0);
-      recordIngestionTime(newTime);
+      recordIngestionTime(newTime.getTime());
     }
     confirmIngestionTime();
     setShowTimeEdit(false);
@@ -622,9 +611,6 @@ export default function PreSessionIntro() {
   // Determine if we can go back
   const canGoBack = step > 0 || inIntentionFlow;
 
-  // Determine if we show skip (to jump to end)
-  const showSkip = step < TOTAL_STEPS - 1 && !isExiting;
-
   return (
     <>
       {/* Progress bar at top */}
@@ -635,7 +621,7 @@ export default function PreSessionIntro() {
       />
 
       {/* Fixed layout container - fills space between progress bar and control bar */}
-      <div className={`fixed top-16 left-0 right-0 bottom-[104px] flex flex-col overflow-hidden transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`fixed left-0 right-0 flex flex-col overflow-hidden transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`} style={{ top: 'var(--header-height)', bottom: 'var(--bottom-chrome)' }}>
         {/* Header - below progress bar with proper spacing */}
         <div className="flex-shrink-0 px-6 pt-6 pb-2 flex justify-between items-center">
           <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
@@ -674,9 +660,6 @@ export default function PreSessionIntro() {
           showBack={canGoBack}
           onBack={handleBack}
           backConfirmMessage={null}
-          showSkip={showSkip}
-          onSkip={handleSkipToEnd}
-          skipConfirmMessage="Skip to the final step?"
         />
       )}
     </>

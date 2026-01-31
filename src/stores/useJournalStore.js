@@ -196,6 +196,19 @@ export const useJournalStore = create(
     {
       name: 'mdma-guide-journal-state',
       version: 2,
+      partialize: (state) => {
+        // Only persist entries and settings, not transient navigation state
+        const { navigation, ...rest } = state;
+        return rest;
+      },
+      migrate: (persistedState, version) => {
+        // v1 → v2: added navigation and settings (both have defaults in initial state).
+        // Zustand merges initial state with persisted, so just passing through preserves entries.
+        if (version < 2) {
+          return { ...persistedState };
+        }
+        return persistedState;
+      },
     }
   )
 );

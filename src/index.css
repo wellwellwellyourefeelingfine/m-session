@@ -33,6 +33,14 @@
     --success: var(--accent);
     --error: var(--accent);
 
+    /* Layout — single source of truth for header/footer/chrome positioning */
+    --header-height: calc(4rem + env(safe-area-inset-top, 0px));
+    --tabbar-height: calc(3rem + env(safe-area-inset-bottom, 0px));
+    --control-bar-height: 3.5rem;
+    --status-bar-height: 2.25rem;
+    --bottom-chrome: calc(var(--tabbar-height) + var(--control-bar-height));
+    --header-plus-status: calc(var(--header-height) + var(--status-bar-height));
+
     /* Spacing */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
