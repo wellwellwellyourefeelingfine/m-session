@@ -29,6 +29,13 @@ export const useAppStore = create(
         set((state) => ({
           preferences: { ...state.preferences, [key]: value },
         })),
+
+      // Dismissed banners (persisted so they don't reappear)
+      dismissedBanners: {},
+      dismissBanner: (id) =>
+        set((state) => ({
+          dismissedBanners: { ...state.dismissedBanners, [id]: true },
+        })),
     }),
     {
       name: 'mdma-guide-app-state',

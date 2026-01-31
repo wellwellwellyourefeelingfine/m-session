@@ -1,0 +1,6 @@
+# m-session — https://m-session.com
+User-agent: *
+Allow: /
+Disallow: /audio/
+
+Sitemap: https://m-session.com/sitemap.xml

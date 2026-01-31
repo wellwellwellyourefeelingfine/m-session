@@ -18,13 +18,13 @@ import PhilosophyTool from './PhilosophyTool';
 import AboutTool from './AboutTool';
 
 const tools = [
-  { id: 'help', label: 'I NEED HELP', component: HelpTool },
   { id: 'about', label: 'ABOUT', component: AboutTool },
   { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
+  { id: 'faq', label: 'FAQ', component: FAQTool },
+  { id: 'help', label: 'I NEED HELP', component: HelpTool },
+  { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'testing', label: 'SUBSTANCE TESTING', component: TestingTool },
-  { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
-  { id: 'faq', label: 'FAQ', component: FAQTool },
   { id: 'ai', label: 'AI ASSISTANT', component: AISettingsTool },
   { id: 'settings', label: 'SETTINGS', component: SettingsTool },
 ];

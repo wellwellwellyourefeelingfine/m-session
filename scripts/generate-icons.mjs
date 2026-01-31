@@ -215,4 +215,68 @@ for (const { name, width, height } of splashes) {
   console.log(`  ${name} (${width}x${height})`);
 }
 
-console.log('\nAll icons and splash screens generated in public/');
+// OG image (1200x630 landscape for social sharing)
+console.log('\nOG image:');
+function renderOgImage() {
+  const width = 1200;
+  const height = 630;
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#F5F5F0';
+  ctx.fillRect(0, 0, width, height);
+
+  // Moon — smaller since landscape, offset to the left
+  const rows = renderMoon(0.35);
+  const moonSize = Math.floor(height * 0.5);
+  const charWidth = moonSize / SIZE;
+  const charHeight = moonSize / SIZE;
+  const fontSize = Math.floor(charHeight * 1.1);
+
+  const moonX = width * 0.22 - moonSize / 2;
+  const moonY = (height - moonSize) / 2;
+
+  ctx.font = `${fontSize}px monospace`;
+  ctx.textBaseline = 'top';
+  const accentColor = '#E8A87C';
+
+  for (let y = 0; y < rows.length; y++) {
+    for (let x = 0; x < rows[y].length; x++) {
+      const ch = rows[y][x];
+      const px = moonX + x * charWidth;
+      const py = moonY + y * charHeight;
+      const dx = x - CENTER_X + 0.5;
+      const dy = y - CENTER_Y + 0.5;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const inCircle = dist <= RADIUS;
+      ctx.globalAlpha = inCircle ? (SPARSE.includes(ch) ? 0.9 : 0.65) : 0.2;
+      ctx.fillStyle = accentColor;
+      ctx.fillText(ch, px, py);
+    }
+  }
+
+  // Title text — right side
+  ctx.globalAlpha = 0.85;
+  ctx.fillStyle = '#333';
+  ctx.font = '52px serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('m-session', width * 0.42, height * 0.4);
+
+  // Tagline
+  ctx.globalAlpha = 0.55;
+  ctx.fillStyle = '#666';
+  ctx.font = '20px monospace';
+  ctx.fillText('guided meditation & journaling', width * 0.42, height * 0.55);
+  ctx.fillText('for intentional experiences', width * 0.42, height * 0.62);
+
+  ctx.globalAlpha = 1.0;
+  return canvas.toBuffer('image/png');
+}
+
+const ogBuf = renderOgImage();
+writeFileSync(join(PUBLIC_DIR, 'og-image.png'), ogBuf);
+console.log('  og-image.png (1200x630)');
+
+console.log('\nAll icons, splash screens, and OG image generated in public/');

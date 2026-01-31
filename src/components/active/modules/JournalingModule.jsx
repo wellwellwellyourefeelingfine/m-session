@@ -8,7 +8,7 @@
  * - ModuleLayout for consistent layout structure
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
@@ -18,8 +18,36 @@ import ModuleControlBar from '../capabilities/ModuleControlBar';
 
 export default function JournalingModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const [content, setContent] = useState('');
+  const [recipient, setRecipient] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef(null);
+
+  const isLetterWriting = module.libraryId === 'letter-writing';
+
+  // Rotating placeholder suggestions for the recipient field
+  const recipientSuggestions = [
+    '[a loved one]',
+    '[my future self]',
+    '[my younger self]',
+    '[someone I miss]',
+    '[a friend]',
+    '[a part of me]',
+  ];
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
+  const [suggestionVisible, setSuggestionVisible] = useState(true);
+  const [recipientFocused, setRecipientFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isLetterWriting || recipient || recipientFocused) return;
+    const cycle = setInterval(() => {
+      setSuggestionVisible(false);
+      setTimeout(() => {
+        setSuggestionIndex((i) => (i + 1) % recipientSuggestions.length);
+        setSuggestionVisible(true);
+      }, 600);
+    }, 3000);
+    return () => clearInterval(cycle);
+  }, [isLetterWriting, recipient, recipientFocused]);
 
   const addEntry = useJournalStore((state) => state.addEntry);
   const settings = useJournalStore((state) => state.settings);
@@ -55,14 +83,18 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
 
   const saveEntry = useCallback(() => {
     if (content.trim()) {
+      // For letter writing, prepend the salutation to the saved content
+      const savedContent = isLetterWriting && recipient.trim()
+        ? `Dear ${recipient.trim()},\n\n${content.trim()}`
+        : content.trim();
       addEntry({
-        content: content.trim(),
+        content: savedContent,
         source: 'session',
         sessionId,
         moduleTitle: module.title,
       });
     }
-  }, [content, addEntry, sessionId, module.title]);
+  }, [content, recipient, isLetterWriting, addEntry, sessionId, module.title]);
 
   const handleComplete = useCallback(() => {
     saveEntry();
@@ -75,7 +107,7 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
     onSkip();
   }, [saveEntry, onSkip]);
 
-  const hasContent = content.trim().length > 0;
+  const hasContent = content.trim().length > 0 || (isLetterWriting && recipient.trim().length > 0);
 
   // Get primary button config
   const getPrimaryButton = () => {
@@ -92,11 +124,28 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
       >
         {/* Header with title and instructions */}
         <div className="text-center mb-6">
-          <ModuleHeader
-            title={module.title}
-            instructions={module.content?.instructions || 'Take time to write and reflect.'}
-            centered
-          />
+          {isLetterWriting ? (
+            <>
+              <h2
+                className="text-2xl text-[var(--color-text-primary)] mb-3"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                {module.title}
+              </h2>
+              <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed" style={{ textTransform: 'none' }}>
+                {module.content?.instructions || 'Take time to write and reflect.'}
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-2" style={{ textTransform: 'none' }}>
+                This will be saved to your journal, where you can revisit or add to it later.
+              </p>
+            </>
+          ) : (
+            <ModuleHeader
+              title={module.title}
+              instructions={module.content?.instructions || 'Take time to write and reflect.'}
+              centered
+            />
+          )}
         </div>
 
         {/* Prompts if available */}
@@ -114,9 +163,45 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
           </div>
         )}
 
+        {/* Recipient input for letter writing */}
+        {isLetterWriting && (
+          <div className="mb-6">
+            <div className="flex items-baseline gap-2">
+              <span
+                className="text-[var(--color-text-primary)] text-base shrink-0"
+                style={{ fontFamily: 'Azeret Mono, monospace', textTransform: 'none' }}
+              >
+                Dear
+              </span>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={recipient}
+                  onChange={(e) => setRecipient(e.target.value)}
+                  onFocus={() => setRecipientFocused(true)}
+                  onBlur={() => setRecipientFocused(false)}
+                  className="w-full py-2 px-0 border-0 border-b border-[var(--color-border)] bg-transparent
+                             focus:outline-none focus:border-[var(--accent)]
+                             text-[var(--color-text-primary)]"
+                  style={{ textTransform: 'none' }}
+                  placeholder=""
+                />
+                {!recipient && !recipientFocused && (
+                  <span
+                    className="absolute left-0 top-1/2 -translate-y-1/2 text-[var(--color-text-tertiary)] pointer-events-none transition-opacity duration-500"
+                    style={{ textTransform: 'none', opacity: suggestionVisible ? 1 : 0 }}
+                  >
+                    {recipientSuggestions[suggestionIndex]}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Writing area */}
         <div className="flex-1 mb-6 min-h-0">
-          <div className="relative h-full border border-[var(--color-border)] rounded-lg overflow-hidden" style={{ minHeight: '200px' }}>
+          <div className="relative h-full border border-[var(--color-border)] rounded-lg overflow-hidden" style={{ minHeight: '300px' }}>
             {/* Placeholder */}
             {!content && !isFocused && (
               <div
@@ -124,7 +209,9 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
                 style={{ textTransform: 'none' }}
               >
                 <span className={`${getFontSizeClass()} ${getFontFamilyClass()}`}>
-                  What's on your mind?
+                  {isLetterWriting
+                    ? 'Write your letter here...'
+                    : "What's on your mind?"}
                 </span>
               </div>
             )}
@@ -139,7 +226,7 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
               className={`w-full h-full p-4 bg-transparent resize-none outline-none
                 text-[var(--color-text-primary)]
                 ${getFontSizeClass()} ${getFontFamilyClass()} ${getLineHeightClass()}`}
-              style={{ textTransform: 'none', minHeight: '200px' }}
+              style={{ textTransform: 'none', minHeight: '300px' }}
               placeholder=""
             />
           </div>

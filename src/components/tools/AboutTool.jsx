@@ -134,6 +134,31 @@ export default function AboutTool() {
           </div>
         </section>
 
+        {/* Open Source */}
+        <section>
+          <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
+            Open Source
+          </h2>
+          <p className="mb-4">
+            This project is fully open source under the AGPL-3.0 license. The entire
+            codebase is public — you can read it, fork it, improve it, or build on it.
+          </p>
+          <p className="mb-4">
+            If you're a developer, designer, writer, or just someone with ideas — you
+            can help make this better. Bug reports, feature suggestions, and pull requests
+            are all welcome.
+          </p>
+          <a
+            href="https://github.com/wellwellwellyourefeelingfine/m-session"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-xs uppercase tracking-wider py-2 px-4 border border-[var(--color-border)] hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            View on GitHub
+          </a>
+        </section>
+
         {/* Legal */}
         <section>
           <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
