@@ -14,20 +14,21 @@
  * - Fall back to ModuleShell for unknown types
  */
 
-// Import custom module components (ones that need specialized logic)
-import GroundingModule from './modules/GroundingModule';
-import BreathingModule from './modules/BreathingModule';
-import BreathMeditationModule from './modules/BreathMeditationModule';
-import JournalingModule from './modules/JournalingModule';
-import GuidedMeditationModule from './modules/GuidedMeditationModule';
+import { lazy } from 'react';
 
-import OpenAwarenessModule from './modules/OpenAwarenessModule';
-import BodyScanModule from './modules/BodyScanModule';
-import SelfCompassionModule from './modules/SelfCompassionModule';
-import SimpleGroundingModule from './modules/SimpleGroundingModule';
-import MusicListeningModule from './modules/MusicListeningModule';
+// Lazy-load custom module components — each becomes its own chunk
+const GroundingModule = lazy(() => import('./modules/GroundingModule'));
+const BreathingModule = lazy(() => import('./modules/BreathingModule'));
+const BreathMeditationModule = lazy(() => import('./modules/BreathMeditationModule'));
+const JournalingModule = lazy(() => import('./modules/JournalingModule'));
+const GuidedMeditationModule = lazy(() => import('./modules/GuidedMeditationModule'));
+const OpenAwarenessModule = lazy(() => import('./modules/OpenAwarenessModule'));
+const BodyScanModule = lazy(() => import('./modules/BodyScanModule'));
+const SelfCompassionModule = lazy(() => import('./modules/SelfCompassionModule'));
+const SimpleGroundingModule = lazy(() => import('./modules/SimpleGroundingModule'));
+const MusicListeningModule = lazy(() => import('./modules/MusicListeningModule'));
 
-// Import the generic shell
+// Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
 
 /**

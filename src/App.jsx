@@ -2,22 +2,33 @@
  * Main App Component
  * Handles tab routing and renders appropriate view
  *
- * Views are kept mounted but hidden (via CSS) to preserve state
- * when switching tabs. This is important for modules like BreathMeditation
- * that need to maintain their state (timer, progress) across tab switches.
+ * Views are lazy-loaded on first visit and then kept mounted (via CSS)
+ * to preserve state when switching tabs. This is important for modules
+ * like BreathMeditation that need to maintain their state across tab switches.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { useAppStore } from './stores/useAppStore';
 import { useAIStore } from './stores/useAIStore';
 import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
-import ActiveView from './components/active/ActiveView';
-import JournalView from './components/journal/JournalView';
-import ToolsView from './components/tools/ToolsView';
+
+// Lazy-load non-Home views — only downloaded when their tab is first opened
+const ActiveView = lazy(() => import('./components/active/ActiveView'));
+const JournalView = lazy(() => import('./components/journal/JournalView'));
+const ToolsView = lazy(() => import('./components/tools/ToolsView'));
 
 function App() {
   const currentTab = useAppStore((state) => state.currentTab);
+
+  // Track which tabs have been visited so we keep them mounted after first load
+  const [mountedTabs, setMountedTabs] = useState({ home: true });
+
+  useEffect(() => {
+    if (!mountedTabs[currentTab]) {
+      setMountedTabs((prev) => ({ ...prev, [currentTab]: true }));
+    }
+  }, [currentTab]);
 
   // AI key expiration check
   const checkKeyExpiration = useAIStore((state) => state.checkKeyExpiration);
@@ -41,19 +52,29 @@ function App() {
 
   return (
     <AppShell>
-      {/* Keep all views mounted but hide inactive ones to preserve state */}
+      {/* Home is always mounted (critical path) */}
       <div className={currentTab === 'home' ? '' : 'hidden'}>
         <HomeView />
       </div>
-      <div className={currentTab === 'active' ? '' : 'hidden'}>
-        <ActiveView />
-      </div>
-      <div className={currentTab === 'journal' ? '' : 'hidden'}>
-        <JournalView />
-      </div>
-      <div className={currentTab === 'tools' ? '' : 'hidden'}>
-        <ToolsView />
-      </div>
+
+      {/* Other views: lazy-loaded on first visit, then kept mounted */}
+      <Suspense fallback={null}>
+        {mountedTabs.active && (
+          <div className={currentTab === 'active' ? '' : 'hidden'}>
+            <ActiveView />
+          </div>
+        )}
+        {mountedTabs.journal && (
+          <div className={currentTab === 'journal' ? '' : 'hidden'}>
+            <JournalView />
+          </div>
+        )}
+        {mountedTabs.tools && (
+          <div className={currentTab === 'tools' ? '' : 'hidden'}>
+            <ToolsView />
+          </div>
+        )}
+      </Suspense>
     </AppShell>
   );
 }
