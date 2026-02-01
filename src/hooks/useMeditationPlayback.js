@@ -2,8 +2,11 @@
  * useMeditationPlayback Hook
  *
  * Shared playback orchestration for all timed meditation modules.
+ * Composes a single continuous MP3 blob from TTS clips + silence + gong,
+ * then plays it via a single <audio> element for iOS screen-lock resilience.
+ *
  * Handles audio-text sync, timer, pause/resume, prompt progression,
- * and completion — everything that's identical across meditation types.
+ * Media Session API, and completion.
  *
  * Each module computes its own timedSequence (via useMemo) and passes
  * it in. This hook handles everything after that.
@@ -20,22 +23,20 @@
  *   });
  */
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
 import { getMeditationById } from '../content/meditations';
 import { useAudioPlayback } from './useAudioPlayback';
-import { useWakeLock } from './useWakeLock';
+import { composeMeditationAudio, revokeMeditationBlobUrl } from '../services/audioComposerService';
 
 // Constants
 const TEXT_FADE_IN_DELAY = 200;           // ms after audio starts before text fades in
-const TEXT_FADE_OUT_INTO_SILENCE = 2000;  // ms into silence before text fades out
-const PROMPT_DISPLAY_DURATION = 8000;     // ms to show text if no audio (fallback)
+const TEXT_FADE_OUT_INTO_SILENCE = 2000;  // ms after clip ends before text fades out
+const PROMPT_DISPLAY_DURATION = 8000;     // ms to show text if muted (fallback)
 
-// Gong timing
-const GONG_SRC = '/audio/meditation-bell.mp3';
-const GONG_VOLUME = 0.66;     // 2/3 of full volume — softer than TTS voice
+// Gong timing (used by the composer)
 const GONG_DELAY = 1;         // seconds of silence before gong plays
-const GONG_PREAMBLE = 8;      // seconds before first TTS (1s silence + gong ring + 4s pause)
+const GONG_PREAMBLE = 8;      // seconds before first TTS (1s silence + gong ring + pause)
 
 export function useMeditationPlayback({
   meditationId,
@@ -61,167 +62,97 @@ export function useMeditationPlayback({
   const hasStarted = isThisModule && meditationPlayback.hasStarted;
   const isPlaying = isThisModule && meditationPlayback.isPlaying;
 
+  // Composition state
+  const [isLoading, setIsLoading] = useState(false);
+  const blobUrlRef = useRef(null);
+  const promptTimeMapRef = useRef([]);
+  const composedDurationRef = useRef(0);
+
   // Prompt display state
   const [currentPromptIndex, setCurrentPromptIndex] = useState(-1);
   const [promptPhase, setPromptPhase] = useState('hidden'); // 'hidden' | 'fading-in' | 'visible' | 'fading-out'
   const [elapsedTime, setElapsedTime] = useState(0);
 
   // Refs for tracking
-  const lastAudioPromptRef = useRef(-1);
+  const lastPromptRef = useRef(-1);
   const textFadeTimeoutRef = useRef(null);
-  const timerRef = useRef(null);
-  const gongPlayedRef = useRef(false);  // opening gong fired
-  const endGongPlayedRef = useRef(false);
+  const rafRef = useRef(null);
 
-  // Preload gong as a blob so playback is instant and artifact-free
-  const gongRef = useRef(null);
-  const gongBlobUrlRef = useRef(null);
-  useEffect(() => {
-    let revoked = false;
-    fetch(GONG_SRC)
-      .then(r => r.blob())
-      .then(blob => {
-        if (revoked) return;
-        gongBlobUrlRef.current = URL.createObjectURL(blob);
-      })
-      .catch(() => {});
-    return () => {
-      revoked = true;
-      if (gongRef.current) {
-        gongRef.current.pause();
-        gongRef.current = null;
-      }
-      if (gongBlobUrlRef.current) {
-        URL.revokeObjectURL(gongBlobUrlRef.current);
-        gongBlobUrlRef.current = null;
-      }
-    };
-  }, []);
-
-  // Shift the timed sequence forward to make room for the gong preamble.
-  // The timer runs from 0; gong plays at GONG_DELAY; first TTS at GONG_PREAMBLE.
-  const shiftedSequence = useMemo(() => {
-    return timedSequence.map(p => ({
-      ...p,
-      startTime: p.startTime + GONG_PREAMBLE,
-      endTime: p.endTime + GONG_PREAMBLE,
-    }));
-  }, [timedSequence]);
-
-  const shiftedTotalDuration = totalDuration + GONG_PREAMBLE;
-
-  // Keep screen awake during active meditation
-  useWakeLock(hasStarted && isPlaying);
-
-  // Audio playback hook (for TTS prompts only)
+  // Audio playback hook (single-source continuous player)
   const audio = useAudioPlayback({
     onEnded: () => {
-      // Audio finished - fade out text after delay into silence
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current);
+      // Only handle if we actually loaded a meditation (prevents spurious state changes)
+      if (blobUrlRef.current) {
+        pauseMeditationPlayback();
       }
-      textFadeTimeoutRef.current = setTimeout(() => {
-        setPromptPhase('fading-out');
-      }, TEXT_FADE_OUT_INTO_SILENCE);
+    },
+    onTimeUpdate: (currentTime) => {
+      setElapsedTime(currentTime);
     },
     onError: (e) => {
-      console.warn('Audio playback error:', e);
-      // Continue with text-only fallback - fade out after estimated duration
-      if (textFadeTimeoutRef.current) {
-        clearTimeout(textFadeTimeoutRef.current);
+      // Only log/handle errors for active meditation playback
+      if (blobUrlRef.current) {
+        console.warn('Audio playback error:', e);
       }
-      textFadeTimeoutRef.current = setTimeout(() => {
-        setPromptPhase('fading-out');
-      }, PROMPT_DISPLAY_DURATION);
     },
   });
 
-  // Preload first few audio files on mount/sequence change
+  // Stale-state recovery: if the persisted store says this module has started
+  // but we have no blob URL (e.g., after page reload or error), reset playback
+  // so the user sees "Begin" instead of a broken "Resume" button.
   useEffect(() => {
-    if (timedSequence.length > 0 && meditation?.audio) {
-      const firstFewSrcs = timedSequence.slice(0, 3)
-        .map(p => p.audioSrc)
-        .filter(Boolean);
-      audio.preload(firstFewSrcs);
+    if (hasStarted && !blobUrlRef.current && !isLoading) {
+      resetMeditationPlayback();
     }
-  }, [timedSequence, meditation?.audio, audio]);
+  }, [hasStarted, isLoading, resetMeditationPlayback]);
 
-  // Play gong from preloaded blob — creates a fresh Audio each time
-  const playGong = useCallback(() => {
-    const url = gongBlobUrlRef.current;
-    if (!url) return;
-    const el = new Audio(url);
-    el.volume = GONG_VOLUME;
-    gongRef.current = el;
-    el.play().catch(() => {});
-  }, []);
-
-  // Timer update effect (timestamp-based for accuracy)
+  // Set up Media Session API for lock-screen controls
   useEffect(() => {
-    if (!isPlaying || !meditationPlayback.startedAt) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
+    if (!hasStarted || !meditation || !('mediaSession' in navigator)) return;
 
-    const updateTimer = () => {
-      const now = Date.now();
-      const currentSegment = (now - meditationPlayback.startedAt) / 1000;
-      const newElapsed = (meditationPlayback.accumulatedTime || 0) + currentSegment;
-      setElapsedTime(newElapsed);
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: meditation.title,
+      artist: 'm-session',
+      album: 'Guided Meditation',
+    });
 
-      // Fire opening gong at GONG_DELAY seconds
-      if (!gongPlayedRef.current && newElapsed >= GONG_DELAY) {
-        gongPlayedRef.current = true;
-        playGong();
-      }
-
-      // Check for completion
-      if (newElapsed >= shiftedTotalDuration && shiftedTotalDuration > 0) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-        pauseMeditationPlayback();
-        if (!endGongPlayedRef.current) {
-          endGongPlayedRef.current = true;
-          playGong();
-        }
+    const handleMediaPlay = () => {
+      if (!isPlaying) {
+        resumeMeditationPlayback();
+        audio.resume();
       }
     };
 
-    updateTimer();
-    timerRef.current = setInterval(updateTimer, 100);
+    const handleMediaPause = () => {
+      if (isPlaying) {
+        pauseMeditationPlayback();
+        audio.pause();
+      }
+    };
+
+    navigator.mediaSession.setActionHandler('play', handleMediaPlay);
+    navigator.mediaSession.setActionHandler('pause', handleMediaPause);
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
+      try {
+        navigator.mediaSession.setActionHandler('play', null);
+        navigator.mediaSession.setActionHandler('pause', null);
+      } catch {
+        // Some browsers don't support removing handlers
       }
     };
-  }, [isPlaying, meditationPlayback.startedAt, meditationPlayback.accumulatedTime, shiftedTotalDuration, pauseMeditationPlayback, playGong]);
+  }, [hasStarted, isPlaying, meditation, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
 
-  // Recalculate elapsed on resume (when returning to tab)
+  // Prompt progression based on elapsed time (driven by audio.currentTime via onTimeUpdate)
   useEffect(() => {
-    if (!isThisModule || !meditationPlayback.hasStarted) return;
+    if (!hasStarted || !isPlaying || promptTimeMapRef.current.length === 0) return;
 
-    const { startedAt, accumulatedTime } = meditationPlayback;
-
-    if (!startedAt) {
-      // Paused - use accumulated time
-      setElapsedTime(accumulatedTime || 0);
-    }
-  }, [isThisModule, meditationPlayback.hasStarted, meditationPlayback.startedAt, meditationPlayback.accumulatedTime]);
-
-  // Prompt progression based on elapsed time (uses shiftedSequence)
-  // Only triggers audio when actually playing — never while paused.
-  useEffect(() => {
-    if (!hasStarted || !isPlaying || shiftedSequence.length === 0) return;
+    const map = promptTimeMapRef.current;
 
     // Find which prompt should be active
     let targetIndex = -1;
-    for (let i = 0; i < shiftedSequence.length; i++) {
-      if (elapsedTime >= shiftedSequence[i].startTime) {
+    for (let i = 0; i < map.length; i++) {
+      if (elapsedTime >= map[i].audioTimeStart) {
         targetIndex = i;
       }
     }
@@ -230,10 +161,9 @@ export function useMeditationPlayback({
     if (targetIndex !== currentPromptIndex && targetIndex >= 0) {
       setCurrentPromptIndex(targetIndex);
 
-      // Start audio for new prompt (if not already played)
-      if (targetIndex !== lastAudioPromptRef.current) {
-        lastAudioPromptRef.current = targetIndex;
-        const prompt = shiftedSequence[targetIndex];
+      if (targetIndex !== lastPromptRef.current) {
+        lastPromptRef.current = targetIndex;
+        const prompt = map[targetIndex];
 
         // Clear any pending fade timeout
         if (textFadeTimeoutRef.current) {
@@ -241,43 +171,41 @@ export function useMeditationPlayback({
           textFadeTimeoutRef.current = null;
         }
 
-        // Try to play audio
-        if (prompt.audioSrc && !audio.isMuted) {
-          audio.loadAndPlay(prompt.audioSrc);
-        }
-
-        // Fade in text after slight delay (audio leads)
+        // Fade in text after slight delay (audio leads text)
         setPromptPhase('hidden');
         setTimeout(() => {
           setPromptPhase('fading-in');
           setTimeout(() => setPromptPhase('visible'), 300);
         }, TEXT_FADE_IN_DELAY);
 
-        // If no audio or muted, set fallback fade-out timer
-        if (!prompt.audioSrc || audio.isMuted) {
+        // Schedule text fade-out based on prompt end time
+        const timeUntilClipEnd = (prompt.audioTimeEnd - elapsedTime) * 1000;
+        const fadeOutDelay = Math.max(0, timeUntilClipEnd) + TEXT_FADE_OUT_INTO_SILENCE;
+
+        // If muted, use fallback display duration instead
+        if (audio.isMuted) {
           textFadeTimeoutRef.current = setTimeout(() => {
             setPromptPhase('fading-out');
           }, PROMPT_DISPLAY_DURATION);
-        }
-
-        // Preload next audio
-        if (targetIndex + 1 < shiftedSequence.length) {
-          const nextSrc = shiftedSequence[targetIndex + 1].audioSrc;
-          if (nextSrc) audio.preload([nextSrc]);
+        } else {
+          textFadeTimeoutRef.current = setTimeout(() => {
+            setPromptPhase('fading-out');
+          }, fadeOutDelay);
         }
       }
     }
-  }, [elapsedTime, hasStarted, isPlaying, shiftedSequence, currentPromptIndex, audio]);
+  }, [elapsedTime, hasStarted, isPlaying, currentPromptIndex, audio.isMuted]);
 
   // Report timer state to parent for ModuleStatusBar
-  // (report against original totalDuration so the progress bar isn't affected by preamble)
+  // (report against original totalDuration so progress bar isn't affected by preamble)
   useEffect(() => {
     if (!onTimerUpdate) return;
 
-    // Subtract preamble so the user-visible timer starts at 0 after gong
+    // Subtract preamble so user-visible timer starts at 0 after gong
     const userElapsed = Math.max(0, elapsedTime - GONG_PREAMBLE);
     const progress = totalDuration > 0 ? Math.min((userElapsed / totalDuration) * 100, 100) : 0;
-    const isComplete = elapsedTime >= shiftedTotalDuration && shiftedTotalDuration > 0 && hasStarted;
+    const composedTotal = composedDurationRef.current;
+    const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
 
     onTimerUpdate({
       progress,
@@ -286,88 +214,114 @@ export function useMeditationPlayback({
       showTimer: hasStarted && !isComplete,
       isPaused: !isPlaying,
     });
-  }, [elapsedTime, totalDuration, shiftedTotalDuration, hasStarted, isPlaying, onTimerUpdate]);
+  }, [elapsedTime, totalDuration, hasStarted, isPlaying, onTimerUpdate]);
 
-  // Cleanup on unmount (gong cleanup is in its own preload effect)
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (textFadeTimeoutRef.current) {
         clearTimeout(textFadeTimeoutRef.current);
       }
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      // Revoke blob URL to free memory
+      if (blobUrlRef.current) {
+        revokeMeditationBlobUrl(blobUrlRef.current);
+        blobUrlRef.current = null;
       }
     };
   }, []);
 
   // Handlers
-  const handleStart = useCallback(() => {
-    // Start immediately — UI transitions right away
-    startMeditationPlayback(moduleInstanceId);
-    setElapsedTime(0);
-    setCurrentPromptIndex(-1);
-    lastAudioPromptRef.current = -1;
-    gongPlayedRef.current = false;
-    endGongPlayedRef.current = false;
-    setPromptPhase('hidden');
-  }, [moduleInstanceId, startMeditationPlayback]);
+  const handleStart = useCallback(async () => {
+    setIsLoading(true);
 
-  // Track whether audio was mid-clip when paused so we can resume it
-  const audioWasPlayingRef = useRef(false);
+    try {
+      // Compose the meditation into a single continuous MP3 blob
+      const { blobUrl, promptTimeMap, totalDuration: composedTotal } = await composeMeditationAudio(
+        timedSequence,
+        { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
+      );
+
+      // Store refs for playback
+      blobUrlRef.current = blobUrl;
+      promptTimeMapRef.current = promptTimeMap;
+      composedDurationRef.current = composedTotal;
+
+      // Reset display state
+      setElapsedTime(0);
+      setCurrentPromptIndex(-1);
+      lastPromptRef.current = -1;
+      setPromptPhase('hidden');
+
+      // Mark as started in store
+      startMeditationPlayback(moduleInstanceId);
+
+      // Start playback (within user gesture chain)
+      const success = await audio.loadAndPlay(blobUrl);
+      if (!success) {
+        console.error('[MeditationPlayback] Failed to start audio playback');
+        resetMeditationPlayback();
+      }
+    } catch (err) {
+      console.error('[MeditationPlayback] Failed to compose meditation audio:', err);
+      resetMeditationPlayback();
+    } finally {
+      setIsLoading(false);
+    }
+  }, [timedSequence, moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio]);
 
   const handlePauseResume = useCallback(() => {
     if (isPlaying) {
-      // Remember if audio was actively playing a clip
-      audioWasPlayingRef.current = audio.isPlaying;
       pauseMeditationPlayback();
       audio.pause();
-      // Also pause gong if it's playing
-      if (gongRef.current && !gongRef.current.paused) {
-        gongRef.current.pause();
-      }
     } else {
       resumeMeditationPlayback();
-      // Only resume the Audio element if it was mid-clip when paused.
-      // Don't call resume() if it was between clips — prompt progression
-      // will handle triggering the next clip when the timer advances.
-      if (audioWasPlayingRef.current && audio.currentSrc && !audio.isMuted) {
-        audio.resume();
-      }
-      audioWasPlayingRef.current = false;
+      audio.resume();
     }
   }, [isPlaying, pauseMeditationPlayback, resumeMeditationPlayback, audio]);
 
   const handleComplete = useCallback(() => {
-    resetMeditationPlayback();
     audio.stop();
+    resetMeditationPlayback();
+    if (blobUrlRef.current) {
+      revokeMeditationBlobUrl(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
     onComplete();
   }, [resetMeditationPlayback, audio, onComplete]);
 
   const handleSkip = useCallback(() => {
-    if (gongRef.current) {
-      gongRef.current.pause();
-      gongRef.current.src = '';
-    }
-    resetMeditationPlayback();
     audio.stop();
+    resetMeditationPlayback();
+    if (blobUrlRef.current) {
+      revokeMeditationBlobUrl(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
     onSkip();
   }, [resetMeditationPlayback, audio, onSkip]);
 
   // Derived state
-  const isComplete = elapsedTime >= shiftedTotalDuration && shiftedTotalDuration > 0 && hasStarted;
-  const currentPrompt = shiftedSequence[currentPromptIndex];
+  const composedTotal = composedDurationRef.current;
+  const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
+  const currentPrompt = promptTimeMapRef.current[currentPromptIndex];
 
   const getPhase = useCallback(() => {
+    if (isLoading) return 'loading';
     if (!hasStarted) return 'idle';
     if (isComplete) return 'completed';
     return 'active';
-  }, [hasStarted, isComplete]);
+  }, [isLoading, hasStarted, isComplete]);
 
   const getPrimaryButton = useCallback(() => {
     const phase = getPhase();
 
     if (phase === 'idle') {
       return { label: 'Begin', onClick: handleStart };
+    }
+    if (phase === 'loading') {
+      return { label: 'Preparing...', onClick: () => {}, disabled: true };
     }
     if (phase === 'active') {
       return { label: isPlaying ? 'Pause' : 'Resume', onClick: handlePauseResume };
@@ -383,6 +337,7 @@ export function useMeditationPlayback({
     meditation,
     hasStarted,
     isPlaying,
+    isLoading,
     isComplete,
     elapsedTime,
     currentPrompt,

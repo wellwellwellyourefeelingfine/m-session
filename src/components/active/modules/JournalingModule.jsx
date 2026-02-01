@@ -6,6 +6,8 @@
  * Uses shared UI components:
  * - ModuleControlBar for consistent bottom controls
  * - ModuleLayout for consistent layout structure
+ *
+ * Shows a landing page with prompts before revealing the writing area.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -17,6 +19,7 @@ import ModuleLayout, { ModuleHeader } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 
 export default function JournalingModule({ module, onComplete, onSkip, onTimerUpdate }) {
+  const [hasStarted, setHasStarted] = useState(false);
   const [content, setContent] = useState('');
   const [recipient, setRecipient] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -107,23 +110,92 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
     onSkip();
   }, [saveEntry, onSkip]);
 
+  const handleBegin = useCallback(() => {
+    setHasStarted(true);
+  }, []);
+
   const hasContent = content.trim().length > 0 || (isLetterWriting && recipient.trim().length > 0);
 
-  // Get primary button config
+  // Control bar phase and primary button
+  const getPhase = () => {
+    if (!hasStarted) return 'idle';
+    return 'active';
+  };
+
   const getPrimaryButton = () => {
+    if (!hasStarted) {
+      return { label: 'Begin', onClick: handleBegin };
+    }
     return {
       label: hasContent ? 'Save & Continue' : 'Continue',
       onClick: handleComplete,
     };
   };
 
+  // Landing page — shown before user clicks Begin
+  if (!hasStarted) {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true }}>
+          <div className="flex flex-col items-center animate-fadeIn px-4">
+            <h2
+              className="text-2xl text-[var(--color-text-primary)] mb-4"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {module.title}
+            </h2>
+
+            <p
+              className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6 max-w-sm text-center"
+              style={{ textTransform: 'none' }}
+            >
+              {module.content?.instructions || 'Take time to write and reflect.'}
+            </p>
+
+            {/* Prompts as inspiration */}
+            {module.content?.prompts && module.content.prompts.length > 0 && (
+              <div className="mb-6 space-y-3 max-w-sm">
+                {module.content.prompts.map((prompt, index) => (
+                  <p
+                    key={index}
+                    className="text-[var(--color-text-secondary)] italic text-sm text-center"
+                    style={{ textTransform: 'none' }}
+                  >
+                    {prompt}
+                  </p>
+                ))}
+              </div>
+            )}
+
+            <p
+              className="text-[var(--color-text-tertiary)] text-xs max-w-sm text-center"
+              style={{ textTransform: 'none' }}
+            >
+              Your writing will be saved to the journal, where you can revisit or add to it later.
+            </p>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase={getPhase()}
+          primary={getPrimaryButton()}
+          showBack={false}
+          showSkip={true}
+          onSkip={handleSkip}
+          skipConfirmMessage="Skip this writing prompt?"
+        />
+      </>
+    );
+  }
+
+  // Active writing view
   return (
     <>
       <ModuleLayout
         layout={{ centered: false, maxWidth: 'lg', padding: 'normal' }}
       >
         {/* Header with title and instructions */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 animate-fadeIn">
           {isLetterWriting ? (
             <>
               <h2
@@ -235,7 +307,7 @@ export default function JournalingModule({ module, onComplete, onSkip, onTimerUp
 
       {/* Fixed control bar above tab bar */}
       <ModuleControlBar
-        phase="simple"
+        phase={getPhase()}
         primary={getPrimaryButton()}
         showBack={false}
         showSkip={true}

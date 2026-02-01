@@ -10,6 +10,52 @@ import { getMeditationById } from '../content/meditations';
 
 const CACHE_NAME = 'audio-cache';
 
+// Silence blocks and soft gong used by the audio composer
+const COMPOSER_ASSETS = [
+  '/audio/silence/silence-0.5s.mp3',
+  '/audio/silence/silence-1s.mp3',
+  '/audio/silence/silence-5s.mp3',
+  '/audio/silence/silence-10s.mp3',
+  '/audio/silence/silence-30s.mp3',
+  '/audio/silence/silence-60s.mp3',
+  '/audio/meditation-bell-soft.mp3',
+];
+
+/**
+ * Precache the silence blocks and soft gong used by the audio composer.
+ * These are shared across all meditations and should be cached early.
+ */
+export async function precacheComposerAssets() {
+  try {
+    if (!('caches' in window)) return;
+
+    const cache = await caches.open(CACHE_NAME);
+    let cached = 0;
+
+    await Promise.all(
+      COMPOSER_ASSETS.map(async (url) => {
+        try {
+          const existing = await cache.match(url);
+          if (existing) return;
+          const response = await fetch(url);
+          if (response.ok) {
+            await cache.put(url, response);
+            cached++;
+          }
+        } catch {
+          // Non-critical — silence blocks will be fetched on demand
+        }
+      })
+    );
+
+    if (cached > 0) {
+      console.log(`[AudioCache] Composer assets: cached ${cached} files`);
+    }
+  } catch (err) {
+    console.warn('[AudioCache] precacheComposerAssets error:', err);
+  }
+}
+
 /**
  * Get all audio URLs for a given module's meditation content.
  * Handles both standard meditations (flat prompts array) and

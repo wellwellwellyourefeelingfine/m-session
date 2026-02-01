@@ -60,26 +60,36 @@ function App() {
         <HomeView />
       </div>
 
-      {/* Other views: lazy-loaded on first visit, then kept mounted */}
-      <ErrorBoundary>
-        <Suspense fallback={null}>
-          {mountedTabs.active && (
+      {/* Other views: lazy-loaded on first visit, then kept mounted.
+          Each view gets its own Suspense boundary so loading one
+          doesn't unmount siblings (critical for active meditation playback). */}
+      {mountedTabs.active && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
             <div className={currentTab === 'active' ? '' : 'hidden'}>
               <ActiveView />
             </div>
-          )}
-          {mountedTabs.journal && (
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      {mountedTabs.journal && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
             <div className={currentTab === 'journal' ? '' : 'hidden'}>
               <JournalView />
             </div>
-          )}
-          {mountedTabs.tools && (
+          </Suspense>
+        </ErrorBoundary>
+      )}
+      {mountedTabs.tools && (
+        <ErrorBoundary>
+          <Suspense fallback={null}>
             <div className={currentTab === 'tools' ? '' : 'hidden'}>
               <ToolsView />
             </div>
-          )}
-        </Suspense>
-      </ErrorBoundary>
+          </Suspense>
+        </ErrorBoundary>
+      )}
       {/* Global banners */}
       <PrivacyNotice />
       <IOSInstallPrompt />

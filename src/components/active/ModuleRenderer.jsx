@@ -50,7 +50,7 @@ export default function ModuleRenderer({ module, onTimerUpdate }) {
 
   return (
     <Suspense fallback={null}>
-      <ModuleComponent {...commonProps} />
+      <ModuleComponent key={module.instanceId} {...commonProps} />
     </Suspense>
   );
 }
