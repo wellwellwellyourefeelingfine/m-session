@@ -16,6 +16,7 @@ import HelpTool from './HelpTool';
 import AISettingsTool from './AISettingsTool';
 import PhilosophyTool from './PhilosophyTool';
 import AboutTool from './AboutTool';
+import ComeUpTestTool from './ComeUpTestTool';
 
 const tools = [
   { id: 'about', label: 'ABOUT', component: AboutTool },
@@ -27,6 +28,7 @@ const tools = [
   { id: 'testing', label: 'SUBSTANCE TESTING', component: TestingTool },
   { id: 'ai', label: 'AI ASSISTANT', component: AISettingsTool },
   { id: 'settings', label: 'SETTINGS', component: SettingsTool },
+  { id: 'come-up-test', label: 'COME-UP TEST', component: ComeUpTestTool },
 ];
 
 export default function ToolsView() {

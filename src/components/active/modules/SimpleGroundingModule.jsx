@@ -70,7 +70,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
-        {!playback.hasStarted && (
+        {!playback.hasStarted && !playback.isLoading && (
           <div className="text-center animate-fadeIn">
             <IdleScreen
               title={meditation.title}
@@ -80,6 +80,15 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
             {/* Fixed duration display */}
             <p className="mt-6 text-[var(--color-text-tertiary)] text-sm">
               ~{Math.round(meditation.fixedDuration / 60)} min
+            </p>
+          </div>
+        )}
+
+        {/* Loading state — composing meditation audio */}
+        {playback.isLoading && (
+          <div className="text-center animate-fadeIn">
+            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+              Preparing meditation...
             </p>
           </div>
         )}

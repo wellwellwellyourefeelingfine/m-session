@@ -4,8 +4,12 @@
  * A robust timer hook for module timing that:
  * - Survives tab switches (timestamp-based)
  * - Supports pause/resume
- * - Persists state to store for tab navigation
+ * - Persists play/pause state to store for tab navigation
  * - Provides multiple timer modes (elapsed, countdown, breathing phases)
+ *
+ * Note: This hook manages its own time tracking via Date.now() timestamps
+ * and local state. It uses the session store only for hasStarted/isPlaying
+ * coordination (not for time accumulation — that's local to this hook).
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -34,12 +38,15 @@ export function useModuleTimer({
   const pauseMeditationPlayback = useSessionStore((state) => state.pauseMeditationPlayback);
   const resumeMeditationPlayback = useSessionStore((state) => state.resumeMeditationPlayback);
   const resetMeditationPlayback = useSessionStore((state) => state.resetMeditationPlayback);
-  const updateMeditationPlayback = useSessionStore((state) => state.updateMeditationPlayback);
 
   // Check if this timer's playback is active in the store
   const isThisModule = meditationPlayback.moduleInstanceId === moduleInstanceId;
   const hasStarted = isThisModule && meditationPlayback.hasStarted;
   const isPlaying = isThisModule && meditationPlayback.isPlaying;
+
+  // Local time tracking (independent of store — useModuleTimer manages its own time)
+  const startedAtRef = useRef(null);       // Timestamp when current segment started
+  const accumulatedRef = useRef(0);        // Accumulated seconds from previous segments
 
   // Local state for display
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -54,40 +61,10 @@ export function useModuleTimer({
   const timerRef = useRef(null);
   const breathTimerRef = useRef(null);
 
-  // Calculate elapsed time from store timestamps
-  const calculateElapsed = useCallback(() => {
-    if (!isThisModule || !meditationPlayback.hasStarted) return 0;
-
-    const { startedAt, accumulatedTime } = meditationPlayback;
-
-    // If paused (startedAt is null when paused), use accumulated time
-    if (!startedAt) {
-      return accumulatedTime || 0;
-    }
-
-    // If playing, calculate from start time plus accumulated
-    const now = Date.now();
-    const currentSegment = (now - startedAt) / 1000;
-    return (accumulatedTime || 0) + currentSegment;
-  }, [isThisModule, meditationPlayback]);
-
-  // Initialize elapsed time when mounting or returning to tab
-  useEffect(() => {
-    if (type !== 'breathing') {
-      const elapsed = calculateElapsed();
-      setElapsedTime(elapsed);
-
-      // Check if already complete
-      if (elapsed >= duration && duration > 0 && hasStarted) {
-        setIsComplete(true);
-      }
-    }
-  }, [calculateElapsed, duration, hasStarted, type]);
-
   // UI update timer for elapsed/countdown modes
   useEffect(() => {
     if (type === 'breathing') return;
-    if (!isPlaying || !meditationPlayback.startedAt) {
+    if (!isPlaying || !startedAtRef.current) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
         timerRef.current = null;
@@ -97,8 +74,8 @@ export function useModuleTimer({
 
     const updateDisplay = () => {
       const now = Date.now();
-      const currentSegment = (now - meditationPlayback.startedAt) / 1000;
-      const newElapsed = (meditationPlayback.accumulatedTime || 0) + currentSegment;
+      const currentSegment = (now - startedAtRef.current) / 1000;
+      const newElapsed = accumulatedRef.current + currentSegment;
 
       setElapsedTime(newElapsed);
 
@@ -126,7 +103,7 @@ export function useModuleTimer({
         timerRef.current = null;
       }
     };
-  }, [type, isPlaying, meditationPlayback.startedAt, meditationPlayback.accumulatedTime, duration, autoComplete, pauseMeditationPlayback]);
+  }, [type, isPlaying, duration, autoComplete, pauseMeditationPlayback]);
 
   // Breathing timer logic
   useEffect(() => {
@@ -225,6 +202,8 @@ export function useModuleTimer({
   const start = useCallback(() => {
     setElapsedTime(0);
     setIsComplete(false);
+    startedAtRef.current = Date.now();
+    accumulatedRef.current = 0;
 
     if (type === 'breathing') {
       setBreathPhase('inhale');
@@ -237,11 +216,18 @@ export function useModuleTimer({
 
   // Pause the timer
   const pause = useCallback(() => {
+    // Accumulate current segment time
+    if (startedAtRef.current) {
+      const currentSegment = (Date.now() - startedAtRef.current) / 1000;
+      accumulatedRef.current += currentSegment;
+      startedAtRef.current = null;
+    }
     pauseMeditationPlayback();
   }, [pauseMeditationPlayback]);
 
   // Resume the timer
   const resume = useCallback(() => {
+    startedAtRef.current = Date.now();
     resumeMeditationPlayback();
   }, [resumeMeditationPlayback]);
 
@@ -256,6 +242,8 @@ export function useModuleTimer({
 
   // Reset the timer
   const reset = useCallback(() => {
+    startedAtRef.current = null;
+    accumulatedRef.current = 0;
     resetMeditationPlayback();
     setElapsedTime(0);
     setIsComplete(false);

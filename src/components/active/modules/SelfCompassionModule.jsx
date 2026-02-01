@@ -82,7 +82,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state — variation selector */}
-        {!playback.hasStarted && (
+        {!playback.hasStarted && !playback.isLoading && (
           <div className="text-center animate-fadeIn">
             <IdleScreen
               title={meditation.title}
@@ -117,6 +117,15 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Loading state — composing meditation audio */}
+        {playback.isLoading && (
+          <div className="text-center animate-fadeIn">
+            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+              Preparing meditation...
+            </p>
           </div>
         )}
 

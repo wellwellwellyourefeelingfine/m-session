@@ -86,7 +86,7 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
-        {!playback.hasStarted && (
+        {!playback.hasStarted && !playback.isLoading && (
           <div className="text-center animate-fadeIn">
             <IdleScreen
               title={meditation.title}
@@ -102,6 +102,15 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
               <span className="text-2xl font-light">{selectedDuration}</span>
               <span className="text-sm ml-1">min</span>
             </button>
+          </div>
+        )}
+
+        {/* Loading state — composing meditation audio */}
+        {playback.isLoading && (
+          <div className="text-center animate-fadeIn">
+            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+              Preparing meditation...
+            </p>
           </div>
         )}
 

@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModuleById } from '../content/modules';
 import { useAppStore } from './useAppStore';
-import { precacheAudioForModule, precacheAudioForTimeline } from '../services/audioCacheService';
+import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -348,10 +348,6 @@ export const useSessionStore = create(
         moduleInstanceId: null,       // Which module is playing
         isPlaying: false,             // Is meditation currently running
         hasStarted: false,            // Has user clicked Begin
-        startedAt: null,              // Timestamp when current segment started
-        pausedAt: null,               // Timestamp when paused (null if playing)
-        accumulatedTime: 0,           // Total accumulated seconds from previous segments
-        currentPromptIndex: 0,        // Current prompt index
       },
 
       // ============================================
@@ -620,6 +616,7 @@ export const useSessionStore = create(
 
         // Precache audio for all modules in the generated timeline (non-blocking)
         precacheAudioForTimeline(defaultModules);
+        precacheComposerAssets();
       },
 
       // ============================================
@@ -1263,40 +1260,16 @@ export const useSessionStore = create(
             moduleInstanceId,
             isPlaying: true,
             hasStarted: true,
-            startedAt: Date.now(),
-            pausedAt: null,
-            accumulatedTime: 0,
-            currentPromptIndex: 0,
-          },
-        });
-      },
-
-      updateMeditationPlayback: (updates) => {
-        const state = get();
-        set({
-          meditationPlayback: {
-            ...state.meditationPlayback,
-            ...updates,
           },
         });
       },
 
       pauseMeditationPlayback: () => {
         const state = get();
-        const { startedAt, accumulatedTime } = state.meditationPlayback;
-        const now = Date.now();
-
-        // Calculate time elapsed in current segment and add to accumulated
-        const currentSegment = startedAt ? (now - startedAt) / 1000 : 0;
-        const newAccumulated = (accumulatedTime || 0) + currentSegment;
-
         set({
           meditationPlayback: {
             ...state.meditationPlayback,
             isPlaying: false,
-            pausedAt: now,
-            accumulatedTime: newAccumulated,
-            startedAt: null, // Clear startedAt since we're paused
           },
         });
       },
@@ -1307,8 +1280,6 @@ export const useSessionStore = create(
           meditationPlayback: {
             ...state.meditationPlayback,
             isPlaying: true,
-            startedAt: Date.now(), // Start a new segment
-            pausedAt: null,
           },
         });
       },
@@ -1319,10 +1290,6 @@ export const useSessionStore = create(
             moduleInstanceId: null,
             isPlaying: false,
             hasStarted: false,
-            startedAt: null,
-            pausedAt: null,
-            accumulatedTime: 0,
-            currentPromptIndex: 0,
           },
         });
       },
@@ -1733,6 +1700,7 @@ export const useSessionStore = create(
               modules: {
                 ...state.modules,
                 currentModuleInstanceId: null,
+                inOpenSpace: !nextModule, // Enter open space if no more modules
                 items: updatedItems,
                 history: [...state.modules.history, historyEntry],
               },
@@ -1748,6 +1716,7 @@ export const useSessionStore = create(
               modules: {
                 ...state.modules,
                 currentModuleInstanceId: null,
+                inOpenSpace: !nextModule, // Enter open space if no more modules
                 items: updatedItems,
                 history: [...state.modules.history, historyEntry],
               },
@@ -1827,6 +1796,7 @@ export const useSessionStore = create(
               modules: {
                 ...state.modules,
                 currentModuleInstanceId: null,
+                inOpenSpace: !nextModule, // Enter open space if no more modules
                 items: updatedItems,
                 history: [...state.modules.history, historyEntry],
               },
@@ -1842,6 +1812,7 @@ export const useSessionStore = create(
               modules: {
                 ...state.modules,
                 currentModuleInstanceId: null,
+                inOpenSpace: !nextModule, // Enter open space if no more modules
                 items: updatedItems,
                 history: [...state.modules.history, historyEntry],
               },
@@ -2202,10 +2173,6 @@ export const useSessionStore = create(
             moduleInstanceId: null,
             isPlaying: false,
             hasStarted: false,
-            startedAt: null,
-            pausedAt: null,
-            accumulatedTime: 0,
-            currentPromptIndex: 0,
           },
         });
       },

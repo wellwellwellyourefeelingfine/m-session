@@ -41,7 +41,10 @@ export default function OpenSpace({ phase }) {
   const startModule = useSessionStore((state) => state.startModule);
   const addModule = useSessionStore((state) => state.addModule);
   const beginClosingRitual = useSessionStore((state) => state.beginClosingRitual);
+  const beginPeakTransition = useSessionStore((state) => state.beginPeakTransition);
+  const beginIntegrationTransition = useSessionStore((state) => state.beginIntegrationTransition);
   const enterOpenSpace = useSessionStore((state) => state.enterOpenSpace);
+  const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
 
   const nextModule = getNextModule();
   const phaseContent = PHASE_MESSAGES[phase] || PHASE_MESSAGES.integration;
@@ -69,6 +72,16 @@ export default function OpenSpace({ phase }) {
   // Handle continuing to closing ritual
   const handleContinueToClosing = () => {
     beginClosingRitual();
+  };
+
+  // Handle continuing to peak phase (come-up open space)
+  const handleContinueToPeak = () => {
+    beginPeakTransition();
+  };
+
+  // Handle continuing to integration phase (peak open space)
+  const handleContinueToIntegration = () => {
+    beginIntegrationTransition();
   };
 
   // Handle module selection from library
@@ -126,6 +139,26 @@ export default function OpenSpace({ phase }) {
                 className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
               >
                 Continue to Activity
+              </button>
+            )}
+
+            {/* Come-up phase: Continue to Peak Phase when fully arrived */}
+            {phase === 'come-up' && comeUpCheckIn.hasIndicatedFullyArrived && (
+              <button
+                onClick={handleContinueToPeak}
+                className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              >
+                Continue to Peak Phase
+              </button>
+            )}
+
+            {/* Peak phase: Continue to Integration Phase */}
+            {phase === 'peak' && (
+              <button
+                onClick={handleContinueToIntegration}
+                className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              >
+                Continue to Integration Phase
               </button>
             )}
 
