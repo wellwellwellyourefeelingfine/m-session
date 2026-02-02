@@ -17,11 +17,15 @@
  * - layout: { centered, maxWidth, padding }
  */
 
+// Display order and labels for module categories in the Add Activity drawer
+export const MODULE_CATEGORIES = {
+  meditation: { label: 'Meditation', order: 1 },
+  journaling: { label: 'Journaling', order: 2 },
+  open: { label: 'Open', order: 3 },
+};
+
 export const MODULE_TYPES = {
-  grounding: { label: 'Grounding', intensity: 'gentle' },
-  breathing: { label: 'Breathing', intensity: 'gentle' },
   'breath-meditation': { label: 'Breath Meditation', intensity: 'gentle' },
-  'guided-meditation': { label: 'Guided Meditation', intensity: 'gentle' },
   'music-listening': { label: 'Music Listening', intensity: 'gentle' },
   'open-awareness': { label: 'Open Awareness', intensity: 'moderate' },
   'body-scan': { label: 'Body Scan', intensity: 'moderate' },
@@ -69,34 +73,9 @@ export const PHASE_INTENSITY_RULES = {
 export const moduleLibrary = [
   // === COME-UP APPROPRIATE (Gentle) ===
   {
-    id: 'grounding-basic',
-    type: 'grounding',
-    title: 'Grounding Meditation',
-    description: 'A simple practice to feel present and connected to your body and surroundings.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 20,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up'],
-    content: {
-      instructions: 'Find a comfortable position. Feel your body making contact with the surface beneath you. Notice the weight of your body, the temperature of the air, any sounds around you.',
-      prompts: [
-        { title: 'Notice Your Body', text: 'Feel your feet on the ground. Notice where your body is supported. You are safe here.' },
-        { title: 'Breathe Slowly', text: 'Breathe in slowly for 4 counts... hold for 4... and out for 6. Let each breath settle you deeper.' },
-        { title: 'Set Your Intention', text: 'What do you want to remember about why you\'re here today? Hold that intention gently.' },
-      ],
-    },
-    // Uses custom GroundingModule component (sequential steps)
-    capabilities: {
-      prompts: { type: 'sequential', showProgress: true, fadeTransition: true },
-      controls: { showBeginButton: false, showSkipButton: true, showBackButton: true },
-    },
-    tags: ['grounding', 'beginner', 'calming'],
-  },
-  {
     id: 'simple-grounding',
     type: 'simple-grounding',
+    category: 'meditation',
     title: 'Simple Grounding',
     description: 'A brief grounding practice to feel present and connected. Settle in, notice your senses, and return to the here and now.',
     defaultDuration: 5,
@@ -115,68 +94,12 @@ export const moduleLibrary = [
     },
     tags: ['grounding', 'brief', 'calming', 'come-up', 'guided'],
   },
-  {
-    id: 'breathing-4-7-8',
-    type: 'breathing',
-    title: '4-7-8 Breathing',
-    description: 'A calming breath pattern to activate your parasympathetic nervous system.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 15,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up'],
-    content: {
-      instructions: 'Breathe in through your nose for 4 counts. Hold for 7 counts. Exhale slowly through your mouth for 8 counts. Repeat.',
-      timerConfig: {
-        inhale: 4,
-        hold: 7,
-        exhale: 8,
-        cycles: 8,
-      },
-    },
-    // Uses custom BreathingModule component (phase-based animation)
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breathing-circle', size: 'large' },
-      controls: { showBeginButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'calming', 'anxiety-relief'],
-  },
-  {
-    id: 'breathing-box',
-    type: 'breathing',
-    title: 'Box Breathing',
-    description: 'Equal counts for inhale, hold, exhale, hold. Creates balance and calm.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 15,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up'],
-    content: {
-      instructions: 'Breathe in for 4 counts. Hold for 4 counts. Breathe out for 4 counts. Hold for 4 counts. Repeat.',
-      timerConfig: {
-        inhale: 4,
-        hold: 4,
-        exhale: 4,
-        holdAfterExhale: 4,
-        cycles: 10,
-      },
-    },
-    // Uses custom BreathingModule component (phase-based animation)
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breathing-circle', size: 'large' },
-      controls: { showBeginButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'calming', 'focus'],
-  },
 
-  // === BREATH MEDITATION 2.0 (with BreathOrb animation) ===
+  // === BREATH MEDITATION (with BreathOrb animation) ===
   {
     id: 'breath-meditation-calm',
     type: 'breath-meditation',
+    category: 'meditation',
     title: 'Calming Breath',
     description: 'A 15-minute guided breathing meditation that progressively deepens your breath, then gently returns to natural breathing.',
     defaultDuration: 15,
@@ -197,114 +120,9 @@ export const moduleLibrary = [
     tags: ['breathing', 'meditation', 'calming', 'orb', '15-minute'],
   },
   {
-    id: 'breath-meditation-deep',
-    type: 'breath-meditation',
-    title: 'Deep Relaxation Breath',
-    description: 'A longer breath meditation that progressively slows your breathing for deep relaxation.',
-    defaultDuration: 15,
-    minDuration: 10,
-    maxDuration: 30,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up', 'peak'],
-    content: {
-      instructions: 'This practice will gradually slow your breath. Trust the orb and let your nervous system settle.',
-      breathSequences: [
-        // Warm up with normal breathing
-        { type: 'cycles', count: 3, pattern: { inhale: 3, hold: 0, exhale: 3, holdAfterExhale: 0 } },
-        // Box breathing to establish rhythm
-        { type: 'cycles', count: 4, pattern: { inhale: 4, hold: 4, exhale: 4, holdAfterExhale: 4 } },
-        // Slow down with extended exhale
-        { type: 'cycles', count: 5, pattern: { inhale: 4, hold: 4, exhale: 6, holdAfterExhale: 2 } },
-        // Deep slow breathing
-        { type: 'duration', seconds: 300, pattern: { inhale: 5, hold: 5, exhale: 8, holdAfterExhale: 2 } },
-      ],
-    },
-    // Uses custom BreathMeditationModule with BreathOrb
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breath-orb' },
-      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'meditation', 'deep-relaxation', 'orb'],
-  },
-  {
-    id: 'breath-meditation-4-7-8',
-    type: 'breath-meditation',
-    title: '4-7-8 Breath Meditation',
-    description: 'The classic relaxation breath with visual guidance. Activates your parasympathetic nervous system.',
-    defaultDuration: 10,
-    minDuration: 5,
-    maxDuration: 15,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up', 'integration'],
-    content: {
-      instructions: 'Breathe in for 4, hold for 7, exhale for 8. This pattern activates your relaxation response.',
-      breathSequences: [
-        // Pure 4-7-8 breathing for the full duration
-        { type: 'cycles', count: 10, pattern: { inhale: 4, hold: 7, exhale: 8, holdAfterExhale: 0 } },
-      ],
-    },
-    // Uses custom BreathMeditationModule with BreathOrb
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breath-orb' },
-      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'meditation', '4-7-8', 'relaxation', 'orb'],
-  },
-  {
-    id: 'breath-meditation-guided',
-    type: 'breath-meditation',
-    title: 'Guided Breath Meditation',
-    description: 'A breath meditation with visual orb and spoken guidance to help you settle into presence.',
-    defaultDuration: 10,
-    minDuration: 10,
-    maxDuration: 30,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up', 'peak'],
-    content: {
-      instructions: 'Follow the orb with your breath while guided prompts help you settle into presence.',
-      // No breathSequences = uses guided mode with generateBreathSequences()
-    },
-    // Uses custom BreathMeditationModule with BreathOrb and guided prompts
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breath-orb' },
-      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'meditation', 'guided', 'orb'],
-  },
-
-  {
-    id: 'guided-meditation-breath',
-    type: 'guided-meditation',
-    title: 'Breath Awareness',
-    description: 'A guided meditation focusing on the breath as an anchor to the present moment.',
-    defaultDuration: 10,
-    minDuration: 10,
-    maxDuration: 30,
-    intensity: 'gentle',
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up', 'peak'],
-    hasVariableDuration: true,
-    durationSteps: [10, 15, 20, 25, 30],
-    meditationId: 'breath-awareness-default',
-    // Uses custom GuidedMeditationModule (timed prompts + playback)
-    capabilities: {
-      timer: { type: 'elapsed', showProgress: true, showTimeDisplay: true, autoComplete: true },
-      prompts: { type: 'timed', fadeTransition: true },
-      // Future: audio: { type: 'voiceover', showMuteButton: true },
-      // Future: animation: { type: 'glowing-orb', color: 'orange' },
-      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
-    },
-    tags: ['meditation', 'breath', 'mindfulness', 'guided'],
-  },
-  {
     id: 'music-listening',
     type: 'music-listening',
+    category: 'open',
     title: 'Music Immersion',
     description: 'Simply listen to music and let it move through you.',
     defaultDuration: 20,
@@ -327,6 +145,7 @@ export const moduleLibrary = [
   {
     id: 'open-awareness',
     type: 'open-awareness',
+    category: 'meditation',
     title: 'Open Awareness',
     description: 'Rest in awareness itself. No technique, no effort — just noticing.',
     defaultDuration: 15,
@@ -351,6 +170,7 @@ export const moduleLibrary = [
   {
     id: 'body-scan',
     type: 'body-scan',
+    category: 'meditation',
     title: 'Body Scan',
     description: 'A guided scan through your entire body. Notice what is present without needing to change anything.',
     defaultDuration: 10,
@@ -375,6 +195,7 @@ export const moduleLibrary = [
   {
     id: 'self-compassion',
     type: 'self-compassion',
+    category: 'meditation',
     title: 'Self-Compassion',
     description: 'Channel the natural self-compassion that opens during this experience.',
     defaultDuration: 11,
@@ -396,6 +217,7 @@ export const moduleLibrary = [
   {
     id: 'light-journaling',
     type: 'light-journaling',
+    category: 'journaling',
     title: 'Light Journaling',
     description: 'Gentle writing prompts to capture what\'s arising.',
     defaultDuration: 15,
@@ -426,6 +248,7 @@ export const moduleLibrary = [
   {
     id: 'deep-journaling',
     type: 'deep-journaling',
+    category: 'journaling',
     title: 'Deep Journaling',
     description: 'Structured prompts for deeper self-exploration and insight.',
     defaultDuration: 30,
@@ -455,6 +278,7 @@ export const moduleLibrary = [
   {
     id: 'parts-work',
     type: 'parts-work',
+    category: 'journaling',
     title: 'Parts Work',
     description: 'Explore and dialogue with different aspects of yourself.',
     defaultDuration: 30,
@@ -484,6 +308,7 @@ export const moduleLibrary = [
   {
     id: 'letter-writing',
     type: 'letter-writing',
+    category: 'journaling',
     title: 'Letter Writing',
     description: 'Write a letter to yourself, someone else, or a part of you.',
     defaultDuration: 25,
@@ -512,6 +337,7 @@ export const moduleLibrary = [
   {
     id: 'therapy-gratitude',
     type: 'therapy-exercise',
+    category: 'journaling',
     title: 'Gratitude Reflection',
     description: 'A structured practice to connect with appreciation and meaning.',
     defaultDuration: 20,
@@ -543,20 +369,23 @@ export const moduleLibrary = [
   {
     id: 'open-space',
     type: 'open-space',
+    category: 'open',
     title: 'Open Space',
     description: 'Unstructured time to simply be with whatever arises.',
     defaultDuration: 20,
     minDuration: 5,
     maxDuration: 60,
+    hasVariableDuration: true,
+    durationSteps: [5, 10, 15, 20, 30, 45, 60],
     intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak', 'integration'],
     content: {
       instructions: 'This is open time. Rest, move, listen to music, or simply be. Follow your inner guidance.',
     },
+    // Uses custom OpenSpaceModule with AsciiMoon animation and duration picker
     capabilities: {
-      timer: { type: 'elapsed', autoComplete: true, awayFromScreen: true },
-      prompts: { type: 'static' },
+      timer: { type: 'elapsed', autoComplete: true },
       controls: { showBeginButton: true, showSkipButton: true },
       layout: { centered: true },
     },

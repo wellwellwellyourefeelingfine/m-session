@@ -255,6 +255,147 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
 }
 
 /**
+ * Compose a silence timer into a single continuous MP3 blob.
+ * Structure: [gongDelay silence] [gong] [preamble gap] [N seconds silence] [1s silence] [gong] [1s silence]
+ *
+ * Used by modules that need a background timer resilient to iOS screen lock.
+ * The audio element keeps playing even when the screen is off, so the closing
+ * gong fires at the correct time.
+ *
+ * @param {number} durationSeconds - The user-visible timer duration in seconds
+ * @param {Object} options
+ * @param {number} options.gongDelay - Seconds of silence before opening gong (default 1)
+ * @param {number} options.gongPreamble - Total seconds before timer starts (default 3)
+ * @param {boolean} options.skipOpeningGong - If true, omit opening gong and preamble (for mid-session resize)
+ * @returns {Promise<{ blobUrl: string, totalDuration: number, preambleEnd: number }>}
+ */
+export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gongPreamble = 3, skipOpeningGong = false } = {}) {
+  // Build the concatenation plan
+  const plan = [];
+
+  // Collect all URLs we need first (for parallel fetch)
+  const urlSet = new Set();
+  urlSet.add(GONG_SOFT_SRC);
+
+  // Pre-calculate silence blocks for each section
+  const delaySilence = (!skipOpeningGong && gongDelay > 0) ? decomposeSilence(gongDelay) : [];
+  const mainSilence = durationSeconds > 0 ? decomposeSilence(durationSeconds) : [];
+  const closingGap = decomposeSilence(1);
+  const trailingSilence = decomposeSilence(1);
+
+  for (const url of [...delaySilence, ...mainSilence, ...closingGap, ...trailingSilence]) {
+    urlSet.add(url);
+  }
+
+  // Fetch all audio files in parallel
+  const uniqueUrls = [...urlSet];
+  const bufferMap = new Map();
+  const fetchResults = await Promise.allSettled(
+    uniqueUrls.map(async (url) => {
+      const buffer = await fetchAudioBuffer(url);
+      bufferMap.set(url, buffer);
+    })
+  );
+
+  // Check for failures
+  for (let i = 0; i < fetchResults.length; i++) {
+    if (fetchResults[i].status === 'rejected') {
+      const url = uniqueUrls[i];
+      if (!url.includes('/silence/')) {
+        throw new Error(`Failed to fetch audio: ${url}`);
+      }
+      console.warn(`[AudioComposer] Non-critical: failed to fetch silence ${url}`);
+    }
+  }
+
+  const gongBuffer = bufferMap.get(GONG_SOFT_SRC);
+  const gongDuration = gongBuffer ? estimateMp3Duration(gongBuffer) : 7.5;
+
+  // --- Build plan ---
+
+  let preambleEnd = 0;
+
+  if (!skipOpeningGong) {
+    // 1. Silence before opening gong
+    for (const url of delaySilence) {
+      plan.push({ url });
+    }
+
+    // 2. Opening gong
+    plan.push({ url: GONG_SOFT_SRC });
+
+    // 3. Preamble gap (fill remaining time between gong end and timer start)
+    const preambleGap = Math.max(0, gongPreamble - gongDelay - gongDuration);
+    if (preambleGap > 0) {
+      const gapBlocks = decomposeSilence(preambleGap);
+      for (const url of gapBlocks) {
+        plan.push({ url });
+        urlSet.add(url);
+      }
+      // Fetch any new blocks from preamble gap decomposition
+      for (const url of gapBlocks) {
+        if (!bufferMap.has(url)) {
+          try {
+            bufferMap.set(url, await fetchAudioBuffer(url));
+          } catch {
+            console.warn(`[AudioComposer] Failed to fetch gap silence ${url}`);
+          }
+        }
+      }
+    }
+
+    preambleEnd = gongPreamble;
+  }
+
+  // 4. Main silence (the timer duration)
+  for (const url of mainSilence) {
+    plan.push({ url });
+  }
+
+  // 5. Closing gap
+  for (const url of closingGap) {
+    plan.push({ url });
+  }
+
+  // 6. Closing gong
+  plan.push({ url: GONG_SOFT_SRC });
+
+  // 7. Trailing silence
+  for (const url of trailingSilence) {
+    plan.push({ url });
+  }
+
+  // Calculate total duration
+  const totalDuration = preambleEnd + durationSeconds + 1 + gongDuration + 1;
+
+  // Concatenate all buffers
+  let totalBytes = 0;
+  for (const entry of plan) {
+    const buffer = bufferMap.get(entry.url);
+    if (buffer) totalBytes += buffer.byteLength;
+  }
+
+  const composed = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const entry of plan) {
+    const buffer = bufferMap.get(entry.url);
+    if (buffer) {
+      composed.set(new Uint8Array(buffer), offset);
+      offset += buffer.byteLength;
+    }
+  }
+
+  const blob = new Blob([composed], { type: 'audio/mpeg' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  return {
+    blobUrl,
+    totalDuration,
+    preambleEnd,
+  };
+}
+
+/**
  * Revoke a previously created blob URL to free memory.
  * Call this when the meditation completes or the component unmounts.
  *

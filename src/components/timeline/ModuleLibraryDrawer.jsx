@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { moduleLibrary, canAddModuleToPhase, MODULE_TYPES } from '../../content/modules';
+import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES } from '../../content/modules';
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterEditMode, isCompletedSession = false }) {
   const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | intensity
@@ -23,13 +23,19 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
     return module.intensity === filter;
   });
 
-  // Group by type for display
+  // Group by category for display, sorted by category order
   const groupedModules = filteredModules.reduce((acc, module) => {
-    const type = module.type;
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(module);
+    const category = module.category || 'other';
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(module);
     return acc;
   }, {});
+
+  const sortedCategories = Object.entries(groupedModules).sort(([a], [b]) => {
+    const orderA = MODULE_CATEGORIES[a]?.order ?? 99;
+    const orderB = MODULE_CATEGORIES[b]?.order ?? 99;
+    return orderA - orderB;
+  });
 
   const handleSelect = (module) => {
     const check = canAddModuleToPhase(module.id, phase);
@@ -168,15 +174,15 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
 
         {/* Module list */}
         <div className="flex-1 overflow-y-auto px-6 py-4 bg-[var(--color-bg)]">
-          {Object.entries(groupedModules).length === 0 ? (
+          {sortedCategories.length === 0 ? (
             <p className="text-[var(--color-text-tertiary)] text-center py-8">
               No modules match this filter
             </p>
           ) : (
-            Object.entries(groupedModules).map(([type, modules]) => (
-              <div key={type} className="mb-6">
+            sortedCategories.map(([category, modules]) => (
+              <div key={category} className="mb-6">
                 <h4 className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs mb-3">
-                  {MODULE_TYPES[type]?.label || type}
+                  {MODULE_CATEGORIES[category]?.label || category}
                 </h4>
                 <div className="space-y-2">
                   {modules.map((module) => {

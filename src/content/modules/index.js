@@ -4,6 +4,7 @@
  */
 
 export {
+  MODULE_CATEGORIES,
   MODULE_TYPES,
   PHASE_INTENSITY_RULES,
   moduleLibrary,
