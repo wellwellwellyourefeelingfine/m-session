@@ -18,7 +18,7 @@ function formatDuration(minutes) {
 
 function getClockAppUrl() {
   const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-  if (isIOS) return 'clock-alarm://';
+  if (isIOS) return 'clock-timer://';
   return null;
 }
 
@@ -27,6 +27,7 @@ export default function AlarmPrompt({
   onProceed,
   durationMinutes,
   activityName = 'activity',
+  hasBackgroundAudio = false,
 }) {
   const clockUrl = getClockAppUrl();
 
@@ -40,13 +41,21 @@ export default function AlarmPrompt({
     <Modal isOpen={isOpen} onClose={onProceed}>
       <div className="text-center space-y-6">
         <h2 className="font-serif text-xl text-[var(--text-primary)]">
-          Set a phone alarm?
+          {hasBackgroundAudio ? 'Ready to begin?' : 'Set a phone alarm?'}
         </h2>
 
-        <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          Your {activityName.toLowerCase()} is {formatDuration(durationMinutes)}.
-          The app can't alert you when your screen is off.
-        </p>
+        {hasBackgroundAudio ? (
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            Your {activityName.toLowerCase()} is {formatDuration(durationMinutes)}.
+            A gentle bell will sound when your time is up, even if your screen is off.
+            You may still want to set a backup alarm, just in case.
+          </p>
+        ) : (
+          <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+            Your {activityName.toLowerCase()} is {formatDuration(durationMinutes)}.
+            The app can't alert you when your screen is off.
+          </p>
+        )}
 
         <div className="space-y-3 pt-2">
           {clockUrl && (
@@ -64,7 +73,9 @@ export default function AlarmPrompt({
             onClick={onProceed}
             className="w-full"
           >
-            {clockUrl ? "I've Set My Alarm" : "Continue"}
+            {hasBackgroundAudio
+              ? 'Begin'
+              : (clockUrl ? "I've Set My Alarm" : "Continue")}
           </Button>
 
           {clockUrl && (
@@ -73,7 +84,7 @@ export default function AlarmPrompt({
               onClick={onProceed}
               className="w-full"
             >
-              No thanks
+              {hasBackgroundAudio ? 'Skip alarm' : 'No thanks'}
             </Button>
           )}
         </div>

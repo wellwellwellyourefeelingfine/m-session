@@ -52,12 +52,9 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
   const getCapabilityCategory = () => {
     const type = libraryModule?.type || module.type;
 
-    if (type === 'breathing') return 'breathing';
-    if (type === 'guided-meditation') return 'meditation';
     if (['journaling', 'light-journaling', 'deep-journaling', 'letter-writing', 'parts-work'].includes(type)) {
       return 'journaling';
     }
-    if (type === 'grounding') return 'sequential';
     return 'simple';
   };
 

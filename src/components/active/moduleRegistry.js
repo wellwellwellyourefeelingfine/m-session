@@ -17,16 +17,14 @@
 import { lazy } from 'react';
 
 // Lazy-load custom module components — each becomes its own chunk
-const GroundingModule = lazy(() => import('./modules/GroundingModule'));
-const BreathingModule = lazy(() => import('./modules/BreathingModule'));
 const BreathMeditationModule = lazy(() => import('./modules/BreathMeditationModule'));
 const JournalingModule = lazy(() => import('./modules/JournalingModule'));
-const GuidedMeditationModule = lazy(() => import('./modules/GuidedMeditationModule'));
 const OpenAwarenessModule = lazy(() => import('./modules/OpenAwarenessModule'));
 const BodyScanModule = lazy(() => import('./modules/BodyScanModule'));
 const SelfCompassionModule = lazy(() => import('./modules/SelfCompassionModule'));
 const SimpleGroundingModule = lazy(() => import('./modules/SimpleGroundingModule'));
 const MusicListeningModule = lazy(() => import('./modules/MusicListeningModule'));
+const OpenSpaceModule = lazy(() => import('./modules/OpenSpaceModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -36,13 +34,7 @@ import { ModuleShell } from './capabilities';
  * These are modules that have specialized logic beyond what capabilities can provide
  */
 export const CUSTOM_MODULES = {
-  // Grounding has a specific multi-step flow
-  grounding: GroundingModule,
-
-  // Breathing has complex phase-based animation timing
-  breathing: BreathingModule,
-
-  // Breath meditation 2.0 with orb animation and sequence support
+  // Breath meditation with orb animation and sequence support
   'breath-meditation': BreathMeditationModule,
 
   // Journaling needs journal store integration with custom save logic
@@ -53,9 +45,6 @@ export const CUSTOM_MODULES = {
   'parts-work': JournalingModule,
   'therapy-exercise': JournalingModule,
   // Note: 'closing-ritual' is now a transition flow, not a module
-
-  // Guided meditation has complex timed prompt + playback logic
-  'guided-meditation': GuidedMeditationModule,
 
   // Open awareness has audio-text sync with variable duration
   'open-awareness': OpenAwarenessModule,
@@ -71,6 +60,9 @@ export const CUSTOM_MODULES = {
 
   // Music listening has duration picker, alarm prompt, and recommendations
   'music-listening': MusicListeningModule,
+
+  // Open space has duration picker, AsciiMoon animation, and elapsed timer
+  'open-space': OpenSpaceModule,
 };
 
 /**
@@ -78,8 +70,7 @@ export const CUSTOM_MODULES = {
  * These modules are fully defined by their capabilities configuration
  */
 export const SHELL_MODULE_TYPES = [
-  // Open/passive types (just content + continue/skip)
-  'open-space',
+  // Reserved for future capability-only modules
 ];
 
 /**
@@ -129,10 +120,8 @@ export function getAllModuleTypes() {
  * Module type categories for organization
  */
 export const MODULE_CATEGORIES = {
-  grounding: ['grounding'],
-  breathing: ['breathing', 'breath-meditation'],
   meditation: [
-    'guided-meditation',
+    'breath-meditation',
     'open-awareness',
     'body-scan',
     'self-compassion',

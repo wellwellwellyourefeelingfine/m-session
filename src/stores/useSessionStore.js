@@ -1260,16 +1260,22 @@ export const useSessionStore = create(
             moduleInstanceId,
             isPlaying: true,
             hasStarted: true,
+            startedAt: Date.now(),
+            accumulatedTime: 0,
           },
         });
       },
 
       pauseMeditationPlayback: () => {
         const state = get();
+        const pb = state.meditationPlayback;
+        const currentSegment = pb.startedAt ? (Date.now() - pb.startedAt) / 1000 : 0;
         set({
           meditationPlayback: {
-            ...state.meditationPlayback,
+            ...pb,
             isPlaying: false,
+            startedAt: null,
+            accumulatedTime: (pb.accumulatedTime || 0) + currentSegment,
           },
         });
       },
@@ -1280,6 +1286,7 @@ export const useSessionStore = create(
           meditationPlayback: {
             ...state.meditationPlayback,
             isPlaying: true,
+            startedAt: Date.now(),
           },
         });
       },
@@ -1290,6 +1297,8 @@ export const useSessionStore = create(
             moduleInstanceId: null,
             isPlaying: false,
             hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
           },
         });
       },
