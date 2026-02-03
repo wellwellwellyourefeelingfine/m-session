@@ -89,7 +89,10 @@ export function useSilenceTimer({
     }
   }, [hasStarted, isLoading, resetMeditationPlayback]);
 
-  // Media Session API for lock-screen controls
+  // Media Session API for lock-screen controls.
+  // Handlers use audio.isPaused() to read directly from the element, avoiding
+  // stale closure issues. isPlaying is intentionally excluded from deps so
+  // handlers aren't torn down and re-registered on every play/pause toggle.
   useEffect(() => {
     if (!hasStarted || !('mediaSession' in navigator)) return;
 
@@ -99,22 +102,19 @@ export function useSilenceTimer({
       album: 'Open Space',
     });
 
-    const handleMediaPlay = () => {
-      if (!isPlaying) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (audio.isPaused()) {
         resumeMeditationPlayback();
         audio.resume();
       }
-    };
+    });
 
-    const handleMediaPause = () => {
-      if (isPlaying) {
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (!audio.isPaused()) {
         pauseMeditationPlayback();
         audio.pause();
       }
-    };
-
-    navigator.mediaSession.setActionHandler('play', handleMediaPlay);
-    navigator.mediaSession.setActionHandler('pause', handleMediaPause);
+    });
 
     return () => {
       try {
@@ -124,7 +124,30 @@ export function useSilenceTimer({
         // Some browsers don't support removing handlers
       }
     };
-  }, [hasStarted, isPlaying, title, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, title, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
+
+  // Update lock-screen position state so iOS displays duration and progress.
+  // Position is the raw audio time (includes preamble) since that's what the
+  // audio element is actually playing.
+  useEffect(() => {
+    if (!hasStarted || !('mediaSession' in navigator)) return;
+    const composed = composedTotalRef.current;
+    if (composed <= 0) return;
+
+    // Raw audio position = elapsedTime (user-visible) - offset + preamble
+    const rawPosition = elapsedTime - elapsedOffsetRef.current + preambleEndRef.current;
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: composed,
+        playbackRate: 1,
+        position: Math.max(0, Math.min(rawPosition, composed)),
+      });
+    } catch {
+      // iOS throws on invalid values; ignore
+    }
+  }, [hasStarted, elapsedTime]);
 
   // Report timer state to parent for ModuleStatusBar
   useEffect(() => {
@@ -184,16 +207,17 @@ export function useSilenceTimer({
     }
   }, [moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio]);
 
-  // Pause/resume toggle
+  // Use audio.isPaused() as the source of truth instead of store's isPlaying.
+  // This reads directly from the <audio> element, so it's never stale.
   const handlePauseResume = useCallback(() => {
-    if (isPlaying) {
+    if (!audio.isPaused()) {
       pauseMeditationPlayback();
       audio.pause();
     } else {
       resumeMeditationPlayback();
       audio.resume();
     }
-  }, [isPlaying, pauseMeditationPlayback, resumeMeditationPlayback, audio]);
+  }, [pauseMeditationPlayback, resumeMeditationPlayback, audio]);
 
   // Complete: stop, cleanup, advance
   const handleComplete = useCallback(() => {
@@ -226,7 +250,7 @@ export function useSilenceTimer({
       // Total user-visible elapsed = audio position in current blob (minus preamble) + any prior offset
       const currentAudioTime = audio.getCurrentTime();
       const totalUserElapsed = Math.max(0, currentAudioTime - preambleEndRef.current) + elapsedOffsetRef.current;
-      const wasPlaying = isPlaying;
+      const wasPlaying = !audio.isPaused();
 
       // Pause during recomposition
       if (wasPlaying) {
@@ -266,7 +290,7 @@ export function useSilenceTimer({
     } finally {
       isResizingRef.current = false;
     }
-  }, [isPlaying, audio]);
+  }, [audio]);
 
   // Phase helper
   const getPhase = useCallback(() => {

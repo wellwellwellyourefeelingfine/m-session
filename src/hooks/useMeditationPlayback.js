@@ -106,7 +106,10 @@ export function useMeditationPlayback({
     }
   }, [hasStarted, isLoading, resetMeditationPlayback]);
 
-  // Set up Media Session API for lock-screen controls
+  // Set up Media Session API for lock-screen controls.
+  // Handlers use audio.isPaused() to read directly from the element, avoiding
+  // stale closure issues. isPlaying is intentionally excluded from deps so
+  // handlers aren't torn down and re-registered on every play/pause toggle.
   useEffect(() => {
     if (!hasStarted || !meditation || !('mediaSession' in navigator)) return;
 
@@ -116,22 +119,19 @@ export function useMeditationPlayback({
       album: 'Guided Meditation',
     });
 
-    const handleMediaPlay = () => {
-      if (!isPlaying) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (audio.isPaused()) {
         resumeMeditationPlayback();
         audio.resume();
       }
-    };
+    });
 
-    const handleMediaPause = () => {
-      if (isPlaying) {
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (!audio.isPaused()) {
         pauseMeditationPlayback();
         audio.pause();
       }
-    };
-
-    navigator.mediaSession.setActionHandler('play', handleMediaPlay);
-    navigator.mediaSession.setActionHandler('pause', handleMediaPause);
+    });
 
     return () => {
       try {
@@ -141,7 +141,25 @@ export function useMeditationPlayback({
         // Some browsers don't support removing handlers
       }
     };
-  }, [hasStarted, isPlaying, meditation, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, meditation, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
+
+  // Update lock-screen position state so iOS displays duration and progress
+  useEffect(() => {
+    if (!hasStarted || !('mediaSession' in navigator)) return;
+    const composedTotal = composedDurationRef.current;
+    if (composedTotal <= 0) return;
+
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: composedTotal,
+        playbackRate: 1,
+        position: Math.min(elapsedTime, composedTotal),
+      });
+    } catch {
+      // iOS throws on invalid values; ignore
+    }
+  }, [hasStarted, elapsedTime]);
 
   // Prompt progression based on elapsed time (driven by audio.currentTime via onTimeUpdate)
   useEffect(() => {
@@ -272,15 +290,19 @@ export function useMeditationPlayback({
     }
   }, [timedSequence, moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio]);
 
+  // Use audio.isPaused() as the source of truth instead of store's isPlaying.
+  // This reads directly from the <audio> element, so it's never stale — even
+  // if the booster modal changed the store behind our back, or rapid taps
+  // outrun React re-renders.
   const handlePauseResume = useCallback(() => {
-    if (isPlaying) {
+    if (!audio.isPaused()) {
       pauseMeditationPlayback();
       audio.pause();
     } else {
       resumeMeditationPlayback();
       audio.resume();
     }
-  }, [isPlaying, pauseMeditationPlayback, resumeMeditationPlayback, audio]);
+  }, [pauseMeditationPlayback, resumeMeditationPlayback, audio]);
 
   const handleComplete = useCallback(() => {
     audio.stop();

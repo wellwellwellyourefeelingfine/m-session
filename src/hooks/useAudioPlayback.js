@@ -7,7 +7,8 @@
  * Features:
  * - Play/pause/resume a single continuous audio stream
  * - Mute state management (audio keeps playing, just silent)
- * - Time tracking via audio.currentTime
+ * - Time tracking via audio.currentTime with polling fallback
+ * - Position preservation across pause/resume (iOS blob URL resilience)
  * - Event callbacks (onEnded, onError, onPlay, onPause, onTimeUpdate)
  * - Blob URL lifecycle (load once, revoke on cleanup)
  *
@@ -21,6 +22,11 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+
+// Polling interval for timeupdate fallback (ms).
+// setInterval is used instead of rAF because rAF stops when iOS backgrounds the page,
+// while setInterval continues at a reduced frequency (~1Hz), keeping the timer alive.
+const POLL_INTERVAL_MS = 250;
 
 export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpdate } = {}) {
   const audioRef = useRef(null);
@@ -41,6 +47,31 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
   useEffect(() => { onPauseRef.current = onPause; }, [onPause]);
   useEffect(() => { onTimeUpdateRef.current = onTimeUpdate; }, [onTimeUpdate]);
 
+  // Position preservation: tracks the last known good currentTime.
+  // Saved continuously during playback and checked after resume to detect iOS resets.
+  const savedTimeRef = useRef(0);
+
+  // Polling fallback for unreliable timeupdate on iOS blob URLs
+  const pollIntervalRef = useRef(null);
+
+  const startPolling = useCallback(() => {
+    if (pollIntervalRef.current) return;
+    pollIntervalRef.current = setInterval(() => {
+      if (audioRef.current && !audioRef.current.paused) {
+        const t = audioRef.current.currentTime;
+        savedTimeRef.current = t;
+        onTimeUpdateRef.current?.(t);
+      }
+    }, POLL_INTERVAL_MS);
+  }, []);
+
+  const stopPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  }, []);
+
   // Lazily create the Audio element (preload='none' to prevent empty-src errors)
   const getAudio = useCallback(() => {
     if (!audioRef.current) {
@@ -58,6 +89,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     listenersAttachedRef.current = true;
 
     audio.addEventListener('ended', () => {
+      stopPolling();
       setIsPlaying(false);
       onEndedRef.current?.();
     });
@@ -67,6 +99,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       // (e.g., when Audio element is created before a blob URL is loaded)
       if (!audio.src || audio.src === '' || audio.src === window.location.href) return;
 
+      stopPolling();
       const errorInfo = {
         code: audio.error?.code,
         message: audio.error?.message || 'Unknown audio error',
@@ -92,10 +125,14 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       onPauseRef.current?.();
     });
 
+    // Native timeupdate — still fires when it can, supplements the polling fallback.
+    // Duplicate calls with the same value are harmless (React batches identical setState).
     audio.addEventListener('timeupdate', () => {
-      onTimeUpdateRef.current?.(audio.currentTime);
+      const t = audio.currentTime;
+      savedTimeRef.current = t;
+      onTimeUpdateRef.current?.(t);
     });
-  }, []);
+  }, [stopPolling]);
 
   // Update mute state on audio element
   useEffect(() => {
@@ -107,13 +144,14 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
   // Cleanup on unmount
   useEffect(() => {
     return () => {
+      stopPolling();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = '';
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [stopPolling]);
 
   // Load a blob URL and begin playback
   const loadAndPlay = useCallback(async (blobUrl) => {
@@ -121,6 +159,10 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
 
     const audio = getAudio();
     attachListeners(audio);
+
+    // Reset position tracking for a new blob
+    savedTimeRef.current = 0;
+    stopPolling();
 
     setIsLoaded(false);
     setError(null);
@@ -140,6 +182,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       const attemptPlay = async () => {
         try {
           await audio.play();
+          startPolling();
           settle(true);
         } catch (e) {
           const errorInfo = {
@@ -168,34 +211,47 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
         }, 5000);
       }
     });
-  }, [getAudio, attachListeners]);
+  }, [getAudio, attachListeners, startPolling, stopPolling]);
 
-  // Pause playback
+  // Pause playback — saves position before pausing
   const pause = useCallback(() => {
     if (audioRef.current) {
+      savedTimeRef.current = audioRef.current.currentTime;
       audioRef.current.pause();
+      stopPolling();
     }
-  }, []);
+  }, [stopPolling]);
 
-  // Resume from pause
+  // Resume from pause — verifies position wasn't reset by iOS
   const resume = useCallback(async () => {
     if (!audioRef.current) return false;
     try {
+      const targetTime = savedTimeRef.current;
       await audioRef.current.play();
+
+      // iOS may reset currentTime to 0 when resuming a blob URL after backgrounding.
+      // If we had a meaningful position and it got reset, seek back to it.
+      if (targetTime > 0.5 && audioRef.current.currentTime < targetTime - 0.5) {
+        audioRef.current.currentTime = targetTime;
+      }
+
+      startPolling();
       return true;
     } catch {
       return false;
     }
-  }, []);
+  }, [startPolling]);
 
   // Stop and reset
   const stop = useCallback(() => {
+    stopPolling();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      savedTimeRef.current = 0;
       setIsPlaying(false);
     }
-  }, []);
+  }, [stopPolling]);
 
   // Toggle mute (audio keeps playing, just silent — important for time tracking)
   const toggleMute = useCallback(() => {
@@ -212,10 +268,16 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     return audioRef.current?.duration || 0;
   }, []);
 
+  // Check if audio element is paused — reads directly from the element, never stale
+  const isPaused = useCallback(() => {
+    return audioRef.current?.paused ?? true;
+  }, []);
+
   // Seek to position
   const seek = useCallback((time) => {
     if (audioRef.current && isFinite(time)) {
       audioRef.current.currentTime = Math.max(0, Math.min(time, audioRef.current.duration || 0));
+      savedTimeRef.current = audioRef.current.currentTime;
     }
   }, []);
 
@@ -238,6 +300,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     // Getters
     getCurrentTime,
     getDuration,
+    isPaused,
   };
 }
 
