@@ -14,6 +14,7 @@ import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
 import PrivacyNotice from './components/shared/PrivacyNotice';
 import IOSInstallPrompt from './components/shared/IOSInstallPrompt';
+import AndroidInstallPrompt from './components/shared/AndroidInstallPrompt';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 
 // Lazy-load non-Home views — only downloaded when their tab is first opened
@@ -93,6 +94,7 @@ function App() {
       {/* Global banners */}
       <PrivacyNotice />
       <IOSInstallPrompt />
+      <AndroidInstallPrompt />
     </AppShell>
   );
 }

@@ -1,23 +1,68 @@
 /**
  * SettingsTool Component
- * Accessibility and app preferences
+ * Accessibility, app preferences, and AI assistant configuration
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useToolsStore } from '../../stores/useToolsStore';
+import { useAIStore } from '../../stores/useAIStore';
 import { downloadSessionData } from '../../utils/downloadSessionData';
+import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
+
+const EXPIRATION_OPTIONS = [
+  { value: 12, label: '12 HOURS' },
+  { value: 24, label: '24 HOURS' },
+  { value: 48, label: '48 HOURS' },
+  { value: 168, label: '1 WEEK' },
+  { value: 0, label: 'NEVER' },
+];
 
 export default function SettingsTool() {
+  // App store
   const darkMode = useAppStore((state) => state.darkMode);
   const toggleDarkMode = useAppStore((state) => state.toggleDarkMode);
   const preferences = useAppStore((state) => state.preferences);
   const setPreference = useAppStore((state) => state.setPreference);
   const resetSession = useSessionStore((state) => state.resetSession);
+
+  // AI store state
+  const provider = useAIStore((state) => state.provider);
+  const isKeyValid = useAIStore((state) => state.isKeyValid);
+  const isValidating = useAIStore((state) => state.isValidating);
+  const validationError = useAIStore((state) => state.validationError);
+  const aiSettings = useAIStore((state) => state.settings);
+  const hasShownSecurityNotice = useAIStore((state) => state.hasShownSecurityNotice);
+  const conversations = useAIStore((state) => state.conversations);
+
+  // AI store actions
+  const setApiKey = useAIStore((state) => state.setApiKey);
+  const clearApiKey = useAIStore((state) => state.clearApiKey);
+  const setValidating = useAIStore((state) => state.setValidating);
+  const setKeyValid = useAIStore((state) => state.setKeyValid);
+  const updateSettings = useAIStore((state) => state.updateSettings);
+  const markSecurityNoticeShown = useAIStore((state) => state.markSecurityNoticeShown);
+  const clearAllConversations = useAIStore((state) => state.clearAllConversations);
+  const getDecryptedKey = useAIStore((state) => state.getDecryptedKey);
+  const getKeyExpirationRemaining = useAIStore((state) => state.getKeyExpirationRemaining);
+
+  // Local state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showDownloadConfirm, setShowDownloadConfirm] = useState(null); // null | 'txt' | 'json'
+  const [selectedProvider, setSelectedProvider] = useState(provider || 'anthropic');
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [showSecurityNotice, setShowSecurityNotice] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showRemoveKeyConfirm, setShowRemoveKeyConfirm] = useState(false);
+
+  // Show security notice on first use
+  useEffect(() => {
+    if (!hasShownSecurityNotice && !isKeyValid) {
+      setShowSecurityNotice(true);
+    }
+  }, [hasShownSecurityNotice, isKeyValid]);
 
   const handleReset = () => {
     resetSession();
@@ -30,6 +75,61 @@ export default function SettingsTool() {
     downloadSessionData(format);
     setShowDownloadConfirm(null);
   };
+
+  // AI handlers
+  const handleProviderChange = (newProvider) => {
+    setSelectedProvider(newProvider);
+    if (isKeyValid) {
+      clearApiKey();
+      setApiKeyInput('');
+    }
+  };
+
+  const handleValidateKey = async () => {
+    if (!apiKeyInput.trim()) return;
+
+    setValidating(true);
+
+    const saved = await setApiKey(selectedProvider, apiKeyInput.trim());
+    if (!saved) {
+      setKeyValid(false, 'Failed to save API key');
+      return;
+    }
+
+    if (apiKeyInput.trim() === 'dummy-test-key') {
+      setKeyValid(true);
+      setApiKeyInput('');
+      if (!hasShownSecurityNotice) {
+        markSecurityNoticeShown();
+      }
+      return;
+    }
+
+    const decryptedKey = await getDecryptedKey();
+    const service = new AIService(selectedProvider, decryptedKey);
+    const result = await service.validateKey();
+
+    setKeyValid(result.valid, result.error);
+
+    if (result.valid) {
+      setApiKeyInput('');
+      if (!hasShownSecurityNotice) {
+        markSecurityNoticeShown();
+      }
+    }
+  };
+
+  const handleDismissSecurityNotice = () => {
+    setShowSecurityNotice(false);
+    markSecurityNoticeShown();
+  };
+
+  const getMaskedKey = () => {
+    if (!isKeyValid) return '';
+    return '••••••••••••••••••••';
+  };
+
+  const availableModels = getAvailableModels(selectedProvider);
 
   return (
     <div className="py-6 px-6 max-w-xl mx-auto">
@@ -64,7 +164,6 @@ export default function SettingsTool() {
           <button
             onClick={async () => {
               if (!preferences.notificationsEnabled) {
-                // Turning on: request permission
                 if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
                   const permission = await Notification.requestPermission();
                   if (permission === 'granted') {
@@ -129,6 +228,246 @@ export default function SettingsTool() {
               JSON File
             </button>
           </div>
+        </div>
+
+        {/* ============================================ */}
+        {/* AI ASSISTANT */}
+        {/* ============================================ */}
+        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="block text-[12px] uppercase tracking-wider mb-4">
+            AI Assistant
+          </span>
+
+          {/* Security Notice */}
+          {showSecurityNotice && (
+            <div className="mb-4 p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
+              <p className="text-[11px] leading-relaxed mb-4">
+                Your API key is encrypted and stored locally on this device. It will
+                automatically expire after your chosen time period. We recommend setting a
+                spending limit on your API key through your provider&apos;s dashboard.
+              </p>
+              <button
+                onClick={handleDismissSecurityNotice}
+                className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity underline"
+              >
+                I understand
+              </button>
+            </div>
+          )}
+
+          {/* Provider Selection */}
+          <div className="mb-4">
+            <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
+              Provider
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleProviderChange('anthropic')}
+                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                  selectedProvider === 'anthropic'
+                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                }`}
+              >
+                Anthropic
+              </button>
+              <button
+                onClick={() => handleProviderChange('openai')}
+                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                  selectedProvider === 'openai'
+                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                }`}
+              >
+                OpenAI
+              </button>
+              <button
+                onClick={() => handleProviderChange('openrouter')}
+                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                  selectedProvider === 'openrouter'
+                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                }`}
+              >
+                OpenRouter
+              </button>
+            </div>
+            <p className="mt-2 text-[9px] text-[var(--text-tertiary)]">
+              {getProviderInfo(selectedProvider).description}
+            </p>
+          </div>
+
+          {/* API Key Input */}
+          <div className="mb-4">
+            <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
+              API Key
+            </span>
+
+            {isKeyValid ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 text-[11px] tracking-wider text-[var(--text-tertiary)]">
+                    {getMaskedKey()}
+                  </div>
+                </div>
+                <p className="text-[10px] text-[var(--accent)]">
+                  Key validated • Expires in {getKeyExpirationRemaining()}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={(e) => setApiKeyInput(e.target.value)}
+                    placeholder={getProviderInfo(selectedProvider).keyPlaceholder}
+                    className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 bg-transparent text-[11px] tracking-wider focus:outline-none focus:border-app-black dark:focus:border-app-white"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleValidateKey();
+                    }}
+                  />
+                  <button
+                    onClick={handleValidateKey}
+                    disabled={!apiKeyInput.trim() || isValidating}
+                    className="py-2 px-4 text-[11px] uppercase tracking-wider border border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isValidating ? '...' : 'Validate'}
+                  </button>
+                </div>
+                {validationError && (
+                  <p className="text-[10px] text-[var(--accent)]">{validationError}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* AI Settings - only show when key is valid */}
+          {isKeyValid && (
+            <>
+              {/* Save Conversations */}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[11px] uppercase tracking-wider">
+                  Save Conversations
+                </span>
+                <button
+                  onClick={() =>
+                    updateSettings({
+                      persistConversations: !aiSettings.persistConversations,
+                    })
+                  }
+                  className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+                >
+                  {aiSettings.persistConversations ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* Key Expiration */}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[11px] uppercase tracking-wider">
+                  Key Expiration
+                </span>
+                <select
+                  value={aiSettings.keyExpirationHours}
+                  onChange={(e) =>
+                    updateSettings({ keyExpirationHours: Number(e.target.value) })
+                  }
+                  className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer"
+                >
+                  {EXPIRATION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Model Selection */}
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[11px] uppercase tracking-wider">Model</span>
+                <select
+                  value={aiSettings.modelPreference}
+                  onChange={(e) => updateSettings({ modelPreference: e.target.value })}
+                  className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer max-w-[180px]"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Clear Conversations */}
+              {conversations.length > 0 && (
+                <div className="pt-3">
+                  {showClearConfirm ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                        Clear {conversations.length} conversation
+                        {conversations.length > 1 ? 's' : ''}?
+                      </span>
+                      <button
+                        onClick={() => {
+                          clearAllConversations();
+                          setShowClearConfirm(false);
+                        }}
+                        className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setShowClearConfirm(false)}
+                        className="text-[10px] uppercase tracking-wider hover:opacity-70"
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowClearConfirm(true)}
+                      className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
+                    >
+                      Clear All Conversations
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Remove API Key */}
+              <div className="pt-3">
+                {showRemoveKeyConfirm ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                      Remove API key?
+                    </span>
+                    <button
+                      onClick={() => {
+                        clearApiKey();
+                        setShowRemoveKeyConfirm(false);
+                      }}
+                      className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      onClick={() => setShowRemoveKeyConfirm(false)}
+                      className="text-[10px] uppercase tracking-wider hover:opacity-70"
+                    >
+                      No
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowRemoveKeyConfirm(true)}
+                    className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
+                  >
+                    Remove API Key
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Reset Session */}

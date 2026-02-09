@@ -7,7 +7,7 @@
  * Features:
  * - Play/pause/resume a single continuous audio stream
  * - Mute state management (audio keeps playing, just silent)
- * - Time tracking via audio.currentTime with polling fallback
+ * - Time tracking via wall-clock (Date.now) — bypasses iOS blob URL currentTime bug
  * - Position preservation across pause/resume (iOS blob URL resilience)
  * - Event callbacks (onEnded, onError, onPlay, onPause, onTimeUpdate)
  * - Blob URL lifecycle (load once, revoke on cleanup)
@@ -68,11 +68,22 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
   // Polling fallback for unreliable timeupdate on iOS blob URLs
   const pollIntervalRef = useRef(null);
 
+  // Wall-clock timer: bypasses iOS Safari's broken audio.currentTime for blob URLs.
+  // Tracks real elapsed time via Date.now() instead of relying on the audio element.
+  const wallStartRef = useRef(0);         // Date.now() when playback started/resumed
+  const wallAccumulatedRef = useRef(0);   // seconds accumulated from prior play periods
+
+  const getWallTime = () => {
+    if (!wallStartRef.current) return wallAccumulatedRef.current;
+    return wallAccumulatedRef.current + (Date.now() - wallStartRef.current) / 1000;
+  };
+
   const startPolling = useCallback(() => {
     if (pollIntervalRef.current) return;
+    wallStartRef.current = Date.now();
     pollIntervalRef.current = setInterval(() => {
       if (audioRef.current && !audioRef.current.paused) {
-        const t = audioRef.current.currentTime + timeOffsetRef.current;
+        const t = getWallTime();
         savedTimeRef.current = t;
         onTimeUpdateRef.current?.(t);
       }
@@ -103,6 +114,11 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     listenersAttachedRef.current = true;
 
     audio.addEventListener('ended', () => {
+      // Freeze wall-clock so getCurrentTime() returns the final position
+      if (wallStartRef.current) {
+        wallAccumulatedRef.current += (Date.now() - wallStartRef.current) / 1000;
+        wallStartRef.current = 0;
+      }
       stopPolling();
       setIsPlaying(false);
       onEndedRef.current?.();
@@ -139,10 +155,10 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       onPauseRef.current?.();
     });
 
-    // Native timeupdate — still fires when it can, supplements the polling fallback.
-    // Duplicate calls with the same value are harmless (React batches identical setState).
+    // Native timeupdate — supplements polling with wall-clock time.
     audio.addEventListener('timeupdate', () => {
-      const t = audio.currentTime + timeOffsetRef.current;
+      if (!wallStartRef.current) return;
+      const t = getWallTime();
       savedTimeRef.current = t;
       onTimeUpdateRef.current?.(t);
     });
@@ -166,6 +182,8 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       }
       composedBytesRef.current = null;
       timeOffsetRef.current = 0;
+      wallStartRef.current = 0;
+      wallAccumulatedRef.current = 0;
     };
   }, [stopPolling]);
 
@@ -179,6 +197,8 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     // Reset position tracking for a new blob
     savedTimeRef.current = 0;
     timeOffsetRef.current = 0;
+    wallStartRef.current = 0;
+    wallAccumulatedRef.current = 0;
     currentBlobUrlRef.current = blobUrl;
     stopPolling();
 
@@ -235,10 +255,15 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     });
   }, [getAudio, attachListeners, startPolling, stopPolling]);
 
-  // Pause playback — saves absolute position before pausing
+  // Pause playback — accumulates wall-clock time and saves position
   const pause = useCallback(() => {
     if (audioRef.current) {
-      savedTimeRef.current = audioRef.current.currentTime + timeOffsetRef.current;
+      // Accumulate wall-clock elapsed before pausing
+      if (wallStartRef.current) {
+        wallAccumulatedRef.current += (Date.now() - wallStartRef.current) / 1000;
+        wallStartRef.current = 0;
+      }
+      savedTimeRef.current = wallAccumulatedRef.current;
       audioRef.current.pause();
       stopPolling();
     }
@@ -369,6 +394,8 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
   // Stop and reset
   const stop = useCallback(() => {
     stopPolling();
+    wallStartRef.current = 0;
+    wallAccumulatedRef.current = 0;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -383,9 +410,9 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     setIsMuted(prev => !prev);
   }, []);
 
-  // Get current playback time (absolute, including offset from blob recreation)
+  // Get current playback time (wall-clock based, not audio.currentTime)
   const getCurrentTime = useCallback(() => {
-    return (audioRef.current?.currentTime || 0) + timeOffsetRef.current;
+    return getWallTime();
   }, []);
 
   // Get duration

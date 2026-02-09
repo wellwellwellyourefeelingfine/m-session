@@ -41,7 +41,7 @@ function SectionHeader({ children }) {
 
 export default function FAQTool() {
   return (
-    <div className="py-12 px-6 max-w-xl mx-auto space-y-2">
+    <div className="py-6 px-6 max-w-xl mx-auto space-y-2">
       {/* Header */}
       <h3 className="text-sm font-light tracking-wide text-[var(--color-text-primary)] pb-2">
         Frequently Asked Questions

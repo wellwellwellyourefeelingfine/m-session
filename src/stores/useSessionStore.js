@@ -321,6 +321,7 @@ export const useSessionStore = create(
             status: 'locked', // 'locked' | 'available' | 'completed'
             completedAt: null,
             feeling: null,    // 'settled' | 'processing' | 'low' | 'tender' | 'energized' | 'mixed'
+            bodyFeeling: null, // 'relaxed' | 'heavy' | 'tense' | 'normal'
             note: null,
           },
           revisit: {
@@ -2197,11 +2198,8 @@ export const useSessionStore = create(
           // Reset transient flags within nested objects
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
-            isVisible: false,
-            isMinimized: true,
-            currentResponse: null,
-            waitingForCheckIn: false,
-            showEndOfPhaseChoice: false,
+            currentResponse: null,      // Transient UI selection — safe to reset
+            waitingForCheckIn: false,    // Transient flag — safe to reset
           },
           peakCheckIn: { isVisible: false },
           closingCheckIn: { isVisible: false },

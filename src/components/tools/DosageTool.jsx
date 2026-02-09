@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import TestingTool from './TestingTool';
 
 // Therapeutic range: 1.0 - 1.5 mg/kg with floor/ceiling
 const calculateRange = (weightKg) => {
@@ -30,6 +31,7 @@ export default function DosageTool() {
   const [weight, setWeight] = useState('');
   const [unit, setUnit] = useState('lb'); // 'kg' or 'lb'
   const [showBooster, setShowBooster] = useState(false);
+  const [showTesting, setShowTesting] = useState(false);
 
   const weightKg = unit === 'kg'
     ? parseFloat(weight)
@@ -45,7 +47,7 @@ export default function DosageTool() {
   } : null;
 
   return (
-    <div className="py-12 px-6 max-w-xl mx-auto space-y-8">
+    <div className="py-6 px-6 max-w-xl mx-auto space-y-8">
       {/* Header */}
       <div className="space-y-2">
         <h3 className="uppercase tracking-wider text-xs text-app-gray-600 dark:text-app-gray-400">
@@ -192,6 +194,23 @@ export default function DosageTool() {
             These are starting points, not prescriptions.
           </li>
         </ul>
+      </div>
+
+      {/* Substance Testing - collapsible */}
+      <div className="pt-4 border-t border-app-gray-200 dark:border-app-gray-800">
+        <button
+          onClick={() => setShowTesting(!showTesting)}
+          className="w-full text-left py-3 text-sm flex justify-between items-center hover:opacity-70 transition-opacity"
+        >
+          <span>Substance Testing</span>
+          <span className="text-app-gray-400">{showTesting ? '−' : '+'}</span>
+        </button>
+
+        {showTesting && (
+          <div className="[&>div]:py-0 [&>div]:px-0">
+            <TestingTool />
+          </div>
+        )}
       </div>
     </div>
   );

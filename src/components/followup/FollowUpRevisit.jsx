@@ -3,10 +3,11 @@
  * Second follow-up module - Revisit session writings with fresh eyes
  *
  * Flow:
- * 1. Introduction
+ * 1. Introduction (contextual based on check-in feeling)
  * 2. Display session writings (intention, future message, commitment)
  * 3. Reflection textarea
- * 4. Complete screen
+ * 4. Carry-forward prompt
+ * 5. Complete screen (with bridge to Integration)
  */
 
 import { useState, useCallback } from 'react';
@@ -18,7 +19,10 @@ import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import { TransitionTextarea } from '../session/transitions/shared';
 
-import { REVISIT_STEPS } from './content/followUpContent';
+import { REVISIT_STEPS, REVISIT_FEELING_CONTEXT } from './content/followUpContent';
+
+// Steps where the moon animation appears (sparse/text-only screens)
+const MOON_STEPS = new Set(['intro', 'complete']);
 
 export default function FollowUpRevisit() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -27,12 +31,14 @@ export default function FollowUpRevisit() {
 
   // Local state for captures
   const [reflection, setReflection] = useState('');
+  const [carryForward, setCarryForward] = useState('');
 
   // Store selectors
   const completeFollowUpModule = useSessionStore((state) => state.completeFollowUpModule);
   const exitFollowUpModule = useSessionStore((state) => state.exitFollowUpModule);
+  const followUp = useSessionStore((state) => state.followUp);
+  const startFollowUpModule = useSessionStore((state) => state.startFollowUpModule);
   const intake = useSessionStore((state) => state.intake);
-  const preSubstanceActivity = useSessionStore((state) => state.preSubstanceActivity);
   const transitionCaptures = useSessionStore((state) => state.transitionCaptures);
   const addEntry = useJournalStore((state) => state.addEntry);
 
@@ -50,11 +56,22 @@ export default function FollowUpRevisit() {
   // Check if there's any content to display
   const hasContent = intention || intentionAddition || futureMessage || commitment;
 
+  // Get check-in feeling for contextual intro
+  const checkInFeeling = followUp?.modules?.checkIn?.feeling;
+
   // Save captures and create journal entry
   const saveCaptures = useCallback(() => {
-    if (reflection.trim()) {
+    const hasReflection = reflection.trim();
+    const hasCarryForward = carryForward.trim();
+
+    if (hasReflection || hasCarryForward) {
       let journalContent = 'FOLLOW-UP: REVISIT\n\n';
-      journalContent += `Reflection:\n${reflection}`;
+      if (hasReflection) {
+        journalContent += `Reflection:\n${reflection}\n`;
+      }
+      if (hasCarryForward) {
+        journalContent += `\nCarrying forward:\n${carryForward}`;
+      }
 
       addEntry({
         content: journalContent.trim(),
@@ -67,8 +84,9 @@ export default function FollowUpRevisit() {
     // Complete the module
     completeFollowUpModule('revisit', {
       reflection: reflection.trim() || null,
+      carryForward: carryForward.trim() || null,
     });
-  }, [reflection, addEntry, completeFollowUpModule]);
+  }, [reflection, carryForward, addEntry, completeFollowUpModule]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -115,20 +133,35 @@ export default function FollowUpRevisit() {
     }, 400);
   }, [currentStepIndex, exitFollowUpModule]);
 
+  const handleContinueToIntegration = () => {
+    saveCaptures();
+    if (followUp.modules.integration.status === 'available') {
+      startFollowUpModule('integration');
+    }
+  };
+
   // Render content based on step
   const renderContent = () => {
     const { content } = currentStep;
 
-    // Intro step
+    // Intro step — with contextual framing from check-in feeling
     if (currentStep.id === 'intro') {
+      const contextText = checkInFeeling ? REVISIT_FEELING_CONTEXT[checkInFeeling] : null;
+
       return (
         <div className="text-center space-y-4 animate-fadeIn">
           <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
             {content.title}
           </h2>
-          <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-            {content.body}
-          </p>
+          {contextText ? (
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {contextText}
+            </p>
+          ) : (
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.body}
+            </p>
+          )}
         </div>
       );
     }
@@ -137,14 +170,13 @@ export default function FollowUpRevisit() {
     if (currentStep.id === 'display') {
       return (
         <div className="space-y-6 animate-fadeIn">
-          {/* Intention */}
           {intention && (
             <div className="space-y-2">
               <h3 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider">
                 Your Intention
               </h3>
               <blockquote className="text-[var(--color-text-primary)] text-sm leading-relaxed italic border-l-2 border-[var(--color-text-tertiary)] pl-4">
-                "{intention}"
+                &ldquo;{intention}&rdquo;
               </blockquote>
               {intentionAddition && (
                 <div className="pl-4 mt-2">
@@ -152,38 +184,35 @@ export default function FollowUpRevisit() {
                     What you added during integration:
                   </p>
                   <p className="text-[var(--color-text-secondary)] text-sm italic mt-1">
-                    "{intentionAddition}"
+                    &ldquo;{intentionAddition}&rdquo;
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* Future Message */}
           {futureMessage && (
             <div className="space-y-2">
               <h3 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider">
                 Message to Your Future Self
               </h3>
               <blockquote className="text-[var(--color-text-primary)] text-sm leading-relaxed italic border-l-2 border-[var(--color-text-tertiary)] pl-4">
-                "{futureMessage}"
+                &ldquo;{futureMessage}&rdquo;
               </blockquote>
             </div>
           )}
 
-          {/* Commitment */}
           {commitment && (
             <div className="space-y-2">
               <h3 className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider">
                 Your Commitment
               </h3>
               <blockquote className="text-[var(--color-text-primary)] text-sm leading-relaxed italic border-l-2 border-[var(--color-text-tertiary)] pl-4">
-                "{commitment}"
+                &ldquo;{commitment}&rdquo;
               </blockquote>
             </div>
           )}
 
-          {/* No content message */}
           {!hasContent && (
             <p className="text-[var(--color-text-tertiary)] text-sm text-center italic">
               No writings were captured during your session.
@@ -216,13 +245,44 @@ export default function FollowUpRevisit() {
       );
     }
 
-    // Complete step
-    if (currentStep.id === 'complete') {
+    // Carry-forward step
+    if (currentStep.id === 'carry-forward') {
       return (
-        <div className="text-center space-y-4 animate-fadeIn">
+        <div className="space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.body}
+            </p>
+          </div>
+
+          <TransitionTextarea
+            value={carryForward}
+            onChange={setCarryForward}
+            placeholder={content.placeholder}
+          />
+        </div>
+      );
+    }
+
+    // Complete step — with bridge to Integration
+    if (currentStep.id === 'complete') {
+      const integrationAvailable = followUp.modules.integration.status === 'available';
+
+      return (
+        <div className="text-center space-y-6 animate-fadeIn">
           <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
             {content.body}
           </p>
+
+          {integrationAvailable && (
+            <button
+              type="button"
+              onClick={handleContinueToIntegration}
+              className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider hover:text-[var(--color-text-secondary)]"
+            >
+              Continue to Integration →
+            </button>
+          )}
         </div>
       );
     }
@@ -245,25 +305,29 @@ export default function FollowUpRevisit() {
     };
   };
 
+  const showSkip = currentStep.id === 'reflection' || currentStep.id === 'carry-forward';
+
   return (
     <>
       <ModuleProgressBar progress={progress} visible={true} showTime={false} />
 
       <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
-        <div className="flex-shrink-0 pt-4 pb-4">
-          <div className="text-center mb-4">
+        <div className="flex-shrink-0 pt-2 pb-1">
+          <div className="text-center mb-1">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
               {currentStep.content.label}
             </p>
           </div>
-          <div className="flex justify-center">
-            <AsciiMoon />
-          </div>
+          {MOON_STEPS.has(currentStep.id) && (
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] ${
+            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] pb-24 ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -278,11 +342,11 @@ export default function FollowUpRevisit() {
         showBack={true}
         onBack={handleBack}
         backConfirmMessage={currentStepIndex === 0 ? 'Exit the revisit?' : null}
-        showSkip={currentStep.id === 'reflection'}
+        showSkip={showSkip}
         onSkip={handleNext}
         skipConfirmMessage={null}
-        secondaryText={currentStep.id === 'reflection' ? 'Skip' : null}
-        onSecondary={currentStep.id === 'reflection' ? handleNext : null}
+        secondaryText={showSkip ? 'Skip' : null}
+        onSecondary={showSkip ? handleNext : null}
       />
     </>
   );

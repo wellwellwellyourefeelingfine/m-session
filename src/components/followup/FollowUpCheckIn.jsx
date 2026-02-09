@@ -5,8 +5,9 @@
  * Flow:
  * 1. "How Are You?" - Single-select feeling options
  * 2. Conditional response based on feeling
- * 3. Optional note textarea
- * 4. Complete screen
+ * 3. "Your Body" - Single-select body awareness
+ * 4. Optional note textarea
+ * 5. Complete screen
  */
 
 import { useState, useCallback } from 'react';
@@ -22,7 +23,12 @@ import {
   CHECK_IN_FEELINGS,
   CHECK_IN_RESPONSES,
   CHECK_IN_STEPS,
+  BODY_FEELINGS,
+  BODY_RESPONSES,
 } from './content/followUpContent';
+
+// Steps where the moon animation appears (sparse/text-only screens)
+const MOON_STEPS = new Set(['response', 'complete']);
 
 export default function FollowUpCheckIn() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -31,6 +37,7 @@ export default function FollowUpCheckIn() {
 
   // Local state for captures
   const [feeling, setFeeling] = useState(null);
+  const [bodyFeeling, setBodyFeeling] = useState(null);
   const [note, setNote] = useState('');
 
   // Store selectors
@@ -47,11 +54,14 @@ export default function FollowUpCheckIn() {
 
   // Save captures and create journal entry
   const saveCaptures = useCallback(() => {
-    // Create journal entry
     const feelingLabel = CHECK_IN_FEELINGS.find((f) => f.value === feeling)?.label || feeling;
+    const bodyLabel = BODY_FEELINGS.find((b) => b.value === bodyFeeling)?.label || bodyFeeling;
 
     let journalContent = 'FOLLOW-UP: CHECK-IN\n\n';
     journalContent += `How I'm feeling: ${feelingLabel}\n`;
+    if (bodyLabel) {
+      journalContent += `Body: ${bodyLabel}\n`;
+    }
     if (note.trim()) {
       journalContent += `\nNote:\n${note}`;
     }
@@ -66,9 +76,10 @@ export default function FollowUpCheckIn() {
     // Complete the module
     completeFollowUpModule('checkIn', {
       feeling,
+      bodyFeeling,
       note: note.trim() || null,
     });
-  }, [feeling, note, addEntry, completeFollowUpModule]);
+  }, [feeling, bodyFeeling, note, addEntry, completeFollowUpModule]);
 
   const handleNext = useCallback(() => {
     if (isLastStep) {
@@ -110,7 +121,6 @@ export default function FollowUpCheckIn() {
 
   const handleContinueToRevisit = () => {
     saveCaptures();
-    // If revisit is available, start it
     if (followUp.modules.revisit.status === 'available') {
       startFollowUpModule('revisit');
     }
@@ -136,7 +146,6 @@ export default function FollowUpCheckIn() {
             </p>
           </div>
 
-          {/* Feeling options */}
           <div className="space-y-2">
             {CHECK_IN_FEELINGS.map((option) => (
               <button
@@ -169,6 +178,60 @@ export default function FollowUpCheckIn() {
           {response.textSecondary && (
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
               {response.textSecondary}
+            </p>
+          )}
+          {response.showSupport && (
+            <div className="pt-2">
+              <a
+                href="tel:+16234737433"
+                className="text-[var(--color-text-tertiary)] text-xs hover:text-[var(--color-text-secondary)] transition-colors"
+              >
+                Fireside Project: 62-FIRESIDE (623-473-7433)
+              </a>
+              <p className="text-[var(--color-text-tertiary)] text-[10px] mt-1">
+                Free psychedelic peer support · Daily 11am–11pm PT
+              </p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Body awareness step
+    if (currentStep.id === 'body') {
+      const bodyResponse = bodyFeeling ? BODY_RESPONSES[bodyFeeling] : null;
+
+      return (
+        <div className="space-y-6 animate-fadeIn">
+          <div className="text-center space-y-2">
+            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+              {content.title}
+            </h2>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              {content.body}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            {BODY_FEELINGS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setBodyFeeling(option.value)}
+                className={`w-full py-3 px-4 border text-left text-sm transition-colors ${
+                  bodyFeeling === option.value
+                    ? 'border-[var(--color-text-primary)] text-[var(--color-text-primary)]'
+                    : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-tertiary)]'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {bodyResponse && (
+            <p className="text-center text-[var(--color-text-secondary)] text-sm leading-relaxed animate-fadeIn">
+              {bodyResponse.text}
             </p>
           )}
         </div>
@@ -222,7 +285,6 @@ export default function FollowUpCheckIn() {
 
   // Get primary button config
   const getPrimaryButton = () => {
-    // Feeling step - need to select something
     if (currentStep.id === 'feeling') {
       return {
         label: 'Continue',
@@ -231,18 +293,17 @@ export default function FollowUpCheckIn() {
       };
     }
 
-    // Complete step
-    if (isLastStep) {
+    if (currentStep.id === 'body') {
       return {
-        label: 'Return Home',
+        label: 'Continue',
         onClick: handleNext,
+        disabled: !bodyFeeling,
       };
     }
 
-    // Note step - can skip
-    if (currentStep.id === 'note') {
+    if (isLastStep) {
       return {
-        label: 'Continue',
+        label: 'Return Home',
         onClick: handleNext,
       };
     }
@@ -253,25 +314,29 @@ export default function FollowUpCheckIn() {
     };
   };
 
+  const showSkip = currentStep.id === 'note' || currentStep.id === 'body';
+
   return (
     <>
       <ModuleProgressBar progress={progress} visible={true} showTime={false} />
 
       <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
-        <div className="flex-shrink-0 pt-4 pb-4">
-          <div className="text-center mb-4">
+        <div className="flex-shrink-0 pt-2 pb-1">
+          <div className="text-center mb-1">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
               {currentStep.content.label}
             </p>
           </div>
-          <div className="flex justify-center">
-            <AsciiMoon />
-          </div>
+          {MOON_STEPS.has(currentStep.id) && (
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] ${
+            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] pb-24 ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >
@@ -286,11 +351,11 @@ export default function FollowUpCheckIn() {
         showBack={true}
         onBack={handleBack}
         backConfirmMessage={currentStepIndex === 0 ? 'Exit the check-in?' : null}
-        showSkip={currentStep.id === 'note'}
+        showSkip={showSkip}
         onSkip={handleNext}
         skipConfirmMessage={null}
-        secondaryText={currentStep.id === 'note' ? 'Skip' : null}
-        onSecondary={currentStep.id === 'note' ? handleNext : null}
+        secondaryText={showSkip ? 'Skip' : null}
+        onSecondary={showSkip ? handleNext : null}
       />
     </>
   );

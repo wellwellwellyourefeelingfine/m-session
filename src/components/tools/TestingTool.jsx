@@ -38,7 +38,7 @@ export default function TestingTool() {
   const isEurope = region === 'europe';
 
   return (
-    <div className="py-12 px-6 max-w-xl mx-auto space-y-6">
+    <div className="py-6 px-6 max-w-xl mx-auto space-y-6">
       {/* Header */}
       <div className="space-y-4">
         <h3 className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)]">

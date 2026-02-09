@@ -17,7 +17,7 @@ export default function AboutTool() {
     });
   };
   return (
-    <div className="py-12 px-6 max-w-xl mx-auto">
+    <div className="py-6 px-6 max-w-xl mx-auto">
       <h3 className="text-lg mb-8 tracking-wider text-xs text-[var(--color-text-tertiary)]">
         About This Project
       </h3>

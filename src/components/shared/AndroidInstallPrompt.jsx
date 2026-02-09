@@ -1,41 +1,34 @@
 /**
- * iOS Install Prompt
- * Detects iOS Safari (not already in standalone PWA mode)
- * and prompts the user to add the app to their home screen.
+ * Android Install Prompt
+ * Detects Android browsers (not already in standalone PWA mode)
+ * and prompts the user to install the app to their home screen.
  * Also includes privacy notice (no cookies, local storage only).
- *
- * iOS doesn't support programmatic install — we guide the user
- * through the native Share > Add to Home Screen flow.
  */
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 
-const BANNER_ID = 'ios-install-prompt';
+const BANNER_ID = 'android-install-prompt';
 
-function isIOSSafari() {
+function isAndroid() {
   if (typeof navigator === 'undefined') return false;
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
-  return isIOS && isSafari;
+  return /Android/.test(navigator.userAgent);
 }
 
 function isStandalone() {
   if (typeof window === 'undefined') return false;
-  return window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  return window.matchMedia('(display-mode: standalone)').matches;
 }
 
-export default function IOSInstallPrompt() {
+export default function AndroidInstallPrompt() {
   const dismissed = useAppStore((state) => state.dismissedBanners[BANNER_ID]);
   const dismissBanner = useAppStore((state) => state.dismissBanner);
   const [show, setShow] = useState(false);
   const [hiding, setHiding] = useState(false);
 
   useEffect(() => {
-    // Only show on iOS Safari when not already installed as PWA
-    if (!dismissed && isIOSSafari() && !isStandalone()) {
-      // Small delay so it doesn't flash on load
+    // Only show on Android when not already installed as PWA
+    if (!dismissed && isAndroid() && !isStandalone()) {
       const timer = setTimeout(() => setShow(true), 10000);
       return () => clearTimeout(timer);
     }
@@ -81,7 +74,7 @@ export default function IOSInstallPrompt() {
 
         <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed mb-5">
           For the best experience &mdash; offline access, full screen,
-          and no browser distractions &mdash; save this app to your home screen:
+          and no browser distractions &mdash; install this app to your home screen:
         </p>
 
         <div className="space-y-3 mb-5">
@@ -90,21 +83,22 @@ export default function IOSInstallPrompt() {
             <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
               Tap the{' '}
               <span className="inline-block align-middle mx-0.5">
-                <ShareIcon />
+                <MenuIcon />
               </span>{' '}
-              share button in your browser toolbar
+              menu in your browser toolbar
             </p>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-[var(--accent)] text-sm mt-0.5 shrink-0">2.</span>
             <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
-              Scroll down and tap <strong className="text-[var(--color-text-primary)]">Add to Home Screen</strong>
+              Tap <strong className="text-[var(--color-text-primary)]">Install app</strong> or{' '}
+              <strong className="text-[var(--color-text-primary)]">Add to Home Screen</strong>
             </p>
           </div>
           <div className="flex items-start gap-3">
             <span className="text-[var(--accent)] text-sm mt-0.5 shrink-0">3.</span>
             <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
-              Tap <strong className="text-[var(--color-text-primary)]">Add</strong> to confirm
+              Tap <strong className="text-[var(--color-text-primary)]">Install</strong> to confirm
             </p>
           </div>
         </div>
@@ -120,23 +114,19 @@ export default function IOSInstallPrompt() {
   );
 }
 
-/** Minimal iOS share icon (box with arrow) */
-function ShareIcon() {
+/** Three-dot vertical menu icon (Android Chrome) */
+function MenuIcon() {
   return (
     <svg
       width="14"
       height="14"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      fill="currentColor"
       className="text-[var(--accent)]"
     >
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
     </svg>
   );
 }

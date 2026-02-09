@@ -3,12 +3,12 @@
  * Third follow-up module - Deeper reflection on integration
  *
  * Flow:
- * 1. Introduction ("A Few Days Later")
+ * 1. Introduction ("A Few Days Later") — contextual if prior modules completed
  * 2. "What's Emerged" textarea
  * 3. Commitment check-in (single-select status)
  * 4. Conditional response based on status
- * 5. Closing text
- * 6. "Follow-Up Complete" screen
+ * 5. Closing text — personalized with intention
+ * 6. "Follow-Up Complete" screen — with integration practices
  */
 
 import { useState, useCallback } from 'react';
@@ -25,7 +25,11 @@ import {
   COMMITMENT_STATUSES,
   COMMITMENT_RESPONSES,
   INTEGRATION_STEPS,
+  INTEGRATION_PRACTICES,
 } from './content/followUpContent';
+
+// Steps where the moon animation appears (sparse/text-only screens)
+const MOON_STEPS = new Set(['intro', 'closing', 'complete']);
 
 export default function FollowUpIntegration() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -41,11 +45,19 @@ export default function FollowUpIntegration() {
   // Store selectors
   const completeFollowUpModule = useSessionStore((state) => state.completeFollowUpModule);
   const exitFollowUpModule = useSessionStore((state) => state.exitFollowUpModule);
+  const followUp = useSessionStore((state) => state.followUp);
+  const intake = useSessionStore((state) => state.intake);
   const transitionCaptures = useSessionStore((state) => state.transitionCaptures);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
   const addEntry = useJournalStore((state) => state.addEntry);
 
   const commitment = transitionCaptures?.closing?.commitment || '';
+  const intention = intake?.responses?.holdingQuestion || '';
+
+  // Check if prior modules were completed (for contextual intro)
+  const checkInCompleted = followUp?.modules?.checkIn?.status === 'completed';
+  const revisitCompleted = followUp?.modules?.revisit?.status === 'completed';
+  const hasPriorContext = checkInCompleted && revisitCompleted;
 
   const currentStep = INTEGRATION_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === INTEGRATION_STEPS.length - 1;
@@ -93,7 +105,6 @@ export default function FollowUpIntegration() {
 
     // Skip commitment response step if no input needed
     if (currentStep.id === 'commitment-check') {
-      const response = COMMITMENT_RESPONSES[commitmentStatus];
       // Skip response step for 'following' which has no input
       if (commitmentStatus === 'following') {
         setIsVisible(false);
@@ -144,15 +155,19 @@ export default function FollowUpIntegration() {
   const renderContent = () => {
     const { content } = currentStep;
 
-    // Intro step
+    // Intro step — contextual if prior modules were completed
     if (currentStep.id === 'intro') {
+      const introText = hasPriorContext && content.bodyWithContext
+        ? content.bodyWithContext
+        : content.body;
+
       return (
         <div className="text-center space-y-4 animate-fadeIn">
           <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
             {content.title}
           </h2>
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
-            {content.body}
+            {introText}
           </p>
         </div>
       );
@@ -194,19 +209,17 @@ export default function FollowUpIntegration() {
             </p>
           </div>
 
-          {/* Show commitment if exists */}
           {commitment && (
             <div className="py-3 px-4 border border-[var(--color-border)] rounded">
               <p className="text-[var(--color-text-tertiary)] text-xs mb-1">
                 You wrote:
               </p>
               <p className="text-[var(--color-text-primary)] text-sm italic">
-                "{commitment}"
+                &ldquo;{commitment}&rdquo;
               </p>
             </div>
           )}
 
-          {/* Status options */}
           <div className="space-y-2">
             {COMMITMENT_STATUSES.map((option) => (
               <button
@@ -243,7 +256,7 @@ export default function FollowUpIntegration() {
 
             {commitment && (
               <blockquote className="text-[var(--color-text-primary)] text-sm leading-relaxed italic border-l-2 border-[var(--color-text-tertiary)] pl-4">
-                "{commitment}"
+                &ldquo;{commitment}&rdquo;
               </blockquote>
             )}
 
@@ -299,10 +312,17 @@ export default function FollowUpIntegration() {
       );
     }
 
-    // Closing step
+    // Closing step — personalized with intention
     if (currentStep.id === 'closing') {
       return (
         <div className="text-center space-y-4 animate-fadeIn">
+          {intention && (
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed italic">
+              You came into this session with an intention: &ldquo;{intention}&rdquo;.
+              Whether that intention has shifted or deepened, the fact that you showed up
+              for this reflection matters.
+            </p>
+          )}
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
             {content.body}
           </p>
@@ -310,7 +330,7 @@ export default function FollowUpIntegration() {
       );
     }
 
-    // Complete step
+    // Complete step — with integration practices
     if (currentStep.id === 'complete') {
       return (
         <div className="text-center space-y-6 animate-fadeIn">
@@ -323,6 +343,21 @@ export default function FollowUpIntegration() {
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
             {content.bodySecondary}
           </p>
+
+          {/* Integration practices */}
+          <div className="text-left space-y-2 pt-2">
+            <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider">
+              Ways to continue integrating
+            </p>
+            <ul className="space-y-1">
+              {INTEGRATION_PRACTICES.map((practice, i) => (
+                <li key={i} className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+                  {practice}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
             {content.bodyTertiary}
           </p>
@@ -343,7 +378,6 @@ export default function FollowUpIntegration() {
 
   // Get primary button config
   const getPrimaryButton = () => {
-    // Commitment check - need selection
     if (currentStep.id === 'commitment-check') {
       return {
         label: 'Continue',
@@ -352,7 +386,6 @@ export default function FollowUpIntegration() {
       };
     }
 
-    // Commitment response for 'forgot' - need choice
     if (currentStep.id === 'commitment-response' && commitmentStatus === 'forgot') {
       return {
         label: 'Continue',
@@ -387,20 +420,22 @@ export default function FollowUpIntegration() {
       <ModuleProgressBar progress={progress} visible={true} showTime={false} />
 
       <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
-        <div className="flex-shrink-0 pt-4 pb-4">
-          <div className="text-center mb-4">
+        <div className="flex-shrink-0 pt-2 pb-1">
+          <div className="text-center mb-1">
             <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
               {currentStep.content.label}
             </p>
           </div>
-          <div className="flex justify-center">
-            <AsciiMoon />
-          </div>
+          {MOON_STEPS.has(currentStep.id) && (
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] pb-6 ${
+            className={`w-full max-w-md mx-auto transition-opacity duration-[400ms] pb-24 ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >
