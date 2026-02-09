@@ -257,7 +257,7 @@ export function useMeditationPlayback({
 
     try {
       // Compose the meditation into a single continuous MP3 blob
-      const { blobUrl, promptTimeMap, totalDuration: composedTotal } = await composeMeditationAudio(
+      const { blobUrl, composedBytes, promptTimeMap, totalDuration: composedTotal } = await composeMeditationAudio(
         timedSequence,
         { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
       );
@@ -266,6 +266,9 @@ export function useMeditationPlayback({
       blobUrlRef.current = blobUrl;
       promptTimeMapRef.current = promptTimeMap;
       composedDurationRef.current = composedTotal;
+
+      // Store composed bytes for iOS blob-recreation resume
+      audio.storeComposedBytes(composedBytes);
 
       // Reset display state
       setElapsedTime(0);

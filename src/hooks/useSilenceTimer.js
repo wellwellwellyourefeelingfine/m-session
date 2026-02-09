@@ -181,7 +181,7 @@ export function useSilenceTimer({
     setIsLoading(true);
 
     try {
-      const { blobUrl, totalDuration, preambleEnd } = await composeSilenceTimer(
+      const { blobUrl, composedBytes, totalDuration, preambleEnd } = await composeSilenceTimer(
         durationSecondsRef.current,
         { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
       );
@@ -189,6 +189,9 @@ export function useSilenceTimer({
       blobUrlRef.current = blobUrl;
       preambleEndRef.current = preambleEnd;
       composedTotalRef.current = totalDuration;
+
+      // Store composed bytes for iOS blob-recreation resume
+      audio.storeComposedBytes(composedBytes);
 
       setElapsedTime(0);
       elapsedOffsetRef.current = 0;
@@ -263,7 +266,7 @@ export function useSilenceTimer({
       // skipOpeningGong=true means no gong/preamble at the start, so the blob
       // begins directly with silence and the user won't hear the gong replay.
       const remainingSeconds = Math.max(0, newDurationSeconds - totalUserElapsed);
-      const { blobUrl, totalDuration } = await composeSilenceTimer(
+      const { blobUrl, composedBytes, totalDuration } = await composeSilenceTimer(
         remainingSeconds,
         { skipOpeningGong: true }
       );
@@ -274,6 +277,9 @@ export function useSilenceTimer({
       preambleEndRef.current = 0;
       blobUrlRef.current = blobUrl;
       composedTotalRef.current = totalDuration;
+
+      // Store new composed bytes for iOS blob-recreation resume
+      audio.storeComposedBytes(composedBytes);
 
       // Load new blob — starts at position 0 (which is the current point in time)
       await audio.loadAndPlay(blobUrl);

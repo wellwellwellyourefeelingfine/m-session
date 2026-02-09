@@ -16,7 +16,7 @@
  */
 
 // All TTS clips and silence blocks are CBR 128kbps (16,000 bytes per second)
-const CBR_BYTES_PER_SECOND = 16000;
+export const CBR_BYTES_PER_SECOND = 16000;
 
 // Available silence block durations (descending order for greedy decomposition)
 const SILENCE_BLOCKS = [60, 30, 10, 5, 1, 0.5];
@@ -85,6 +85,27 @@ async function fetchAudioBuffer(url) {
  */
 function estimateMp3Duration(buffer) {
   return buffer.byteLength / CBR_BYTES_PER_SECOND;
+}
+
+/**
+ * Find the next valid MPEG audio frame boundary at or after `offset`.
+ *
+ * MPEG sync word: 11 bits set = first byte 0xFF, second byte has top 3 bits set (0xE0 mask).
+ * For CBR 128kbps 44100Hz, frame size is 417-418 bytes. We scan up to one full frame forward.
+ * If no sync found, returns the original offset as fallback.
+ *
+ * @param {Uint8Array} bytes - The full composed MP3 data
+ * @param {number} offset - Starting byte position to search from
+ * @returns {number} The byte offset of the next frame boundary
+ */
+export function findNextFrameBoundary(bytes, offset) {
+  const maxScan = Math.min(offset + 418, bytes.length - 1);
+  for (let i = offset; i < maxScan; i++) {
+    if (bytes[i] === 0xFF && (bytes[i + 1] & 0xE0) === 0xE0) {
+      return i;
+    }
+  }
+  return offset;
 }
 
 /**
@@ -249,6 +270,7 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
 
   return {
     blobUrl,
+    composedBytes: composed,
     promptTimeMap,
     totalDuration,
   };
@@ -390,6 +412,7 @@ export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gong
 
   return {
     blobUrl,
+    composedBytes: composed,
     totalDuration,
     preambleEnd,
   };
