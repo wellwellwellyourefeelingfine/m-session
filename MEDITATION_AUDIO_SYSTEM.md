@@ -119,7 +119,7 @@ The `promptTimeMap` has absolute timestamps within the blob (e.g., first prompt 
 
 ### How elapsedTime drives everything
 
-`elapsedTime` is set from `audio.currentTime` via the `onTimeUpdate` callback. Everything derives from it:
+`elapsedTime` is set from the wall-clock timer in `useAudioPlayback` via the `onTimeUpdate` callback. The wall-clock tracks real elapsed time via `Date.now()` instead of relying on `audio.currentTime`, which is broken for blob URLs on iOS Safari (see Known Issues). Everything derives from `elapsedTime`:
 
 - **Timer:** `userElapsed = max(0, elapsedTime - GONG_PREAMBLE)` → reported to ModuleStatusBar
 - **Prompts:** Linear scan of `promptTimeMap` to find active prompt → triggers text fade sequence (`hidden` → `fading-in` → `visible` → `fading-out`)
@@ -161,28 +161,39 @@ Used by OpenSpaceModule and MusicListeningModule. Same architecture as useMedita
 
 **File:** `src/hooks/useAudioPlayback.js`
 
-Wraps a single `new Audio()` element. Handles iOS blob URL seeking limitations via a two-phase resume strategy.
+Wraps a single `new Audio()` element. Uses a **wall-clock timer** (`Date.now()`) for all time reporting, bypassing iOS Safari's broken `audio.currentTime` for blob URLs. Handles iOS blob URL seeking limitations via a two-phase resume strategy.
 
 ### Key refs
 
 ```
-savedTimeRef        — Last known absolute currentTime (persists across pause/resume)
+savedTimeRef        — Last known absolute position in seconds (persists across pause/resume)
 composedBytesRef    — Full composed MP3 Uint8Array (for blob recreation on iOS)
 timeOffsetRef       — Added to audio.currentTime after blob recreation for absolute time
 currentBlobUrlRef   — Current blob URL (for revocation on recreation)
+wallStartRef        — Date.now() timestamp when playback started/resumed (0 when paused)
+wallAccumulatedRef  — Seconds accumulated from prior play periods before current wallStartRef
 ```
 
-### Time reporting
+### Time reporting (wall-clock timer)
 
-Both native `timeupdate` events and a 250ms `setInterval` polling fallback report `audio.currentTime + timeOffsetRef` upstream. The polling uses `setInterval` (not `rAF`) because `rAF` stops when iOS backgrounds the page, while `setInterval` continues at ~1Hz.
+All time reporting uses a wall-clock timer based on `Date.now()` instead of `audio.currentTime`. This completely bypasses iOS Safari's bug where `audio.currentTime` returns 0 for blob URLs on first play.
+
+**How it works:**
+- `wallStartRef` stores `Date.now()` when playback begins or resumes
+- `wallAccumulatedRef` stores seconds from prior play periods (accumulated on each pause)
+- `getWallTime()` = `wallAccumulatedRef + (Date.now() - wallStartRef) / 1000`
+
+Both native `timeupdate` events and a 250ms `setInterval` polling fallback call `getWallTime()` and report it upstream via `onTimeUpdate`. The polling uses `setInterval` (not `rAF`) because `rAF` stops when iOS backgrounds the page, while `setInterval` continues at ~1Hz.
+
+`getCurrentTime()` also returns `getWallTime()`, so all consumers get wall-clock time regardless of whether they use the callback or the getter.
 
 ### loadAndPlay(blobUrl)
 
-Resets position tracking, sets `audio.src`, loads, waits for `canplay` (with 5s timeout guarded by `settled` flag to prevent double-play on iOS), calls `play()`, starts polling.
+Resets position tracking (including wall-clock refs `wallStartRef` and `wallAccumulatedRef`), sets `audio.src`, loads, waits for `canplay` (with 5s timeout guarded by `settled` flag to prevent double-play on iOS), calls `play()`, starts polling (which sets `wallStartRef = Date.now()`).
 
 ### pause()
 
-Saves absolute position (`currentTime + timeOffset`) to `savedTimeRef`, pauses element, stops polling.
+Accumulates wall-clock elapsed time (`wallAccumulatedRef += (Date.now() - wallStartRef) / 1000`), zeroes `wallStartRef`, saves accumulated time to `savedTimeRef`, pauses element, stops polling.
 
 ### resume() — Two-Phase Strategy
 
@@ -246,29 +257,31 @@ Several store actions (booster show/hide/take/skip/snooze/maximize/expire) call 
 ## Timer Data Flow
 
 ```
-audio.currentTime fires (native timeupdate OR 250ms polling)
-  → useAudioPlayback adds timeOffsetRef, reports to onTimeUpdate callback
-    → useMeditationPlayback: setElapsedTime(absoluteTime)
+Date.now() wall-clock (via native timeupdate OR 250ms setInterval polling)
+  → useAudioPlayback: getWallTime() → reports to onTimeUpdate callback
+    → useMeditationPlayback: setElapsedTime(wallClockTime)
       → useEffect: userElapsed = max(0, elapsedTime - GONG_PREAMBLE)
         → onTimerUpdate({ elapsed, total, progress, showTimer, isPaused })
           → ActiveView → ModuleStatusBar: "2:30 / 10:00"
 ```
 
+Note: `audio.currentTime` is NOT used for timer display. It is only used by `resume()` for seek-before-play (fast path) and by `resumeFromBytes()` for byte-offset calculation.
+
 ---
 
 ## Known Issues
 
-### iOS first-play timer stuck at 0
+### iOS first-play `audio.currentTime` stuck at 0
 
-On iOS Safari, when a user first starts a meditation module, the audio plays correctly (gong + TTS clips are audible), but `audio.currentTime` stays at 0 for the blob URL. This means the timer stays at 0:00 and text prompts never appear. After the user pauses and resumes (which triggers the blob recreation fallback starting from ~0), the second playthrough works perfectly — timer advances, text syncs, pause/resume works normally.
+On iOS Safari, `audio.currentTime` returns 0 for blob URLs on first play, despite audio being audible (gong + TTS clips play correctly). This is an iOS WebKit bug — `currentTime` never initializes for freshly-created Audio elements playing blob URLs.
 
-**Status:** Unsolved. The root cause appears to be an iOS WebKit quirk where `currentTime` doesn't advance for freshly-created Audio elements playing blob URLs, despite audio being audible. The 250ms polling fallback doesn't help because `audio.currentTime` itself returns 0.
+**Status: SOLVED** via wall-clock timer in `useAudioPlayback`. All time reporting now uses `Date.now()` instead of `audio.currentTime`, completely bypassing the WebKit bug. The timer advances correctly on first play, text prompts appear at the right times, and pause/resume works from the first tap.
 
-**Why the second play works:** When the user pauses (with timer stuck at 0), `savedTimeRef` is ~0. On resume, `resume()` takes the early-position fast path (`absoluteTarget <= 0.5` → direct `play()` call). iOS handles this second `play()` on the same element correctly — `currentTime` starts advancing normally.
+**Why the second play used to work (historical):** When the user paused (with timer stuck at 0), `savedTimeRef` was ~0. On resume, `resume()` took the early-position fast path (`absoluteTarget <= 0.5` → direct `play()` call). iOS handled this second `play()` on the same element correctly — `currentTime` started advancing normally. The wall-clock fix made this workaround unnecessary.
 
-#### Failed fix attempts (dead ends)
+#### Failed fix attempts (historical — before wall-clock solution)
 
-These approaches were all tested on iOS Safari with Simple Grounding. None solved the first-play issue.
+These approaches were all tested on iOS Safari with Simple Grounding before the wall-clock timer was implemented. None solved the first-play issue because they tried to work around `audio.currentTime` instead of bypassing it entirely.
 
 **1. Wall-clock Date.now() fallback**
 Added refs (`pollStartWallTimeRef`, `pollStartAudioTimeRef`, `getEffectiveTimeRef`) to derive elapsed time from `Date.now()` when `audio.currentTime` is stuck at 0. The idea: if `currentTime` hasn't advanced but wall time has, report wall time instead.
@@ -301,7 +314,7 @@ Moved `composeMeditationAudio()` into a background `useEffect` that runs when `t
 - A pause/play cycle on the **same** blob URL does NOT fix the decoder (attempt 4 proved this)
 - The existing `resumeFromBytes()` blob recreation DOES work — but only after a user-initiated pause/resume cycle, not programmatically during initial `loadAndPlay`
 - Eliminating the async gap between gesture and play does NOT fix `currentTime` (attempt 6 proved this)
-- **`audio.currentTime` is fundamentally broken for blob URLs on iOS Safari first play — the fix must bypass it entirely** (e.g., wall-clock timer)
+- **`audio.currentTime` is fundamentally broken for blob URLs on iOS Safari first play — the fix is to bypass it entirely with a wall-clock timer (`Date.now()`)**
 
 ### Booster modal store/audio desync
 

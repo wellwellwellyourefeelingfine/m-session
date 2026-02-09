@@ -67,6 +67,7 @@ export function useMeditationPlayback({
   const blobUrlRef = useRef(null);
   const promptTimeMapRef = useRef([]);
   const composedDurationRef = useRef(0);
+  const realContentDurationRef = useRef(0); // Actual content duration from composed blob (excludes preamble + closing gong)
 
   // Prompt display state
   const [currentPromptIndex, setCurrentPromptIndex] = useState(-1);
@@ -214,21 +215,23 @@ export function useMeditationPlayback({
     }
   }, [elapsedTime, hasStarted, isPlaying, currentPromptIndex, audio.isMuted]);
 
-  // Report timer state to parent for ModuleStatusBar
-  // (report against original totalDuration so progress bar isn't affected by preamble)
+  // Report timer state to parent for ModuleStatusBar.
+  // Uses the real content duration (from actual MP3 byte lengths) when available,
+  // falling back to the estimated totalDuration before composition completes.
   useEffect(() => {
     if (!onTimerUpdate) return;
 
     // Subtract preamble so user-visible timer starts at 0 after gong
     const userElapsed = Math.max(0, elapsedTime - GONG_PREAMBLE);
-    const progress = totalDuration > 0 ? Math.min((userElapsed / totalDuration) * 100, 100) : 0;
+    const displayTotal = realContentDurationRef.current || totalDuration;
+    const progress = displayTotal > 0 ? Math.min((userElapsed / displayTotal) * 100, 100) : 0;
     const composedTotal = composedDurationRef.current;
     const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
 
     onTimerUpdate({
       progress,
       elapsed: userElapsed,
-      total: totalDuration,
+      total: displayTotal,
       showTimer: hasStarted && !isComplete,
       isPaused: !isPlaying,
     });
@@ -266,6 +269,13 @@ export function useMeditationPlayback({
       blobUrlRef.current = blobUrl;
       promptTimeMapRef.current = promptTimeMap;
       composedDurationRef.current = composedTotal;
+
+      // Compute real content duration from the composed prompt map.
+      // This is the actual duration of all TTS clips + silences, derived from
+      // real MP3 byte lengths — not the word-count estimate.
+      if (promptTimeMap.length > 0) {
+        realContentDurationRef.current = promptTimeMap[promptTimeMap.length - 1].slotEnd - GONG_PREAMBLE;
+      }
 
       // Store composed bytes for iOS blob-recreation resume
       audio.storeComposedBytes(composedBytes);
