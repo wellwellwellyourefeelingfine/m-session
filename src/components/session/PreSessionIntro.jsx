@@ -99,7 +99,7 @@ export default function PreSessionIntro() {
     setTimeout(() => {
       callback();
       setIsVisible(true);
-    }, 400); // Slightly longer for smoother transitions
+    }, 300); // Quick fade to avoid spill-over into next question
   };
 
   const goToStep = (newStep) => {

@@ -6,12 +6,13 @@
  * Note: Substance checklist and PreSessionIntro are shown in ActiveView
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 
 /**
  * Format date nicely
@@ -50,6 +51,7 @@ export default function HomeView() {
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const startIntake = useSessionStore((state) => state.startIntake);
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
+  const completeIntake = useSessionStore((state) => state.completeIntake);
   const resetSession = useSessionStore((state) => state.resetSession);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
@@ -73,6 +75,28 @@ export default function HomeView() {
     setShowResetConfirm(false);
   };
 
+  // Intake → pre-session transition (moon buffer)
+  const [transitionStep, setTransitionStep] = useState(null);
+  const transitionTimersRef = useRef([]);
+
+  // Called by IntakeFlow after its fade-out completes
+  const handleIntakeComplete = () => {
+    // Put the overlay up FIRST (covers whatever is currently rendered)
+    setTransitionStep('moon-enter');
+
+    transitionTimersRef.current = [
+      setTimeout(() => setTransitionStep('moon-visible'), 50),   // fade in moon (700ms)
+      setTimeout(() => completeIntake(), 200),                   // generate timeline behind overlay
+      setTimeout(() => setTransitionStep('moon-exit'), 2750),    // hold 2s, then fade out (700ms)
+      setTimeout(() => setTransitionStep('reveal'), 3550),       // moon gone, overlay fades out (1s)
+      setTimeout(() => setTransitionStep(null), 4700),           // cleanup
+    ];
+  };
+
+  useEffect(() => {
+    return () => transitionTimersRef.current.forEach(clearTimeout);
+  }, []);
+
   // Trigger fade-in when component mounts
   useEffect(() => {
     setIsVisible(false);
@@ -85,7 +109,7 @@ export default function HomeView() {
       case 'not-started':
         return (
           <div className="max-w-md mx-auto px-6 py-8 text-center">
-            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none' }}>welcome to m-session</h2>
+            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none', color: 'var(--accent)' }}>Welcome</h2>
             <div className="flex justify-center mb-8">
               <AsciiDiamond />
             </div>
@@ -115,14 +139,10 @@ export default function HomeView() {
         );
 
       case 'intake':
-        return <IntakeFlow />;
+        return <IntakeFlow onComplete={handleIntakeComplete} />;
 
       case 'pre-session':
-        return (
-          <TimelineEditor
-            onBeginSession={handleBeginSession}
-          />
-        );
+        return <TimelineEditor onBeginSession={handleBeginSession} />;
 
       // Substance checklist now shows in Active tab - redirect user there
       case 'substance-checklist':
@@ -221,6 +241,39 @@ export default function HomeView() {
   return (
     <div className={`transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       {renderContent()}
+
+      {/* Background overlay — hides content during transition, fades out to reveal */}
+      {transitionStep != null && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'var(--color-bg)',
+          zIndex: 10,
+          opacity: transitionStep === 'reveal' ? 0 : 1,
+          transition: 'opacity 1000ms ease',
+          pointerEvents: 'none',
+        }} />
+      )}
+
+      {/* Moon animation — floats above overlay */}
+      {transitionStep?.startsWith('moon') && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 20,
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            opacity: transitionStep === 'moon-visible' ? 1 : 0,
+            transition: 'opacity 700ms ease',
+          }}>
+            <AsciiMoon />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

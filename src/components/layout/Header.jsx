@@ -4,11 +4,13 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useAppStore } from '../../stores/useAppStore';
 import { useAIStore } from '../../stores/useAIStore';
 import AIAssistantTab from '../ai/AIAssistantTab';
 import AIAssistantModal from '../ai/AIAssistantModal';
 
 export default function Header() {
+  const darkMode = useAppStore((state) => state.darkMode);
   const isKeyValid = useAIStore((state) => state.isKeyValid);
   const isModalOpen = useAIStore((state) => state.isModalOpen);
   const openModal = useAIStore((state) => state.openModal);
@@ -37,21 +39,21 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
-        <div className="h-full flex items-end px-4">
-          {/* App Title - DM Serif Text (left-aligned, flush above border) */}
-          <h1
-            className="text-3xl leading-none"
-            style={{
-              fontFamily: 'DM Serif Text, serif',
-              textTransform: 'none',
-              marginBottom: '4px',
-              marginLeft: '-10px',
-            }}
-          >
-            <span style={{ color: 'var(--accent)', opacity: 0.7 }}>m</span>
-            <span style={{ color: 'var(--text-secondary)', opacity: 0.4 }}>-</span>
-            <span>session</span>
-          </h1>
+        <div className="h-full flex items-end pl-0 pr-4">
+          {/* App Logo + "SESSION" text */}
+          <div className="h-full flex items-end gap-1" style={{ padding: '0' }}>
+            <img
+              src={darkMode ? '/m-session-logo-black-128.png' : '/m-session-logo-light-128.png'}
+              alt="m-session"
+              className="h-full w-auto"
+            />
+            <span
+              className="uppercase tracking-wider leading-none"
+              style={{ fontFamily: 'Azeret Mono, monospace', fontSize: '10px', color: 'var(--accent)', marginBottom: '11px', marginLeft: '-7px' }}
+            >
+              session
+            </span>
+          </div>
 
           {/* AI Assistant Tab (centered in remaining space, only visible when API key is configured) */}
           {isKeyValid && (

@@ -42,7 +42,7 @@ export default function SingleSelect({ question, value, onChange }) {
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className="w-full text-left px-4 py-3 border transition-colors duration-150"
+            className="w-full text-left px-4 py-3 border transition-colors duration-75"
             style={{
               borderColor: value === option.value ? 'var(--text-primary)' : 'var(--border)',
               backgroundColor: value === option.value ? 'var(--text-primary)' : 'transparent',

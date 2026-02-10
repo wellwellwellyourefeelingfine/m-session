@@ -58,12 +58,11 @@ const HEALTH_WARNINGS = {
   },
 };
 
-export default function IntakeFlow() {
+export default function IntakeFlow({ onComplete }) {
   const {
     intake,
     updateIntakeResponse,
     setIntakeQuestionIndex,
-    completeIntake,
   } = useSessionStore();
 
   // Use store for question index persistence
@@ -187,7 +186,10 @@ export default function IntakeFlow() {
   };
 
   const handleComplete = () => {
-    completeIntake();
+    setIsVisible(false);
+    setTimeout(() => {
+      onComplete();
+    }, 350);
   };
 
   // Render the current question component

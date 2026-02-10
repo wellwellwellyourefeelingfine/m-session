@@ -464,26 +464,26 @@ export const useSessionStore = create(
 
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'breath-meditation-calm',
+          libraryId: 'music-listening',
           phase: 'come-up',
-          title: 'Calming Breath',
-          duration: 15,
+          title: 'Music Immersion',
+          duration: 20,
           status: 'upcoming',
           order: 1,
-          content: getModuleById('breath-meditation-calm')?.content || {},
+          content: getModuleById('music-listening')?.content || {},
           startedAt: null,
           completedAt: null,
         });
 
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'music-listening',
+          libraryId: 'open-space',
           phase: 'come-up',
-          title: 'Music Immersion',
+          title: 'Open Space',
           duration: 20,
           status: 'upcoming',
           order: 2,
-          content: getModuleById('music-listening')?.content || {},
+          content: getModuleById('open-space')?.content || {},
           startedAt: null,
           completedAt: null,
         });
@@ -517,12 +517,25 @@ export const useSessionStore = create(
 
         defaultModules.push({
           instanceId: generateId(),
+          libraryId: 'letter-writing',
+          phase: 'peak',
+          title: 'Letter Writing',
+          duration: 25,
+          status: 'upcoming',
+          order: 2,
+          content: getModuleById('letter-writing')?.content || {},
+          startedAt: null,
+          completedAt: null,
+        });
+
+        defaultModules.push({
+          instanceId: generateId(),
           libraryId: 'music-listening',
           phase: 'peak',
           title: 'Music Immersion',
           duration: 20,
           status: 'upcoming',
-          order: 2,
+          order: 3,
           content: getModuleById('music-listening')?.content || {},
           startedAt: null,
           completedAt: null,
@@ -570,26 +583,26 @@ export const useSessionStore = create(
 
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'light-journaling',
+          libraryId: 'parts-work',
           phase: 'integration',
-          title: 'Journaling',
-          duration: 15,
+          title: 'Parts Work',
+          duration: 30,
           status: 'upcoming',
           order: 1,
-          content: getModuleById('light-journaling')?.content || {},
+          content: getModuleById('parts-work')?.content || {},
           startedAt: null,
           completedAt: null,
         });
 
         defaultModules.push({
           instanceId: generateId(),
-          libraryId: 'letter-writing',
+          libraryId: 'music-listening',
           phase: 'integration',
-          title: 'Letter Writing',
-          duration: 25,
+          title: 'Music Immersion',
+          duration: 20,
           status: 'upcoming',
           order: 2,
-          content: getModuleById('letter-writing')?.content || {},
+          content: getModuleById('music-listening')?.content || {},
           startedAt: null,
           completedAt: null,
         });
