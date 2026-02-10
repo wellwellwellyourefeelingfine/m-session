@@ -51,7 +51,10 @@ export default function ActiveView() {
   const startModule = useSessionStore((state) => state.startModule);
   const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
   const expireBooster = useSessionStore((state) => state.expireBooster);
-  const inOpenSpace = useSessionStore((state) => state.modules.inOpenSpace);
+  // Subscribe to modules state to trigger re-renders when modules are added/changed
+  // eslint-disable-next-line no-unused-vars
+  const _modules = useSessionStore((state) => state.modules);
+  const inOpenSpace = _modules.inOpenSpace;
   const currentModule = getCurrentModule();
   const nextModule = getNextModule();
   const currentPhase = timeline.currentPhase;
@@ -143,7 +146,7 @@ export default function ActiveView() {
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
-  }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, inOpenSpace]);
+  }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, _modules.inOpenSpace]);
 
   // Handler to update module timer state (called by modules)
   // Memoized with useCallback to prevent infinite loops in child useEffects

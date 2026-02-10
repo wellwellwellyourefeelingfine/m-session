@@ -67,6 +67,7 @@ export default function ModuleControlBar({
   };
 
   const confirmSkip = () => {
+    console.log('[ModuleControlBar] confirmSkip — calling onSkip');
     setShowSkipConfirm(false);
     onSkip?.();
   };

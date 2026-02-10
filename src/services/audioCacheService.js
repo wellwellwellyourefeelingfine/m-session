@@ -48,9 +48,6 @@ export async function precacheComposerAssets() {
       })
     );
 
-    if (cached > 0) {
-      console.log(`[AudioCache] Composer assets: cached ${cached} files`);
-    }
   } catch (err) {
     console.warn('[AudioCache] precacheComposerAssets error:', err);
   }
@@ -122,9 +119,6 @@ export async function precacheAudioForModule(libraryId) {
     const skipped = results.filter((r) => r === 'skipped').length;
     const failed = results.filter((r) => r === 'failed').length;
 
-    if (cached > 0) {
-      console.log(`[AudioCache] "${libraryId}": cached ${cached}, skipped ${skipped}, failed ${failed}`);
-    }
   } catch (err) {
     console.warn('[AudioCache] precacheAudioForModule error:', err);
   }

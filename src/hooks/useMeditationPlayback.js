@@ -340,13 +340,24 @@ export function useMeditationPlayback({
   }, [resetMeditationPlayback, audio, onComplete]);
 
   const handleSkip = useCallback(() => {
-    audio.stop();
-    resetMeditationPlayback();
-    if (blobUrlRef.current) {
-      revokeMeditationBlobUrl(blobUrlRef.current);
-      blobUrlRef.current = null;
+    console.log('[MeditationPlayback] handleSkip called');
+    try {
+      audio.stop();
+      console.log('[MeditationPlayback] audio.stop() done');
+      resetMeditationPlayback();
+      console.log('[MeditationPlayback] resetMeditationPlayback() done');
+      if (blobUrlRef.current) {
+        revokeMeditationBlobUrl(blobUrlRef.current);
+        blobUrlRef.current = null;
+      }
+      console.log('[MeditationPlayback] calling onSkip()...');
+      onSkip();
+      console.log('[MeditationPlayback] onSkip() done — skip complete');
+    } catch (err) {
+      console.error('[MeditationPlayback] handleSkip ERROR:', err);
+      // Ensure skip completes even if cleanup fails
+      try { onSkip(); } catch (e2) { console.error('[MeditationPlayback] fallback onSkip ERROR:', e2); }
     }
-    onSkip();
   }, [resetMeditationPlayback, audio, onSkip]);
 
   // Derived state

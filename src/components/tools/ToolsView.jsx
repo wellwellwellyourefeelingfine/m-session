@@ -15,8 +15,6 @@ import SettingsTool from './SettingsTool';
 import HelpTool from './HelpTool';
 import PhilosophyTool from './PhilosophyTool';
 import AboutTool from './AboutTool';
-import DebugModeTool from './DebugModeTool';
-
 const tools = [
   { id: 'about', label: 'ABOUT', component: AboutTool },
   { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
@@ -25,7 +23,6 @@ const tools = [
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
   { id: 'settings', label: 'SETTINGS', component: SettingsTool },
-  { id: 'debug-mode', label: 'DEBUG MODE', component: DebugModeTool },
 ];
 
 export default function ToolsView() {

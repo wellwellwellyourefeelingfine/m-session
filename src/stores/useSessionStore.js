@@ -1777,12 +1777,14 @@ export const useSessionStore = create(
       },
 
       skipModule: (instanceId) => {
+        console.log('[SessionStore] skipModule(%s) called', instanceId);
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
-        if (!module) return;
+        if (!module) { console.warn('[SessionStore] skipModule — module not found!'); return; }
 
         const now = Date.now();
         const currentPhase = state.timeline.currentPhase;
+        console.log('[SessionStore] skipModule — phase=%s, module=%s', currentPhase, module.libraryId);
 
         // Update the module items first (mark as skipped)
         const updatedItems = state.modules.items.map((m) =>

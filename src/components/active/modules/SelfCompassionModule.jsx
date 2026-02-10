@@ -19,7 +19,7 @@ import {
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 
 // Shared UI components
-import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
+import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 
@@ -90,11 +90,18 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state — variation selector */}
         {!playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={meditation.title}
-              description={meditation.description}
-            />
+          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-4rem' }}>
+            <div className="text-center space-y-6 animate-fadeIn">
+              <h2
+                className="text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px' }}
+              >
+                {meditation.title}
+              </h2>
+              <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                {meditation.description}
+              </p>
+            </div>
 
             {/* Variation selector */}
             <div className="mt-6 space-y-3 max-w-sm mx-auto">

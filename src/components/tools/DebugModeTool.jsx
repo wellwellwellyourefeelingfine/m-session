@@ -325,6 +325,199 @@ function FollowUpTest() {
   );
 }
 
+// ─── Booster Peak Test ──────────────────────────────────────────
+
+function BoosterPeakTest() {
+  const sessionPhase = useSessionStore((state) => state.sessionPhase);
+  const resetSession = useSessionStore((state) => state.resetSession);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const isActive = sessionPhase === 'active';
+
+  const handleLaunch = () => {
+    resetSession();
+    useJournalStore.setState({ entries: [], navigation: { currentView: 'editor', activeEntryId: null } });
+    useToolsStore.setState({ openTools: [], timerDuration: 0, timerRemaining: 0, timerActive: false, timerStartTime: null });
+
+    setTimeout(() => {
+      const store = useSessionStore.getState();
+      const now = Date.now();
+      const ninetyMinutesAgo = now - 90 * 60 * 1000;
+      const comeUpStarted = ninetyMinutesAgo;
+      const comeUpEnded = ninetyMinutesAgo + 45 * 60 * 1000;
+
+      // Create intention journal entry
+      const intentionEntry = useJournalStore.getState().addEntry({
+        content: 'INTENTION:\n\nTo dream like Hans Castorp in the snow.',
+        source: 'session',
+        moduleTitle: 'Pre-Substance Intention',
+        isEdited: false,
+      });
+
+      useSessionStore.setState({
+        intake: {
+          ...store.intake,
+          isComplete: true,
+          responses: {
+            ...store.intake.responses,
+            sessionDuration: '4-6h',
+            experienceLevel: 'experienced',
+            sessionMode: 'solo-guided',
+            guidanceLevel: 'balanced',
+            considerBooster: 'yes',
+            safeSpace: 'yes',
+            emergencyContact: 'yes',
+            heartConditions: 'no',
+            psychiatricHistory: 'no',
+            holdingQuestion: 'To dream like Hans Castorp in the snow.',
+          },
+        },
+        sessionPhase: 'pre-session',
+        timeline: {
+          ...store.timeline,
+          targetDuration: 300,
+        },
+      });
+
+      useSessionStore.getState().generateTimelineFromIntake();
+
+      // Mark come-up modules as completed
+      const currentItems = useSessionStore.getState().modules.items;
+      const updatedItems = currentItems.map((m) => {
+        if (m.phase === 'come-up') {
+          return { ...m, status: 'completed', startedAt: comeUpStarted, completedAt: comeUpEnded };
+        }
+        return m;
+      });
+
+      // Find first peak module to set as active
+      const firstPeakModule = updatedItems
+        .filter((m) => m.phase === 'peak' && m.status === 'upcoming')
+        .sort((a, b) => a.order - b.order)[0];
+
+      if (firstPeakModule) {
+        const idx = updatedItems.findIndex((m) => m.instanceId === firstPeakModule.instanceId);
+        updatedItems[idx] = { ...firstPeakModule, status: 'active', startedAt: now };
+      }
+
+      useSessionStore.setState({
+        sessionPhase: 'active',
+        substanceChecklist: {
+          ...useSessionStore.getState().substanceChecklist,
+          hasTakenSubstance: true,
+          ingestionTime: ninetyMinutesAgo,
+          ingestionTimeConfirmed: true,
+          plannedDosageMg: 100,
+          dosageFeedback: 'moderate',
+        },
+        preSubstanceActivity: {
+          ...useSessionStore.getState().preSubstanceActivity,
+          substanceChecklistSubPhase: 'pre-session-intro',
+          completedActivities: ['intention'],
+          touchstone: 'snow',
+          intentionJournalEntryId: intentionEntry.id,
+        },
+        booster: {
+          ...useSessionStore.getState().booster,
+          considerBooster: true,
+          boosterPrepared: true,
+          status: 'pending',
+        },
+        timeline: {
+          ...useSessionStore.getState().timeline,
+          currentPhase: 'peak',
+          phases: {
+            ...useSessionStore.getState().timeline.phases,
+            comeUp: {
+              ...useSessionStore.getState().timeline.phases.comeUp,
+              startedAt: comeUpStarted,
+              endedAt: comeUpEnded,
+              endedBy: 'user-checkin',
+            },
+            peak: {
+              ...useSessionStore.getState().timeline.phases.peak,
+              startedAt: comeUpEnded,
+            },
+          },
+        },
+        phaseTransitions: {
+          ...useSessionStore.getState().phaseTransitions,
+          activeTransition: null,
+          transitionCompleted: true,
+        },
+        comeUpCheckIn: {
+          ...useSessionStore.getState().comeUpCheckIn,
+          isVisible: false,
+          isMinimized: true,
+          hasIndicatedFullyArrived: true,
+        },
+        modules: {
+          ...useSessionStore.getState().modules,
+          items: updatedItems,
+          activeModuleId: firstPeakModule?.instanceId || null,
+        },
+      });
+
+      setShowConfirm(false);
+    }, 50);
+  };
+
+  return (
+    <>
+      <div className="space-y-3">
+        <p className="text-sm text-[var(--color-text-primary)]">Booster Peak Test</p>
+        <p className="text-[12px] text-[var(--color-text-tertiary)]">
+          Jumps into the peak phase with a pending booster, ingestion set to 90 minutes ago,
+          and a pre-filled intention.
+        </p>
+
+        {isActive && (
+          <p className="text-[12px] text-[var(--accent)]">
+            A session is currently active. Launching will reset and restart.
+          </p>
+        )}
+
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+          style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+        >
+          Launch Booster Peak Test
+        </button>
+      </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Booster Peak Test</p>
+            <p style={{ color: 'var(--text-primary)' }}>
+              This will {isActive ? 'reset the current session and ' : ''}generate a 5-hour timeline
+              with a pending booster, skip to the peak phase with ingestion 90 minutes ago,
+              and a pre-filled intention.
+            </p>
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleLaunch}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+              >
+                Launch
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Main Debug Mode Component ──────────────────────────────────
 
 export default function DebugModeTool() {
@@ -340,6 +533,10 @@ export default function DebugModeTool() {
       </div>
 
       <ComeUpTest />
+
+      <div className="border-t border-[var(--color-border)]" />
+
+      <BoosterPeakTest />
 
       <div className="border-t border-[var(--color-border)]" />
 

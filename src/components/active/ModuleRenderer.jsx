@@ -37,7 +37,9 @@ export default function ModuleRenderer({ module, onTimerUpdate }) {
   };
 
   const handleSkip = () => {
+    console.log('[ModuleRenderer] handleSkip — skipModule(%s)', module.instanceId);
     skipModule(module.instanceId);
+    console.log('[ModuleRenderer] skipModule done');
   };
 
   // Common props passed to all module components

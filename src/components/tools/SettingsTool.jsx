@@ -11,6 +11,7 @@ import { useToolsStore } from '../../stores/useToolsStore';
 import { useAIStore } from '../../stores/useAIStore';
 import { downloadSessionData } from '../../utils/downloadSessionData';
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
+import DebugModeTool from './DebugModeTool';
 
 const EXPIRATION_OPTIONS = [
   { value: 12, label: '12 HOURS' },
@@ -56,6 +57,8 @@ export default function SettingsTool() {
   const [showSecurityNotice, setShowSecurityNotice] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showRemoveKeyConfirm, setShowRemoveKeyConfirm] = useState(false);
+  const [showBugReportConfirm, setShowBugReportConfirm] = useState(false);
+  const [showDebugMode, setShowDebugMode] = useState(false);
 
   // Show security notice on first use
   useEffect(() => {
@@ -481,6 +484,35 @@ export default function SettingsTool() {
             RESET
           </button>
         </div>
+
+        {/* Report a Bug */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Report a Bug</span>
+          <button
+            onClick={() => setShowBugReportConfirm(true)}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            REPORT
+          </button>
+        </div>
+
+        {/* Debug Mode */}
+        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <button
+            onClick={() => setShowDebugMode(!showDebugMode)}
+            className="w-full flex items-center justify-between hover:opacity-70 transition-opacity"
+          >
+            <span className="text-[12px] uppercase tracking-wider">Debug Mode</span>
+            <span
+              className="text-[12px] tracking-wider transition-transform duration-200"
+              style={{ fontFamily: 'Azeret Mono, monospace', transform: showDebugMode ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            >
+              +
+            </span>
+          </button>
+          {showDebugMode && <DebugModeTool />}
+        </div>
       </div>
 
       {/* Reset Confirmation Modal */}
@@ -545,6 +577,44 @@ export default function SettingsTool() {
               </button>
               <button
                 onClick={() => setShowDownloadConfirm(null)}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bug Report Confirmation Modal */}
+      {showBugReportConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Report a Bug</p>
+            <p style={{ color: 'var(--text-primary)' }}>
+              You&apos;ll be taken to our GitHub page to submit a bug report. A short form will help you describe what happened.
+            </p>
+            <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
+              A free GitHub account is required to submit.
+            </p>
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => {
+                  window.open(
+                    'https://github.com/wellwellwellyourefeelingfine/m-session/issues/new?template=bug_report.yml&labels=bug',
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                  setShowBugReportConfirm(false);
+                }}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+              >
+                Continue to GitHub
+              </button>
+              <button
+                onClick={() => setShowBugReportConfirm(false)}
                 className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
                 style={{ border: '1px solid var(--border)' }}
               >

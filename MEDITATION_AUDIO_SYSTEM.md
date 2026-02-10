@@ -316,6 +316,48 @@ Moved `composeMeditationAudio()` into a background `useEffect` that runs when `t
 - Eliminating the async gap between gesture and play does NOT fix `currentTime` (attempt 6 proved this)
 - **`audio.currentTime` is fundamentally broken for blob URLs on iOS Safari first play — the fix is to bypass it entirely with a wall-clock timer (`Date.now()`)**
 
+### MP3 files with ID3 metadata tags break byte-offset calculations
+
+The audio composer calculates durations via `buffer.byteLength / CBR_BYTES_PER_SECOND` and the resume system (`resumeFromBytes`) slices the composed `Uint8Array` at byte offsets derived from elapsed time. Both assume the MP3 files contain **only audio frames** — no metadata.
+
+If an MP3 file has a large ID3v2 tag (common when files are manually exported from audio editors, ElevenLabs web UI, etc.), those non-audio bytes get included in the composed blob. This causes:
+1. **Duration overestimation** — e.g., a 4.5s clip with 35KB of ID3 tags reports as ~6.7s
+2. **Prompt timing drift** — text sync falls behind because `promptTimeMap` timestamps are wrong
+3. **Pause/resume restart** — `resumeFromBytes` calculates the wrong byte offset, landing inside ID3 data instead of at a valid MP3 frame boundary, causing audio to restart from the beginning
+
+**How to detect:** Run from the project root:
+```bash
+python3 -c "
+import os, glob
+for d in ['body-scan', 'open-awareness', 'self-compassion', 'simple-grounding']:
+    for f in sorted(glob.glob(f'public/audio/meditations/{d}/*.mp3')):
+        with open(f, 'rb') as fh:
+            h = fh.read(10); fh.seek(0, 2); total = fh.tell()
+        if h[:3] == b'ID3':
+            sz = (h[6]<<21)|(h[7]<<14)|(h[8]<<7)|h[9] + 10
+            if sz > 100: print(f'  {f}: {total:,}B, ID3 tag: {sz:,}B ({round(sz/total*100)}%)')
+"
+```
+
+**How to fix:** Strip the ID3 tags (lossless — only removes metadata, audio data is untouched):
+```bash
+python3 -c "
+import os, glob
+for d in ['body-scan', 'open-awareness', 'self-compassion', 'simple-grounding']:
+    for f in sorted(glob.glob(f'public/audio/meditations/{d}/*.mp3')):
+        with open(f, 'rb') as fh:
+            h = fh.read(10)
+            if h[:3] != b'ID3': continue
+            sz = (h[6]<<21)|(h[7]<<14)|(h[8]<<7)|h[9] + 10
+            if sz <= 100: continue
+            fh.seek(sz); data = fh.read()
+        with open(f, 'wb') as fh: fh.write(data)
+        print(f'  Stripped {os.path.basename(f)}')
+"
+```
+
+**Prevention:** When replacing audio clips manually, always strip metadata before adding them to the project. The ElevenLabs API scripts (`scripts/generate-*-audio.mjs`) produce clean files, but manually downloaded/exported files typically carry ID3 tags with embedded artwork, encoder info, etc.
+
 ### Booster modal store/audio desync
 
 Store actions that auto-pause/resume meditation during booster modals only update the store — they don't touch the audio element. This can cause prompt progression to stall (guarded by `isPlaying` from store) even though audio is playing.

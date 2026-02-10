@@ -22,6 +22,12 @@ const ActiveView = lazy(() => import('./components/active/ActiveView'));
 const JournalView = lazy(() => import('./components/journal/JournalView'));
 const ToolsView = lazy(() => import('./components/tools/ToolsView'));
 
+const LazyFallback = (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="w-5 h-5 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
 function App() {
   const currentTab = useAppStore((state) => state.currentTab);
 
@@ -57,16 +63,18 @@ function App() {
   return (
     <AppShell>
       {/* Home is always mounted (critical path) */}
-      <div className={currentTab === 'home' ? '' : 'hidden'}>
-        <HomeView />
-      </div>
+      <ErrorBoundary>
+        <div className={currentTab === 'home' ? '' : 'hidden'}>
+          <HomeView />
+        </div>
+      </ErrorBoundary>
 
       {/* Other views: lazy-loaded on first visit, then kept mounted.
           Each view gets its own Suspense boundary so loading one
           doesn't unmount siblings (critical for active meditation playback). */}
       {mountedTabs.active && (
         <ErrorBoundary>
-          <Suspense fallback={null}>
+          <Suspense fallback={LazyFallback}>
             <div className={currentTab === 'active' ? '' : 'hidden'}>
               <ActiveView />
             </div>
@@ -75,7 +83,7 @@ function App() {
       )}
       {mountedTabs.journal && (
         <ErrorBoundary>
-          <Suspense fallback={null}>
+          <Suspense fallback={LazyFallback}>
             <div className={currentTab === 'journal' ? '' : 'hidden'}>
               <JournalView />
             </div>
@@ -84,7 +92,7 @@ function App() {
       )}
       {mountedTabs.tools && (
         <ErrorBoundary>
-          <Suspense fallback={null}>
+          <Suspense fallback={LazyFallback}>
             <div className={currentTab === 'tools' ? '' : 'hidden'}>
               <ToolsView />
             </div>
