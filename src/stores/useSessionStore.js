@@ -2207,8 +2207,10 @@ export const useSessionStore = create(
           closingCheckIn: { isVisible: false },
           booster: {
             ...state.booster,
-            isModalVisible: false,
-            isMinimized: false,
+            // Restore modal visibility from status so booster survives page refresh
+            // (same pattern as comeUpCheckIn preserving isVisible)
+            isModalVisible: state.booster.status === 'prompted' || state.booster.status === 'snoozed',
+            isMinimized: state.booster.status === 'snoozed',
           },
           phaseTransitions: {
             ...state.phaseTransitions,
