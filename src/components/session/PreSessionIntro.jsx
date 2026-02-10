@@ -42,11 +42,16 @@ export default function PreSessionIntro() {
   const [isExiting, setIsExiting] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
 
+  // Store selectors (intake needed before intention state initialization)
+  const intake = useSessionStore((state) => state.intake);
+
   // Intention sub-flow state
   const [inIntentionFlow, setInIntentionFlow] = useState(false);
   const [intentionStep, setIntentionStep] = useState(0);
   const [touchstoneInput, setTouchstoneInput] = useState('');
-  const [intentionText, setIntentionText] = useState(null);
+  const [intentionText, setIntentionText] = useState(
+    () => intake.responses?.holdingQuestion || ''
+  );
 
   // Initial entrance fade-in effect
   useEffect(() => {
@@ -59,9 +64,6 @@ export default function PreSessionIntro() {
       return () => clearTimeout(timer);
     }
   }, [hasEnteredView]);
-
-  // Store selectors
-  const intake = useSessionStore((state) => state.intake);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const completedActivities = useSessionStore(
     (state) => state.preSubstanceActivity.completedActivities
@@ -83,11 +85,6 @@ export default function PreSessionIntro() {
     (state) => state.updateIntakeResponse
   );
   const addEntry = useJournalStore((state) => state.addEntry);
-
-  // Initialize intention text from store
-  if (intentionText === null) {
-    setIntentionText(intake.responses?.holdingQuestion || '');
-  }
 
   const primaryFocus = intake.responses?.primaryFocus;
   const primaryFocusLabel = PRIMARY_FOCUS_LABELS[primaryFocus] || 'your chosen focus';

@@ -9,7 +9,7 @@
  *
  * Features:
  * - Composes gong-bookended silence blob via audioComposerService
- * - Tracks elapsed time from audio.currentTime (not Date.now())
+ * - Tracks elapsed time via wall-clock (Date.now) — bypasses iOS blob URL currentTime bug
  * - Supports mid-session duration changes via resize()
  * - Integrates with meditationPlayback store (prevents concurrent modules)
  * - Media Session API for iOS lock-screen controls
@@ -88,6 +88,17 @@ export function useSilenceTimer({
       resetMeditationPlayback();
     }
   }, [hasStarted, isLoading, resetMeditationPlayback]);
+
+  // Sync store's isPlaying state to the audio element.
+  // Booster modal actions update the store but can't access the audio element.
+  useEffect(() => {
+    if (!hasStarted || isLoading) return;
+    if (isPlaying && audio.isPaused()) {
+      audio.resume();
+    } else if (!isPlaying && !audio.isPaused()) {
+      audio.pause();
+    }
+  }, [isPlaying, hasStarted, isLoading, audio]);
 
   // Media Session API for lock-screen controls.
   // Handlers use audio.isPaused() to read directly from the element, avoiding

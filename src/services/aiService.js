@@ -42,8 +42,8 @@ export class AIService {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 10,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1,
         messages: [{ role: 'user', content: 'Hi' }],
       }),
     });
@@ -80,7 +80,7 @@ export class AIService {
       },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 10,
+        max_tokens: 1,
         messages: [{ role: 'user', content: 'Hi' }],
       }),
     });
@@ -120,7 +120,7 @@ export class AIService {
       },
       body: JSON.stringify({
         model: 'meta-llama/llama-3.2-3b-instruct:free',
-        max_tokens: 10,
+        max_tokens: 1,
         messages: [{ role: 'user', content: 'Hi' }],
       }),
     });
@@ -173,7 +173,7 @@ export class AIService {
    */
   async *streamAnthropic(messages, systemPrompt, modelPreference, signal = null) {
     const model =
-      modelPreference === 'default' ? 'claude-3-5-sonnet-20241022' : modelPreference;
+      modelPreference === 'default' ? 'claude-sonnet-4-5-20250929' : modelPreference;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -327,7 +327,7 @@ export class AIService {
 
   async sendAnthropicMessage(messages, systemPrompt, modelPreference) {
     const model =
-      modelPreference === 'default' ? 'claude-3-5-sonnet-20241022' : modelPreference;
+      modelPreference === 'default' ? 'claude-sonnet-4-5-20250929' : modelPreference;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -460,10 +460,10 @@ AIService.prototype.streamOpenRouter = async function* (messages, systemPrompt, 
 export function getAvailableModels(provider) {
   if (provider === 'anthropic') {
     return [
-      { id: 'default', label: 'Default (Claude 3.5 Sonnet)' },
-      { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-      { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
-      { id: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+      { id: 'default', label: 'Default (Claude Sonnet 4.5)' },
+      { id: 'claude-sonnet-4-5-20250929', label: 'Claude Sonnet 4.5' },
+      { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+      { id: 'claude-opus-4-6', label: 'Claude Opus 4.6' },
     ];
   }
 

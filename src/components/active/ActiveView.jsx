@@ -51,9 +51,7 @@ export default function ActiveView() {
   const startModule = useSessionStore((state) => state.startModule);
   const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
   const expireBooster = useSessionStore((state) => state.expireBooster);
-  // Subscribe to modules state to trigger re-renders when modules are added/changed
-  // eslint-disable-next-line no-unused-vars
-  const _modules = useSessionStore((state) => state.modules);
+  const inOpenSpace = useSessionStore((state) => state.modules.inOpenSpace);
   const currentModule = getCurrentModule();
   const nextModule = getNextModule();
   const currentPhase = timeline.currentPhase;
@@ -137,7 +135,7 @@ export default function ActiveView() {
     if (sessionPhase !== 'active') return;
     if (currentModule) return;
     if (peakCheckIn.isVisible) return;
-    if (_modules.inOpenSpace) return; // Don't auto-start when in open space
+    if (inOpenSpace) return; // Don't auto-start when in open space
 
     // Start next module if available
     // Note: The check-in modal overlay naturally blocks user interaction,
@@ -145,7 +143,7 @@ export default function ActiveView() {
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
-  }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, _modules.inOpenSpace]);
+  }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, inOpenSpace]);
 
   // Handler to update module timer state (called by modules)
   // Memoized with useCallback to prevent infinite loops in child useEffects

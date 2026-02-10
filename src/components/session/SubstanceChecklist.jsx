@@ -283,7 +283,7 @@ export default function SubstanceChecklist() {
               </div>
 
               {/* Dangerous dose warning - shown inline when dose >= 300mg */}
-              {parseInt(substanceChecklist.plannedDosageMg, 10) >= DOSAGE_THRESHOLDS.DANGEROUS && (
+              {(parseInt(substanceChecklist.plannedDosageMg, 10) || 0) >= DOSAGE_THRESHOLDS.DANGEROUS && (
                 <div className="mt-6 p-4 border border-red-500/50 bg-red-500/10">
                   <p className="font-medium mb-2 text-red-400">
                     Dangerous Dose
@@ -295,7 +295,7 @@ export default function SubstanceChecklist() {
               )}
 
               {/* Normal dosage feedback - shown when dose is not dangerous */}
-              {substanceChecklist.dosageFeedback && parseInt(substanceChecklist.plannedDosageMg, 10) < DOSAGE_THRESHOLDS.DANGEROUS && (
+              {substanceChecklist.dosageFeedback && (parseInt(substanceChecklist.plannedDosageMg, 10) || 0) < DOSAGE_THRESHOLDS.DANGEROUS && (
                 <div className="mt-6 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                   <p className="font-medium mb-2">
                     {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].range} — {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].label}

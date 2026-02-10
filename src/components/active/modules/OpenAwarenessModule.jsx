@@ -8,7 +8,7 @@
  * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { getModuleById } from '../../../content/modules';
 import {
   getMeditationById,
@@ -33,6 +33,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showAnimation, setShowAnimation] = useState(true);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   // Build timed sequence (unique to this module: conditional filtering + silence expansion)
   const [timedSequence, totalDuration] = useMemo(() => {
@@ -73,6 +74,12 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     onTimerUpdate,
   });
 
+  // Fade out idle screen before starting composition
+  const handleBeginWithTransition = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => playback.handleStart(), 300);
+  }, [playback]);
+
   // Fallback if no meditation found
   if (!meditation) {
     return (
@@ -96,7 +103,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
         {!playback.hasStarted && !playback.isLoading && (
-          <div className="text-center animate-fadeIn">
+          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
             <IdleScreen
               title={meditation.title}
               description={meditation.description}
@@ -123,61 +130,63 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
           </div>
         )}
 
-        {/* Active state - title, animation, prompt display */}
+        {/* Active state — title, animation, paused indicator, prompt display */}
         {playback.hasStarted && !playback.isComplete && (
           <div
-            className="relative w-full px-4"
+            className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
               alignSelf: 'stretch',
               minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
             }}
           >
-            {/* Anchored top section: title + animation — absolutely positioned, never shifts */}
-            <div className="flex flex-col items-center text-center">
-              <h2
-                className="text-[var(--color-text-primary)] mb-4"
-                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
-              >
-                {meditation.title}
-              </h2>
+            <h2
+              className="text-[var(--color-text-primary)] mb-4"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
+            >
+              {meditation.title}
+            </h2>
 
-              {showAnimation && (
-                <div className="animate-fadeIn">
-                  <MorphingShapes size={128} duration={8} />
-                </div>
+            {showAnimation && (
+              <div className="animate-fadeIn">
+                <MorphingShapes size={128} duration={8} />
+              </div>
+            )}
+
+            {/* Paused indicator — below shapes with minimal gap */}
+            <div className="h-5 flex items-center justify-center mt-3">
+              {!playback.isPlaying && (
+                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
+                  Paused
+                </p>
               )}
             </div>
 
-            {/* Prompt text area — centered in remaining space, doesn't affect top elements */}
-            <div className="absolute left-0 right-0 px-4 text-center" style={{ top: '55%', transform: 'translateY(-50%)' }}>
-              {/* Paused indicator — fixed height so it doesn't shift layout */}
-              <div className="h-6 flex items-center justify-center mb-2">
-                {!playback.isPlaying && (
-                  <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
-                    Paused
-                  </p>
-                )}
-              </div>
-
-              <p
-                className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
-                  playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
-                }`}
-              >
-                {playback.currentPrompt?.text || ''}
-              </p>
-            </div>
+            {/* Prompt text — below paused indicator */}
+            <p
+              className={`mt-1 px-4 text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
+                playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {playback.currentPrompt?.text || ''}
+            </p>
           </div>
         )}
 
         {/* Completed state */}
-        {playback.isComplete && <CompletionScreen />}
+        {playback.isComplete && (
+          <div className="animate-fadeIn">
+            <CompletionScreen />
+          </div>
+        )}
       </ModuleLayout>
 
       {/* Control bar */}
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={playback.getPrimaryButton()}
+        primary={playback.getPhase() === 'idle'
+          ? { label: 'Begin', onClick: handleBeginWithTransition }
+          : playback.getPrimaryButton()
+        }
         showSkip={!playback.isComplete}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"

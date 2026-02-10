@@ -107,6 +107,18 @@ export function useMeditationPlayback({
     }
   }, [hasStarted, isLoading, resetMeditationPlayback]);
 
+  // Sync store's isPlaying state to the audio element.
+  // Booster modal actions (showBoosterModal, takeBooster, etc.) update the store
+  // but can't access the audio element. This effect bridges that gap.
+  useEffect(() => {
+    if (!hasStarted || isLoading) return;
+    if (isPlaying && audio.isPaused()) {
+      audio.resume();
+    } else if (!isPlaying && !audio.isPaused()) {
+      audio.pause();
+    }
+  }, [isPlaying, hasStarted, isLoading, audio]);
+
   // Set up Media Session API for lock-screen controls.
   // Handlers use audio.isPaused() to read directly from the element, avoiding
   // stale closure issues. isPlaying is intentionally excluded from deps so

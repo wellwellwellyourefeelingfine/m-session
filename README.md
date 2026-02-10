@@ -42,7 +42,7 @@ This app follows a **modular, capability-based architecture** where:
 src/
 ├── components/
 │   ├── active/                    # Active session (meditation playback)
-│   │   ├── modules/               # Custom module components (9 types)
+│   │   ├── modules/               # Custom module components (8 types)
 │   │   ├── capabilities/          # Composable UI building blocks
 │   │   │   ├── animations/        # BreathOrb, AsciiMoon, AsciiDiamond, MorphingShapes
 │   │   │   ├── hooks/             # useBreathController
@@ -88,10 +88,13 @@ src/
 │   └── useToolsStore.js           # Tools panel state
 ├── services/
 │   ├── aiService.js               # AI provider API integration
+│   ├── audioComposerService.js    # Composes TTS clips + silence + gong into single MP3 blob
+│   ├── audioCacheService.js       # Caches fetched audio files (IndexedDB)
 │   └── cryptoService.js           # API key encryption
 ├── hooks/
-│   ├── useAudioPlayback.js        # Audio playback management
-│   ├── useMeditationPlayback.js   # Shared meditation playback orchestration
+│   ├── useAudioPlayback.js        # Single <audio> element lifecycle (play/pause/resume)
+│   ├── useMeditationPlayback.js   # Shared TTS meditation playback orchestration
+│   ├── useSilenceTimer.js         # Gong-bookended silence timer (for non-TTS modules)
 │   └── useWakeLock.js             # Screen Wake Lock API wrapper
 ├── content/
 │   ├── modules/library.js         # All module definitions
@@ -194,20 +197,19 @@ public/
 ### Two-Tier Architecture
 
 **1. Custom Components** (for complex logic):
-- `BreathingModule` - Phase-based breathing animation
 - `BreathMeditationModule` - BreathOrb + breath sequences
 - `OpenAwarenessModule` - Audio-synced guided meditation (shared `useMeditationPlayback` hook)
 - `BodyScanModule` - Audio-synced body scan (shared `useMeditationPlayback` hook)
 - `SelfCompassionModule` - Audio-synced self-compassion with variation selector (shared `useMeditationPlayback` hook)
-- `GuidedMeditationModule` - Timed prompts with playback
 - `JournalingModule` - Journal store integration (handles all journaling types: light, deep, letter-writing, parts-work, therapy-exercise)
-- `GroundingModule` - Sequential step flow
+- `SimpleGroundingModule` - Sequential grounding steps with audio prompts
 - `MusicListeningModule` - Duration picker, alarm prompt, recommendations
+- `OpenSpaceModule` - Freeform rest with silence timer (`useSilenceTimer` hook)
 
 **2. ModuleShell** (capability-driven, no custom code):
 - Reads module's `capabilities` config
 - Composes: timer, prompts, animation, controls
-- Used for: open-space, and any future capability-only modules
+- Used for: any future capability-only modules
 
 ### Adding a New Module
 
@@ -478,10 +480,15 @@ Component useMemo → builds [timedSequence, totalDuration]
 useMeditationPlayback hook (src/hooks/useMeditationPlayback.js)
   ↓ orchestrates timer, audio-text sync, prompt progression, pause/resume
   ↓
-useAudioPlayback hook (src/hooks/useAudioPlayback.js)
-  ↓ manages HTMLAudioElement lifecycle
+audioComposerService (src/services/audioComposerService.js)
+  ↓ fetches TTS clips, composes gong + clips + silence into single MP3 blob
+  ↓ returns blobUrl + promptTimeMap for audio-text sync
   ↓
-Audio files (public/audio/meditations/<name>/<promptId>.<format>)
+useAudioPlayback hook (src/hooks/useAudioPlayback.js)
+  ↓ plays the single composed blob via <audio> element
+  ↓ iOS screen-lock resilient (single continuous audio keeps session alive)
+  ↓
+Audio source files (public/audio/meditations/<name>/<promptId>.<format>)
 ```
 
 ### Audio-Text Sync
@@ -524,16 +531,16 @@ Self-Compassion also uses: `variations`, `defaultVariation`, `assembleVariation(
 
 ### Shared Hook: `useMeditationPlayback`
 
-All meditation components delegate playback to this shared hook. It handles:
+All TTS meditation components delegate playback to this shared hook. It handles:
 
 1. Session store integration (start/pause/resume/reset via Zustand)
-2. Timestamp-based timer (accurate across tab switches)
-3. Prompt progression based on elapsed time
-4. Audio-text synchronization (play audio, fade text in/out)
-5. Audio preloading (first 3 files on mount, next file on each transition)
-6. Screen Wake Lock during active playback
+2. Single-blob audio composition (gong + TTS clips + silence via `audioComposerService`)
+3. Prompt progression based on `audio.currentTime` (iOS-resilient, survives screen lock)
+4. Audio-text synchronization (audio leads text by 200ms, fade in/out)
+5. Media Session API for iOS lock-screen play/pause controls
+6. Store-to-audio sync (bridges booster modal pause/resume to audio element)
 7. Timer reporting to parent via `onTimerUpdate`
-8. Phase derivation (`idle` / `active` / `completed`) and primary button state
+8. Phase derivation (`idle` / `loading` / `active` / `completed`) and primary button state
 
 **Parameters:**
 ```javascript
@@ -565,11 +572,12 @@ useMeditationPlayback({
 
 Audio files are generated using ElevenLabs TTS via scripts in `scripts/`:
 
-| Script | Meditation | Prompts |
-|--------|-----------|:-------:|
-| `generate-open-awareness-audio.mjs` | Open Awareness | 26 |
-| `generate-body-scan-audio.mjs` | Body Scan | 54 |
-| `generate-self-compassion-audio.mjs` | Self-Compassion | 70 |
+| Script | Purpose |
+|--------|---------|
+| `generate-body-scan-audio.mjs` | Body Scan TTS (54 prompts) |
+| `generate-self-compassion-audio.mjs` | Self-Compassion TTS (70 prompts) |
+| `generate-simple-grounding-audio.mjs` | Simple Grounding TTS |
+| `generate-silence-blocks.mjs` | Pre-rendered silence MP3 blocks for blob composition |
 
 **Voice settings** (shared across all scripts):
 - **Voice**: Oliver Silk (ElevenLabs)
@@ -591,7 +599,7 @@ node scripts/generate-<name>-audio.mjs
 
 An optional AI assistant for session support:
 
-- **Providers**: Supports OpenAI and Anthropic APIs
+- **Providers**: Supports Anthropic, OpenAI, and OpenRouter APIs
 - **Key Storage**: Encrypted with session-based encryption (auto-expires)
 - **Context**: Builds system prompts with session state awareness
 - **Components**: `AIAssistantModal`, `ChatWindow`, `ChatSidebar`
