@@ -27,6 +27,7 @@ const MusicListeningModule = lazy(() => import('./modules/MusicListeningModule')
 const OpenSpaceModule = lazy(() => import('./modules/OpenSpaceModule'));
 const ProtectorDialoguePart1Module = lazy(() => import('./modules/ProtectorDialoguePart1Module'));
 const ProtectorDialoguePart2Module = lazy(() => import('./modules/ProtectorDialoguePart2Module'));
+const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -69,6 +70,9 @@ export const CUSTOM_MODULES = {
   // Protector Dialogue (IFS) — two-part linked module
   'protector-dialogue-p1': ProtectorDialoguePart1Module,
   'protector-dialogue-p2': ProtectorDialoguePart2Module,
+
+  // Leaves on a Stream (ACT cognitive defusion) — meditation + reflection + journaling
+  'leaves-on-a-stream': LeavesOnAStreamModule,
 };
 
 /**
@@ -132,6 +136,7 @@ export const MODULE_CATEGORIES = {
     'body-scan',
     'self-compassion',
     'simple-grounding',
+    'leaves-on-a-stream',
   ],
   journaling: [
     'journaling',

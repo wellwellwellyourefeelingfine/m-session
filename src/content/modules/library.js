@@ -38,6 +38,8 @@ export const MODULE_TYPES = {
   'letter-writing': { label: 'Letter Writing', intensity: 'deep' },
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
   'open-space': { label: 'Open Space', intensity: 'gentle' },
+  // Leaves on a Stream (ACT cognitive defusion)
+  'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 'moderate' },
   // Protector Dialogue (IFS) — linked two-part module
   'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 'moderate' },
   'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 'deep' },
@@ -217,6 +219,31 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['meditation', 'self-compassion', 'loving-kindness', 'guided'],
+  },
+  {
+    id: 'leaves-on-a-stream',
+    type: 'leaves-on-a-stream',
+    category: 'meditation',
+    title: 'Leaves on a Stream',
+    description: 'A guided meditation for observing your thoughts with curiosity rather than getting caught in them. You\'ll practice watching thoughts come and go, like leaves floating past on a stream.',
+    defaultDuration: 10,
+    minDuration: 10,
+    maxDuration: 20,
+    intensity: 'moderate',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['peak'],
+    hasVariableDuration: true,
+    durationSteps: [10, 15, 20],
+    meditationId: 'leaves-on-a-stream',
+    // Uses custom LeavesOnAStreamModule with audio-text sync + reflection + journaling
+    capabilities: {
+      timer: { type: 'elapsed', showProgress: true, showTimeDisplay: true, autoComplete: true },
+      prompts: { type: 'timed', fadeTransition: true },
+      audio: { type: 'voiceover', showMuteButton: true },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['ACT', 'cognitive-defusion', 'meditation', 'guided', 'leaves-on-a-stream', 'mindfulness'],
   },
   {
     id: 'light-journaling',
