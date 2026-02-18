@@ -25,16 +25,4 @@ export const sectionBQuestions = [
     required: false,
     multiline: true,
   },
-  {
-    field: 'emotionalState',
-    type: 'single-select',
-    label: 'How would you describe your current emotional state?',
-    options: [
-      { value: 'calm', label: 'Calm and centered' },
-      { value: 'anxious', label: 'Some anxiety' },
-      { value: 'excited', label: 'Excited and open' },
-      { value: 'heavy', label: 'Carrying heaviness' },
-      { value: 'neutral', label: 'Neutral' },
-    ],
-  },
 ];

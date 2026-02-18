@@ -3,7 +3,25 @@
  * Radio-style single selection question
  */
 
+import { useAppStore } from '../../../stores/useAppStore';
+import { useToolsStore } from '../../../stores/useToolsStore';
+
 export default function SingleSelect({ question, value, onChange }) {
+  const handleToolLink = (action) => {
+    if (action.section) {
+      useToolsStore.getState().setPendingSection(action.section);
+    }
+    if (action.tool) {
+      const { openTools, toggleTool } = useToolsStore.getState();
+      if (!openTools.includes(action.tool)) {
+        toggleTool(action.tool);
+      }
+    }
+    if (action.tab) {
+      useAppStore.getState().setCurrentTab(action.tab);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <p style={{ color: 'var(--text-primary)' }}>{question.label}</p>
@@ -18,6 +36,19 @@ export default function SingleSelect({ question, value, onChange }) {
                 <li key={item} className="list-disc">{item}</li>
               ))}
             </ul>
+          );
+        }
+        if (block.type === 'accent-link') {
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleToolLink(block.action)}
+              className="uppercase tracking-wider text-xs underline"
+              style={{ color: 'var(--accent)' }}
+            >
+              {block.text}
+            </button>
           );
         }
         return <p key={i} style={{ color: block.color === 'grey' ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{block.text}</p>;

@@ -5,7 +5,8 @@
  * Lives in the Tools tab. Weight-based ranges with optional booster info.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useToolsStore } from '../../stores/useToolsStore';
 import TestingTool from './TestingTool';
 
 // Therapeutic range: 1.0 - 1.5 mg/kg with floor/ceiling
@@ -28,10 +29,21 @@ const calculateRange = (weightKg) => {
 };
 
 export default function DosageTool() {
+  const pendingSection = useToolsStore((state) => state.pendingSection);
+  const clearPendingSection = useToolsStore((state) => state.clearPendingSection);
+
   const [weight, setWeight] = useState('');
   const [unit, setUnit] = useState('lb'); // 'kg' or 'lb'
   const [showBooster, setShowBooster] = useState(false);
   const [showTesting, setShowTesting] = useState(false);
+
+  // Auto-expand a section when deep-linked from elsewhere
+  useEffect(() => {
+    if (pendingSection === 'testing') {
+      setShowTesting(true);
+      clearPendingSection();
+    }
+  }, [pendingSection, clearPendingSection]);
 
   const weightKg = unit === 'kg'
     ? parseFloat(weight)

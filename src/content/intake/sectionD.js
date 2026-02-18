@@ -5,6 +5,12 @@
 
 export const sectionDQuestions = [
   {
+    field: 'hasResearchedDosage',
+    type: 'dosage-calculator',
+    label: 'Have you considered what dosage you plan to take?',
+    required: false,
+  },
+  {
     field: 'hasMDMA',
     type: 'single-select',
     label: 'Do you have your MDMA?',
@@ -25,28 +31,22 @@ export const sectionDQuestions = [
       { type: 'spacer' },
       { type: 'text', text: 'We recommend testing your MDMA either with an at-home kit or by sending it to a lab service.' },
       { type: 'spacer' },
-      { type: 'text', text: 'Check out the Resources in the Tools tab for more information.', color: 'grey' },
+      { type: 'accent-link', text: 'Check out the Resources in the Tools tab for more information.', action: { tab: 'tools', tool: 'dosage', section: 'testing' } },
     ],
-    skipWhen: { field: 'hasMDMA', value: 'not-yet' },
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'not-yet', label: 'Not yet' },
     ],
   },
   {
-    field: 'hasResearchedDosage',
+    field: 'considerBooster',
     type: 'single-select',
-    label: 'Have you researched the dosage you wish to take?',
-    contentBlocks: [
-      { type: 'spacer' },
-      { type: 'text', text: 'The standard therapeutic dose used in clinical settings is 80\u2013120mg. We recommend staying within this range.' },
-      { type: 'spacer' },
-      { type: 'text', text: 'If your MDMA is in crystal form, you will need a milligram-sensitive scale (often called a jewelry scale, accurate to 0.001g) to measure properly. Standard kitchen scales are not precise enough.', color: 'grey' },
-    ],
-    skipWhen: { field: 'hasMDMA', value: 'not-yet' },
+    label: 'Would you like to consider a supplemental dose?',
+    description: 'Some people choose to take a smaller "booster" dose partway through their session to extend the experience. This is entirely optional.',
     options: [
-      { value: 'yes', label: 'Yes' },
-      { value: 'not-yet', label: 'Not yet' },
+      { value: 'yes', label: 'Yes, I\'d like to consider it' },
+      { value: 'no', label: 'No, just one dose' },
+      { value: 'decide-later', label: 'I\'ll decide during the session' },
     ],
   },
   {
@@ -65,7 +65,6 @@ export const sectionDQuestions = [
       { type: 'spacer' },
       { type: 'text', text: 'These factors meaningfully affect how your body processes MDMA and how you feel during the experience.', color: 'grey' },
     ],
-    skipWhen: { field: 'hasMDMA', value: 'not-yet' },
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'not-yet', label: 'Not yet' },
@@ -75,7 +74,6 @@ export const sectionDQuestions = [
     field: 'lastMDMAUse',
     type: 'single-select',
     label: 'When did you last use MDMA?',
-    skipWhen: { field: 'hasMDMA', value: 'not-yet' },
     options: [
       { value: 'first-time', label: 'This is my first time' },
       { value: 'more-than-3-months', label: 'More than 3 months ago' },
@@ -124,6 +122,19 @@ export const sectionDQuestions = [
     field: 'heartConditions',
     type: 'single-select',
     label: 'Do you have any heart conditions?',
+    contentBlocks: [
+      { type: 'spacer' },
+      { type: 'text', text: 'MDMA significantly increases heart rate and blood pressure, sometimes for several hours. This includes conditions such as:' },
+      { type: 'list', items: [
+        'High blood pressure (hypertension)',
+        'Heart arrhythmias or irregular heartbeat',
+        'History of heart attack or stroke',
+        'Heart valve conditions',
+        'Cardiomyopathy',
+      ]},
+      { type: 'spacer' },
+      { type: 'text', text: 'If you have any cardiovascular concerns, we strongly recommend consulting a healthcare provider before proceeding.', color: 'grey' },
+    ],
     options: [
       { value: 'no', label: 'No' },
       { value: 'yes', label: 'Yes' },
@@ -133,6 +144,18 @@ export const sectionDQuestions = [
     field: 'psychiatricHistory',
     type: 'single-select',
     label: 'Do you have a history of psychosis or severe psychiatric conditions?',
+    contentBlocks: [
+      { type: 'spacer' },
+      { type: 'text', text: 'MDMA can temporarily alter perception and emotional processing in powerful ways. For most people this is manageable, but certain conditions carry elevated risk:' },
+      { type: 'list', items: [
+        'Schizophrenia or schizoaffective disorder',
+        'Bipolar disorder (especially with psychotic features)',
+        'History of psychotic episodes',
+        'Severe dissociative disorders',
+      ]},
+      { type: 'spacer' },
+      { type: 'text', text: 'If any of these apply, please consult a mental health professional before proceeding. This is not about judgment \u2014 it\u2019s about ensuring your safety during a vulnerable experience.', color: 'grey' },
+    ],
     options: [
       { value: 'no', label: 'No' },
       { value: 'yes', label: 'Yes' },

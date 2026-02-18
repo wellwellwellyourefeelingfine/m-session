@@ -5,6 +5,7 @@
 
 import { useSessionStore } from '../stores/useSessionStore';
 import { useJournalStore } from '../stores/useJournalStore';
+import { getProtectorLabel } from '../content/modules/protectorDialogueContent';
 
 /**
  * Format a date nicely for display
@@ -230,6 +231,23 @@ ${subDivider}
     }
     if (closing.commitment) {
       text += `\n\nOne thing I want to do differently:\n${closing.commitment}`;
+    }
+  }
+
+  // Protector Dialogue
+  const protector = data.transitionCaptures?.protectorDialogue;
+  if (protector?.protectorType) {
+    const label = getProtectorLabel(protector.protectorType, protector.customProtectorName);
+    text += `\n\n${subDivider}
+PROTECTOR DIALOGUE
+${subDivider}
+`;
+    text += `\nProtector: ${label}`;
+    if (protector.bodyLocation) {
+      text += `\nBody Location: ${protector.bodyLocation}`;
+    }
+    if (protector.protectorMessage) {
+      text += `\n\nMessage to Protector:\n${protector.protectorMessage}`;
     }
   }
 

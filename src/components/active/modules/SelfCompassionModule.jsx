@@ -67,6 +67,12 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
     setTimeout(() => playback.handleStart(), 300);
   }, [playback]);
 
+  // Restart meditation from the beginning
+  const handleRestart = useCallback(() => {
+    playback.handleRestart();
+    setIsLeaving(false);
+  }, [playback]);
+
   // Fallback if no meditation found
   if (!meditation) {
     return (
@@ -91,10 +97,10 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
         {/* Idle state — variation selector */}
         {!playback.hasStarted && !playback.isLoading && (
           <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-4rem' }}>
-            <div className="text-center space-y-6 animate-fadeIn">
+            <div className="text-center space-y-4 animate-fadeIn">
               <h2
-                className="text-[var(--color-text-primary)]"
-                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px' }}
+                className="font-serif text-2xl text-[var(--color-text-primary)]"
+                style={{ textTransform: 'none' }}
               >
                 {meditation.title}
               </h2>
@@ -111,7 +117,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
                   onClick={() => setSelectedVariation(v.key)}
                   className={`w-full text-left px-4 py-3 border transition-colors ${
                     selectedVariation === v.key
-                      ? 'border-[var(--color-text-primary)] bg-[var(--color-bg-secondary)]'
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                       : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
                   }`}
                 >
@@ -161,7 +167,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
 
             {showAnimation && (
               <div className="animate-fadeIn">
-                <MorphingShapes size={128} duration={8} />
+                <MorphingShapes />
               </div>
             )}
 
@@ -200,6 +206,9 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
           ? { label: 'Begin', onClick: handleBeginWithTransition }
           : playback.getPrimaryButton()
         }
+        showBack={playback.hasStarted && !playback.isComplete}
+        onBack={handleRestart}
+        backConfirmMessage="Restart this meditation from the beginning?"
         showSkip={!playback.isComplete}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"

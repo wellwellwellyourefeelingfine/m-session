@@ -309,6 +309,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     const targetModule = phaseModules[currentIndex - 1];
     if (!targetModule) return;
 
+    // Linked module guard: Part 2 can't move above its Part 1 sibling
+    if (module.linkedGroupId && module.linkedRole === 'part2'
+        && targetModule.linkedGroupId === module.linkedGroupId && targetModule.linkedRole === 'part1') {
+      return;
+    }
+
     // Swap their order values
     swapModuleOrder(instanceId, targetModule.order);
   };
@@ -330,6 +336,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     // Get the module below (higher index = higher order)
     const targetModule = phaseModules[currentIndex + 1];
     if (!targetModule) return;
+
+    // Linked module guard: Part 1 can't move below its Part 2 sibling
+    if (module.linkedGroupId && module.linkedRole === 'part1'
+        && targetModule.linkedGroupId === module.linkedGroupId && targetModule.linkedRole === 'part2') {
+      return;
+    }
 
     // Swap their order values
     swapModuleOrder(instanceId, targetModule.order);

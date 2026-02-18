@@ -20,8 +20,9 @@
 // Display order and labels for module categories in the Add Activity drawer
 export const MODULE_CATEGORIES = {
   meditation: { label: 'Meditation', order: 1 },
-  journaling: { label: 'Journaling', order: 2 },
-  open: { label: 'Open', order: 3 },
+  activity: { label: 'Activity', order: 2 },
+  journaling: { label: 'Journaling', order: 3 },
+  open: { label: 'Open', order: 4 },
 };
 
 export const MODULE_TYPES = {
@@ -37,6 +38,9 @@ export const MODULE_TYPES = {
   'letter-writing': { label: 'Letter Writing', intensity: 'deep' },
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
   'open-space': { label: 'Open Space', intensity: 'gentle' },
+  // Protector Dialogue (IFS) — linked two-part module
+  'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 'moderate' },
+  'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 'deep' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 24-48h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
@@ -364,6 +368,65 @@ export const moduleLibrary = [
     tags: ['gratitude', 'appreciation', 'positive'],
   },
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
+
+  // === PROTECTOR DIALOGUE (IFS Framework) — Linked Two-Part Module ===
+  // Parent entry — shown in ModuleLibraryDrawer. Adding this creates both Part 1 and Part 2.
+  {
+    id: 'protector-dialogue',
+    type: 'protector-dialogue',
+    category: 'activity',
+    title: 'Dialogue with a Protector',
+    description: 'A two-part IFS practice. Meet a protective part of yourself through guided meditation and reflection, then deepen the dialogue during integration.',
+    defaultDuration: 45,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak'],
+    isLinkedParent: true,
+    linkedParts: [
+      { id: 'protector-dialogue-p1', title: 'Meeting a Protector (Part 1)', duration: 20, phase: 'same' },
+      { id: 'protector-dialogue-p2', title: 'Understanding Your Protector (Part 2)', duration: 25, phase: 'integration' },
+    ],
+    tags: ['IFS', 'parts-work', 'protector', 'dialogue', 'deep-work', 'guided', 'meditation'],
+  },
+  // Part 1 — hidden from drawer, added automatically by linked parent
+  {
+    id: 'protector-dialogue-p1',
+    type: 'protector-dialogue-p1',
+    category: 'activity',
+    title: 'Meeting a Protector (Part 1)',
+    description: 'Guided meditation and reflection to meet a protective part of yourself.',
+    defaultDuration: 20,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    hidden: true,
+    isLinkedPart: true,
+    linkedParentId: 'protector-dialogue',
+    meditationId: 'protector-dialogue',
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['IFS', 'parts-work', 'protector', 'meditation'],
+  },
+  // Part 2 — hidden from drawer, added automatically by linked parent
+  {
+    id: 'protector-dialogue-p2',
+    type: 'protector-dialogue-p2',
+    category: 'activity',
+    title: 'Understanding Your Protector (Part 2)',
+    description: 'Deepen your dialogue with the protector you met. Journaling and reflection.',
+    defaultDuration: 25,
+    intensity: 'deep',
+    allowedPhases: ['peak', 'integration'],
+    hidden: true,
+    isLinkedPart: true,
+    linkedParentId: 'protector-dialogue',
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['IFS', 'parts-work', 'protector', 'journaling'],
+  },
 
   // === UTILITY MODULES (Any phase) ===
   {

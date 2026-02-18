@@ -14,6 +14,7 @@ import { openAwarenessMeditation } from './open-awareness';
 import { bodyScanMeditation } from './body-scan';
 import { selfCompassionMeditation } from './self-compassion';
 import { simpleGroundingMeditation } from './simple-grounding';
+import { protectorDialogueMeditation } from './protector-dialogue';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -24,6 +25,7 @@ export const meditationLibrary = {
   'body-scan': bodyScanMeditation,
   'self-compassion': selfCompassionMeditation,
   'simple-grounding': simpleGroundingMeditation,
+  'protector-dialogue': protectorDialogueMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -43,6 +45,9 @@ export { selfCompassionMeditation };
 
 // Re-export simple grounding meditation
 export { simpleGroundingMeditation };
+
+// Re-export protector dialogue meditation
+export { protectorDialogueMeditation };
 
 /**
  * Get a meditation by its ID

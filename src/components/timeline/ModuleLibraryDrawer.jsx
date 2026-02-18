@@ -12,6 +12,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
 
   // Get modules that can be added to this phase
   const availableModules = moduleLibrary.filter((module) => {
+    if (module.hidden) return false; // Hide linked parts (shown via parent entry)
     const check = canAddModuleToPhase(module.id, phase);
     return check.allowed || check.warning; // Include modules with warnings
   });

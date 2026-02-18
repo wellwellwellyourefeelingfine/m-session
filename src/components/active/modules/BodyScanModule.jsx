@@ -71,6 +71,12 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
     setTimeout(() => playback.handleStart(), 300);
   }, [playback]);
 
+  // Restart meditation from the beginning
+  const handleRestart = useCallback(() => {
+    playback.handleRestart();
+    setIsLeaving(false);
+  }, [playback]);
+
   // Fallback if no meditation found
   if (!meditation) {
     return (
@@ -139,7 +145,7 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
 
             {showAnimation && (
               <div className="animate-fadeIn">
-                <MorphingShapes size={128} duration={8} />
+                <MorphingShapes />
               </div>
             )}
 
@@ -178,6 +184,9 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
           ? { label: 'Begin', onClick: handleBeginWithTransition }
           : playback.getPrimaryButton()
         }
+        showBack={playback.hasStarted && !playback.isComplete}
+        onBack={handleRestart}
+        backConfirmMessage="Restart this meditation from the beginning?"
         showSkip={!playback.isComplete}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"

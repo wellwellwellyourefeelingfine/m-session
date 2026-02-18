@@ -1,12 +1,13 @@
 /**
  * SubstanceChecklist Component
- * Pre-session preparation questionnaire (5 steps)
+ * Pre-session preparation questionnaire (6 steps)
  *
  * Step 0: Do you have your MDMA ready?
  * Step 1: Have you tested your substance?
  * Step 2: Dosage preparation (input + feedback)
  * Step 3: Prepare your space (tips)
  * Step 4: Trusted contact & session helper
+ * Step 5: Emotional state check-in
  *
  * After completion, transitions to PreSessionIntro via substanceChecklistSubPhase
  */
@@ -75,8 +76,10 @@ export default function SubstanceChecklist() {
   const booster = useSessionStore((state) => state.booster);
   const updateBoosterPrepared = useSessionStore((state) => state.updateBoosterPrepared);
 
+  const updateIntakeResponse = useSessionStore((state) => state.updateIntakeResponse);
+
   const showBoosterStep = booster.considerBooster;
-  const totalSteps = showBoosterStep ? 6 : 5;
+  const totalSteps = showBoosterStep ? 7 : 6;
 
   const BOOSTER_STEP = 3; // Only used when showBoosterStep is true
 
@@ -375,6 +378,67 @@ export default function SubstanceChecklist() {
           </div>
         );
 
+      // Step 5: Emotional State
+      case 5:
+        return (
+          <div className="space-y-8">
+            <div>
+              <h2 className="text-sm mb-4">Emotional Check-In</h2>
+              <p className="text-[var(--color-text-primary)] mb-6">
+                How would you describe your current emotional state?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  updateIntakeResponse('B', 'emotionalState', 'calm');
+                  handleContinueToIntro();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Calm and centered
+              </button>
+              <button
+                onClick={() => {
+                  updateIntakeResponse('B', 'emotionalState', 'anxious');
+                  handleContinueToIntro();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Some anxiety
+              </button>
+              <button
+                onClick={() => {
+                  updateIntakeResponse('B', 'emotionalState', 'excited');
+                  handleContinueToIntro();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Excited and open
+              </button>
+              <button
+                onClick={() => {
+                  updateIntakeResponse('B', 'emotionalState', 'heavy');
+                  handleContinueToIntro();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Carrying heaviness
+              </button>
+              <button
+                onClick={() => {
+                  updateIntakeResponse('B', 'emotionalState', 'neutral');
+                  handleContinueToIntro();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
+              >
+                Neutral
+              </button>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -387,7 +451,7 @@ export default function SubstanceChecklist() {
     // Steps with yes/no or multi-choice buttons that auto-advance
     if (showBoosterStep && step === BOOSTER_STEP) return true;
     const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
-    return displayStep === 0 || displayStep === 1;
+    return displayStep === 0 || displayStep === 1 || displayStep === 5;
   };
 
   // Check dosage level for warnings
@@ -441,10 +505,10 @@ export default function SubstanceChecklist() {
           label: 'Continue',
           onClick: handleNext,
         };
-      case 4: // Trusted contact (last step)
+      case 4: // Trusted contact
         return {
           label: 'Continue',
-          onClick: handleContinueToIntro,
+          onClick: handleNext,
         };
       default:
         return null;

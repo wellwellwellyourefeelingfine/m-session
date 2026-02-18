@@ -27,6 +27,8 @@
  * - Safe area padding
  */
 
+import MorphingShapes from './animations/MorphingShapes';
+
 /**
  * @param {object} props
  * @param {object} props.layout - Layout configuration
@@ -154,7 +156,7 @@ export function CompletionScreen({
 
 /**
  * Idle Screen Component
- * Shown before a module starts (with title, description)
+ * Shown before a module starts (with title, description, morphing shapes animation)
  */
 export function IdleScreen({
   title,
@@ -162,12 +164,19 @@ export function IdleScreen({
   duration,
 }) {
   return (
-    <div className="text-center space-y-6 animate-fadeIn">
+    <div className="text-center space-y-4 animate-fadeIn">
       {title && (
-        <h2 className="text-[var(--color-text-primary)]">
+        <h2
+          className="font-serif text-2xl text-[var(--color-text-primary)]"
+          style={{ textTransform: 'none' }}
+        >
           {title}
         </h2>
       )}
+
+      <div className="flex justify-center">
+        <MorphingShapes />
+      </div>
 
       {description && (
         <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">

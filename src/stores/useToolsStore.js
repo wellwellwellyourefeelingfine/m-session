@@ -10,6 +10,11 @@ export const useToolsStore = create(
     // Open tools (array of tool IDs)
     openTools: [],
 
+    // Pending section to auto-expand inside a tool (e.g., 'testing' for DosageTool)
+    pendingSection: null,
+    setPendingSection: (section) => set({ pendingSection: section }),
+    clearPendingSection: () => set({ pendingSection: null }),
+
     toggleTool: (toolId) => {
       const state = get();
       const isOpen = state.openTools.includes(toolId);

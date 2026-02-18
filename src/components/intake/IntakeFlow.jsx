@@ -20,6 +20,7 @@ import SingleSelect from './questions/SingleSelect';
 import MultiSelect from './questions/MultiSelect';
 import TextInput from './questions/TextInput';
 import TimePicker from './questions/TimePicker';
+import DosageCalculator from './questions/DosageCalculator';
 
 // Flatten all questions into a single array with section info
 const allQuestions = [
@@ -133,10 +134,12 @@ export default function IntakeFlow({ onComplete }) {
   };
 
   // Check if a question should be skipped based on its skipWhen condition
+  // Read fresh state from store to avoid stale closure issues during auto-advance
   const shouldSkipQuestion = (question) => {
     if (!question?.skipWhen) return false;
     const { field, value } = question.skipWhen;
-    return intake.responses[field] === value;
+    const currentResponses = useSessionStore.getState().intake.responses;
+    return currentResponses[field] === value;
   };
 
   // Navigate to next question with fade animation
@@ -211,6 +214,8 @@ export default function IntakeFlow({ onComplete }) {
         return <TextInput {...commonProps} onContinue={goToNextQuestion} />;
       case 'time':
         return <TimePicker {...commonProps} />;
+      case 'dosage-calculator':
+        return <DosageCalculator {...commonProps} onContinue={goToNextQuestion} />;
       default:
         return null;
     }
@@ -223,7 +228,7 @@ export default function IntakeFlow({ onComplete }) {
         className="max-w-md mx-auto px-6 py-8 transition-opacity duration-300"
         style={{ opacity: isVisible ? 1 : 0 }}
       >
-        <h2 className="mb-8">Ready to Begin</h2>
+        <h2 className="font-serif text-lg text-center mb-8" style={{ color: 'var(--text-primary)' }}>Ready to Begin</h2>
 
         {(intake.showSafetyWarnings || intake.showMedicationWarning) && (
           <SafetyWarning
@@ -233,8 +238,14 @@ export default function IntakeFlow({ onComplete }) {
         )}
 
         <div className="mt-8">
-          <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
             Your personalized session timeline will be generated based on your responses.
+          </p>
+
+          <div className="flex justify-center mb-4"><div className="circle-spacer" /></div>
+
+          <p className="mb-6" style={{ color: 'var(--text-tertiary)' }}>
+            In the days before your planned session, we recommend reviewing your timeline. You can add, remove, or reorder different activities based on the session focus you wish to have.
           </p>
 
           <div className="space-y-4">

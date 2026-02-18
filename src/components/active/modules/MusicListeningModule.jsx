@@ -334,16 +334,16 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         {/* Idle state: title, animation, duration picker, description, recommendations */}
         {!hasStarted && (
           <div className="flex flex-col items-center animate-fadeIn w-full px-4 -mt-2">
-            <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-2" style={{ textTransform: 'none' }}>
+            <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
               Music Time
             </h2>
 
-            <div className="mb-2">
-              <MorphingShapes size={80} duration={10} />
+            <div className="mb-1">
+              <MorphingShapes />
             </div>
 
             {/* Duration picker button */}
-            <div className="mb-3">
+            <div className="mb-2">
               <button
                 onClick={() => setShowDurationPicker(true)}
                 className="w-[80px] py-1 border border-[var(--color-border)] text-[var(--color-text-secondary)]
@@ -354,12 +354,12 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
               </button>
             </div>
 
-            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-4">
+            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-2">
               Set a duration, choose an album or pick from our recommendations, and let the music move through you.
             </p>
 
             {/* Recommendations widget */}
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center pb-40">
               <RecommendationsWidget />
             </div>
           </div>
@@ -368,15 +368,15 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         {/* Active state: title, animation, description, add time, recommendations — anchored to top */}
         {hasStarted && !isComplete && (
           <div className="flex flex-col items-center animate-fadeIn w-full px-4">
-            <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-2" style={{ textTransform: 'none' }}>
+            <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
               Music Time
             </h2>
 
-            <div className="mb-4">
-              <MorphingShapes size={80} duration={10} />
+            <div className="mb-2">
+              <MorphingShapes />
             </div>
 
-            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-3">
+            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-2">
               Relax, listen, and let the music move through you. Close your eyes or use an eye mask — there's nothing to do but feel.
             </p>
 
@@ -384,14 +384,14 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
             {maxAddableMinutes > 0 && (
               <button
                 onClick={() => setShowAddTime(true)}
-                className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors mb-3"
+                className="text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors mb-2"
               >
                 + Add Time
               </button>
             )}
 
             {/* Recommendations widget — open by default in active state */}
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center pb-40">
               <RecommendationsWidget initiallyOpen />
             </div>
           </div>

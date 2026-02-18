@@ -30,6 +30,7 @@ import { memo, useMemo } from 'react';
  * @param {number} props.moonAngle - Current moon position in degrees (0-360)
  * @param {boolean} props.isActive - Whether the animation is actively running
  * @param {boolean} props.isIdle - Whether in idle state (gentle pulse animation)
+ * @param {boolean} props.hideText - Hide phase text and countdown while keeping animation
  * @param {string} props.size - Size variant: 'small' | 'medium' | 'large'
  */
 export default memo(function BreathOrb({
@@ -40,6 +41,7 @@ export default memo(function BreathOrb({
   moonAngle = 180,
   isActive = false,
   isIdle = false,
+  hideText = false,
   size = 'medium',
 }) {
   // Size configurations
@@ -229,37 +231,39 @@ export default memo(function BreathOrb({
       />
 
       {/* Center Text */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-        {/* Phase text - DM Serif, 14px, uppercase, white */}
-        {isActive && (
-          <span
-            className="font-serif text-white uppercase"
-            style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
-          >
-            {getPhaseText()}
-          </span>
-        )}
+      {!hideText && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+          {/* Phase text - DM Serif, 14px, uppercase, white */}
+          {isActive && (
+            <span
+              className="font-serif text-white uppercase"
+              style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
+            >
+              {getPhaseText()}
+            </span>
+          )}
 
-        {/* Countdown - DM Serif, 16px, white */}
-        {isActive && (
-          <span
-            className="font-serif text-white mt-1"
-            style={{ fontSize: '24px', opacity: 0.6 }}
-          >
-            {phaseSecondsRemaining}
-          </span>
-        )}
+          {/* Countdown - DM Serif, 16px, white */}
+          {isActive && (
+            <span
+              className="font-serif text-white mt-1"
+              style={{ fontSize: '24px', opacity: 0.6 }}
+            >
+              {phaseSecondsRemaining}
+            </span>
+          )}
 
-        {/* Idle state text - matches active phase text styling */}
-        {isIdle && !isActive && (
-          <span
-            className="font-serif text-white uppercase"
-            style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
-          >
-            Ready
-          </span>
-        )}
-      </div>
+          {/* Idle state text - matches active phase text styling */}
+          {isIdle && !isActive && (
+            <span
+              className="font-serif text-white uppercase"
+              style={{ fontSize: '14px', opacity: 0.6, letterSpacing: '-0.03em' }}
+            >
+              Ready
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }, (prev, next) => {
@@ -268,6 +272,7 @@ export default memo(function BreathOrb({
   if (prev.phase !== next.phase) return false;
   if (prev.isActive !== next.isActive) return false;
   if (prev.isIdle !== next.isIdle) return false;
+  if (prev.hideText !== next.hideText) return false;
   if (prev.size !== next.size) return false;
   if (prev.phaseSecondsRemaining !== next.phaseSecondsRemaining) return false;
   if (Math.abs(prev.phaseProgress - next.phaseProgress) > 0.01) return false;

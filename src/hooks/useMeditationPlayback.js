@@ -339,6 +339,31 @@ export function useMeditationPlayback({
     onComplete();
   }, [resetMeditationPlayback, audio, onComplete]);
 
+  // Reset to idle state so the user can restart from scratch.
+  // Same cleanup as handleSkip/handleComplete but does NOT navigate away —
+  // the module re-renders its idle/Begin screen.
+  const handleRestart = useCallback(() => {
+    audio.stop();
+    resetMeditationPlayback();
+    if (blobUrlRef.current) {
+      revokeMeditationBlobUrl(blobUrlRef.current);
+      blobUrlRef.current = null;
+    }
+    // Clear prompt state
+    if (textFadeTimeoutRef.current) {
+      clearTimeout(textFadeTimeoutRef.current);
+      textFadeTimeoutRef.current = null;
+    }
+    promptTimeMapRef.current = [];
+    composedDurationRef.current = 0;
+    realContentDurationRef.current = 0;
+    lastPromptRef.current = -1;
+    setCurrentPromptIndex(-1);
+    setPromptPhase('hidden');
+    setElapsedTime(0);
+    setIsLoading(false);
+  }, [resetMeditationPlayback, audio]);
+
   const handleSkip = useCallback(() => {
     console.log('[MeditationPlayback] handleSkip called');
     try {
@@ -409,6 +434,7 @@ export function useMeditationPlayback({
     handlePauseResume,
     handleComplete,
     handleSkip,
+    handleRestart,
 
     // UI helpers
     getPhase,

@@ -289,6 +289,14 @@ export const useSessionStore = create(
           commitment: '',
           completedAt: null,
         },
+        // Protector Dialogue captures (Part 1 → Part 2 data contract)
+        protectorDialogue: {
+          protectorType: null,        // 'critic' | 'controller' | 'pleaser' | 'achiever' | 'avoider' | 'worrier' | 'caretaker' | 'other'
+          customProtectorName: '',    // Only if protectorType === 'other'
+          bodyLocation: '',           // Free text
+          protectorMessage: '',       // Free text
+          completedAt: null,
+        },
       },
 
       // ============================================
@@ -650,6 +658,111 @@ export const useSessionStore = create(
           }
         }
 
+        // ============================================
+        // LINKED PARENT MODULES (e.g., Protector Dialogue)
+        // Adding the parent creates both Part 1 and Part 2 as separate instances.
+        // ============================================
+        if (libraryModule.isLinkedParent && libraryModule.linkedParts) {
+          // Prevent duplicate linked module pairs
+          const existingPart = state.modules.items.find(
+            m => m.libraryId === libraryModule.linkedParts[0].id || m.libraryId === libraryModule.linkedParts[1].id
+          );
+          if (existingPart) {
+            return { success: false, error: `${libraryModule.title} is already in your timeline.` };
+          }
+
+          const part1Lib = getModuleById(libraryModule.linkedParts[0].id);
+          const part2Lib = getModuleById(libraryModule.linkedParts[1].id);
+          if (!part1Lib || !part2Lib) return { success: false, error: 'Linked module parts not found' };
+
+          const linkedGroupId = generateId();
+          const part1Phase = phase;
+          // Part 2 goes to integration unless both are in integration
+          const part2Phase = (phase === 'integration') ? 'integration' : 'integration';
+
+          // Calculate Part 1 order
+          const part1PhaseModules = state.modules.items.filter(m => m.phase === part1Phase);
+          const part1Order = position !== null ? position : part1PhaseModules.length;
+
+          // Shift existing modules in Part 1's phase
+          let updatedItems = state.modules.items.map(m => {
+            if (m.phase === part1Phase && m.order >= part1Order) {
+              return { ...m, order: m.order + 1 };
+            }
+            return m;
+          });
+
+          // Calculate Part 2 order
+          let part2Order;
+          if (part2Phase === part1Phase) {
+            // Same phase (both in integration): Part 2 goes right after Part 1
+            part2Order = part1Order + 1;
+            updatedItems = updatedItems.map(m => {
+              if (m.phase === part2Phase && m.order >= part2Order) {
+                return { ...m, order: m.order + 1 };
+              }
+              return m;
+            });
+          } else {
+            // Different phases: Part 2 goes at start of integration
+            const part2PhaseModules = updatedItems.filter(m => m.phase === part2Phase);
+            part2Order = 0;
+            updatedItems = updatedItems.map(m => {
+              if (m.phase === part2Phase && m.order >= part2Order) {
+                return { ...m, order: m.order + 1 };
+              }
+              return m;
+            });
+          }
+
+          const newPart1 = {
+            instanceId: generateId(),
+            libraryId: part1Lib.id,
+            phase: part1Phase,
+            title: libraryModule.linkedParts[0].title,
+            duration: part1Lib.defaultDuration,
+            status: 'upcoming',
+            order: part1Order,
+            content: part1Lib.content,
+            linkedGroupId,
+            linkedRole: 'part1',
+            startedAt: null,
+            completedAt: null,
+          };
+
+          const newPart2 = {
+            instanceId: generateId(),
+            libraryId: part2Lib.id,
+            phase: part2Phase,
+            title: libraryModule.linkedParts[1].title,
+            duration: part2Lib.defaultDuration,
+            status: 'upcoming',
+            order: part2Order,
+            content: part2Lib.content,
+            linkedGroupId,
+            linkedRole: 'part2',
+            startedAt: null,
+            completedAt: null,
+          };
+
+          set({
+            modules: {
+              ...state.modules,
+              items: [...updatedItems, newPart1, newPart2],
+            },
+          });
+
+          // Precache audio for parts that have meditation content
+          if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id);
+          if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id);
+
+          return { success: true, module: newPart1 };
+        }
+
+        // ============================================
+        // STANDARD MODULE (non-linked)
+        // ============================================
+
         // Get modules in this phase to determine order
         const phaseModules = state.modules.items.filter((m) => m.phase === phase);
 
@@ -712,15 +825,32 @@ export const useSessionStore = create(
         const moduleToRemove = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!moduleToRemove) return;
 
-        // Remove and reorder remaining modules in that phase
-        const updatedItems = state.modules.items
-          .filter((m) => m.instanceId !== instanceId)
-          .map((m) => {
-            if (m.phase === moduleToRemove.phase && m.order > moduleToRemove.order) {
-              return { ...m, order: m.order - 1 };
-            }
-            return m;
+        // Determine which instances to remove (cascade for linked modules)
+        let idsToRemove = [instanceId];
+        if (moduleToRemove.linkedGroupId) {
+          idsToRemove = state.modules.items
+            .filter(m => m.linkedGroupId === moduleToRemove.linkedGroupId)
+            .map(m => m.instanceId);
+        }
+
+        // Remove all targeted modules
+        let updatedItems = state.modules.items.filter(m => !idsToRemove.includes(m.instanceId));
+
+        // Reorder each affected phase
+        const affectedPhases = new Set(
+          state.modules.items
+            .filter(m => idsToRemove.includes(m.instanceId))
+            .map(m => m.phase)
+        );
+
+        affectedPhases.forEach(phase => {
+          const phaseItems = updatedItems
+            .filter(m => m.phase === phase)
+            .sort((a, b) => a.order - b.order);
+          phaseItems.forEach((m, idx) => {
+            m.order = idx;
           });
+        });
 
         const updates = {
           modules: {
@@ -1492,6 +1622,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateProtectorCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            protectorDialogue: {
+              ...state.transitionCaptures.protectorDialogue,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2158,6 +2301,13 @@ export const useSessionStore = create(
               commitment: '',
               completedAt: null,
             },
+            protectorDialogue: {
+              protectorType: null,
+              customProtectorName: '',
+              bodyLocation: '',
+              protectorMessage: '',
+              completedAt: null,
+            },
           },
           closingCheckIn: {
             isVisible: false,
@@ -2204,7 +2354,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 6, // Increment this when schema changes to force reset
+      version: 7, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, ...rest } = state;
@@ -2419,6 +2569,22 @@ export const useSessionStore = create(
                 startedAt: toMs(m.startedAt),
                 completedAt: toMs(m.completedAt),
               })),
+            };
+          }
+        }
+
+        // Version 6 → 7: Add protectorDialogue to transitionCaptures
+        if (version < 7) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.protectorDialogue) {
+            state.transitionCaptures.protectorDialogue = {
+              protectorType: null,
+              customProtectorName: '',
+              bodyLocation: '',
+              protectorMessage: '',
+              completedAt: null,
             };
           }
         }

@@ -125,8 +125,14 @@ export default function HomeView() {
             <div className="flex justify-center mb-4">
               <div className="circle-spacer" />
             </div>
-            <p className="mb-8 leading-relaxed">
+            <p className="mb-4 leading-relaxed">
               We'll start with a brief questionnaire to understand your intentions and preferences.
+            </p>
+            <div className="flex justify-center mb-4">
+              <div className="circle-spacer" />
+            </div>
+            <p className="mb-8 text-[var(--color-text-tertiary)]">
+              We recommend completing this intake section at least a few days before your planned session.
             </p>
             <button
               type="button"
