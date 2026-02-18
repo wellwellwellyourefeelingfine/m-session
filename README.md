@@ -110,7 +110,8 @@ public/
     └── meditations/
         ├── open-awareness/        # 26 TTS audio files
         ├── body-scan/             # 54 TTS audio files
-        └── self-compassion/       # 70 TTS audio files
+        ├── self-compassion/       # 70 TTS audio files
+        └── protector/             # 16 TTS audio files
 ```
 
 ---
@@ -467,6 +468,7 @@ Three meditation modules use pre-recorded TTS audio with synchronized text displ
 | Open Awareness | 26 | 10-30 min (variable) | Conditional prompts for longer sessions (20+ min) |
 | Body Scan | 54 | 10-15 min (variable) | Silence expansion concentrated in later body regions |
 | Self-Compassion | 70 | ~11-15 min (fixed per variation) | 3 variations assembled from shared core + variation clips |
+| Protector Dialogue | 16 | 8-12 min (fixed) | Part of 2-part IFS activity; expandable silences for peak state |
 
 ### Architecture
 
@@ -570,28 +572,51 @@ useMeditationPlayback({
 
 ### Audio Generation
 
-Audio files are generated using ElevenLabs TTS via scripts in `scripts/`:
+Audio files are generated using ElevenLabs TTS via scripts in `scripts/`. Each meditation has its own generation script that imports prompts from the content definition and outputs MP3 files to the corresponding `public/audio/meditations/<name>/` directory.
 
-| Script | Purpose |
-|--------|---------|
-| `generate-body-scan-audio.mjs` | Body Scan TTS (54 prompts) |
-| `generate-self-compassion-audio.mjs` | Self-Compassion TTS (70 prompts) |
-| `generate-simple-grounding-audio.mjs` | Simple Grounding TTS |
-| `generate-silence-blocks.mjs` | Pre-rendered silence MP3 blocks for blob composition |
+| Script | Voice | Prompts | Output Directory |
+|--------|-------|:-------:|------------------|
+| `generate-body-scan-audio.mjs` | Oliver Silk | 54 | `public/audio/meditations/body-scan/` |
+| `generate-self-compassion-audio.mjs` | Oliver Silk | 70 | `public/audio/meditations/self-compassion/` |
+| `generate-protector-audio.mjs` | Theo Silk | 16 | `public/audio/meditations/protector/` |
+| `generate-simple-grounding-audio.mjs` | Oliver Silk | — | `public/audio/meditations/simple-grounding/` |
+| `generate-silence-blocks.mjs` | — | — | Pre-rendered silence MP3 blocks for blob composition |
 
-**Voice settings** (shared across all scripts):
-- **Voice**: Oliver Silk (ElevenLabs)
-- **Model**: `eleven_multilingual_v2`
-- **Settings**: stability 0.88, similarity_boost 0.88, speed 0.70
+**Voices:**
+
+| Voice | ID | Typical Settings |
+|-------|----|------------------|
+| Oliver Silk | `jfIS2w2yJi0grJZPyEsk` | stability 0.88, similarity 0.88, speed 0.70 |
+| Theo Silk | `UmQN7jS1Ee8B1czsUtQh` | stability 0.75, similarity 0.70, speed 0.69, speaker_boost on |
 
 **Usage:**
 ```bash
-# Dry run (shows what would be generated, no API calls)
+# Dry run — preview prompts and filenames, no API calls
 node scripts/generate-<name>-audio.mjs --dry-run
 
-# Generate all audio files (requires ELEVENLABS_API_KEY env var)
-node scripts/generate-<name>-audio.mjs
+# Generate all audio files
+ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs
+
+# Resume from a specific prompt index (0-based) — skips earlier prompts
+ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs --start 5
+
+# Regenerate a single prompt by ID
+ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs --only settling-01
+
+# List all voices on your ElevenLabs account
+ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs --list-voices
 ```
+
+**Creating a new generation script:**
+
+1. Define prompts in `src/content/meditations/<name>.js` (each prompt needs an `id` and `text`)
+2. Copy an existing script (e.g. `generate-protector-audio.mjs`) as a template
+3. Update: `VOICE_ID`, `VOICE_SETTINGS`, `SPEECH_SPEED`, `OUTPUT_DIR`, and the content import
+4. Run `--dry-run` first to verify prompt count and text, then generate
+5. Each prompt's `id` becomes its filename (e.g. `settling-01` → `settling-01.mp3`)
+6. The content file's `audio.basePath` must match the output directory path relative to `public/`
+
+**Audio spec:** 44100 Hz, mono, 128 kbps CBR MP3 (`mp3_44100_128` format in ElevenLabs API). The `audioComposerService` composes these clips with silence gaps and a gong into a single playback blob at runtime.
 
 ---
 

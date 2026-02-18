@@ -31,9 +31,10 @@ import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/Module
 import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import BreathOrb from '../capabilities/animations/BreathOrb';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
+import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import ProtectorSelectionGrid from './shared/ProtectorSelectionGrid';
 
-export default function ProtectorDialoguePart1Module({ module, onComplete, onSkip }) {
+export default function ProtectorDialoguePart1Module({ module, onComplete, onSkip, onTimerUpdate }) {
   // ── Stores ──
   const updateProtectorCapture = useSessionStore((s) => s.updateProtectorCapture);
   const addEntry = useJournalStore((s) => s.addEntry);
@@ -97,7 +98,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
   const [meditationMode, setMeditationMode] = useState(null); // null | 'listen' | 'read'
   const [readPromptIndex, setReadPromptIndex] = useState(0);
   const [showMeditationAnimation, setShowMeditationAnimation] = useState(true);
-  const [isLeavingMeditationIdle, setIsLeavingMeditationIdle] = useState(false);
 
   const meditation = getMeditationById('protector-dialogue');
 
@@ -123,7 +123,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
       });
       setMeditationMode(null);
       setReadPromptIndex(0);
-      setIsLeavingMeditationIdle(false);
       setIsVisible(true);
     }, 400);
   }, []);
@@ -137,7 +136,7 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
     totalDuration: meditationTotalDuration,
     onComplete: advanceFromMeditation,
     onSkip: advanceFromMeditation,
-    onTimerUpdate: null,
+    onTimerUpdate,
   });
 
   // ── Derived values ──
@@ -220,7 +219,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
   // ── Restart meditation from the beginning (listen mode) ──
   const handleRestartMeditation = useCallback(() => {
     playback.handleRestart();
-    setIsLeavingMeditationIdle(false);
   }, [playback]);
 
   // ── Handle back with step-specific resets ──
@@ -241,7 +239,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
       if (meditationMode !== null) {
         setMeditationMode(null);
         setReadPromptIndex(0);
-        setIsLeavingMeditationIdle(false);
         return;
       }
     }
@@ -255,7 +252,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
     if (step.type === 'meditation') {
       setMeditationMode(null);
       setReadPromptIndex(0);
-      setIsLeavingMeditationIdle(false);
     }
 
     goBack();
@@ -267,10 +263,9 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
     onSkip();
   }, [breathController, onSkip]);
 
-  // ── Begin meditation with fade transition (listen mode) ──
+  // ── Begin meditation (listen mode) — no fade needed, content stays in place ──
   const handleBeginMeditation = useCallback(() => {
-    setIsLeavingMeditationIdle(true);
-    setTimeout(() => playback.handleStart(), 300);
+    playback.handleStart();
   }, [playback]);
 
   // ── Primary button handler ──
@@ -531,14 +526,26 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
           </p>
           <div className="flex flex-col gap-3 items-center mt-4">
             <button
-              onClick={() => setMeditationMode('listen')}
+              onClick={() => {
+                setIsVisible(false);
+                setTimeout(() => {
+                  setMeditationMode('listen');
+                  setIsVisible(true);
+                }, 400);
+              }}
               className="w-48 px-6 py-3 bg-[var(--color-text-primary)] text-white
                 uppercase tracking-wider text-xs transition-colors"
             >
               {step.content.listenLabel}
             </button>
             <button
-              onClick={() => setMeditationMode('read')}
+              onClick={() => {
+                setIsVisible(false);
+                setTimeout(() => {
+                  setMeditationMode('read');
+                  setIsVisible(true);
+                }, 400);
+              }}
               className="w-48 px-6 py-3 border border-[var(--color-border)] text-[var(--color-text-primary)]
                 uppercase tracking-wider text-xs hover:bg-[var(--color-bg-secondary)] transition-colors"
             >
@@ -568,75 +575,61 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
       );
     }
 
-    // Idle — waiting to begin
-    if (!playback.hasStarted) {
+    // Complete — shown after meditation finishes
+    if (playback.isComplete) {
       return (
-        <div className={`text-center space-y-4 ${isLeavingMeditationIdle ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-          <h2
-            className="font-serif text-2xl text-[var(--color-text-primary)]"
-            style={{ textTransform: 'none' }}
+        <div className="text-center space-y-4 animate-fadeIn">
+          <h2 className="text-[var(--color-text-primary)]">Well done.</h2>
+          <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)]">
+            Take a moment before we continue.
+          </p>
+        </div>
+      );
+    }
+
+    // Unified idle + active view — title and animation stay in place,
+    // description cross-fades into prompt text when playback begins
+    const isActive = playback.hasStarted;
+    return (
+      <div className="flex flex-col items-center text-center w-full px-4">
+        <h2
+          className="font-serif text-2xl text-[var(--color-text-primary)]"
+          style={{ textTransform: 'none' }}
+        >
+          {meditation?.title || 'Guided Meditation'}
+        </h2>
+
+        <div className="flex justify-center mt-4">
+          <MorphingShapes />
+        </div>
+
+        {/* Pause indicator — only during active playback */}
+        <div className="h-5 flex items-center justify-center mt-3">
+          {isActive && !playback.isPlaying && (
+            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
+              Paused
+            </p>
+          )}
+        </div>
+
+        {/* Description (idle) cross-fades into prompt text (active) — grid stacking prevents layout shift */}
+        <div className="mt-1 px-4 grid" style={{ gridTemplateArea: "'slot'" }}>
+          <p
+            className={`text-sm leading-relaxed text-[var(--color-text-secondary)] transition-opacity duration-500`}
+            style={{ gridArea: 'slot', opacity: isActive ? 0 : 1 }}
           >
-            {meditation?.title || 'Guided Meditation'}
-          </h2>
-          <div className="flex justify-center">
-            <MorphingShapes />
-          </div>
-          <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
             {meditation?.description}
           </p>
-        </div>
-      );
-    }
-
-    // Active playback
-    if (!playback.isComplete) {
-      return (
-        <div
-          className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
-          style={{
-            alignSelf: 'stretch',
-            minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
-          }}
-        >
-          <h2
-            className="text-[var(--color-text-primary)] mb-4"
-            style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
-          >
-            {meditation?.title}
-          </h2>
-
-          {showMeditationAnimation && (
-            <div className="animate-fadeIn">
-              <MorphingShapes />
-            </div>
-          )}
-
-          <div className="h-5 flex items-center justify-center mt-3">
-            {!playback.isPlaying && (
-              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
-                Paused
-              </p>
-            )}
-          </div>
-
           <p
-            className={`mt-1 px-4 text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
-              playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
-            }`}
+            className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300`}
+            style={{
+              gridArea: 'slot',
+              opacity: isActive && (playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in') ? 1 : 0,
+            }}
           >
-            {playback.currentPrompt?.text || ''}
+            {playback.currentPrompt?.text || '\u00A0'}
           </p>
         </div>
-      );
-    }
-
-    // Complete
-    return (
-      <div className="text-center space-y-4 animate-fadeIn">
-        <h2 className="text-[var(--color-text-primary)]">Well done.</h2>
-        <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)]">
-          Take a moment before we continue.
-        </p>
       </div>
     );
   };

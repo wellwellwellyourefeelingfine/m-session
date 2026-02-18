@@ -20,7 +20,7 @@ export const protectorDialogueMeditation = {
 
   // Audio config
   audio: {
-    basePath: '/audio/meditations/protector-dialogue/',
+    basePath: '/audio/meditations/protector/',
     format: 'mp3',
   },
 

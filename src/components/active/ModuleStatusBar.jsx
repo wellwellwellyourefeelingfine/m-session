@@ -105,22 +105,22 @@ export default function ModuleStatusBar({
       </div>
 
       {/* Status content */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)]">
-        {/* Left: Phase info */}
-        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
-          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider">
+      <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)] gap-3">
+        {/* Left: Phase info — basis matches right column for centering */}
+        <div className="flex items-center space-x-2 flex-shrink-0">
+          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
             Phase {phaseConfig.number}
           </span>
           <span className="w-1 h-1 rounded-full bg-[var(--color-border)]" />
-          <span className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider">
+          <span className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
             {phaseConfig.name}
           </span>
         </div>
 
         {/* Center: Optional module timer */}
-        <div className="flex-1 flex justify-center">
+        <div className="flex-1 flex justify-center min-w-0">
           {showModuleTimer && moduleElapsed !== undefined && moduleTotal !== undefined && (
-            <span className={`text-[10px] uppercase tracking-wider transition-opacity
+            <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
               ${isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
               {formatTime(moduleElapsed)} / {formatTime(moduleTotal)}
             </span>
@@ -129,7 +129,7 @@ export default function ModuleStatusBar({
 
         {/* Right: Session elapsed time */}
         <div className="flex-shrink-0">
-          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider">
+          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
             {sessionElapsed}
           </span>
         </div>
