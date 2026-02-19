@@ -343,9 +343,10 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     }
   }, [startPolling]);
 
-  // Resume from pause — tries seek-before-play first (fast path for desktop and
-  // iOS when buffer hasn't been evicted). If iOS resets currentTime to 0 after
-  // play(), falls back to blob recreation from composed bytes.
+  // Resume from pause — uses blob recreation for reliable seeking across all platforms.
+  // Direct seeking (currentTime assignment) is unreliable for composed blob URLs:
+  // desktop browsers may report success while the decoder starts from position 0,
+  // and iOS resets currentTime entirely. Blob recreation bypasses seeking.
   const resume = useCallback(async () => {
     if (!audioRef.current) return false;
 
@@ -362,33 +363,25 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       }
     }
 
-    // Fast path: try seek-before-play
-    try {
-      // Convert absolute target to position within current blob
-      const blobTarget = absoluteTarget - timeOffsetRef.current;
-      audioRef.current.currentTime = blobTarget;
-      await audioRef.current.play();
-
-      // Check if seek survived the play() call
-      const actualTime = audioRef.current.currentTime;
-      if (actualTime >= blobTarget - 1.0) {
-        // Seek worked — start polling and we're done
-        startPolling();
-        return true;
-      }
-
-      // Seek failed (iOS reset currentTime to ~0). Fall back to blob recreation.
-      audioRef.current.pause();
-    } catch {
-      // play() itself failed — try blob recreation
-    }
-
-    // Fallback: recreate blob from composed bytes
+    // Use blob recreation for reliable resume.
+    // Composed blob URLs (headerless MP3 concatenation) don't support reliable
+    // seeking — desktop browsers may accept the currentTime assignment but the
+    // decoder starts from byte 0. resumeFromBytes() bypasses this entirely by
+    // slicing the composed bytes at the pause point and creating a fresh blob.
     if (composedBytesRef.current) {
       return resumeFromBytes();
     }
 
-    return false;
+    // No composed bytes available — try direct seek as last resort
+    try {
+      const blobTarget = absoluteTarget - timeOffsetRef.current;
+      audioRef.current.currentTime = blobTarget;
+      await audioRef.current.play();
+      startPolling();
+      return true;
+    } catch {
+      return false;
+    }
   }, [startPolling, resumeFromBytes]);
 
   // Stop and reset

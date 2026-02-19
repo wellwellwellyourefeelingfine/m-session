@@ -1,10 +1,11 @@
 /**
  * LeavesOnAStreamModule Component
  *
- * An ACT cognitive defusion meditation with three phases:
+ * An ACT cognitive defusion meditation with four phases:
  * 1. Audio-guided meditation (useMeditationPlayback — same as OpenAwareness/BodyScan)
- * 2. Post-meditation reflection (3 step-through text screens, no audio)
+ * 2. Post-meditation reflection (6 step-through text screens with circle spacers)
  * 3. Journaling exercise (2 open text prompts saved to journal store)
+ * 4. Closing screen (AsciiDiamond animation + summary)
  *
  * Variable duration: 10-20 min meditation via expandable silence + conditional prompts
  */
@@ -24,36 +25,97 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
+import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
+import LeafDraw from '../capabilities/animations/LeafDraw';
 import DurationPicker from '../../shared/DurationPicker';
 
 // ─── Reflection screen content ──────────────────────────────────────────────
+// Uses '§' for circle spacers and '{cognitive_defusion}' for accent highlighting
 
 const REFLECTION_SCREENS = [
   {
-    header: 'What You Just Practiced',
-    body: [
-      'What you just practiced has a name: cognitive defusion. The name doesn\u2019t matter. What matters is the skill.',
-      'Most of the time, we experience our thoughts as if they are reality. A thought like \u201cI\u2019m not good enough\u201d doesn\u2019t feel like a thought. It feels like a fact. We look at the world through it without even realizing it\u2019s there.',
-      'What you just practiced is stepping back. Seeing thoughts as thoughts. Mental events that come and go. Not truths you need to act on. Not problems you need to solve right now. Just visitors passing through.',
+    lines: [
+      'What you just practiced has a name in psychology: {cognitive_defusion}.',
+      '§',
+      'It means learning to observe a thought without being captured by it.',
     ],
   },
   {
-    header: 'You Can Do This Anywhere',
-    body: [
-      'You don\u2019t need a meditation, a special state, or even a quiet room to do this.',
-      'The next time you notice a difficult thought pulling at you, you can try the same move. It works for all of them: a worry, a self-criticism, a story about how things should be.',
-      'Notice it. Name it gently, even silently: \u201cThere\u2019s that worry again.\u201d And let it be there without following it.',
-      'You\u2019re not fighting the thought. You\u2019re not pretending it doesn\u2019t exist. You\u2019re just choosing not to let it steer.',
+    lines: [
+      'Most of the time, thinking is invisible to us.',
+      '§',
+      'A thought like \u201cI\u2019m not good enough\u201d doesn\u2019t announce itself as a thought. It becomes the lens we see through, and we never notice it\u2019s there.',
     ],
   },
   {
-    header: 'Thoughts as Visitors',
-    body: [
-      'Here\u2019s a way to think about it going forward. Your thoughts are visitors in your house, not the house itself. Some are welcome, some aren\u2019t. But none of them are you. You\u2019re the space they pass through.',
-      'The practice isn\u2019t about having fewer thoughts or better thoughts. It\u2019s about learning you have a choice in how you relate to the ones that show up.',
+    lines: [
+      'We act on these thoughts, argue with them, or try to push them away. All without recognizing that each one is just a mental event.',
+      '§',
+      'One more leaf on the water.',
+    ],
+  },
+  {
+    lines: [
+      'What you practiced by the stream is the alternative: watching thoughts arrive and pass without climbing onto them.',
+      '§',
+      'The moment you can see a thought as a thought, it loses the authority it had when it was pretending to be a fact.',
+    ],
+  },
+  {
+    lines: [
+      'You don\u2019t need a meditation or a quiet room to do this.',
+      '§',
+      'The next time you notice a thought pulling at you, try the same move. Notice it. Name it quietly: \u201cThere\u2019s that worry again.\u201d Then let it sit there without following where it leads.',
+    ],
+  },
+  {
+    lines: [
+      'This skill gets stronger with practice. Not because you get better at controlling your thoughts, but because you get faster at noticing when one has already carried you away.',
     ],
   },
 ];
+
+// ─── Render helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Renders an array of content lines with circle spacer and accent color support.
+ * Follows the ProtectorDialogue renderLines pattern.
+ */
+function renderReflectionLines(lines) {
+  return (
+    <div className="space-y-0">
+      {lines.map((line, i) => {
+        if (line === '§') {
+          return (
+            <div key={i} className="flex justify-center my-4">
+              <div className="circle-spacer" />
+            </div>
+          );
+        }
+        if (line.includes('{cognitive_defusion}')) {
+          const parts = line.split('{cognitive_defusion}');
+          return (
+            <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {parts.map((part, j) => (
+                <span key={j}>
+                  {part}
+                  {j < parts.length - 1 && (
+                    <span className="text-[var(--accent)]">cognitive defusion</span>
+                  )}
+                </span>
+              ))}
+            </p>
+          );
+        }
+        return (
+          <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+            {line}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -68,7 +130,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
 
   // ─── State ──────────────────────────────────────────────────────────────
 
-  // Module phase: idle → meditation → reflection → journaling
+  // Module phase: idle → meditation → reflection → journaling → closing
   const [phase, setPhase] = useState('idle');
 
   // Meditation state
@@ -78,14 +140,20 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showAnimation, setShowAnimation] = useState(true);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [isMeditationCompleteVisible, setIsMeditationCompleteVisible] = useState(true);
 
   // Reflection state
   const [reflectionStep, setReflectionStep] = useState(0);
   const [isReflectionVisible, setIsReflectionVisible] = useState(true);
+  const [isReflectionHeaderVisible, setIsReflectionHeaderVisible] = useState(false);
 
   // Journaling state
   const [journalEntry1, setJournalEntry1] = useState('');
   const [journalEntry2, setJournalEntry2] = useState('');
+  const [isJournalingVisible, setIsJournalingVisible] = useState(true);
+
+  // Closing state
+  const [isClosingVisible, setIsClosingVisible] = useState(false);
 
   // ─── Timed sequence (conditional filtering + silence expansion) ─────────
 
@@ -122,6 +190,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     setPhase('reflection');
     setReflectionStep(0);
     setIsReflectionVisible(true);
+    setIsReflectionHeaderVisible(true);
   }, []);
 
   const handleMeditationSkip = useCallback(() => {
@@ -129,6 +198,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     setPhase('reflection');
     setReflectionStep(0);
     setIsReflectionVisible(true);
+    setIsReflectionHeaderVisible(true);
   }, []);
 
   // Shared playback hook — onComplete wired to transition, not module completion
@@ -142,11 +212,24 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     onTimerUpdate,
   });
 
+  // Smooth fade from meditation-complete interstitial → reflection
+  const handleContinueToReflection = useCallback(() => {
+    setIsMeditationCompleteVisible(false);
+    setTimeout(() => {
+      playback.handleRestart(); // Hook cleanup (stop audio, revoke blob, reset store)
+      setPhase('reflection');
+      setReflectionStep(0);
+      setIsReflectionVisible(true);
+      setIsReflectionHeaderVisible(true);
+      setIsMeditationCompleteVisible(true);
+    }, 400);
+  }, [playback]);
+
   // ─── Phase transitions ────────────────────────────────────────────────
 
-  // Hide timer during reflection/journaling
+  // Hide timer during reflection/journaling/closing
   useEffect(() => {
-    if (phase === 'reflection' || phase === 'journaling') {
+    if (phase === 'reflection' || phase === 'journaling' || phase === 'closing') {
       onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
   }, [phase, onTimerUpdate]);
@@ -175,20 +258,54 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
 
   const handleReflectionContinue = useCallback(() => {
     if (reflectionStep < REFLECTION_SCREENS.length - 1) {
-      // Fade out → advance → fade in
+      // Fade out body only → advance → fade in body
       setIsReflectionVisible(false);
       setTimeout(() => {
         setReflectionStep((prev) => prev + 1);
         setIsReflectionVisible(true);
       }, 400);
     } else {
-      // Last reflection screen → transition to journaling
+      // Last reflection screen → fade out header + body → transition to journaling
       setIsReflectionVisible(false);
+      setIsReflectionHeaderVisible(false);
       setTimeout(() => {
         setPhase('journaling');
       }, 400);
     }
   }, [reflectionStep]);
+
+  const handleReflectionBack = useCallback(() => {
+    if (reflectionStep > 0) {
+      setIsReflectionVisible(false);
+      setTimeout(() => {
+        setReflectionStep((prev) => prev - 1);
+        setIsReflectionVisible(true);
+      }, 400);
+    }
+  }, [reflectionStep]);
+
+  // ─── Back navigation from journaling/closing ───────────────────────────
+
+  const handleBackToReflection = useCallback(() => {
+    setPhase('reflection');
+    setReflectionStep(REFLECTION_SCREENS.length - 1);
+    setIsReflectionVisible(true);
+    setIsReflectionHeaderVisible(true);
+  }, []);
+
+  const handleBackToJournaling = useCallback(() => {
+    setIsClosingVisible(false);
+    setTimeout(() => {
+      setPhase('journaling');
+    }, 400);
+  }, []);
+
+  const handleClosingComplete = useCallback(() => {
+    setIsClosingVisible(false);
+    setTimeout(() => {
+      onComplete();
+    }, 400);
+  }, [onComplete]);
 
   // ─── Journaling save & complete ───────────────────────────────────────
 
@@ -215,8 +332,13 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
 
   const handleJournalingSave = useCallback(() => {
     saveJournalEntry();
-    onComplete();
-  }, [saveJournalEntry, onComplete]);
+    setIsJournalingVisible(false);
+    setTimeout(() => {
+      setPhase('closing');
+      setIsClosingVisible(true);
+      setIsJournalingVisible(true); // Reset for potential back navigation
+    }, 400);
+  }, [saveJournalEntry]);
 
   // ─── Module-level skip (saves any journal content) ─────────────────────
 
@@ -331,8 +453,8 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
               }}
             >
               <h2
-                className="text-[var(--color-text-primary)] mb-4"
-                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
+                className="text-xl font-light mb-6"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
                 {meditation.title}
               </h2>
@@ -391,14 +513,16 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
       );
     }
 
-    // Meditation completed — brief interstitial before reflection
+    // Meditation completed — interstitial with fade-out transition
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center animate-fadeIn space-y-4">
+          <div className={`text-center space-y-4 transition-opacity duration-[400ms] ${
+            isMeditationCompleteVisible ? 'opacity-100' : 'opacity-0'
+          }`}>
             <h2
-              className="text-[var(--color-text-primary)]"
-              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px' }}
+              className="text-xl font-light mb-6"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
               {meditation.title}
             </h2>
@@ -410,7 +534,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
 
         <ModuleControlBar
           phase="completed"
-          primary={playback.getPrimaryButton()}
+          primary={{ label: 'Continue', onClick: handleContinueToReflection }}
           showBack={false}
           showSkip={true}
           onSkip={handleModuleSkip}
@@ -428,21 +552,27 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
-          <div className={`pt-6 transition-opacity duration-[400ms] ${isReflectionVisible ? 'opacity-100' : 'opacity-0'}`}>
-            <div key={reflectionStep} className="animate-fadeIn">
+          <div className="pt-2">
+            {/* Header + animation — persistent across steps, fades in on first screen, fades out on last */}
+            <div className={`transition-opacity duration-[400ms] ${
+              isReflectionHeaderVisible ? 'opacity-100' : 'opacity-0'
+            }`}>
               <h2
-                className="text-[var(--color-text-primary)] text-xl mb-6"
-                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+                className="text-xl font-light mb-4 text-center"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
-                {screen.header}
+                Leaves on a Stream
               </h2>
 
-              <div className="space-y-4">
-                {screen.body.map((paragraph, i) => (
-                  <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
-                    {paragraph}
-                  </p>
-                ))}
+              <div className="flex justify-center mb-6">
+                <LeafDraw />
+              </div>
+            </div>
+
+            {/* Body text — fades out/in on each step change */}
+            <div className={`transition-opacity duration-[400ms] ${isReflectionVisible ? 'opacity-100' : 'opacity-0'}`}>
+              <div key={reflectionStep} className="animate-fadeIn">
+                {renderReflectionLines(screen.lines)}
               </div>
             </div>
           </div>
@@ -451,7 +581,8 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
         <ModuleControlBar
           phase="active"
           primary={{ label: 'Continue', onClick: handleReflectionContinue }}
-          showBack={false}
+          showBack={reflectionStep > 0}
+          onBack={handleReflectionBack}
           showSkip={true}
           onSkip={handleModuleSkip}
           skipConfirmMessage="Skip the remaining reflection and journaling?"
@@ -463,13 +594,11 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   // ─── Render: Journaling phase ─────────────────────────────────────────
 
   if (phase === 'journaling') {
-    const hasContent = journalEntry1.trim() || journalEntry2.trim();
-
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm', padding: 'normal' }}>
-          <div className="space-y-6 animate-fadeIn pt-6" style={{ paddingBottom: '8rem' }}>
-            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+          <div className={`space-y-6 pt-6 animate-fadeIn transition-opacity duration-[400ms] ${isJournalingVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
               Take a few minutes to write about what you noticed. There are no right answers, just what's true for you right now.
             </p>
 
@@ -482,7 +611,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
                 <textarea
                   value={journalEntry1}
                   onChange={(e) => setJournalEntry1(e.target.value)}
-                  placeholder="What kinds of thoughts came during the meditation? Was there anything that kept returning, or anything surprising?"
+                  placeholder="Thoughts, feelings, or memories that came up..."
                   rows={4}
                   className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
                     focus:outline-none focus:border-[var(--accent)]
@@ -499,7 +628,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
                 <textarea
                   value={journalEntry2}
                   onChange={(e) => setJournalEntry2(e.target.value)}
-                  placeholder="Was it easy or hard to let thoughts float by? Were some thoughts stickier than others? What did you notice about the experience of watching rather than thinking?"
+                  placeholder="What was it like to watch rather than engage..."
                   rows={4}
                   className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
                     focus:outline-none focus:border-[var(--accent)]
@@ -514,14 +643,57 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
         <ModuleControlBar
           phase="active"
           primary={{
-            label: 'Save & Continue',
+            label: 'Continue',
             onClick: handleJournalingSave,
-            disabled: !hasContent,
           }}
-          showBack={false}
+          showBack={true}
+          onBack={handleBackToReflection}
           showSkip={true}
           onSkip={handleModuleSkip}
           skipConfirmMessage="Skip journaling?"
+        />
+      </>
+    );
+  }
+
+  // ─── Render: Closing phase ────────────────────────────────────────────
+
+  if (phase === 'closing') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[400ms] ${isClosingVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <h2
+              className="text-xl font-light mb-6 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Leaves on a Stream
+            </h2>
+
+            <div className="space-y-0">
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                You can return to this exercise anytime. In a quiet moment, on a walk, or in a future session.
+              </p>
+              <div className="flex justify-center my-4">
+                <div className="circle-spacer" />
+              </div>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                The stream is always there when you need it.
+              </p>
+            </div>
+
+            <div className="flex justify-center pt-6">
+              <AsciiDiamond />
+            </div>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="completed"
+          primary={{ label: 'Complete', onClick: handleClosingComplete }}
+          showBack={true}
+          onBack={handleBackToJournaling}
+          showSkip={false}
         />
       </>
     );

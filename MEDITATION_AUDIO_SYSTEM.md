@@ -195,15 +195,11 @@ Resets position tracking (including wall-clock refs `wallStartRef` and `wallAccu
 
 Accumulates wall-clock elapsed time (`wallAccumulatedRef += (Date.now() - wallStartRef) / 1000`), zeroes `wallStartRef`, saves accumulated time to `savedTimeRef`, pauses element, stops polling.
 
-### resume() — Two-Phase Strategy
+### resume() — Blob Recreation
 
-**Phase 1 (fast path):** Set `currentTime` to saved position while paused, call `play()`, check if seek survived. Works on desktop and sometimes iOS when buffer hasn't been evicted.
+Always uses `resumeFromBytes()` when composed bytes are available: calculate byte offset from saved time, snap to MP3 frame boundary via `findNextFrameBoundary()`, slice remaining bytes with `subarray()` (zero-copy), create new Blob + URL, load and play. `timeOffsetRef` ensures upstream hooks see absolute position with no discontinuity.
 
-**Phase 2 (blob recreation fallback):** If iOS reset `currentTime` to 0 after `play()`, call `resumeFromBytes()`: calculate byte offset from saved time, snap to MP3 frame boundary via `findNextFrameBoundary()`, slice remaining bytes with `subarray()` (zero-copy), create new Blob + URL, load and play. `timeOffsetRef` ensures upstream hooks see absolute position with no discontinuity.
-
-### Why two phases
-
-Phase 1 handles the common case (brief foreground pause) with zero latency. Phase 2 handles iOS WebKit's inability to seek blob URLs — instead of fighting the seek, it creates a new blob starting from the pause point. The `Uint8Array` is already in memory; `subarray()` is zero-copy.
+Direct seeking (`currentTime` assignment) is unreliable for composed blob URLs on both platforms — iOS resets `currentTime` to 0 (WebKit bug), and desktop browsers may accept the assignment while the decoder starts from byte 0 (headerless MP3 concatenation lacks a seek table). Blob recreation bypasses seeking entirely.
 
 ### Memory
 
