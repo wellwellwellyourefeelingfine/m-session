@@ -251,6 +251,23 @@ ${subDivider}
     }
   }
 
+  // Stay With It Check-In
+  const stayWithIt = data.transitionCaptures?.stayWithIt;
+  if (stayWithIt?.checkInResponse) {
+    const responseLabels = {
+      'lighter': 'Lighter, like something loosened',
+      'still-processing': 'Still processing, not sure yet',
+      'heavy': 'Heavy or weighed down',
+      'numb': 'Blank or numb',
+      'activated': 'Anxious, restless, or stirred up',
+    };
+    text += `\n\n${subDivider}
+STAY WITH IT CHECK-IN
+${subDivider}
+`;
+    text += `\nResponse: ${responseLabels[stayWithIt.checkInResponse] || stayWithIt.checkInResponse}`;
+  }
+
   // Come-Up Check-In Responses
   if (data.comeUpCheckIn?.responses?.length > 0) {
     text += `\n\n${subDivider}

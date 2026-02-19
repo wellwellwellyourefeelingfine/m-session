@@ -297,6 +297,11 @@ export const useSessionStore = create(
           protectorMessage: '',       // Free text
           completedAt: null,
         },
+        // Stay With It captures (check-in response)
+        stayWithIt: {
+          checkInResponse: null,    // 'lighter' | 'still-processing' | 'heavy' | 'numb' | 'activated'
+          completedAt: null,
+        },
       },
 
       // ============================================
@@ -1635,6 +1640,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateStayWithItCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            stayWithIt: {
+              ...state.transitionCaptures.stayWithIt,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2308,6 +2326,10 @@ export const useSessionStore = create(
               protectorMessage: '',
               completedAt: null,
             },
+            stayWithIt: {
+              checkInResponse: null,
+              completedAt: null,
+            },
           },
           closingCheckIn: {
             isVisible: false,
@@ -2354,7 +2376,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 7, // Increment this when schema changes to force reset
+      version: 8, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, ...rest } = state;
@@ -2584,6 +2606,19 @@ export const useSessionStore = create(
               customProtectorName: '',
               bodyLocation: '',
               protectorMessage: '',
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 7 → 8: Add stayWithIt to transitionCaptures
+        if (version < 8) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.stayWithIt) {
+            state.transitionCaptures.stayWithIt = {
+              checkInResponse: null,
               completedAt: null,
             };
           }

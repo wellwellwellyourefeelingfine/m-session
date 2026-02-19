@@ -360,6 +360,58 @@ Store actions that auto-pause/resume meditation during booster modals only updat
 
 ---
 
+## ElevenLabs TTS API Reference
+
+**Scripts:** `scripts/generate-*-audio.mjs`
+
+Each script calls the ElevenLabs `/v1/text-to-speech/{voice_id}` REST endpoint to generate MP3 clips from prompt text. Key formatting rules:
+
+### Request structure
+
+```
+POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128
+```
+
+- **`output_format`** is a **query parameter** on the URL, NOT in the JSON body.
+- **`speed`** goes **inside `voice_settings`**, NOT as a top-level body parameter. If placed at the top level, the API silently ignores it.
+
+### Correct request body
+
+```json
+{
+  "text": "Prompt text here.",
+  "model_id": "eleven_multilingual_v2",
+  "voice_settings": {
+    "stability": 0.85,
+    "similarity_boost": 0.70,
+    "style": 0.0,
+    "use_speaker_boost": true,
+    "speed": 0.81
+  }
+}
+```
+
+### Parameter ranges
+
+| Parameter | Range | Notes |
+|-----------|-------|-------|
+| `speed` | 0.7–1.2 | 1.0 = normal. Values below 0.7 are clamped or ignored. |
+| `stability` | 0.0–1.0 | Higher = more consistent delivery |
+| `similarity_boost` | 0.0–1.0 | Higher = closer to original voice |
+| `style` | 0.0–1.0 | Style exaggeration. 0.0 for meditation. |
+
+### Common mistakes
+
+1. **`speed` at top level** — The API ignores `speed` outside `voice_settings`. Always nest it inside.
+2. **`output_format` in body** — The API expects this as a URL query parameter, not in the JSON body.
+3. **`speed` below 0.7** — Values like 0.47 are outside the valid range and will be clamped or ignored.
+
+### Voice: Theo Silk
+
+All meditation scripts use the Theo Silk voice (`UmQN7jS1Ee8B1czsUtQh`) with `eleven_multilingual_v2`. Voice settings vary per meditation but `speed: 0.7` (slowest allowed) is the baseline for meditative delivery.
+
+---
+
 ## Testing Checklist (iOS Safari, physical device)
 
 1. **Timer advances:** Start a meditation → timer should count up after preamble

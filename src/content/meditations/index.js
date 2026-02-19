@@ -16,6 +16,7 @@ import { selfCompassionMeditation } from './self-compassion';
 import { simpleGroundingMeditation } from './simple-grounding';
 import { protectorDialogueMeditation } from './protector-dialogue';
 import { leavesOnAStreamMeditation } from './leaves-on-a-stream';
+import { stayWithItMeditation } from './stay-with-it';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -28,6 +29,7 @@ export const meditationLibrary = {
   'simple-grounding': simpleGroundingMeditation,
   'protector-dialogue': protectorDialogueMeditation,
   'leaves-on-a-stream': leavesOnAStreamMeditation,
+  'stay-with-it': stayWithItMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -53,6 +55,9 @@ export { protectorDialogueMeditation };
 
 // Re-export leaves on a stream meditation
 export { leavesOnAStreamMeditation };
+
+// Re-export stay with it meditation
+export { stayWithItMeditation };
 
 /**
  * Get a meditation by its ID

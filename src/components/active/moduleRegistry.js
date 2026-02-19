@@ -28,6 +28,7 @@ const OpenSpaceModule = lazy(() => import('./modules/OpenSpaceModule'));
 const ProtectorDialoguePart1Module = lazy(() => import('./modules/ProtectorDialoguePart1Module'));
 const ProtectorDialoguePart2Module = lazy(() => import('./modules/ProtectorDialoguePart2Module'));
 const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule'));
+const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -73,6 +74,9 @@ export const CUSTOM_MODULES = {
 
   // Leaves on a Stream (ACT cognitive defusion) — meditation + reflection + journaling
   'leaves-on-a-stream': LeavesOnAStreamModule,
+
+  // Stay With It (reconsolidation) — meditation + check-in + psychoeducation + journaling
+  'stay-with-it': StayWithItModule,
 };
 
 /**
@@ -137,6 +141,7 @@ export const MODULE_CATEGORIES = {
     'self-compassion',
     'simple-grounding',
     'leaves-on-a-stream',
+    'stay-with-it',
   ],
   journaling: [
     'journaling',

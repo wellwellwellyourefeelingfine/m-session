@@ -27,15 +27,14 @@ const OUTPUT_FORMAT = 'mp3_44100_128'; // High quality MP3
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
 // Voice settings tuned for slow, meditative speech
+// Speed: 0.7-1.2 (1.0 = normal pace; 0.7 = slowest allowed)
 const VOICE_SETTINGS = {
   stability: 0.95,
   similarity_boost: 0.95,
   style: 0.0,
   use_speaker_boost: false,
+  speed: 0.7,
 };
-
-// Speech speed (0.25-4.0, where 1.0 = normal pace)
-const SPEECH_SPEED = 0.60;
 
 // Delay between requests to respect rate limits (ms)
 const REQUEST_DELAY = 1200;
@@ -105,7 +104,7 @@ if (listVoices) {
 
 // --- Main ---
 async function generateAudio(clipId, text) {
-  const url = `${API_BASE}/text-to-speech/${VOICE_ID}`;
+  const url = `${API_BASE}/text-to-speech/${VOICE_ID}?output_format=${OUTPUT_FORMAT}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -117,9 +116,7 @@ async function generateAudio(clipId, text) {
     body: JSON.stringify({
       text,
       model_id: MODEL_ID,
-      output_format: OUTPUT_FORMAT,
       voice_settings: VOICE_SETTINGS,
-      speed: SPEECH_SPEED,
     }),
   });
 
