@@ -473,7 +473,7 @@ export const selfCompassionMeditation = {
   id: 'self-compassion',
   title: 'Self-Compassion',
   subtitle: 'Guided self-compassion',
-  description: 'Channel the natural self-compassion that opens during this experience. Not about generating warmth through effort \u2014 just allowing and directing what\u2019s already opening.',
+  description: 'A guided audio meditation. Channel the natural self-compassion that opens during this experience. Not about generating warmth through effort \u2014 just allowing and directing what\u2019s already opening. Have your headphones or speakers ready.',
 
   // Audio configuration
   audio: {

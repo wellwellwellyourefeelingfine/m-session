@@ -16,7 +16,6 @@ import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { calculateBoosterDose } from '../../stores/useSessionStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
-import TransitionBuffer from './TransitionBuffer';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 
@@ -67,7 +66,6 @@ const DOSAGE_WARNINGS = {
 export default function SubstanceChecklist() {
   const [step, setStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [showTransition, setShowTransition] = useState(false);
   const [showDosageWarning, setShowDosageWarning] = useState(null); // 'heavy' | 'dangerous' | null
 
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
@@ -100,18 +98,11 @@ export default function SubstanceChecklist() {
   };
 
   const handleContinueToIntro = () => {
-    // Show transition buffer before moving to PreSessionIntro
-    setShowTransition(true);
+    setIsVisible(false);
+    setTimeout(() => {
+      setSubstanceChecklistSubPhase('pre-session-intro');
+    }, 300);
   };
-
-  const handleTransitionComplete = () => {
-    setSubstanceChecklistSubPhase('pre-session-intro');
-  };
-
-  // Show TransitionBuffer with extended hold time (~5.5s total)
-  if (showTransition) {
-    return <TransitionBuffer onComplete={handleTransitionComplete} holdDuration={3500} />;
-  }
 
   const renderStep = () => {
     // Booster prep step (inserted after dosage when applicable)
@@ -346,6 +337,10 @@ export default function SubstanceChecklist() {
               </div>
               <div className="flex items-start space-x-3">
                 <span className="text-[var(--color-text-tertiary)]">•</span>
+                <p>Have access to headphones or speakers</p>
+              </div>
+              <div className="flex items-start space-x-3">
+                <span className="text-[var(--color-text-tertiary)]">•</span>
                 <p>Consider having light snacks available for later</p>
               </div>
             </div>
@@ -369,10 +364,6 @@ export default function SubstanceChecklist() {
 
               <p className="text-[var(--color-text-primary)]">
                 During the session, stay in your prepared space. If things get difficult and you feel the urge to leave, contact this person first.
-              </p>
-
-              <p className="text-[var(--color-text-tertiary)]">
-                You can access the Session Helper anytime by tapping the &#9786; button.
               </p>
             </div>
           </div>

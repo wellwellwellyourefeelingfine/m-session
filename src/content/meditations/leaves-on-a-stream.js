@@ -16,7 +16,7 @@ export const leavesOnAStreamMeditation = {
   id: 'leaves-on-a-stream',
   title: 'Leaves on a Stream',
   subtitle: 'ACT Cognitive Defusion',
-  description: 'A guided meditation for observing your thoughts with curiosity rather than getting caught in them.',
+  description: 'A guided audio meditation for observing your thoughts with curiosity rather than getting caught in them. Have your headphones or speakers ready.',
   baseDuration: 600,   // ~10 minutes base
   minDuration: 600,    // 10 min
   maxDuration: 1200,   // 20 min

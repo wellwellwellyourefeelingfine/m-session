@@ -55,10 +55,20 @@ export default function HomeView() {
   const resetSession = useSessionStore((state) => state.resetSession);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
-  // Handle Begin Session - starts substance checklist and navigates to Active tab
+  // Handle Begin Session - moon transition then navigate to substance checklist
   const handleBeginSession = () => {
-    startSubstanceChecklist();
-    setCurrentTab('active');
+    setTransitionStep('moon-enter');
+
+    transitionTimersRef.current = [
+      setTimeout(() => setTransitionStep('moon-visible'), 50),
+      setTimeout(() => {
+        startSubstanceChecklist();
+        setCurrentTab('active');
+      }, 200),
+      setTimeout(() => setTransitionStep('moon-exit'), 2750),
+      setTimeout(() => setTransitionStep('reveal'), 3550),
+      setTimeout(() => setTransitionStep(null), 4700),
+    ];
   };
 
   // Handle reset with confirmation

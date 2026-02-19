@@ -17,7 +17,7 @@ export const stayWithItMeditation = {
   id: 'stay-with-it',
   title: 'Stay With It',
   subtitle: 'Reconsolidation Meditation',
-  description: 'A meditation for turning toward whatever you\u2019re feeling right now and staying present with it. No technique to learn. No visualization. Just you and what\u2019s here.',
+  description: 'A guided audio meditation for turning toward whatever you\u2019re feeling right now and staying present with it. No technique to learn. No visualization. Just you and what\u2019s here. Have your headphones or speakers ready.',
   baseDuration: 600,   // ~10 minutes base
   minDuration: 600,    // 10 min
   maxDuration: 1500,   // 25 min

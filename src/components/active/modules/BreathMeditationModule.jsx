@@ -25,7 +25,7 @@ import {
 import { useWakeLock } from '../../../hooks/useWakeLock';
 
 // Shared UI components
-import ModuleControlBar, { SlotButton, MuteButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { SlotButton, VolumeButton } from '../capabilities/ModuleControlBar';
 import DurationPicker from '../../shared/DurationPicker';
 
 // Breath-specific components
@@ -174,7 +174,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
 
   // Visual toggles
   const [isOrbVisible, setIsOrbVisible] = useState(true);
-  const [isAudioMuted, setIsAudioMuted] = useState(true); // Default muted since no audio yet
+  const [audioVolume, setAudioVolume] = useState(0); // Default 0 (muted) since no audio yet
 
   // Current prompt state
   const [currentPrompt, setCurrentPrompt] = useState(null);
@@ -431,9 +431,9 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
 
   // Right slot: Audio mute toggle
   const rightSlotContent = hasStarted && !breathController.isComplete ? (
-    <MuteButton
-      isMuted={isAudioMuted}
-      onToggle={() => setIsAudioMuted(!isAudioMuted)}
+    <VolumeButton
+      volume={audioVolume}
+      onVolumeChange={setAudioVolume}
     />
   ) : null;
 

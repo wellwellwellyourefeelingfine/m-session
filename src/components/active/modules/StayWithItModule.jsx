@@ -25,7 +25,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
@@ -251,6 +251,9 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   const [journalEntry1, setJournalEntry1] = useState('');
   const [journalEntry2, setJournalEntry2] = useState('');
   const [journalEntry3, setJournalEntry3] = useState('');
+  const [juxtaposition1, setJuxtaposition1] = useState('');
+  const [juxtaposition2, setJuxtaposition2] = useState('');
+  const [journalingPage, setJournalingPage] = useState(0); // 0 = prompts, 1 = juxtaposition
   const [isJournalingVisible, setIsJournalingVisible] = useState(true);
 
   // Closing state
@@ -331,11 +334,13 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   }, [phase, onTimerUpdate]);
 
   // Track when we enter meditation phase (playback starts)
+  // Gate on !isLoading so the idle block persists during audio composition,
+  // preventing a control bar unmount/remount flash.
   useEffect(() => {
-    if (playback.hasStarted && phase === 'idle') {
+    if (playback.hasStarted && !playback.isLoading && phase === 'idle') {
       setPhase('meditation');
     }
-  }, [playback.hasStarted, phase]);
+  }, [playback.hasStarted, playback.isLoading, phase]);
 
   // Fade out idle screen before starting composition
   const handleBeginWithTransition = useCallback(() => {
@@ -431,8 +436,23 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
     setIsClosingVisible(false);
     setTimeout(() => {
       setPhase('journaling');
+      setJournalingPage(1); // Return to juxtaposition page
     }, 400);
   }, []);
+
+  const handleJournalingBack = useCallback(() => {
+    if (journalingPage === 1) {
+      // Juxtaposition → prompts
+      setIsJournalingVisible(false);
+      setTimeout(() => {
+        setJournalingPage(0);
+        setIsJournalingVisible(true);
+      }, 400);
+    } else {
+      // Prompts → psychoeducation
+      handleBackToPsychoeducation();
+    }
+  }, [journalingPage, handleBackToPsychoeducation]);
 
   // ─── Closing complete ─────────────────────────────────────────────────
 
@@ -452,7 +472,8 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   // ─── Journaling save & complete ───────────────────────────────────────
 
   const saveJournalEntry = useCallback(() => {
-    const hasContent = journalEntry1.trim() || journalEntry2.trim() || journalEntry3.trim();
+    const hasContent = journalEntry1.trim() || journalEntry2.trim() || journalEntry3.trim()
+      || juxtaposition1.trim() || juxtaposition2.trim();
     if (!hasContent) return;
 
     let content = 'STAY WITH IT\n';
@@ -461,10 +482,19 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
       content += `\nWhat was most present during the meditation?\n${journalEntry1.trim()}\n`;
     }
     if (journalEntry2.trim()) {
-      content += `\nDid your attention pull away at any point?\n${journalEntry2.trim()}\n`;
+      content += `\nWas there a moment where your attention pulled away?\n${journalEntry2.trim()}\n`;
     }
     if (journalEntry3.trim()) {
-      content += `\nHow does the feeling compare to when you started?\n${journalEntry3.trim()}\n`;
+      content += `\nWhat's different now compared to when you started?\n${journalEntry3.trim()}\n`;
+    }
+    if (juxtaposition1.trim() || juxtaposition2.trim()) {
+      content += `\nJuxtaposition Exercise\n`;
+      if (juxtaposition1.trim()) {
+        content += `Part of me knows... ${juxtaposition1.trim()}\n`;
+      }
+      if (juxtaposition2.trim()) {
+        content += `And at the same time, I also know... ${juxtaposition2.trim()}\n`;
+      }
     }
 
     addEntry({
@@ -473,17 +503,28 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
       sessionId,
       moduleTitle: 'Stay With It',
     });
-  }, [journalEntry1, journalEntry2, journalEntry3, addEntry, sessionId]);
+  }, [journalEntry1, journalEntry2, journalEntry3, juxtaposition1, juxtaposition2, addEntry, sessionId]);
 
-  const handleJournalingSave = useCallback(() => {
-    saveJournalEntry();
-    setIsJournalingVisible(false);
-    setTimeout(() => {
-      setPhase('closing');
-      setIsClosingVisible(true);
-      setIsJournalingVisible(true); // Reset for potential back navigation
-    }, 400);
-  }, [saveJournalEntry]);
+  const handleJournalingContinue = useCallback(() => {
+    if (journalingPage === 0) {
+      // Prompts page → juxtaposition page
+      setIsJournalingVisible(false);
+      setTimeout(() => {
+        setJournalingPage(1);
+        setIsJournalingVisible(true);
+      }, 400);
+    } else {
+      // Juxtaposition page → save + closing
+      saveJournalEntry();
+      setIsJournalingVisible(false);
+      setTimeout(() => {
+        setPhase('closing');
+        setIsClosingVisible(true);
+        setIsJournalingVisible(true); // Reset for potential back navigation
+        setJournalingPage(0); // Reset for potential back navigation
+      }, 400);
+    }
+  }, [journalingPage, saveJournalEntry]);
 
   // ─── Module-level skip (saves any journal content + check-in) ──────────
 
@@ -516,73 +557,58 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
     );
   }
 
-  // ─── Render: Idle phase ───────────────────────────────────────────────
+  // ─── Render: Idle phase (also covers loading to prevent control bar flash) ──
 
-  if (phase === 'idle' && !playback.isLoading && !playback.hasStarted) {
+  if (phase === 'idle') {
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={meditation.title}
-              description={meditation.description}
-            />
+          {!playback.isLoading ? (
+            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+              <IdleScreen
+                title={meditation.title}
+                description={meditation.description}
+              />
 
-            {/* Duration selector */}
-            <button
-              onClick={() => setShowDurationPicker(true)}
-              className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                hover:border-[var(--color-text-tertiary)] transition-colors"
-            >
-              <span className="text-2xl font-light">{selectedDuration}</span>
-              <span className="text-sm ml-1">min</span>
-            </button>
-          </div>
+              {/* Duration selector */}
+              <button
+                onClick={() => setShowDurationPicker(true)}
+                className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
+                  hover:border-[var(--color-text-tertiary)] transition-colors"
+              >
+                <span className="text-2xl font-light">{selectedDuration}</span>
+                <span className="text-sm ml-1">min</span>
+              </button>
+            </div>
+          ) : (
+            <div className="text-center animate-fadeIn">
+              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+                Preparing meditation...
+              </p>
+            </div>
+          )}
         </ModuleLayout>
 
         <ModuleControlBar
           phase="idle"
-          primary={{ label: 'Begin', onClick: handleBeginWithTransition }}
+          primary={{ label: 'Begin', onClick: playback.isLoading ? () => {} : handleBeginWithTransition }}
           showBack={false}
           showSkip={true}
           onSkip={onSkip}
           skipConfirmMessage="Skip this meditation?"
         />
 
-        <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={setSelectedDuration}
-          currentDuration={selectedDuration}
-          durationSteps={meditation.durationSteps}
-          minDuration={meditation.minDuration / 60}
-          maxDuration={meditation.maxDuration / 60}
-        />
-      </>
-    );
-  }
-
-  // ─── Render: Loading state ────────────────────────────────────────────
-
-  if (playback.isLoading) {
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
-        </ModuleLayout>
-
-        <ModuleControlBar
-          phase="loading"
-          primary={{ label: 'Preparing...', onClick: () => {}, disabled: true }}
-          showBack={false}
-          showSkip={true}
-          onSkip={onSkip}
-          skipConfirmMessage="Skip this meditation?"
-        />
+        {!playback.isLoading && (
+          <DurationPicker
+            isOpen={showDurationPicker}
+            onClose={() => setShowDurationPicker(false)}
+            onSelect={setSelectedDuration}
+            currentDuration={selectedDuration}
+            durationSteps={meditation.durationSteps}
+            minDuration={meditation.minDuration / 60}
+            maxDuration={meditation.maxDuration / 60}
+          />
+        )}
       </>
     );
   }
@@ -653,9 +679,9 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
               />
             }
             rightSlot={
-              <MuteButton
-                isMuted={playback.audio.isMuted}
-                onToggle={playback.audio.toggleMute}
+              <VolumeButton
+                volume={playback.audio.volume}
+                onVolumeChange={playback.audio.setVolume}
               />
             }
           />
@@ -859,24 +885,119 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   // ─── Render: Journaling phase ─────────────────────────────────────────
 
   if (phase === 'journaling') {
+    // Page 0: Three journaling prompts
+    if (journalingPage === 0) {
+      return (
+        <>
+          <ModuleLayout layout={{ centered: false, maxWidth: 'sm', padding: 'normal' }}>
+            <div className={`space-y-6 pt-6 animate-fadeIn transition-opacity duration-[400ms] ${isJournalingVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                Take a moment to write. Whatever comes to mind. No need for complete sentences.
+              </p>
+
+              <div className="space-y-5">
+                {/* Prompt 1 */}
+                <div>
+                  <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                    What was most present for you during the meditation?
+                  </p>
+                  <textarea
+                    value={journalEntry1}
+                    onChange={(e) => setJournalEntry1(e.target.value)}
+                    placeholder="Describe what came up, even if it's hard to put into words..."
+                    rows={3}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none"
+                  />
+                </div>
+
+                {/* Prompt 2 */}
+                <div>
+                  <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                    Was there a moment where your attention pulled away, went blank, or wanted to be somewhere else?
+                  </p>
+                  <textarea
+                    value={journalEntry2}
+                    onChange={(e) => setJournalEntry2(e.target.value)}
+                    placeholder="Any moments of blankness, restlessness, distraction, or checking out..."
+                    rows={3}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none"
+                  />
+                </div>
+
+                {/* Prompt 3 */}
+                <div>
+                  <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                    What&apos;s different now compared to when you started? What stayed the same?
+                  </p>
+                  <textarea
+                    value={journalEntry3}
+                    onChange={(e) => setJournalEntry3(e.target.value)}
+                    placeholder="What shifted, what stayed, what you'd like to revisit..."
+                    rows={3}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </ModuleLayout>
+
+          <ModuleControlBar
+            phase="active"
+            primary={{
+              label: 'Continue',
+              onClick: handleJournalingContinue,
+            }}
+            showBack={true}
+            onBack={handleJournalingBack}
+            showSkip={true}
+            onSkip={handleModuleSkip}
+            skipConfirmMessage="Skip journaling?"
+          />
+        </>
+      );
+    }
+
+    // Page 1: Juxtaposition Exercise
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm', padding: 'normal' }}>
-          <div className={`space-y-6 pt-6 animate-fadeIn transition-opacity duration-[400ms] ${isJournalingVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+          <div className={`space-y-0 pt-6 animate-fadeIn transition-opacity duration-[400ms] ${isJournalingVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
             <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
-              Take a moment to write. Whatever comes to mind. No need for complete sentences.
+              Sometimes, after turning toward a difficult feeling, you find yourself holding two things that both feel true: an old knowing and a newer one that doesn&apos;t quite fit with it.
+            </p>
+
+            <div className="flex justify-center my-4">
+              <div className="circle-spacer" />
+            </div>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              That tension is not a problem. It&apos;s the conditions under which deep patterns actually change.
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mt-4">
+              If you&apos;re holding something like that right now, see if you can put both sides into words.
+            </p>
+
+            <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed mt-4 mb-6">
+              If nothing like this is present, skip this and come back to it whenever.
             </p>
 
             <div className="space-y-5">
-              {/* Prompt 1 */}
               <div>
                 <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-                  What was most present for you during the meditation?
+                  Part of me knows...
                 </p>
                 <textarea
-                  value={journalEntry1}
-                  onChange={(e) => setJournalEntry1(e.target.value)}
-                  placeholder="Describe what came up, even if it's hard to put into words..."
+                  value={juxtaposition1}
+                  onChange={(e) => setJuxtaposition1(e.target.value)}
                   rows={3}
                   className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
                     focus:outline-none focus:border-[var(--accent)]
@@ -885,32 +1006,13 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
                 />
               </div>
 
-              {/* Prompt 2 */}
               <div>
                 <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-                  Did you notice your attention pulling away at any point?
+                  And at the same time, I also know...
                 </p>
                 <textarea
-                  value={journalEntry2}
-                  onChange={(e) => setJournalEntry2(e.target.value)}
-                  placeholder="Any moments of blankness, restlessness, distraction, or checking out..."
-                  rows={3}
-                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
-                    focus:outline-none focus:border-[var(--accent)]
-                    text-[var(--color-text-primary)] text-sm leading-relaxed
-                    placeholder:text-[var(--color-text-tertiary)] resize-none"
-                />
-              </div>
-
-              {/* Prompt 3 */}
-              <div>
-                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-                  How does the feeling you started with compare to how you feel now?
-                </p>
-                <textarea
-                  value={journalEntry3}
-                  onChange={(e) => setJournalEntry3(e.target.value)}
-                  placeholder="What shifted, what stayed, what you'd like to revisit..."
+                  value={juxtaposition2}
+                  onChange={(e) => setJuxtaposition2(e.target.value)}
                   rows={3}
                   className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
                     focus:outline-none focus:border-[var(--accent)]
@@ -926,10 +1028,10 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
           phase="active"
           primary={{
             label: 'Continue',
-            onClick: handleJournalingSave,
+            onClick: handleJournalingContinue,
           }}
           showBack={true}
-          onBack={handleBackToPsychoeducation}
+          onBack={handleJournalingBack}
           showSkip={true}
           onSkip={handleModuleSkip}
           skipConfirmMessage="Skip journaling?"

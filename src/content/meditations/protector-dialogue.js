@@ -11,7 +11,7 @@ export const protectorDialogueMeditation = {
   id: 'protector-dialogue',
   title: 'Meeting a Protector',
   subtitle: 'Guided Noticing',
-  description: 'A gentle guided meditation to notice and connect with a protective part of yourself.',
+  description: 'A gentle guided audio meditation to notice and connect with a protective part of yourself. Have your headphones or speakers ready.',
 
   // Duration config — this is a fixed-length meditation, not variable
   baseDuration: 600, // ~10 minutes base

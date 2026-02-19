@@ -248,7 +248,7 @@ export const moduleLibrary = [
   {
     id: 'stay-with-it',
     type: 'stay-with-it',
-    category: 'meditation',
+    category: 'activity',
     title: 'Stay With It',
     description: 'A meditation for turning toward whatever you\u2019re feeling and staying present with it. Includes a check-in, brief psychoeducation, and journaling.',
     defaultDuration: 15,

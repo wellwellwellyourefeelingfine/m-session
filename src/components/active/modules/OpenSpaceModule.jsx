@@ -20,7 +20,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import { useSilenceTimer } from '../../../hooks/useSilenceTimer';
 
 // Shared UI components
-import ModuleControlBar, { MuteButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton } from '../capabilities/ModuleControlBar';
 import DurationPicker from '../../shared/DurationPicker';
 import AlarmPrompt from '../../shared/AlarmPrompt';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -223,9 +223,9 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
         skipConfirmMessage="Skip this open space?"
         rightSlot={
           timer.hasStarted ? (
-            <MuteButton
-              isMuted={timer.audio.isMuted}
-              onToggle={timer.audio.toggleMute}
+            <VolumeButton
+              volume={timer.audio.volume}
+              onVolumeChange={timer.audio.setVolume}
             />
           ) : null
         }

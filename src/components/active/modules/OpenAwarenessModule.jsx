@@ -19,7 +19,7 @@ import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import DurationPicker from '../../shared/DurationPicker';
 
@@ -189,18 +189,18 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
       {/* Control bar */}
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={playback.getPhase() === 'idle'
+        primary={playback.getPhase() === 'idle' || playback.isLoading
           ? { label: 'Begin', onClick: handleBeginWithTransition }
           : playback.getPrimaryButton()
         }
-        showBack={playback.hasStarted && !playback.isComplete}
+        showBack={playback.hasStarted && !playback.isComplete && !playback.isLoading}
         onBack={handleRestart}
         backConfirmMessage="Restart this meditation from the beginning?"
         showSkip={!playback.isComplete}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"
         leftSlot={
-          playback.hasStarted && !playback.isComplete ? (
+          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
             <SlotButton
               icon={<AnimationIcon visible={showAnimation} />}
               label={showAnimation ? 'Hide animation' : 'Show animation'}
@@ -210,10 +210,10 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
           ) : null
         }
         rightSlot={
-          playback.hasStarted && !playback.isComplete ? (
-            <MuteButton
-              isMuted={playback.audio.isMuted}
-              onToggle={playback.audio.toggleMute}
+          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
+            <VolumeButton
+              volume={playback.audio.volume}
+              onVolumeChange={playback.audio.setVolume}
             />
           ) : null
         }

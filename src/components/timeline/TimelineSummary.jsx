@@ -3,7 +3,7 @@
  * Shows total duration and module count for the timeline
  */
 
-export default function TimelineSummary({ totalDuration, targetDuration, moduleCount }) {
+export default function TimelineSummary({ totalDuration, moduleCount }) {
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
@@ -14,29 +14,23 @@ export default function TimelineSummary({ totalDuration, targetDuration, moduleC
   };
 
   return (
-    <div className="mt-4 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
-      <div className="flex justify-between items-center">
+    <div className="mt-2 px-4 pt-4 pb-2 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+      <div className="flex justify-between items-center mb-2">
         <div>
           <p className="text-[var(--color-text-tertiary)] text-sm">Total Activities</p>
-          <p className="text-[var(--color-text-primary)] text-lg">{moduleCount}</p>
+          <p className="text-[var(--color-text-primary)] text-lg leading-tight">{moduleCount}</p>
         </div>
         <div className="text-right">
           <p className="text-[var(--color-text-tertiary)] text-sm">Scheduled Time</p>
-          <p className="text-[var(--color-text-primary)] text-lg">
+          <p className="text-[var(--color-text-primary)] text-lg leading-tight">
             {formatDuration(totalDuration)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-        <p className="text-[var(--color-text-tertiary)] text-sm">
-          Session target: {formatDuration(targetDuration)}
-        </p>
-        <p className="text-[var(--color-text-secondary)] text-xs mt-1">
-          Your session will continue even after all activities are complete,
-          until you choose to end it.
-        </p>
-      </div>
+      <p className="text-[var(--color-text-secondary)] text-xs">
+        A typical MDMA session usually lasts between 4-6 hours. You can always alter your timeline and add or remove activities during the session.
+      </p>
     </div>
   );
 }

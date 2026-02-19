@@ -5,7 +5,7 @@
  * Sequence:
  * 1. Blank screen (300ms)
  * 2. AsciiDiamond + random quote fade in (800ms)
- * 3. Hold for holdDuration (default 2000ms)
+ * 3. Hold for holdDuration (default 3000ms)
  * 4. Fade out (800ms)
  * 5. Blank screen briefly (300ms), then calls onComplete
  *
@@ -47,7 +47,7 @@ const QUOTES = [
   },
 ];
 
-export default function TransitionBuffer({ onComplete, holdDuration = 2000 }) {
+export default function TransitionBuffer({ onComplete, holdDuration = 3000 }) {
   const [phase, setPhase] = useState('blank'); // 'blank' | 'fading-in' | 'visible' | 'fading-out' | 'done'
   const quoteRef = useRef(null);
 

@@ -141,7 +141,6 @@ export const MODULE_CATEGORIES = {
     'self-compassion',
     'simple-grounding',
     'leaves-on-a-stream',
-    'stay-with-it',
   ],
   journaling: [
     'journaling',
@@ -154,6 +153,7 @@ export const MODULE_CATEGORIES = {
   activity: [
     'protector-dialogue-p1',
     'protector-dialogue-p2',
+    'stay-with-it',
   ],
   open: [
     'open-space',

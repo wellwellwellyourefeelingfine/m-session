@@ -24,7 +24,7 @@ export const bodyScanMeditation = {
   id: 'body-scan',
   title: 'Body Scan',
   subtitle: 'Somatic awareness',
-  description: 'A guided scan through your entire body. Notice what is present without needing to change anything.',
+  description: 'A guided audio scan through your entire body. Notice what is present without needing to change anything. Have your headphones or speakers ready.',
   baseDuration: 517,   // ~8:37 in seconds
   minDuration: 600,    // 10 min
   maxDuration: 900,    // 15 min

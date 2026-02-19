@@ -29,11 +29,17 @@ import { CBR_BYTES_PER_SECOND, findNextFrameBoundary } from '../services/audioCo
 // while setInterval continues at a reduced frequency (~1Hz), keeping the timer alive.
 const POLL_INTERVAL_MS = 250;
 
+// Persisted volume across module instances (survives unmount/remount, resets on page refresh)
+let persistedVolume = 1.0;
+let persistedPreviousVolume = 1.0;
+
 export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpdate } = {}) {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolumeState] = useState(persistedVolume);
+  const previousVolumeRef = useRef(persistedPreviousVolume);
+  const isMuted = volume === 0;
   const [error, setError] = useState(null);
 
   // Store callbacks in refs so event listeners don't churn on every render
@@ -164,12 +170,15 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     });
   }, [stopPolling]);
 
-  // Update mute state on audio element
+  // Sync volume to audio element and persist across modules
   useEffect(() => {
+    persistedVolume = volume;
+    persistedPreviousVolume = previousVolumeRef.current;
     if (audioRef.current) {
-      audioRef.current.muted = isMuted;
+      audioRef.current.volume = volume;
+      audioRef.current.muted = volume === 0;
     }
-  }, [isMuted]);
+  }, [volume]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -398,9 +407,23 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     }
   }, [stopPolling]);
 
-  // Toggle mute (audio keeps playing, just silent — important for time tracking)
+  // Toggle mute (toggles between 0 and previous volume level)
   const toggleMute = useCallback(() => {
-    setIsMuted(prev => !prev);
+    if (volume === 0) {
+      setVolumeState(previousVolumeRef.current || 1.0);
+    } else {
+      previousVolumeRef.current = volume;
+      setVolumeState(0);
+    }
+  }, [volume]);
+
+  // Set volume to a specific level (0-1 range)
+  const setVolume = useCallback((v) => {
+    const clamped = Math.max(0, Math.min(1, v));
+    setVolumeState(clamped);
+    if (clamped > 0) {
+      previousVolumeRef.current = clamped;
+    }
   }, []);
 
   // Get current playback time (wall-clock based, not audio.currentTime)
@@ -438,6 +461,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     isPlaying,
     isLoaded,
     isMuted,
+    volume,
     error,
 
     // Actions
@@ -447,7 +471,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     stop,
     seek,
     toggleMute,
-    setMuted: setIsMuted,
+    setVolume,
     storeComposedBytes,
 
     // Getters

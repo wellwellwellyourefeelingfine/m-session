@@ -17,7 +17,7 @@
  * - Right slot: Optional secondary control (e.g., mute button)
  */
 
-import { useState } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 /**
  * @param {object} props
@@ -304,6 +304,120 @@ export function MuteButton({ isMuted, onToggle, disabled = false }) {
       active={!isMuted}
       disabled={disabled}
     />
+  );
+}
+
+/**
+ * Volume button with popup slider for right slot
+ */
+export function VolumeButton({ volume, onVolumeChange, disabled = false }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  const isMuted = volume === 0;
+
+  return (
+    <div ref={containerRef} className="relative pointer-events-auto">
+      {isOpen && (
+        <VolumeSliderPopup volume={volume} onVolumeChange={onVolumeChange} />
+      )}
+      <button
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors
+          disabled:opacity-40 disabled:cursor-not-allowed
+          ${!isMuted
+            ? 'text-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+            : 'text-[var(--color-text-tertiary)] border-[var(--color-text-tertiary)]'
+          }`}
+        aria-label="Volume"
+      >
+        {isMuted ? <MutedIcon /> : <UnmutedIcon />}
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Volume slider popup — appears above the volume button
+ */
+function VolumeSliderPopup({ volume, onVolumeChange }) {
+  const trackRef = useRef(null);
+  const isDragging = useRef(false);
+
+  const getVolumeFromY = useCallback((clientY) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const ratio = 1 - (clientY - rect.top) / rect.height;
+    return Math.max(0, Math.min(1, ratio));
+  }, []);
+
+  const handleInteraction = useCallback((clientY) => {
+    onVolumeChange(getVolumeFromY(clientY));
+  }, [getVolumeFromY, onVolumeChange]);
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!isDragging.current) return;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      handleInteraction(clientY);
+    };
+    const handleEnd = () => { isDragging.current = false; };
+
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('mouseup', handleEnd);
+    document.addEventListener('touchmove', handleMove, { passive: true });
+    document.addEventListener('touchend', handleEnd);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('mouseup', handleEnd);
+      document.removeEventListener('touchmove', handleMove);
+      document.removeEventListener('touchend', handleEnd);
+    };
+  }, [handleInteraction]);
+
+  return (
+    <div
+      className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2
+        bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full
+        p-2 animate-fadeIn"
+      style={{ zIndex: 40 }}
+    >
+      <div
+        ref={trackRef}
+        className="relative w-1.5 h-24 bg-[var(--color-border)] rounded-full cursor-pointer"
+        onMouseDown={(e) => { isDragging.current = true; handleInteraction(e.clientY); }}
+        onTouchStart={(e) => { isDragging.current = true; handleInteraction(e.touches[0].clientY); }}
+      >
+        {/* Filled portion */}
+        <div
+          className="absolute bottom-0 w-full bg-[var(--color-text-primary)] rounded-full pointer-events-none"
+          style={{ height: `${volume * 100}%` }}
+        />
+        {/* Thumb */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full
+            bg-[var(--color-text-primary)] pointer-events-none"
+          style={{ bottom: `calc(${volume * 100}% - 6px)` }}
+        />
+      </div>
+    </div>
   );
 }
 

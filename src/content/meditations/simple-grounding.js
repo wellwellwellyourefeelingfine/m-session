@@ -29,7 +29,7 @@ export const simpleGroundingMeditation = {
   id: 'simple-grounding',
   title: 'Simple Grounding',
   subtitle: 'Body & breath anchoring',
-  description: 'A brief grounding practice to feel present and connected to your body. Settle in, notice your senses, and return to the here and now.',
+  description: 'A brief guided audio meditation to feel present and connected to your body. Have your headphones or speakers ready before you begin.',
 
   // Audio configuration
   audio: {

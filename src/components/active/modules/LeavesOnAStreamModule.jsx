@@ -23,7 +23,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import LeafDraw from '../capabilities/animations/LeafDraw';
@@ -235,11 +235,13 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   }, [phase, onTimerUpdate]);
 
   // Track when we enter meditation phase (playback starts)
+  // Gate on !isLoading so the idle block persists during audio composition,
+  // preventing a control bar unmount/remount flash.
   useEffect(() => {
-    if (playback.hasStarted && phase === 'idle') {
+    if (playback.hasStarted && !playback.isLoading && phase === 'idle') {
       setPhase('meditation');
     }
-  }, [playback.hasStarted, phase]);
+  }, [playback.hasStarted, playback.isLoading, phase]);
 
   // Fade out idle screen before starting composition
   const handleBeginWithTransition = useCallback(() => {
@@ -366,73 +368,58 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     );
   }
 
-  // ─── Render: Idle phase ───────────────────────────────────────────────
+  // ─── Render: Idle phase (also covers loading to prevent control bar flash) ──
 
-  if (phase === 'idle' && !playback.isLoading && !playback.hasStarted) {
+  if (phase === 'idle') {
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={meditation.title}
-              description={meditation.description}
-            />
+          {!playback.isLoading ? (
+            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+              <IdleScreen
+                title={meditation.title}
+                description={meditation.description}
+              />
 
-            {/* Duration selector */}
-            <button
-              onClick={() => setShowDurationPicker(true)}
-              className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                hover:border-[var(--color-text-tertiary)] transition-colors"
-            >
-              <span className="text-2xl font-light">{selectedDuration}</span>
-              <span className="text-sm ml-1">min</span>
-            </button>
-          </div>
+              {/* Duration selector */}
+              <button
+                onClick={() => setShowDurationPicker(true)}
+                className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
+                  hover:border-[var(--color-text-tertiary)] transition-colors"
+              >
+                <span className="text-2xl font-light">{selectedDuration}</span>
+                <span className="text-sm ml-1">min</span>
+              </button>
+            </div>
+          ) : (
+            <div className="text-center animate-fadeIn">
+              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+                Preparing meditation...
+              </p>
+            </div>
+          )}
         </ModuleLayout>
 
         <ModuleControlBar
           phase="idle"
-          primary={{ label: 'Begin', onClick: handleBeginWithTransition }}
+          primary={{ label: 'Begin', onClick: playback.isLoading ? () => {} : handleBeginWithTransition }}
           showBack={false}
           showSkip={true}
           onSkip={onSkip}
           skipConfirmMessage="Skip this meditation?"
         />
 
-        <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={setSelectedDuration}
-          currentDuration={selectedDuration}
-          durationSteps={meditation.durationSteps}
-          minDuration={meditation.minDuration / 60}
-          maxDuration={meditation.maxDuration / 60}
-        />
-      </>
-    );
-  }
-
-  // ─── Render: Loading state ────────────────────────────────────────────
-
-  if (playback.isLoading) {
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
-        </ModuleLayout>
-
-        <ModuleControlBar
-          phase="loading"
-          primary={{ label: 'Preparing...', onClick: () => {}, disabled: true }}
-          showBack={false}
-          showSkip={true}
-          onSkip={onSkip}
-          skipConfirmMessage="Skip this meditation?"
-        />
+        {!playback.isLoading && (
+          <DurationPicker
+            isOpen={showDurationPicker}
+            onClose={() => setShowDurationPicker(false)}
+            onSelect={setSelectedDuration}
+            currentDuration={selectedDuration}
+            durationSteps={meditation.durationSteps}
+            minDuration={meditation.minDuration / 60}
+            maxDuration={meditation.maxDuration / 60}
+          />
+        )}
       </>
     );
   }
@@ -503,9 +490,9 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
               />
             }
             rightSlot={
-              <MuteButton
-                isMuted={playback.audio.isMuted}
-                onToggle={playback.audio.toggleMute}
+              <VolumeButton
+                volume={playback.audio.volume}
+                onVolumeChange={playback.audio.setVolume}
               />
             }
           />

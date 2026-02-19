@@ -747,6 +747,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       {/* Begin Session Button (only show pre-session) */}
       {!isActiveSession && !isCompletedSession && onBeginSession && (
         <div className="mt-8 space-y-4">
+          <p className="text-[var(--accent)] text-xs uppercase tracking-wider text-left leading-tight">
+            Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet. Press begin when you&apos;re ready.
+          </p>
           <button
             onClick={onBeginSession}
             className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"

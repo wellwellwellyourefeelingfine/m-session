@@ -27,7 +27,7 @@ import { useBreathController } from '../hooks/useBreathController';
 
 // Shared UI components
 import ModuleLayout from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton, SlotButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import BreathOrb from '../capabilities/animations/BreathOrb';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
@@ -834,9 +834,9 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
   const getRightSlot = () => {
     if (currentStep.type === 'meditation' && meditationMode === 'listen' && playback.hasStarted && !playback.isComplete) {
       return (
-        <MuteButton
-          isMuted={playback.audio.isMuted}
-          onToggle={playback.audio.toggleMute}
+        <VolumeButton
+          volume={playback.audio.volume}
+          onVolumeChange={playback.audio.setVolume}
         />
       );
     }
