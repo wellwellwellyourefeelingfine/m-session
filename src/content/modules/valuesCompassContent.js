@@ -10,13 +10,18 @@
 export const INTRO_SCREENS = [
   {
     lines: [
-      'This exercise helps you map the relationship between what you care about, what gets in the way, and how you actually move through your life.',
+      'This exercise is designed to give you clarity on the forces that drive your behavior.',
       '§',
-      'It\u2019s based on the ACT Matrix, a tool for seeing your patterns clearly, without judgment.',
+      { title: '1:', body: 'We\u2019ll explain the ACT Matrix.' },
+      { title: '2:', body: 'We\u2019ll guide you through developing your own personalized matrix.' },
+      { title: '3:', body: 'We\u2019ll end with some journaling to help draw out insights and integrate them into your life.' },
+      '§',
+      'By mapping your inner world against your outer actions, you stop reacting to discomfort and start building a life of intention.',
     ],
   },
   {
     header: 'The Four Areas',
+    spaced: true,
     topLines: [
       'The ACT Matrix has four areas:',
       { title: 'Toward Moves', body: '(Top Right): The actions you take to move toward what is important.' },
@@ -30,6 +35,7 @@ export const INTRO_SCREENS = [
   },
   {
     header: 'The Axes',
+    spaced: true,
     topLines: [
       'We use two axes to map these areas:',
       { title: 'The Horizontal Axis', body: '(Away vs. Toward): This tracks the direction of your life. Are you moving away from discomfort, or toward what you care about?' },

@@ -49,13 +49,13 @@ const PHASE_SEQUENCE = [
 
 // ─── Render helpers ─────────────────────────────────────────────────────────
 
-function renderContentLines(lines, { small } = {}) {
+function renderContentLines(lines, { small, spaced } = {}) {
   const textClass = small
     ? 'text-[var(--color-text-primary)] text-xs leading-relaxed'
     : 'text-[var(--color-text-primary)] text-sm leading-relaxed';
 
   return (
-    <div className="space-y-0">
+    <div className={spaced ? 'space-y-2' : 'space-y-0'}>
       {lines.map((line, i) => {
         if (line === '§') {
           return (
@@ -82,6 +82,13 @@ function renderContentLines(lines, { small } = {}) {
     </div>
   );
 }
+
+const PLACEMENT_DESCRIPTIONS = {
+  q1: 'Items in the far bottom-right are your deepest internal values and the most powerful \u201CNorth Stars\u201D for moving you toward the life you want.',
+  q2: 'Items in the far bottom-left are your core hooks\u2014the oldest, deepest internal stories that most strongly push you toward defensive reactions.',
+  q3: 'Items in the far top-left are your strongest avoidance habits, representing significant energy spent trying to escape discomfort.',
+  q4: 'Items in the far top-right are your boldest actions, representing moments where you are most actively living out your values.',
+};
 
 // ─── ChipInput ──────────────────────────────────────────────────────────────
 
@@ -1105,10 +1112,16 @@ function MatrixSchematic({ variant = 'full', maxWidth = 'max-w-[280px]' }) {
 // ─── Schematic Modal (shows matrix key before reveal) ────────────────────────
 
 function SchematicModal({ isOpen, closing, onClose }) {
+  const [entered, setEntered] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Trigger fade-in on next frame
+      const raf = requestAnimationFrame(() => setEntered(true));
+      return () => cancelAnimationFrame(raf);
     }
+    setEntered(false);
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
@@ -1118,7 +1131,7 @@ function SchematicModal({ isOpen, closing, onClose }) {
     <div
       className="fixed inset-0 z-[60] bg-[var(--color-bg)] flex flex-col"
       style={{
-        opacity: closing ? 0 : 1,
+        opacity: closing ? 0 : entered ? 1 : 0,
         transition: `opacity ${FADE_MS}ms ease`,
         pointerEvents: closing ? 'none' : 'auto',
       }}
@@ -1144,8 +1157,44 @@ function SchematicModal({ isOpen, closing, onClose }) {
         </span>
         <div className="w-8" />
       </div>
-      <div className="flex-1 flex items-center justify-center px-8 pb-8">
-        <MatrixSchematic />
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="min-h-full px-6 py-6 flex flex-col items-center">
+          <div className="my-auto w-full flex flex-col items-center">
+            {/* Top definitions: Toward Moves, then Away Moves */}
+            <div className="w-full max-w-[320px] space-y-3 mb-10 text-left">
+              <div>
+                <span className="font-serif text-[14px] text-[var(--accent)]">Toward Moves</span>
+                <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug mt-0.5">
+                  Items in the far top-right are your boldest actions, representing moments where you are most actively living out your values.
+                </p>
+              </div>
+              <div>
+                <span className="font-serif text-[14px] text-[var(--accent)]">Away Moves</span>
+                <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug mt-0.5">
+                  Items in the far top-left are your strongest avoidance habits, representing significant energy spent trying to escape discomfort.
+                </p>
+              </div>
+            </div>
+
+            <MatrixSchematic maxWidth="max-w-[240px]" />
+
+            {/* Bottom definitions: What Matters, then Inner Obstacles */}
+            <div className="w-full max-w-[320px] space-y-3 mt-14 text-left">
+              <div>
+                <span className="font-serif text-[14px] text-[var(--accent)]">What Matters</span>
+                <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug mt-0.5">
+                  Items in the far bottom-right are your deepest internal values and the most powerful {'\u201C'}North Stars{'\u201D'} for moving you toward the life you want.
+                </p>
+              </div>
+              <div>
+                <span className="font-serif text-[14px] text-[var(--accent)]">Inner Obstacles</span>
+                <p className="text-[12px] text-[var(--color-text-secondary)] leading-snug mt-0.5">
+                  Items in the far bottom-left are your core hooks{'\u2014'}the oldest, deepest internal stories that most strongly push you toward defensive reactions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1420,9 +1469,12 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
             Values Compass
           </h2>
           <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-14">
-            Map what matters, what gets in the way, and what you&apos;d do differently.
+            A visual guide to noticing your inner world and choosing actions that align with the person you want to be.
           </p>
           <MatrixSchematic />
+          <p className="text-[var(--color-text-tertiary)] text-xs mt-14">
+            Based on the ACT Matrix therapeutic model
+          </p>
         </div>
       );
     }
@@ -1437,13 +1489,13 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
       if (phase === 'intro-a') {
         return (
           <div className="space-y-0">
-            <h2 className="font-serif text-xl text-[var(--color-text-primary)] mb-6 normal-case text-center">
+            <h2 className="font-serif text-xl text-[var(--color-text-primary)] mb-3 normal-case text-center">
               Values Compass
             </h2>
-            <div className="flex justify-center pb-6">
+            <div className="flex justify-center pb-3">
               <CompassAnimation />
             </div>
-            {renderContentLines(screen.lines)}
+            {renderContentLines(screen.lines, { small: true })}
           </div>
         );
       }
@@ -1454,8 +1506,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
         screen.schematic === 'axes-only' ? 'max-w-[180px]' :
         'max-w-[220px]';
       const schematicPadding =
-        screen.schematic === 'quadrants-only' ? 'py-4' :
-        screen.schematic === 'axes-only' ? 'py-8' :
+        screen.schematic === 'quadrants-only' ? 'py-2' :
+        screen.schematic === 'axes-only' ? 'py-10' :
         'py-8';
       return (
         <div
@@ -1467,7 +1519,7 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
               {screen.header}
             </h2>
           )}
-          {screen.topLines && renderContentLines(screen.topLines, { small: true })}
+          {screen.topLines && renderContentLines(screen.topLines, { small: true, spaced: screen.spaced })}
           {screen.schematic && (
             <div className={schematicPadding}>
               <MatrixSchematic
@@ -1476,8 +1528,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
               />
             </div>
           )}
-          {screen.bottomLines && renderContentLines(screen.bottomLines, { small: true })}
-          {screen.lines && renderContentLines(screen.lines, { small: true })}
+          {screen.bottomLines && renderContentLines(screen.bottomLines, { small: true, spaced: screen.spaced })}
+          {screen.lines && renderContentLines(screen.lines, { small: true, spaced: screen.spaced })}
           {screen.showKeyTip && (
             <p className="text-[10px] text-[var(--color-text-tertiary)] text-center normal-case mt-6">
               Tip: You can view the Matrix Key at any time by pressing the{' '}
@@ -1524,6 +1576,16 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
             <p className="text-[9px] text-[var(--color-text-tertiary)] text-center normal-case">
               Add at least {currentQuadrantConfig.minItems} item{currentQuadrantConfig.minItems > 1 ? 's' : ''} to continue
             </p>
+          )}
+
+          {/* Placement description */}
+          {PLACEMENT_DESCRIPTIONS[currentQuadrantId] && (
+            <div className="border border-[var(--accent)] rounded-md px-2.5 pt-1.5 pb-1 mt-2">
+              <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed text-left">
+                <span className="text-[var(--accent)] tracking-wider text-[10px]">TIP: </span>
+                {PLACEMENT_DESCRIPTIONS[currentQuadrantId]}
+              </p>
+            </div>
           )}
         </div>
       );
