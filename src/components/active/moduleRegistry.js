@@ -29,6 +29,7 @@ const ProtectorDialoguePart1Module = lazy(() => import('./modules/ProtectorDialo
 const ProtectorDialoguePart2Module = lazy(() => import('./modules/ProtectorDialoguePart2Module'));
 const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule'));
 const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
+const ValuesCompassModule = lazy(() => import('./modules/ValuesCompassModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -77,6 +78,9 @@ export const CUSTOM_MODULES = {
 
   // Stay With It (reconsolidation) — meditation + check-in + psychoeducation + journaling
   'stay-with-it': StayWithItModule,
+
+  // Values Compass (ACT Matrix) — interactive quadrant mapping + journaling
+  'values-compass': ValuesCompassModule,
 };
 
 /**
@@ -154,6 +158,7 @@ export const MODULE_CATEGORIES = {
     'protector-dialogue-p1',
     'protector-dialogue-p2',
     'stay-with-it',
+    'values-compass',
   ],
   open: [
     'open-space',

@@ -122,7 +122,7 @@ export default function AboutTool() {
               Donate via Ethereum
             </p>
             <p
-              className="text-xs text-[var(--color-text-primary)] break-all font-mono cursor-pointer hover:opacity-70 transition-opacity"
+              className="text-xs text-[var(--color-text-primary)] break-all font-mono cursor-pointer hover:opacity-70 transition-opacity normal-case"
               onClick={handleCopyAddress}
               title="Click to copy"
             >

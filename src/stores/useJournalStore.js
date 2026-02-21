@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { deleteImage } from '../utils/imageStorage';
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -62,7 +63,7 @@ export const useJournalStore = create(
       // ============================================
 
       // Add a new entry
-      addEntry: ({ content = '', source = 'manual', sessionId = null, moduleTitle = null, isEdited = false }) => {
+      addEntry: ({ content = '', source = 'manual', sessionId = null, moduleTitle = null, isEdited = false, hasImage = false }) => {
         const now = Date.now();
         const newEntry = {
           id: generateId(),
@@ -75,6 +76,7 @@ export const useJournalStore = create(
           sessionId,
           moduleTitle,
           isEdited, // true if entry was created for immediate editing (skips confirmation)
+          hasImage, // true if entry has an associated image in IndexedDB
         };
 
         set((state) => ({
@@ -102,8 +104,12 @@ export const useJournalStore = create(
         }));
       },
 
-      // Delete an entry
+      // Delete an entry (also removes associated image from IndexedDB if present)
       deleteEntry: (id) => {
+        const entry = get().entries.find((e) => e.id === id);
+        if (entry?.hasImage) {
+          deleteImage(id).catch(() => {});
+        }
         set((state) => ({
           entries: state.entries.filter((entry) => entry.id !== id),
         }));
@@ -195,17 +201,25 @@ export const useJournalStore = create(
     }),
     {
       name: 'mdma-guide-journal-state',
-      version: 2,
+      version: 3,
       partialize: (state) => {
         // Only persist entries and settings, not transient navigation state
-        const { navigation, ...rest } = state;
+        const { navigation: _navigation, ...rest } = state;
         return rest;
       },
       migrate: (persistedState, version) => {
         // v1 → v2: added navigation and settings (both have defaults in initial state).
-        // Zustand merges initial state with persisted, so just passing through preserves entries.
         if (version < 2) {
-          return { ...persistedState };
+          persistedState = { ...persistedState };
+        }
+        // v2 → v3: added hasImage field to entries for IndexedDB image attachments.
+        if (version < 3) {
+          if (persistedState.entries) {
+            persistedState.entries = persistedState.entries.map((entry) => ({
+              ...entry,
+              hasImage: entry.hasImage ?? false,
+            }));
+          }
         }
         return persistedState;
       },

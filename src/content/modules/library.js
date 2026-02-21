@@ -43,6 +43,8 @@ export const MODULE_TYPES = {
   // Protector Dialogue (IFS) — linked two-part module
   'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 'moderate' },
   'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 'deep' },
+  // Values Compass (ACT Matrix)
+  'values-compass': { label: 'Values Compass', intensity: 'moderate' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 24-48h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
@@ -269,6 +271,23 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['reconsolidation', 'schema', 'meditation', 'guided', 'stay-with-it', 'emotional-processing'],
+  },
+  {
+    id: 'values-compass',
+    type: 'values-compass',
+    category: 'activity',
+    title: 'Values Compass',
+    description: 'An interactive exercise for mapping what you care about, what gets in the way, and how you actually move through your life. Based on the ACT Matrix.',
+    defaultDuration: 25,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak', 'integration'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['ACT', 'values', 'matrix', 'interactive', 'journaling'],
   },
   {
     id: 'light-journaling',

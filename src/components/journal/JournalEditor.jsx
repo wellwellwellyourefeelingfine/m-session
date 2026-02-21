@@ -13,6 +13,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useJournalStore } from '../../stores/useJournalStore';
+import { getImage } from '../../utils/imageStorage';
 
 // Debounce helper
 const useDebounce = (callback, delay) => {
@@ -81,6 +82,9 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isContentReady, setIsContentReady] = useState(false);
 
+  const [imageUrl, setImageUrl] = useState(null);
+  const imageUrlRef = useRef(null);
+
   const textareaRef = useRef(null);
   const editorAreaRef = useRef(null);
   const mirrorRef = useRef(null);
@@ -115,6 +119,38 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
     }
     setHasUnsavedChanges(false);
     setIsContentReady(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entryId]);
+
+  // Load image from IndexedDB when entry has one
+  useEffect(() => {
+    if (imageUrlRef.current) {
+      URL.revokeObjectURL(imageUrlRef.current);
+      imageUrlRef.current = null;
+    }
+    setImageUrl(null);
+
+    const entry = entryId ? getEntryById(entryId) : null;
+    if (!entry?.hasImage) return;
+
+    let cancelled = false;
+    getImage(entryId)
+      .then((blob) => {
+        if (blob && !cancelled) {
+          const url = URL.createObjectURL(blob);
+          imageUrlRef.current = url;
+          setImageUrl(url);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId]);
 
@@ -355,6 +391,17 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
           ) : (
             /* Spacer for new notes - clears the back button */
             <div style={{ height: '3.5rem' }} />
+          )}
+
+          {/* Image attachment (if present) */}
+          {imageUrl && (
+            <div className="px-4 pt-2 pb-1">
+              <img
+                src={imageUrl}
+                alt="Matrix"
+                className="w-full rounded-sm border border-[var(--color-border)]"
+              />
+            </div>
           )}
 
           {/* Textarea wrapper with overlaid placeholder */}

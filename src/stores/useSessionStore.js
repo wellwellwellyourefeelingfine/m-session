@@ -302,6 +302,11 @@ export const useSessionStore = create(
           checkInResponse: null,    // 'lighter' | 'still-processing' | 'heavy' | 'numb' | 'activated'
           completedAt: null,
         },
+        // Values Compass captures (ACT Matrix quadrant data)
+        valuesCompass: {
+          quadrants: null,    // { q1: [{id, text, x, y}], q2: [...], q3: [...], q4: [...] }
+          completedAt: null,
+        },
       },
 
       // ============================================
@@ -1653,6 +1658,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateValuesCompassCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            valuesCompass: {
+              ...state.transitionCaptures.valuesCompass,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2330,6 +2348,10 @@ export const useSessionStore = create(
               checkInResponse: null,
               completedAt: null,
             },
+            valuesCompass: {
+              quadrants: null,
+              completedAt: null,
+            },
           },
           closingCheckIn: {
             isVisible: false,
@@ -2376,7 +2398,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 8, // Increment this when schema changes to force reset
+      version: 9, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, ...rest } = state;
@@ -2619,6 +2641,19 @@ export const useSessionStore = create(
           if (!state.transitionCaptures.stayWithIt) {
             state.transitionCaptures.stayWithIt = {
               checkInResponse: null,
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 8 → 9: Add valuesCompass to transitionCaptures
+        if (version < 9) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.valuesCompass) {
+            state.transitionCaptures.valuesCompass = {
+              quadrants: null,
               completedAt: null,
             };
           }
