@@ -119,8 +119,11 @@ export default function ClosingRitual() {
       // Save captures and complete the session
       saveCaptures();
       completeSession();
-      // Show post-close animation instead of static screen
-      setShowPostCloseAnimation(true);
+      // Fade out before showing post-close screen
+      setIsVisible(false);
+      setTimeout(() => {
+        setShowPostCloseAnimation(true);
+      }, 400);
       return;
     }
 
@@ -153,7 +156,10 @@ export default function ClosingRitual() {
     // Save whatever we have and complete
     saveCaptures();
     completeSession();
-    setShowPostCloseAnimation(true);
+    setIsVisible(false);
+    setTimeout(() => {
+      setShowPostCloseAnimation(true);
+    }, 400);
   }, [saveCaptures, completeSession]);
 
   // Render content based on step type
@@ -426,7 +432,7 @@ export default function ClosingRitual() {
       {/* Progress bar at top */}
       <ModuleProgressBar
         progress={progress}
-        visible={true}
+        visible={isVisible}
         showTime={false}
       />
 

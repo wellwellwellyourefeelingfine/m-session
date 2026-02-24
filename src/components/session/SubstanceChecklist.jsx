@@ -115,8 +115,11 @@ export default function SubstanceChecklist() {
         <div className="space-y-8">
           <div>
             <h2 className="text-sm mb-4">Supplemental Dose</h2>
-            <p className="text-[var(--color-text-primary)] mb-6">
+            <p className="text-[var(--color-text-primary)] mb-3">
               Do you have your supplemental dose prepared?
+            </p>
+            <p className="text-[var(--color-text-tertiary)] text-sm mb-6">
+              We highly recommend weighing out your supplemental booster dose ahead of time. Measuring a dose while under the effects of your initial dose can be difficult and may lead to impaired judgement.
             </p>
           </div>
 

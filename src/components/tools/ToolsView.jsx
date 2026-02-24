@@ -15,8 +15,10 @@ import SettingsTool from './SettingsTool';
 import HelpTool from './HelpTool';
 import PhilosophyTool from './PhilosophyTool';
 import AboutTool from './AboutTool';
+import HowToUseTool from './HowToUseTool';
 const tools = [
   { id: 'about', label: 'ABOUT', component: AboutTool },
+  { id: 'how-to-use', label: 'HOW TO USE THIS APP', component: HowToUseTool },
   { id: 'philosophy', label: 'OUR PHILOSOPHY', component: PhilosophyTool },
   { id: 'faq', label: 'FAQ', component: FAQTool },
   { id: 'help', label: 'I NEED HELP', component: HelpTool },

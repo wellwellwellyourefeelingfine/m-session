@@ -30,6 +30,7 @@ const ProtectorDialoguePart2Module = lazy(() => import('./modules/ProtectorDialo
 const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule'));
 const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
 const ValuesCompassModule = lazy(() => import('./modules/ValuesCompassModule'));
+const LetsDanceModule = lazy(() => import('./modules/LetsDanceModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -81,6 +82,9 @@ export const CUSTOM_MODULES = {
 
   // Values Compass (ACT Matrix) — interactive quadrant mapping + journaling
   'values-compass': ValuesCompassModule,
+
+  // Let's Dance — dance-focused music module (peak phase only)
+  'lets-dance': LetsDanceModule,
 };
 
 /**
@@ -144,7 +148,6 @@ export const MODULE_CATEGORIES = {
     'body-scan',
     'self-compassion',
     'simple-grounding',
-    'leaves-on-a-stream',
   ],
   journaling: [
     'journaling',
@@ -159,10 +162,12 @@ export const MODULE_CATEGORIES = {
     'protector-dialogue-p2',
     'stay-with-it',
     'values-compass',
+    'leaves-on-a-stream',
   ],
   open: [
     'open-space',
     'music-listening',
+    'lets-dance',
   ],
 };
 

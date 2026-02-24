@@ -29,18 +29,6 @@ const PHASE_NAMES = {
   'integration': 'Integration',
 };
 
-/**
- * Format minutes into readable time label
- * 0 → "0 min", 45 → "45 min", 60 → "1H", 90 → "1H 30M"
- */
-function formatTimeLabel(minutes) {
-  if (minutes === 0) return '0 min';
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours === 0) return `${mins} min`;
-  if (mins === 0) return `${hours}H`;
-  return `${hours}H ${mins}M`;
-}
 
 const PhaseSection = forwardRef(function PhaseSection(
   {
@@ -55,11 +43,13 @@ const PhaseSection = forwardRef(function PhaseSection(
     currentModuleId = null,
     canRemoveModule = () => true,
     isEditable = true,
-    cumulativeStartTime = 0,
     isLast = false,
     isEditMode = false,
+    onToggleEditMode,
+    isCompletedSession = false,
     onMoveModuleUp,
     onMoveModuleDown,
+    isFirst = false,
   },
   ref
 ) {
@@ -92,7 +82,6 @@ const PhaseSection = forwardRef(function PhaseSection(
     }, 150);
   };
 
-  const progressPercent = maxDuration ? Math.min((duration / maxDuration) * 100, 100) : 0;
   const isOverLimit = phase === 'come-up' && duration > maxDuration;
 
   // Handle delete with animation
@@ -129,6 +118,11 @@ const PhaseSection = forwardRef(function PhaseSection(
     <div ref={ref} className={`relative flex ${getPhaseOpacity()}`}>
       {/* Timeline node and vertical bar segment */}
       <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+        {/* Connecting bar from previous phase (invisible spacer when first) */}
+        {isFirst
+          ? <div className="h-2" />
+          : <div className="w-0.5 h-2 bg-[var(--color-text-primary)]" />
+        }
         {/* Node circle - aligned with phase header */}
         <div
           className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
@@ -147,33 +141,37 @@ const PhaseSection = forwardRef(function PhaseSection(
       <div className="flex-1 pb-6">
         {/* Phase header - new design with DM Serif font */}
         <div className="mb-4">
-          <h3
-            className="flex items-baseline gap-2"
-            style={{ lineHeight: 1, marginBottom: '8px' }}
-          >
-            <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-              {PHASE_NUMBERS[phase]}
-            </span>
-            <span className="text-[var(--color-text-primary)]">-</span>
-            <span className="text-[var(--color-text-primary)] text-[13px]">
-              {PHASE_NAMES[phase]}
-            </span>
-          </h3>
+          <div className="flex items-start justify-between">
+            <h3
+              className="flex items-baseline gap-2"
+              style={{ lineHeight: 1, marginBottom: '8px' }}
+            >
+              <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                {PHASE_NUMBERS[phase]}
+              </span>
+              <span className="text-[var(--color-text-primary)]">-</span>
+              <span className="text-[var(--color-text-primary)] text-[13px]">
+                {PHASE_NAMES[phase]}
+              </span>
+            </h3>
+            {!isCompletedSession && onToggleEditMode && (
+              <button
+                onClick={onToggleEditMode}
+                className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
+                  isEditMode
+                    ? 'bg-[var(--accent)] text-white'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                }`}
+              >
+                {isEditMode ? 'Done' : 'Edit'}
+              </button>
+            )}
+          </div>
 
-          {/* Cumulative start time - tightly beneath header */}
+          {/* Phase duration text - tightly beneath header */}
           <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-            {cumulativeStartTime === 0 ? 'Start of session' : `Starts at ${formatTimeLabel(cumulativeStartTime)}`}
+            {phase === 'come-up' ? '0 to 1 hour in length' : 'About 2 hours in length'}
           </p>
-
-          {/* Duration progress bar for come-up phase */}
-          {phase === 'come-up' && maxDuration && (
-            <div className="mb-1 w-full h-1 bg-[var(--color-border)] rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${isOverLimit ? 'bg-[var(--accent)]' : 'bg-[var(--color-text-primary)]'}`}
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          )}
 
           {/* Phase description - compact styling */}
           <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
@@ -197,10 +195,15 @@ const PhaseSection = forwardRef(function PhaseSection(
               // Check if this is the current module (should not be editable during active session)
               const isCurrentModuleItem = module.instanceId === currentModuleId;
 
-              // Determine if this module can be edited (reordered/deleted)
+              // Determine if this module can be reordered
               // Booster modules can never be reordered
               // Current module and completed/skipped modules cannot be edited during active session
               const canEditModule = isEditMode && !isBooster && (
+                !isActiveSession || (module.status === 'upcoming' && !isCurrentModuleItem)
+              );
+
+              // Booster modules can be deleted (but not reordered), so pass edit mode through
+              const canShowEditMode = isEditMode && (
                 !isActiveSession || (module.status === 'upcoming' && !isCurrentModuleItem)
               );
 
@@ -287,7 +290,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                     isActiveSession={isActiveSession}
                     isCurrentModule={module.instanceId === currentModuleId}
                     canRemove={canRemoveModule(module)}
-                    isEditMode={canEditModule}
+                    isEditMode={canShowEditMode}
                   />
                 </div>
               );

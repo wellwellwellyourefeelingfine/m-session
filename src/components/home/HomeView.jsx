@@ -57,6 +57,12 @@ export default function HomeView() {
 
   // Handle Begin Session - moon transition then navigate to substance checklist
   const handleBeginSession = () => {
+    // Cancel any active pre-session module before starting the main session
+    const activePreSession = useSessionStore.getState().activePreSessionModule;
+    if (activePreSession) {
+      useSessionStore.getState().exitPreSessionModule();
+    }
+
     setTransitionStep('moon-enter');
 
     transitionTimersRef.current = [

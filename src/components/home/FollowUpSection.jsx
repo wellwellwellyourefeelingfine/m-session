@@ -44,11 +44,15 @@ export default function FollowUpSection() {
   useEffect(() => {
     const updateCountdowns = () => {
       checkFollowUpAvailability();
-      setCountdown({
+      const counts = {
         checkIn: formatCountdown(followUp.unlockTimes.checkIn),
         revisit: formatCountdown(followUp.unlockTimes.revisit),
         integration: formatCountdown(followUp.unlockTimes.integration),
-      });
+      };
+      if (followUp.unlockTimes.valuesCompassFollowUp) {
+        counts.valuesCompassFollowUp = formatCountdown(followUp.unlockTimes.valuesCompassFollowUp);
+      }
+      setCountdown(counts);
     };
 
     updateCountdowns();
@@ -149,7 +153,7 @@ export default function FollowUpSection() {
 
           {/* Timing info */}
           <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-            Available 24-48 hours after session
+            Available 8-24 hours after session
           </p>
 
           {/* Phase description */}
@@ -162,6 +166,7 @@ export default function FollowUpSection() {
         <div>
           {renderModuleCard('checkIn')}
           {renderModuleCard('revisit')}
+          {followUp.unlockTimes.valuesCompassFollowUp && renderModuleCard('valuesCompassFollowUp')}
           {renderModuleCard('integration', true)}
         </div>
       </div>

@@ -69,6 +69,7 @@ export default function IntakeFlow({ onComplete }) {
   // Use store for question index persistence
   const currentQuestionIndex = intake.currentQuestionIndex || 0;
   const [isVisible, setIsVisible] = useState(true);
+  const [showPrivacyScreen, setShowPrivacyScreen] = useState(false);
   const [showCompletionScreen, setShowCompletionScreen] = useState(
     currentQuestionIndex >= allQuestions.length
   );
@@ -158,16 +159,25 @@ export default function IntakeFlow({ onComplete }) {
         }, 300);
       } else {
         setTimeout(() => {
-          setShowCompletionScreen(true);
-          setIsVisible(true);
+          setShowPrivacyScreen(true);
+          // Let new screen render at opacity 0 before fading in
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              setIsVisible(true);
+            });
+          });
         }, 300);
       }
     } else {
       // All questions done
       setIsVisible(false);
       setTimeout(() => {
-        setShowCompletionScreen(true);
-        setIsVisible(true);
+        setShowPrivacyScreen(true);
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            setIsVisible(true);
+          });
+        });
       }, 300);
     }
   };
@@ -221,6 +231,100 @@ export default function IntakeFlow({ onComplete }) {
     }
   };
 
+  // Show privacy & install info screen (as final numbered step)
+  if (showPrivacyScreen && !showCompletionScreen) {
+    const privacyProgress = ((totalQuestions + 1) / (totalQuestions + 1)) * 100;
+
+    return (
+      <>
+        <ModuleProgressBar
+          progress={privacyProgress}
+          visible={isVisible}
+          showTime={false}
+        />
+
+        <div className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
+          <div
+            className="max-w-md mx-auto px-6 py-6 transition-opacity duration-300"
+            style={{ opacity: isVisible ? 1 : 0 }}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
+                Privacy & Best Use
+              </span>
+              <span className="text-[var(--color-text-tertiary)] text-xs">
+                {totalQuestions + 1} of {totalQuestions + 1}
+              </span>
+            </div>
+
+            <div className="min-h-[300px]">
+              <div className="space-y-3">
+                <p style={{ color: 'var(--text-primary)' }}>
+                  This is a Progressive Web App and works best saved to your home screen.
+                  For offline access, full screen, and no browser distractions:
+                </p>
+
+                <ol className="text-left space-y-1 pl-4" style={{ color: 'var(--text-primary)' }}>
+                  <li className="list-decimal">Tap the share or menu button in your browser</li>
+                  <li className="list-decimal">Select <strong>Add to Home Screen</strong></li>
+                  <li className="list-decimal">Tap <strong>Add</strong> to confirm</li>
+                </ol>
+
+                <div className="flex justify-center"><div className="circle-spacer" /></div>
+
+                <p style={{ color: 'var(--text-tertiary)' }}>
+                  This app doesn&apos;t use any cookies, trackers, or analytics.
+                  All of your data is stored locally on your device &mdash; nothing
+                  is ever sent to any servers.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-12 space-y-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVisible(false);
+                  setTimeout(() => {
+                    setShowCompletionScreen(true);
+                    requestAnimationFrame(() => {
+                      requestAnimationFrame(() => {
+                        setIsVisible(true);
+                      });
+                    });
+                  }, 300);
+                }}
+                className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300"
+                style={{
+                  backgroundColor: 'var(--text-primary)',
+                  color: 'var(--bg-primary)',
+                }}
+              >
+                Continue
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsVisible(false);
+                  setTimeout(() => {
+                    setShowPrivacyScreen(false);
+                    setCurrentQuestionIndex(totalQuestions - 1);
+                    setIsVisible(true);
+                  }, 300);
+                }}
+                className="w-full py-2 underline"
+                style={{ color: 'var(--text-tertiary)' }}
+              >
+                Back
+              </button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   // Show completion screen
   if (showCompletionScreen) {
     return (
@@ -267,14 +371,13 @@ export default function IntakeFlow({ onComplete }) {
                 setIsVisible(false);
                 setTimeout(() => {
                   setShowCompletionScreen(false);
-                  setCurrentQuestionIndex(totalQuestions - 1);
                   setIsVisible(true);
                 }, 300);
               }}
               className="w-full py-2 underline"
               style={{ color: 'var(--text-tertiary)' }}
             >
-              Back to Review
+              Back
             </button>
           </div>
         </div>
@@ -282,7 +385,8 @@ export default function IntakeFlow({ onComplete }) {
     );
   }
 
-  const progress = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+  const displayTotal = totalQuestions + 1; // +1 for privacy & best use page
+  const progress = ((currentQuestionIndex + 1) / displayTotal) * 100;
 
   return (
     <>
@@ -302,7 +406,7 @@ export default function IntakeFlow({ onComplete }) {
               {currentQuestion?.sectionTitle}
             </span>
             <span className="text-[var(--color-text-tertiary)] text-xs">
-              {currentQuestionIndex + 1} of {totalQuestions}
+              {currentQuestionIndex + 1} of {displayTotal}
             </span>
           </div>
 

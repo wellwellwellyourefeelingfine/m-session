@@ -11,7 +11,7 @@
  * Audio-text sync via shared useMeditationPlayback hook.
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
@@ -22,6 +22,7 @@ import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
+import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
 
 export default function SelfCompassionModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const meditation = getMeditationById('self-compassion');
@@ -30,8 +31,31 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
   const [selectedVariation, setSelectedVariation] = useState(
     meditation?.defaultVariation || 'default'
   );
-  const [showAnimation, setShowAnimation] = useState(true);
   const [isLeaving, setIsLeaving] = useState(false);
+
+  // Transcript modal state
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [transcriptClosing, setTranscriptClosing] = useState(false);
+  const transcriptCloseTimerRef = useRef(null);
+
+  const handleOpenTranscript = useCallback(() => {
+    setShowTranscript(true);
+  }, []);
+
+  const handleCloseTranscript = useCallback(() => {
+    setTranscriptClosing(true);
+    if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
+    transcriptCloseTimerRef.current = setTimeout(() => {
+      setShowTranscript(false);
+      setTranscriptClosing(false);
+    }, FADE_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
+    };
+  }, []);
 
   // Assemble clips for selected variation and generate timed sequence
   const [timedSequence, totalDuration] = useMemo(() => {
@@ -49,6 +73,16 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
     // Use the rounded duration for the timer (pads with trailing silence)
     return [sequence, variationMeta.duration];
   }, [meditation, selectedVariation]);
+
+  // Transcript prompts and title for the current variation
+  const transcriptPrompts = useMemo(() => {
+    if (!meditation) return [];
+    return meditation.assembleVariation(selectedVariation);
+  }, [meditation, selectedVariation]);
+
+  const transcriptTitle = meditation
+    ? `${meditation.title} (${meditation.variations[selectedVariation]?.label || selectedVariation})`
+    : '';
 
   // Shared playback hook handles timer, audio-text sync, prompt progression, etc.
   const playback = useMeditationPlayback({
@@ -165,11 +199,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
               {meditation.title}
             </h2>
 
-            {showAnimation && (
-              <div className="animate-fadeIn">
-                <MorphingShapes />
-              </div>
-            )}
+            <MorphingShapes />
 
             {/* Paused indicator — below shapes with minimal gap */}
             <div className="h-5 flex items-center justify-center mt-3">
@@ -214,53 +244,31 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
         skipConfirmMessage="Skip this meditation?"
         leftSlot={
           playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
-            <SlotButton
-              icon={<AnimationIcon visible={showAnimation} />}
-              label={showAnimation ? 'Hide animation' : 'Show animation'}
-              onClick={() => setShowAnimation(!showAnimation)}
-              active={showAnimation}
-            />
-          ) : null
-        }
-        rightSlot={
-          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
             <VolumeButton
               volume={playback.audio.volume}
               onVolumeChange={playback.audio.setVolume}
             />
           ) : null
         }
+        rightSlot={
+          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
+            <SlotButton
+              icon={<TranscriptIcon />}
+              label="View transcript"
+              onClick={handleOpenTranscript}
+            />
+          ) : null
+        }
+      />
+
+      {/* Transcript modal */}
+      <TranscriptModal
+        isOpen={showTranscript}
+        closing={transcriptClosing}
+        onClose={handleCloseTranscript}
+        title={transcriptTitle}
+        prompts={transcriptPrompts}
       />
     </>
-  );
-}
-
-/**
- * Animation toggle icon (eye open/closed)
- */
-function AnimationIcon({ visible }) {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {visible ? (
-        <>
-          <circle cx="12" cy="12" r="3" />
-          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
-        </>
-      ) : (
-        <>
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </>
-      )}
-    </svg>
   );
 }

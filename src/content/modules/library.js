@@ -19,6 +19,7 @@
 
 // Display order and labels for module categories in the Add Activity drawer
 export const MODULE_CATEGORIES = {
+  'pre-session': { label: 'Pre-Session', order: 0 },
   meditation: { label: 'Meditation', order: 1 },
   activity: { label: 'Activity', order: 2 },
   journaling: { label: 'Journaling', order: 3 },
@@ -29,7 +30,7 @@ export const MODULE_TYPES = {
   'breath-meditation': { label: 'Breath Meditation', intensity: 'gentle' },
   'music-listening': { label: 'Music Listening', intensity: 'gentle' },
   'open-awareness': { label: 'Open Awareness', intensity: 'moderate' },
-  'body-scan': { label: 'Body Scan', intensity: 'moderate' },
+  'body-scan': { label: 'Body Scan', intensity: 'gentle' },
   'simple-grounding': { label: 'Simple Grounding', intensity: 'gentle' },
   'light-journaling': { label: 'Light Journaling', intensity: 'moderate' },
   'deep-journaling': { label: 'Deep Journaling', intensity: 'deep' },
@@ -38,20 +39,26 @@ export const MODULE_TYPES = {
   'letter-writing': { label: 'Letter Writing', intensity: 'deep' },
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
   'open-space': { label: 'Open Space', intensity: 'gentle' },
+  'lets-dance': { label: "Let's Dance", intensity: 'gentle' },
   // Leaves on a Stream (ACT cognitive defusion)
-  'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 'moderate' },
+  'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 'gentle' },
   // Protector Dialogue (IFS) — linked two-part module
   'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 'moderate' },
   'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 'deep' },
   // Values Compass (ACT Matrix)
   'values-compass': { label: 'Values Compass', intensity: 'moderate' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
-  // Follow-up phase modules (time-locked, available 24-48h after session)
+  // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
 
 // Phase restrictions for module intensities
 export const PHASE_INTENSITY_RULES = {
+  'pre-session': {
+    allowed: ['gentle', 'moderate', 'deep'],
+    warning: [],
+    blocked: [],
+  },
   'come-up': {
     allowed: ['gentle'],
     warning: [],
@@ -131,7 +138,7 @@ export const moduleLibrary = [
     id: 'music-listening',
     type: 'music-listening',
     category: 'open',
-    title: 'Music Immersion',
+    title: 'Music Time',
     description: 'Simply listen to music and let it move through you.',
     defaultDuration: 20,
     minDuration: 10,
@@ -147,6 +154,27 @@ export const moduleLibrary = [
       controls: { showSkipButton: true },
     },
     tags: ['music', 'passive', 'immersive'],
+  },
+  {
+    id: 'lets-dance',
+    type: 'lets-dance',
+    category: 'open',
+    title: "Let's Dance",
+    description: 'Put on your favourite dance music and move your body freely.',
+    defaultDuration: 20,
+    minDuration: 10,
+    maxDuration: 60,
+    intensity: 'gentle',
+    allowedPhases: ['peak'],
+    recommendedPhases: ['peak'],
+    content: {
+      instructions: 'Pick a song that makes you want to move. Let your body lead — there\'s no right or wrong way to dance.',
+    },
+    // Uses custom LetsDanceModule component
+    capabilities: {
+      controls: { showSkipButton: true },
+    },
+    tags: ['music', 'dance', 'movement', 'active'],
   },
 
   // === PEAK APPROPRIATE (Moderate) ===
@@ -184,7 +212,7 @@ export const moduleLibrary = [
     defaultDuration: 10,
     minDuration: 10,
     maxDuration: 15,
-    intensity: 'moderate',
+    intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak'],
     hasVariableDuration: true,
@@ -225,13 +253,13 @@ export const moduleLibrary = [
   {
     id: 'leaves-on-a-stream',
     type: 'leaves-on-a-stream',
-    category: 'meditation',
+    category: 'activity',
     title: 'Leaves on a Stream',
     description: 'A guided meditation for observing your thoughts with curiosity rather than getting caught in them. You\'ll practice watching thoughts come and go, like leaves floating past on a stream.',
     defaultDuration: 10,
     minDuration: 10,
     maxDuration: 20,
-    intensity: 'moderate',
+    intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: true,
@@ -448,14 +476,14 @@ export const moduleLibrary = [
     category: 'activity',
     title: 'Dialogue with a Protector',
     description: 'A two-part IFS practice. Meet a protective part of yourself through guided meditation and reflection, then deepen the dialogue during integration.',
-    defaultDuration: 45,
+    defaultDuration: 55,
     intensity: 'moderate',
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     isLinkedParent: true,
     linkedParts: [
-      { id: 'protector-dialogue-p1', title: 'Meeting a Protector (Part 1)', duration: 20, phase: 'same' },
-      { id: 'protector-dialogue-p2', title: 'Understanding Your Protector (Part 2)', duration: 25, phase: 'integration' },
+      { id: 'protector-dialogue-p1', title: 'Meeting a Protector (Part 1)', duration: 25, phase: 'same' },
+      { id: 'protector-dialogue-p2', title: 'Understanding Your Protector (Part 2)', duration: 30, phase: 'integration' },
     ],
     tags: ['IFS', 'parts-work', 'protector', 'dialogue', 'deep-work', 'guided', 'meditation'],
   },
@@ -466,7 +494,7 @@ export const moduleLibrary = [
     category: 'activity',
     title: 'Meeting a Protector (Part 1)',
     description: 'Guided meditation and reflection to meet a protective part of yourself.',
-    defaultDuration: 20,
+    defaultDuration: 25,
     intensity: 'moderate',
     allowedPhases: ['peak', 'integration'],
     hidden: true,
@@ -486,7 +514,7 @@ export const moduleLibrary = [
     category: 'activity',
     title: 'Understanding Your Protector (Part 2)',
     description: 'Deepen your dialogue with the protector you met. Journaling and reflection.',
-    defaultDuration: 25,
+    defaultDuration: 30,
     intensity: 'deep',
     allowedPhases: ['peak', 'integration'],
     hidden: true,
@@ -543,7 +571,7 @@ export const moduleLibrary = [
     tags: ['booster', 'check-in', 'supplemental'],
   },
 
-  // === FOLLOW-UP MODULES (Time-locked, 24-48h after session) ===
+  // === FOLLOW-UP MODULES (Time-locked, 8-24h after session) ===
   {
     id: 'followup-check-in',
     type: 'follow-up',
@@ -555,7 +583,7 @@ export const moduleLibrary = [
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
     followUpModuleId: 'checkIn',
-    unlockDelay: 24, // hours after session close
+    unlockDelay: 8, // hours after session close
     content: {
       instructions: 'Take a moment to notice how you are feeling today.',
     },
@@ -572,11 +600,28 @@ export const moduleLibrary = [
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
     followUpModuleId: 'revisit',
-    unlockDelay: 24, // hours after session close
+    unlockDelay: 8, // hours after session close
     content: {
       instructions: 'Revisit the intentions and messages you wrote during your session.',
     },
     tags: ['follow-up', 'revisit', 'reflection'],
+  },
+  {
+    id: 'followup-values-compass',
+    type: 'follow-up',
+    title: 'Values Compass',
+    description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
+    defaultDuration: 15,
+    intensity: 'gentle',
+    allowedPhases: ['follow-up'],
+    recommendedPhases: ['follow-up'],
+    isFollowUpModule: true,
+    followUpModuleId: 'valuesCompassFollowUp',
+    unlockDelay: 12, // hours after session close (conditional on VC completion)
+    content: {
+      instructions: 'Revisit the values compass you created during your session.',
+    },
+    tags: ['follow-up', 'values-compass', 'ACT', 'matrix'],
   },
   {
     id: 'followup-integration',
@@ -589,7 +634,7 @@ export const moduleLibrary = [
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
     followUpModuleId: 'integration',
-    unlockDelay: 48, // hours after session close
+    unlockDelay: 24, // hours after session close
     content: {
       instructions: 'Reflect on what has emerged since your session and how your commitment is taking shape.',
     },
@@ -658,6 +703,28 @@ export function canAddModuleToPhase(moduleId, phase) {
   const rules = PHASE_INTENSITY_RULES[phase];
   if (!rules) {
     return { allowed: false, error: 'Invalid phase' };
+  }
+
+  // Pre-session: most modules allowed, but exclude session-specific ones that don't make sense to practice
+  if (phase === 'pre-session') {
+    const excludedFromPreSession = [
+      'booster-consideration',
+      'followup-check-in',
+      'followup-revisit',
+      'values-compass',
+      'followup-integration',
+      'followup-journaling',
+    ];
+    if (excludedFromPreSession.includes(module.id)) {
+      return { allowed: false, error: `"${module.title}" is not available for pre-session.` };
+    }
+    if (!module.allowedPhases.includes('pre-session')) {
+      return {
+        allowed: true,
+        warning: `This activity is designed for the main session. You can still try it here before your session begins.`,
+      };
+    }
+    return { allowed: true };
   }
 
   // Check if module is explicitly not allowed in this phase

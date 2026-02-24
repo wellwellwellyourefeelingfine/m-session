@@ -17,8 +17,12 @@ function formatDuration(minutes) {
 }
 
 function getClockAppUrl() {
-  const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/.test(ua);
+  const isAndroid = /Android/.test(ua);
+
   if (isIOS) return 'clock-timer://';
+  if (isAndroid) return 'intent:#Intent;action=android.intent.action.SHOW_TIMERS;end';
   return null;
 }
 
@@ -32,9 +36,15 @@ export default function AlarmPrompt({
   const clockUrl = getClockAppUrl();
 
   const handleOpenClock = () => {
-    if (clockUrl) {
-      window.location.href = clockUrl;
-    }
+    if (!clockUrl) return;
+    // Use a programmatic link click instead of window.location.href.
+    // Firefox (and some other browsers) treat window.location.href with
+    // custom URL schemes as invalid navigation and show an error page.
+    // A link click is the standard way to trigger URL schemes and is
+    // handled gracefully across browsers.
+    const a = document.createElement('a');
+    a.href = clockUrl;
+    a.click();
   };
 
   return (

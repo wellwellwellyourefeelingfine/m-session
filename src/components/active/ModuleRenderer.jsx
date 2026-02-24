@@ -19,7 +19,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { getModuleById } from '../../content/modules';
 import { getModuleComponent } from './moduleRegistry';
 
-export default function ModuleRenderer({ module, onTimerUpdate }) {
+export default function ModuleRenderer({ module, onTimerUpdate, onComplete: onCompleteOverride, onSkip: onSkipOverride }) {
   const completeModule = useSessionStore((state) => state.completeModule);
   const skipModule = useSessionStore((state) => state.skipModule);
 
@@ -33,13 +33,13 @@ export default function ModuleRenderer({ module, onTimerUpdate }) {
   const ModuleComponent = getModuleComponent(moduleType);
 
   const handleComplete = () => {
+    if (onCompleteOverride) return onCompleteOverride();
     completeModule(module.instanceId);
   };
 
   const handleSkip = () => {
-    console.log('[ModuleRenderer] handleSkip — skipModule(%s)', module.instanceId);
+    if (onSkipOverride) return onSkipOverride();
     skipModule(module.instanceId);
-    console.log('[ModuleRenderer] skipModule done');
   };
 
   // Common props passed to all module components

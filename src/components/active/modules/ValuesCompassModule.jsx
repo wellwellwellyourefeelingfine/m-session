@@ -5,7 +5,7 @@
  * 1. Introduction (5 screens — overview, quadrants, axes, placement, big picture)
  * 2. Four quadrant-building phases — add chips via free-text or examples, drag to position
  * 3. Matrix reveal — full-screen modal with assembled 4-quadrant view
- * 4. Journaling (3 screens, last skippable)
+ * 4. Journaling (observer-self interstitial + 8 screens)
  * 5. Closing screen
  *
  * No audio/meditation component. Self-paced, ~20-30 minutes.
@@ -25,6 +25,7 @@ import {
   QUADRANT_CONFIG,
   QUADRANT_ORDER,
   REVEAL_CONTENT,
+  OBSERVER_SELF_CONTENT,
   JOURNALING_SCREENS,
   CLOSING_CONTENT,
   AXIS_LABELS,
@@ -32,6 +33,14 @@ import {
 } from '../../../content/modules/valuesCompassContent';
 
 import { saveImage } from '../../../utils/imageStorage';
+
+// Shared matrix components (extracted for reuse in follow-up modules)
+import DraggableChip from './shared/matrix/DraggableChip';
+import MatrixGrid from './shared/matrix/MatrixGrid';
+import MatrixModal, { QuadrantWorkArea, ReferenceChips, ViewMatrixIcon } from './shared/matrix/MatrixModal';
+import { MatrixSchematic, FocusedMatrixSchematic } from './shared/matrix/MatrixSchematics';
+import LoopArrowAnimation from './shared/matrix/LoopArrowAnimation';
+import { exportMatrixAsPNG } from './shared/matrix/exportMatrixAsPNG';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -43,7 +52,8 @@ const PHASE_SEQUENCE = [
   'q3', 'q3-transition',
   'q4', 'q4-transition',
   'reveal-prompt', 'reveal-modal',
-  'journal-a', 'journal-b', 'journal-c',
+  'observer-self',
+  'journal-a', 'journal-b', 'journal-c', 'journal-d', 'journal-e', 'journal-f', 'journal-g', 'journal-h',
   'closing',
 ];
 
@@ -89,713 +99,6 @@ const PLACEMENT_DESCRIPTIONS = {
   q3: 'Items in the far top-left are your strongest avoidance habits, representing significant energy spent trying to escape discomfort.',
   q4: 'Items in the far top-right are your boldest actions, representing moments where you are most actively living out your values.',
 };
-
-// ─── ChipInput ──────────────────────────────────────────────────────────────
-
-function ChipInput({ onAdd, onCancel }) {
-  const inputRef = useRef(null);
-  const [text, setText] = useState('');
-
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const handleSubmit = useCallback(() => {
-    const trimmed = text.trim();
-    if (trimmed) {
-      onAdd(trimmed);
-      setText('');
-    }
-  }, [text, onAdd]);
-
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSubmit();
-    } else if (e.key === 'Escape') {
-      onCancel();
-    }
-  }, [handleSubmit, onCancel]);
-
-  return (
-    <div className="flex items-center gap-2 animate-fadeIn">
-      <input
-        ref={inputRef}
-        type="text"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => { if (!text.trim()) onCancel(); }}
-        placeholder="Type a word or phrase..."
-        maxLength={60}
-        className="flex-1 bg-transparent border-b border-[var(--color-border)] focus:border-[var(--accent)]
-          text-[var(--color-text-primary)] text-xs uppercase tracking-wider py-2 outline-none
-          placeholder:text-[var(--color-text-tertiary)] placeholder:normal-case"
-      />
-      <button
-        onClick={handleSubmit}
-        disabled={!text.trim()}
-        className="text-[var(--accent)] text-xs uppercase tracking-wider px-2 py-1
-          disabled:opacity-30 transition-opacity"
-      >
-        Add
-      </button>
-    </div>
-  );
-}
-
-// ─── ExamplesDrawer ─────────────────────────────────────────────────────────
-
-function ExamplesDrawer({ examples, addedTexts, onAdd, onClose }) {
-  useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = ''; };
-  }, []);
-
-  const addedSet = useMemo(
-    () => new Set(addedTexts.map((t) => t.toLowerCase())),
-    [addedTexts]
-  );
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[55] bg-black/30"
-        onClick={onClose}
-      />
-      {/* Drawer */}
-      <div className="fixed bottom-0 left-0 right-0 z-[56] bg-[var(--color-bg)] border-t border-[var(--color-border)]
-        rounded-t-xl max-h-[60vh] flex flex-col animate-slideUp"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)]">
-          <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)]">
-            Examples
-          </span>
-          <button
-            onClick={onClose}
-            className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)]"
-          >
-            Done
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-4 py-3 scrollable">
-          <div className="flex flex-wrap gap-2">
-            {examples.map((example) => {
-              const isAdded = addedSet.has(example.toLowerCase());
-              return (
-                <button
-                  key={example}
-                  onClick={() => { if (!isAdded) onAdd(example); }}
-                  disabled={isAdded}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-[10px] uppercase tracking-wider
-                    transition-all ${
-                    isAdded
-                      ? 'border-[var(--color-border)] text-[var(--color-text-tertiary)] opacity-40'
-                      : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
-                  }`}
-                >
-                  {!isAdded && (
-                    <span className="text-[var(--accent)] text-xs leading-none">+</span>
-                  )}
-                  {example}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── DraggableChip ──────────────────────────────────────────────────────────
-
-function DraggableChip({ chip, onMove, onRemove, containerRef, disabled, editMode, matrixView }) {
-  const chipRef = useRef(null);
-  const isDragging = useRef(false);
-  const startOffset = useRef({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
-
-  const handlePointerDown = useCallback((e) => {
-    if (disabled) return;
-    e.preventDefault();
-    e.stopPropagation();
-    isDragging.current = true;
-    setDragging(true);
-
-    chipRef.current?.setPointerCapture(e.pointerId);
-
-    const rect = chipRef.current.getBoundingClientRect();
-    startOffset.current = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-  }, [disabled]);
-
-  const handlePointerMove = useCallback((e) => {
-    if (!isDragging.current || !containerRef?.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const chipEl = chipRef.current;
-    if (!chipEl) return;
-    const chipW = chipEl.offsetWidth;
-    const chipH = chipEl.offsetHeight;
-
-    let newX = (e.clientX - startOffset.current.x - containerRect.left) / (containerRect.width - chipW);
-    let newY = (e.clientY - startOffset.current.y - containerRect.top) / (containerRect.height - chipH);
-
-    newX = Math.max(0, Math.min(1, newX));
-    newY = Math.max(0, Math.min(1, newY));
-
-    onMove(chip.id, newX, newY);
-  }, [chip.id, onMove, containerRef]);
-
-  const handlePointerUp = useCallback(() => {
-    isDragging.current = false;
-    setDragging(false);
-  }, []);
-
-  const posStyle = {
-    position: 'absolute',
-    left: `${chip.x * 85}%`,
-    top: `${chip.y * 85}%`,
-    touchAction: disabled ? 'auto' : 'none',
-    transform: dragging ? 'scale(1.08)' : 'scale(1)',
-    transition: dragging ? 'none' : 'transform 150ms ease, left 0ms, top 0ms',
-    zIndex: dragging ? 10 : 1,
-  };
-
-  return (
-    <div
-      ref={chipRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerUp}
-      style={posStyle}
-      className={`inline-flex items-start text-[10px] uppercase tracking-wider select-none
-        ${matrixView && !editMode
-          ? 'gap-1 text-[var(--color-text-primary)] cursor-default'
-          : matrixView && editMode
-            ? 'gap-1 px-2.5 py-1 rounded-full border border-dashed border-[var(--color-text-tertiary)] text-[var(--color-text-primary)] cursor-grab whitespace-nowrap max-w-[80%]'
-            : 'gap-1 px-2.5 py-1 rounded-full border border-[var(--accent)] text-[var(--color-text-primary)] bg-transparent cursor-grab whitespace-nowrap max-w-[80%]'
-        }
-        ${disabled ? 'cursor-default' : ''}
-        ${dragging ? 'cursor-grabbing' : ''}`}
-    >
-      {!editMode && (
-        <span className="text-[var(--color-text-primary)] text-[14px] leading-[0.85] flex-shrink-0">&bull;</span>
-      )}
-      <span className={matrixView && !editMode ? '' : 'truncate'}>{chip.text}</span>
-      {!disabled && onRemove && (
-        <button
-          onClick={(e) => { e.stopPropagation(); onRemove(chip.id); }}
-          className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] text-[11px] ml-0.5 leading-none flex-shrink-0"
-        >
-          &times;
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ─── QuadrantWorkArea ───────────────────────────────────────────────────────
-
-function QuadrantWorkArea({ chips, onAddChip, onMoveChip, onRemoveChip, config }) {
-  const containerRef = useRef(null);
-  const [showInput, setShowInput] = useState(false);
-  const [showExamples, setShowExamples] = useState(false);
-  const prevChipCount = useRef(chips.length);
-
-  const handleAddFromInput = useCallback((text) => {
-    onAddChip(text);
-    setShowInput(false);
-  }, [onAddChip]);
-
-  const handleAddFromExample = useCallback((text) => {
-    onAddChip(text);
-  }, [onAddChip]);
-
-  const addedTexts = useMemo(() => chips.map((c) => c.text), [chips]);
-
-  // Border edges: subtle lines on the edges that will become the matrix center
-  const borderClasses = useMemo(() => {
-    const edges = config.borderEdges || [];
-    const classes = [];
-    if (edges.includes('left')) classes.push('border-l');
-    if (edges.includes('right')) classes.push('border-r');
-    if (edges.includes('top')) classes.push('border-t');
-    if (edges.includes('bottom')) classes.push('border-b');
-    return classes.join(' ');
-  }, [config.borderEdges]);
-
-  return (
-    <div className="w-full">
-      {/* Work area with heat map */}
-      <div
-        ref={containerRef}
-        className={`relative w-full aspect-square rounded-sm ${borderClasses}`}
-        style={{
-          borderStyle: 'solid',
-          borderColor: 'color-mix(in srgb, var(--color-border) 40%, transparent)',
-          borderLeftWidth: config.borderEdges?.includes('left') ? '1px' : '0',
-          borderRightWidth: config.borderEdges?.includes('right') ? '1px' : '0',
-          borderTopWidth: config.borderEdges?.includes('top') ? '1px' : '0',
-          borderBottomWidth: config.borderEdges?.includes('bottom') ? '1px' : '0',
-        }}
-      >
-        {/* Heat map gradient */}
-        <div
-          className="absolute inset-0 pointer-events-none rounded-sm"
-          style={{
-            background: `radial-gradient(ellipse at ${config.gradientOrigin}, var(--accent) 0%, transparent 70%)`,
-            opacity: 0.15,
-          }}
-        />
-
-        {/* Axis labels with arrows */}
-        <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-40 pointer-events-none">
-          {AXIS_LABELS.top} ↑
-        </span>
-        <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-40 pointer-events-none">
-          ↓ {AXIS_LABELS.bottom}
-        </span>
-        <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-40 pointer-events-none">
-          ← {AXIS_LABELS.left}
-        </span>
-        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-40 pointer-events-none">
-          {AXIS_LABELS.right} →
-        </span>
-
-        {/* Chips */}
-        {chips.map((chip) => (
-          <DraggableChip
-            key={chip.id}
-            chip={chip}
-            onMove={onMoveChip}
-            onRemove={onRemoveChip}
-            containerRef={containerRef}
-            disabled={false}
-            editMode={false}
-          />
-        ))}
-
-      </div>
-
-      {/* Controls below work area */}
-      <div className="mt-4 space-y-3">
-        {showInput ? (
-          <ChipInput
-            onAdd={handleAddFromInput}
-            onCancel={() => setShowInput(false)}
-          />
-        ) : (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowInput(true)}
-              className="flex items-center gap-1.5 px-4 py-2 border rounded-full text-xs uppercase tracking-wider
-                transition-all border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            >
-              <span className="text-sm leading-none">+</span>
-              Add your own
-            </button>
-            <button
-              onClick={() => setShowExamples(true)}
-              className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)]
-                hover:text-[var(--color-text-secondary)] transition-colors underline underline-offset-2"
-            >
-              Examples
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Examples drawer */}
-      {showExamples && (
-        <ExamplesDrawer
-          examples={config.examples}
-          addedTexts={addedTexts}
-          onAdd={handleAddFromExample}
-          onClose={() => setShowExamples(false)}
-        />
-      )}
-    </div>
-  );
-}
-
-// ─── ReferenceChips ─────────────────────────────────────────────────────────
-
-function ReferenceChips({ quadrants, showQuadrants }) {
-  const items = useMemo(() => {
-    const result = [];
-    for (const qId of showQuadrants) {
-      const chips = quadrants[qId];
-      if (chips?.length > 0) {
-        result.push({ qId, label: QUADRANT_LABELS[qId], chips });
-      }
-    }
-    return result;
-  }, [quadrants, showQuadrants]);
-
-  if (items.length === 0) return null;
-
-  return (
-    <div className="mb-4 space-y-2">
-      {items.map(({ qId, label, chips }) => (
-        <div key={qId}>
-          <span className="text-[8px] uppercase tracking-wider text-[var(--color-text-secondary)] block mb-1">
-            {label}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {chips.map((chip) => (
-              <span
-                key={chip.id}
-                className="px-2 py-0.5 rounded-full text-[9px] uppercase tracking-wider
-                  text-[var(--color-text-secondary)] border border-[var(--color-border)] opacity-75"
-              >
-                {chip.text}
-              </span>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── Quadrant Cell (extracted to avoid useRef in .map) ──────────────────────
-
-function QuadrantCell({ id, gridArea, chips, mode, onMoveChip }) {
-  const qRef = useRef(null);
-  return (
-    <div
-      ref={qRef}
-      className="relative overflow-visible"
-      style={{ gridArea }}
-    >
-      <span
-        className={`absolute font-serif text-xs tracking-wide pointer-events-none ${
-          id === 'q3' ? 'top-1.5 left-2' :
-          id === 'q4' ? 'top-1.5 right-2 text-right' :
-          id === 'q2' ? 'bottom-1.5 left-2' :
-          'bottom-1.5 right-2 text-right'
-        }`}
-        style={{ color: 'var(--accent)', opacity: 0.7, textTransform: 'none' }}
-      >
-        {QUADRANT_LABELS[id]}
-      </span>
-      {(chips || []).map((chip) => (
-        <DraggableChip
-          key={chip.id}
-          chip={chip}
-          onMove={mode === 'edit' ? onMoveChip : undefined}
-          onRemove={null}
-          containerRef={qRef}
-          disabled={mode !== 'edit'}
-          editMode={mode === 'edit'}
-          matrixView
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Matrix Grid (used in both modal and canvas) ────────────────────────────
-
-const QUADRANT_LAYOUT = [
-  { id: 'q3', gridArea: '1 / 1' },
-  { id: 'q4', gridArea: '1 / 2' },
-  { id: 'q2', gridArea: '2 / 1' },
-  { id: 'q1', gridArea: '2 / 2' },
-];
-
-function MatrixGrid({ quadrants, mode, onMoveChip }) {
-  const axisColor = 'color-mix(in srgb, var(--accent) 30%, transparent)';
-
-  return (
-    <div className="relative w-full aspect-square">
-      {/* Heat map gradient from center */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 60%)',
-          opacity: 0.15,
-        }}
-      />
-
-      {/* Grid */}
-      <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
-        {QUADRANT_LAYOUT.map(({ id, gridArea }) => (
-          <QuadrantCell
-            key={id}
-            id={id}
-            gridArea={gridArea}
-            chips={quadrants[id]}
-            mode={mode}
-            onMoveChip={onMoveChip}
-          />
-        ))}
-      </div>
-
-      {/* Vertical axis — arrows inside container, line stops at arrow bases */}
-      <div className="absolute left-1/2 -translate-x-1/2 pointer-events-none" style={{ top: '8%', bottom: '8%' }}>
-        {/* Line — inset 6px from each end to terminate at arrow base */}
-        <div className="absolute left-1/2 -translate-x-1/2" style={{ top: '6px', bottom: '6px', width: '1px', backgroundColor: axisColor }} />
-        {/* Arrow up */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2"
-          style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderBottom: `6px solid ${axisColor}` }} />
-        {/* Arrow down */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2"
-          style={{ width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: `6px solid ${axisColor}` }} />
-      </div>
-
-      {/* Horizontal axis — arrows inside container, line stops at arrow bases */}
-      <div className="absolute top-1/2 -translate-y-1/2 pointer-events-none" style={{ left: '14%', right: '14%' }}>
-        {/* Line — inset 6px from each end to terminate at arrow base */}
-        <div className="absolute top-1/2 -translate-y-1/2" style={{ left: '6px', right: '6px', height: '1px', backgroundColor: axisColor }} />
-        {/* Arrow left */}
-        <div className="absolute left-0 top-1/2 -translate-y-1/2"
-          style={{ width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderRight: `6px solid ${axisColor}` }} />
-        {/* Arrow right */}
-        <div className="absolute right-0 top-1/2 -translate-y-1/2"
-          style={{ width: 0, height: 0, borderTop: '4px solid transparent', borderBottom: '4px solid transparent', borderLeft: `6px solid ${axisColor}` }} />
-      </div>
-
-      {/* Axis labels — positioned outside the shortened axes */}
-      <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-60 pointer-events-none">
-        {AXIS_LABELS.top}
-      </span>
-      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-60 pointer-events-none">
-        {AXIS_LABELS.bottom}
-      </span>
-      <span className="absolute left-1 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-60 pointer-events-none">
-        {AXIS_LABELS.left}
-      </span>
-      <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[7px] uppercase tracking-wider text-[var(--color-text-tertiary)] opacity-60 pointer-events-none">
-        {AXIS_LABELS.right}
-      </span>
-    </div>
-  );
-}
-
-// ─── Matrix Modal ───────────────────────────────────────────────────────────
-
-function MatrixModal({ isOpen, closing, onClose, quadrants, onUpdateChipPosition }) {
-  const [mode, setMode] = useState('view');
-  const matrixWrapperRef = useRef(null);
-  const transformRef = useRef({ scale: 1, x: 0, y: 0 });
-  const gestureRef = useRef({
-    activePointers: new Map(),
-    initialDistance: 0,
-    initialScale: 1,
-    initialCenter: { x: 0, y: 0 },
-    initialTranslate: { x: 0, y: 0 },
-  });
-
-  // Lock body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
-
-  // Pinch-to-zoom + pan (view mode only)
-  useEffect(() => {
-    if (!isOpen || mode === 'edit') return;
-    const el = matrixWrapperRef.current;
-    if (!el) return;
-
-    const getDistance = (p1, p2) => Math.sqrt((p1.clientX - p2.clientX) ** 2 + (p1.clientY - p2.clientY) ** 2);
-
-    const applyTransform = () => {
-      const t = transformRef.current;
-      el.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
-    };
-
-    const handleTouchStart = (e) => {
-      const g = gestureRef.current;
-      for (const touch of e.changedTouches) {
-        g.activePointers.set(touch.identifier, touch);
-      }
-      if (g.activePointers.size === 2) {
-        const [p1, p2] = [...g.activePointers.values()];
-        g.initialDistance = getDistance(p1, p2);
-        g.initialScale = transformRef.current.scale;
-        g.initialTranslate = { x: transformRef.current.x, y: transformRef.current.y };
-      } else if (g.activePointers.size === 1) {
-        const [p1] = [...g.activePointers.values()];
-        g.initialCenter = { x: p1.clientX, y: p1.clientY };
-        g.initialTranslate = { x: transformRef.current.x, y: transformRef.current.y };
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      e.preventDefault();
-      const g = gestureRef.current;
-      for (const touch of e.changedTouches) {
-        g.activePointers.set(touch.identifier, touch);
-      }
-      if (g.activePointers.size === 2) {
-        const [p1, p2] = [...g.activePointers.values()];
-        const distance = getDistance(p1, p2);
-        const scale = Math.max(0.5, Math.min(4, g.initialScale * (distance / g.initialDistance)));
-        transformRef.current.scale = scale;
-        applyTransform();
-      } else if (g.activePointers.size === 1 && transformRef.current.scale > 1) {
-        const [p1] = [...g.activePointers.values()];
-        transformRef.current.x = g.initialTranslate.x + (p1.clientX - g.initialCenter.x);
-        transformRef.current.y = g.initialTranslate.y + (p1.clientY - g.initialCenter.y);
-        applyTransform();
-      }
-    };
-
-    const handleTouchEnd = (e) => {
-      for (const touch of e.changedTouches) {
-        gestureRef.current.activePointers.delete(touch.identifier);
-      }
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchmove', handleTouchMove, { passive: false });
-    el.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchmove', handleTouchMove);
-      el.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isOpen, mode]);
-
-  // Smart zoom-out on entering edit mode
-  useEffect(() => {
-    if (mode === 'edit' && transformRef.current.scale > 1.25) {
-      const el = matrixWrapperRef.current;
-      if (el) {
-        transformRef.current = { scale: 1, x: 0, y: 0 };
-        el.style.transition = 'transform 400ms ease';
-        el.style.transform = 'translate(0px, 0px) scale(1)';
-        const cleanup = () => { el.style.transition = ''; };
-        el.addEventListener('transitionend', cleanup, { once: true });
-      }
-    }
-  }, [mode]);
-
-  const handleMoveChip = useCallback((chipId, x, y) => {
-    // Find which quadrant this chip belongs to
-    for (const qId of QUADRANT_ORDER) {
-      const chip = quadrants[qId]?.find((c) => c.id === chipId);
-      if (chip) {
-        onUpdateChipPosition(qId, chipId, x, y);
-        break;
-      }
-    }
-  }, [quadrants, onUpdateChipPosition]);
-
-  const handleToggleMode = useCallback(() => {
-    setMode((m) => m === 'view' ? 'edit' : 'view');
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    try {
-      const blob = await exportMatrixAsPNG(quadrants);
-      const file = new File([blob], 'values-compass.png', { type: 'image/png' });
-
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Values Compass' });
-        return;
-      }
-
-      // Fallback: download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `values-compass-${new Date().toISOString().slice(0, 10)}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (err) {
-      if (err.name !== 'AbortError') {
-        console.warn('Matrix export failed:', err);
-      }
-    }
-  }, [quadrants]);
-
-  // Click on empty grid space exits edit mode
-  const handleGridClick = useCallback((e) => {
-    if (mode === 'edit' && e.target === e.currentTarget) {
-      setMode('view');
-    }
-  }, [mode]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-[60] bg-[var(--color-bg)] flex flex-col"
-      style={{
-        opacity: closing ? 0 : 1,
-        transition: `opacity ${FADE_MS}ms ease`,
-        pointerEvents: closing ? 'none' : 'auto',
-      }}
-    >
-      {/* Header */}
-      <div
-        className="flex items-center justify-between px-4 shrink-0"
-        style={{
-          paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))',
-          paddingBottom: '0.75rem',
-          backgroundColor: 'color-mix(in srgb, var(--color-bg) 85%, transparent)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}
-      >
-        <button
-          onClick={onClose}
-          className="text-[var(--color-text-secondary)] text-sm w-8 h-8 flex items-center justify-center"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <line x1="1" y1="1" x2="13" y2="13" />
-            <line x1="13" y1="1" x2="1" y2="13" />
-          </svg>
-        </button>
-        <button
-          onClick={handleToggleMode}
-          className="text-[10px] uppercase tracking-wider text-[var(--color-text-secondary)]
-            px-3 py-1.5 border border-[var(--color-border)] rounded-full"
-        >
-          {mode === 'view' ? 'Edit' : 'Done'}
-        </button>
-        <button
-          onClick={handleSave}
-          className="text-[var(--color-text-secondary)] w-8 h-8 flex items-center justify-center"
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M8 2v8M4 6l4 4 4-4M2 12h12" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Matrix */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center px-4 pb-4" onClick={handleGridClick}>
-        <div
-          ref={matrixWrapperRef}
-          className="w-full max-w-md"
-          style={{ touchAction: mode === 'edit' ? 'none' : 'manipulation' }}
-        >
-          <MatrixGrid
-            quadrants={quadrants}
-            mode={mode}
-            onMoveChip={handleMoveChip}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Reveal Overlay ─────────────────────────────────────────────────────────
 
@@ -858,254 +161,221 @@ function RevealOverlay({ isActive, onDone }) {
   );
 }
 
-// ─── PNG Export ──────────────────────────────────────────────────────────────
+// ─── exportMatrixAsPNG — imported from shared/matrix/exportMatrixAsPNG ───────
 
-async function exportMatrixAsPNG(quadrants) {
-  const scale = 3;
-  const BASE = 420;
-  const MATRIX = 360;
-  const PAD = 30;
-  const FOOTER = 40;
+// ─── ViewMatrixIcon — imported from shared/matrix/MatrixModal ────────────────
 
-  const canvas = document.createElement('canvas');
-  canvas.width = BASE * scale;
-  canvas.height = (BASE + FOOTER) * scale;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(scale, scale);
+// ─── MatrixSchematic, FocusedMatrixSchematic — imported from shared/matrix/MatrixSchematics
 
-  const isDark = document.documentElement.classList.contains('dark');
-  const bg = isDark ? '#1A1A1A' : '#F5F5F0';
-  const accent = isDark ? '#9D8CD9' : '#E8A87C';
-  const textPrimary = isDark ? '#E5E5E5' : '#3A3A3A';
-  const textTertiary = isDark ? '#666666' : '#999999';
-  const border = isDark ? '#333333' : '#D0D0D0';
-  const chipBg = isDark ? '#2A2A2A' : '#ECECEC';
+// ─── Focused Single Quadrant (zoomed view of one quadrant with chips) ────────
 
-  // Wait for fonts
-  await document.fonts.ready;
-
-  // Background
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, BASE, BASE + FOOTER);
-
-  const cx = PAD + MATRIX / 2;
-  const cy = PAD + MATRIX / 2;
-
-  // Heat map gradient
-  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, MATRIX * 0.45);
-  grad.addColorStop(0, accent + '28');
-  grad.addColorStop(1, accent + '00');
-  ctx.fillStyle = grad;
-  ctx.fillRect(PAD, PAD, MATRIX, MATRIX);
-
-  // Grid lines (accent color, semi-opaque)
-  const accentLine = accent + '4D'; // ~30% opacity
-  ctx.strokeStyle = accentLine;
-  ctx.lineWidth = 0.5;
-  const arrowSize = 3;
-  // Shortened vertical axis — line terminates at arrow bases
-  const vTop = PAD + MATRIX * 0.08;
-  const vBot = PAD + MATRIX * 0.92;
-  ctx.beginPath();
-  ctx.moveTo(cx, vTop + arrowSize);
-  ctx.lineTo(cx, vBot - arrowSize);
-  ctx.stroke();
-  // Shortened horizontal axis — line terminates at arrow bases
-  const hLeft = PAD + MATRIX * 0.14;
-  const hRight = PAD + MATRIX * 0.86;
-  ctx.beginPath();
-  ctx.moveTo(hLeft + arrowSize, cy);
-  ctx.lineTo(hRight - arrowSize, cy);
-  ctx.stroke();
-
-  // Arrow heads
-  ctx.fillStyle = accentLine;
-  // Up arrow
-  ctx.beginPath();
-  ctx.moveTo(cx, vTop);
-  ctx.lineTo(cx - arrowSize, vTop + arrowSize);
-  ctx.lineTo(cx + arrowSize, vTop + arrowSize);
-  ctx.fill();
-  // Down arrow
-  ctx.beginPath();
-  ctx.moveTo(cx, vBot);
-  ctx.lineTo(cx - arrowSize, vBot - arrowSize);
-  ctx.lineTo(cx + arrowSize, vBot - arrowSize);
-  ctx.fill();
-  // Left arrow
-  ctx.beginPath();
-  ctx.moveTo(hLeft, cy);
-  ctx.lineTo(hLeft + arrowSize, cy - arrowSize);
-  ctx.lineTo(hLeft + arrowSize, cy + arrowSize);
-  ctx.fill();
-  // Right arrow
-  ctx.beginPath();
-  ctx.moveTo(hRight, cy);
-  ctx.lineTo(hRight - arrowSize, cy - arrowSize);
-  ctx.lineTo(hRight - arrowSize, cy + arrowSize);
-  ctx.fill();
-
-  // Axis labels
-  ctx.fillStyle = textTertiary;
-  ctx.font = '6px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText('AWAY', PAD + MATRIX * 0.05, cy + 3);
-  ctx.fillText('TOWARD', PAD + MATRIX * 0.95, cy + 3);
-  ctx.fillText('EXTERNAL ACTIONS', cx, PAD + 8);
-  ctx.fillText('INNER EXPERIENCE', cx, PAD + MATRIX - 4);
-
-  // Quadrant offsets: q3(TL) q4(TR) q2(BL) q1(BR)
-  const offsets = {
-    q3: { x: PAD, y: PAD },
-    q4: { x: cx, y: PAD },
-    q2: { x: PAD, y: cy },
-    q1: { x: cx, y: cy },
-  };
-  const half = MATRIX / 2;
-
-  // Quadrant labels (serif, accent color) — positioned at corner opposite origin
-  ctx.font = '9px serif';
-  ctx.fillStyle = accent + 'B3'; // ~70% opacity
-  // q3 (top-left): label at top-left
-  ctx.textAlign = 'left';
-  ctx.fillText(QUADRANT_LABELS.q3 || '', offsets.q3.x + 4, offsets.q3.y + 12);
-  // q4 (top-right): label at top-right
-  ctx.textAlign = 'right';
-  ctx.fillText(QUADRANT_LABELS.q4 || '', offsets.q4.x + half - 4, offsets.q4.y + 12);
-  // q2 (bottom-left): label at bottom-left
-  ctx.textAlign = 'left';
-  ctx.fillText(QUADRANT_LABELS.q2 || '', offsets.q2.x + 4, offsets.q2.y + half - 6);
-  // q1 (bottom-right): label at bottom-right
-  ctx.textAlign = 'right';
-  ctx.fillText(QUADRANT_LABELS.q1 || '', offsets.q1.x + half - 4, offsets.q1.y + half - 6);
-
-  // Draw chips
-  ctx.font = '7px monospace';
-  ctx.textAlign = 'left';
-  for (const [qId, chips] of Object.entries(quadrants)) {
-    const off = offsets[qId];
-    if (!off || !chips) continue;
-    for (const chip of chips) {
-      const chipX = off.x + 6 + chip.x * (half - 40);
-      const chipY = off.y + 20 + chip.y * (half - 30);
-
-      const textWidth = ctx.measureText(chip.text.toUpperCase()).width;
-      const chipW = textWidth + 10;
-      const chipH = 14;
-
-      // Chip background
-      ctx.fillStyle = chipBg;
-      ctx.beginPath();
-      ctx.roundRect(chipX, chipY, chipW, chipH, 7);
-      ctx.fill();
-
-      // Chip border
-      ctx.strokeStyle = border;
-      ctx.lineWidth = 0.3;
-      ctx.beginPath();
-      ctx.roundRect(chipX, chipY, chipW, chipH, 7);
-      ctx.stroke();
-
-      // Chip text
-      ctx.fillStyle = textPrimary;
-      ctx.fillText(chip.text.toUpperCase(), chipX + 5, chipY + 10);
-    }
-  }
-
-  // Footer
-  ctx.fillStyle = textTertiary;
-  ctx.font = '8px monospace';
-  ctx.textAlign = 'center';
-  ctx.fillText(`VALUES COMPASS · ${new Date().toLocaleDateString()}`, BASE / 2, BASE + FOOTER / 2 + 3);
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob), 'image/png');
-  });
-}
-
-// ─── View Matrix Button (SlotButton for journaling phases) ──────────────────
-
-const ViewMatrixIcon = ({ inline } = {}) => (
-  <svg
-    width={inline ? "12" : "16"}
-    height={inline ? "12" : "16"}
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    style={inline ? { display: 'inline-block', verticalAlign: 'middle', margin: '0 2px' } : undefined}
-  >
-    <rect x="1" y="1" width="6" height="6" rx="0.5" />
-    <rect x="9" y="1" width="6" height="6" rx="0.5" />
-    <rect x="1" y="9" width="6" height="6" rx="0.5" />
-    <rect x="9" y="9" width="6" height="6" rx="0.5" />
-  </svg>
-);
-
-// ─── Matrix Schematic (used on idle + reveal-prompt pages) ──────────────────
-
-function MatrixSchematic({ variant = 'full', maxWidth = 'max-w-[280px]' }) {
-  const showAxisLabels = variant !== 'quadrants-only';
-  const showQuadrantLabels = variant !== 'axes-only';
+function FocusedSingleQuadrant({ quadrantId, quadrants }) {
+  const containerRef = useRef(null);
+  const chips = quadrants[quadrantId] || [];
 
   return (
-    <div className={`relative w-full aspect-square ${maxWidth} mx-auto`}>
-      {/* Radial gradient heat map from center */}
+    <div className="relative max-w-[60vw] mx-auto" style={{ aspectRatio: '1 / 1' }}>
+      {/* Subtle gradient */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none rounded-sm"
         style={{
-          background: 'radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 60%)',
-          opacity: 0.15,
+          background: 'radial-gradient(circle at 50% 50%, var(--accent) 0%, transparent 70%)',
+          opacity: 0.08,
         }}
       />
 
-      {/* Vertical line */}
-      <div
-        className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2"
-        style={{ width: '1px', backgroundColor: 'var(--accent)' }}
-      />
-      {/* Horizontal line */}
-      <div
-        className="absolute top-1/2 left-0 right-0 -translate-y-1/2"
-        style={{ height: '1px', backgroundColor: 'var(--accent)' }}
-      />
+      {/* Quadrant label */}
+      <span
+        className="absolute top-2 left-2 font-serif text-[11px] tracking-wide pointer-events-none opacity-60"
+        style={{ color: 'var(--color-text-secondary)', textTransform: 'none' }}
+      >
+        {QUADRANT_LABELS[quadrantId]}
+      </span>
 
-      {/* Axis labels */}
-      {showAxisLabels && (
-        <>
-          <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full pb-1.5 text-[10px] text-[var(--color-text-primary)] uppercase tracking-wider">
-            External Actions
-          </span>
-          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-1.5 text-[10px] text-[var(--color-text-primary)] uppercase tracking-wider">
-            Inner Experience
-          </span>
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-2 text-[10px] text-[var(--color-text-primary)] uppercase tracking-wider">
-            Away
-          </span>
-          <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full pl-2 text-[10px] text-[var(--color-text-primary)] uppercase tracking-wider">
-            Toward
-          </span>
-        </>
+      {/* Chips */}
+      <div ref={containerRef} className="absolute inset-0 overflow-visible">
+        {chips.map((chip) => (
+          <DraggableChip
+            key={chip.id}
+            chip={chip}
+            onMove={undefined}
+            onRemove={null}
+            containerRef={containerRef}
+            disabled
+            editMode={false}
+            matrixView
+          />
+        ))}
+      </div>
+
+      {/* Border edges to indicate position in matrix */}
+      {(quadrantId === 'q3' || quadrantId === 'q4') && (
+        <div className="absolute bottom-0 left-0 right-0" style={{ height: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)' }} />
       )}
-
-      {/* Quadrant labels — centered within each quadrant, each word on its own line */}
-      {showQuadrantLabels && (
-        <>
-          <span className="absolute top-3/4 left-3/4 -translate-x-1/2 -translate-y-1/2 font-serif text-base text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
-            What<br />Matters
-          </span>
-          <span className="absolute top-3/4 left-1/4 -translate-x-1/2 -translate-y-1/2 font-serif text-base text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
-            Inner<br />Obstacles
-          </span>
-          <span className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 font-serif text-base text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
-            Away<br />Moves
-          </span>
-          <span className="absolute top-1/4 left-3/4 -translate-x-1/2 -translate-y-1/2 font-serif text-base text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
-            Toward<br />Moves
-          </span>
-        </>
+      {(quadrantId === 'q1' || quadrantId === 'q2') && (
+        <div className="absolute top-0 left-0 right-0" style={{ height: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)' }} />
+      )}
+      {(quadrantId === 'q3' || quadrantId === 'q2') && (
+        <div className="absolute top-0 right-0 bottom-0" style={{ width: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)' }} />
+      )}
+      {(quadrantId === 'q4' || quadrantId === 'q1') && (
+        <div className="absolute top-0 left-0 bottom-0" style={{ width: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 25%, transparent)' }} />
       )}
     </div>
+  );
+}
+
+// ─── LoopArrowAnimation — imported from shared/matrix/LoopArrowAnimation ─────
+
+// ─── Cross-Quadrant Arrow (diagonal tension line) ───────────────────────────
+
+function CrossQuadrantArrow({ visible }) {
+  return (
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 300ms ease',
+      }}
+    >
+      <svg
+        viewBox="0 0 100 100"
+        className="w-full h-full"
+        fill="none"
+        style={{ color: 'var(--accent)' }}
+      >
+        {/* Diagonal line */}
+        <line
+          className="vc-cross-draw"
+          x1="25" y1="25" x2="75" y2="75"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        {/* Chevron arrowhead at bottom-right (pointing down-right) */}
+        <polyline
+          className="vc-cross-head"
+          points="69,79 76,76 79,69"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Chevron arrowhead at top-left (pointing up-left) */}
+        <polyline
+          className="vc-cross-head"
+          points="31,21 24,24 21,31"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+
+      <style>{`
+        .vc-cross-draw {
+          stroke-dasharray: 72;
+          stroke-dashoffset: 72;
+          animation: vc-cross-draw-in 1s ease-out forwards;
+        }
+        .vc-cross-head {
+          opacity: 0;
+          animation: vc-cross-head-in 300ms ease-out 900ms forwards;
+        }
+        @keyframes vc-cross-draw-in {
+          to { stroke-dashoffset: 0; }
+        }
+        @keyframes vc-cross-head-in {
+          to { opacity: 1; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── Tension Schematic (full matrix with highlighted quadrants) ──────────────
+
+function TensionSchematic() {
+  return (
+    <div className="relative w-full aspect-square max-w-[240px] mx-auto">
+      {/* Highlighted quadrants: top-left (q3) and bottom-right (q1) */}
+      <div
+        className="absolute top-0 left-0 w-1/2 h-1/2 rounded-tl-sm"
+        style={{ backgroundColor: 'var(--accent)', opacity: 0.08 }}
+      />
+      <div
+        className="absolute bottom-0 right-0 w-1/2 h-1/2 rounded-br-sm"
+        style={{ backgroundColor: 'var(--accent)', opacity: 0.08 }}
+      />
+
+      {/* Vertical axis line */}
+      <div
+        className="absolute left-1/2 top-0 bottom-0 -translate-x-1/2"
+        style={{ width: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 35%, transparent)' }}
+      />
+      {/* Horizontal axis line */}
+      <div
+        className="absolute top-1/2 left-0 right-0 -translate-y-1/2"
+        style={{ height: '1px', backgroundColor: 'color-mix(in srgb, var(--accent) 35%, transparent)' }}
+      />
+
+      {/* Quadrant labels */}
+      <span className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 font-serif text-sm text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
+        Away<br />Moves
+      </span>
+      <span className="absolute top-1/4 left-3/4 -translate-x-1/2 -translate-y-1/2 font-serif text-sm text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
+        Toward<br />Moves
+      </span>
+      <span className="absolute top-3/4 left-1/4 -translate-x-1/2 -translate-y-1/2 font-serif text-sm text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
+        Inner<br />Obstacles
+      </span>
+      <span className="absolute top-3/4 left-3/4 -translate-x-1/2 -translate-y-1/2 font-serif text-sm text-[var(--color-text-primary)] text-center leading-tight" style={{ textTransform: 'none' }}>
+        What<br />Matters
+      </span>
+
+      {/* Axis labels */}
+      <span className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full pb-1 text-[9px] text-[var(--color-text-primary)] uppercase tracking-wider">
+        Actions
+      </span>
+      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full pt-1 text-[9px] text-[var(--color-text-primary)] uppercase tracking-wider whitespace-nowrap">
+        Inner Experience
+      </span>
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full pr-1.5 text-[9px] text-[var(--color-text-primary)] uppercase tracking-wider">
+        Away
+      </span>
+      <span className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-full pl-1.5 text-[9px] text-[var(--color-text-primary)] uppercase tracking-wider">
+        Toward
+      </span>
+    </div>
+  );
+}
+
+// ─── Animation Icon (eye open/closed toggle) ────────────────────────────────
+
+function AnimationIcon({ visible }) {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {visible ? (
+        <>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+        </>
+      ) : (
+        <>
+          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+          <line x1="1" y1="1" x2="23" y2="23" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -1211,10 +481,19 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
   const [quadrants, setQuadrants] = useState({ q1: [], q2: [], q3: [], q4: [] });
 
   // ── Journal text ──
-  const [journalNoticing, setJournalNoticing] = useState('');
+  const [journalFirstImpression, setJournalFirstImpression] = useState('');
+  const [journalStuckLoop, setJournalStuckLoop] = useState('');
+  const [journalVitalLoop, setJournalVitalLoop] = useState('');
+  const [journalTension, setJournalTension] = useState('');
   const [journalTowardMove, setJournalTowardMove] = useState('');
   const [journalCompassion, setJournalCompassion] = useState('');
+  const [journalWholeness, setJournalWholeness] = useState('');
+  const [journalMessageFromHere, setJournalMessageFromHere] = useState('');
 
+  // ── Animation toggle state (per-screen) ──
+  const [showStuckLoopArrows, setShowStuckLoopArrows] = useState(true);
+  const [showVitalLoopArrows, setShowVitalLoopArrows] = useState(true);
+  const [showTensionArrow, setShowTensionArrow] = useState(true);
   // ── Matrix modal ──
   const [showMatrix, setShowMatrix] = useState(false);
   const [matrixClosing, setMatrixClosing] = useState(false);
@@ -1240,6 +519,7 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
   const fadeToPhase = useCallback((nextPhase) => {
     setIsVisible(false);
     setTimeout(() => {
+      window.scrollTo(0, 0);
       setPhase(nextPhase);
       setIsVisible(true);
     }, FADE_MS);
@@ -1301,17 +581,22 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
       }
     }
 
-    if (journalNoticing.trim()) {
-      content += `\nWhat I noticed:\n${journalNoticing.trim()}\n`;
-      hasContent = true;
-    }
-    if (journalTowardMove.trim()) {
-      content += `\nOne toward move:\n${journalTowardMove.trim()}\n`;
-      hasContent = true;
-    }
-    if (journalCompassion.trim()) {
-      content += `\nSelf-compassion note:\n${journalCompassion.trim()}\n`;
-      hasContent = true;
+    const journalSections = [
+      { value: journalFirstImpression, label: 'First impression' },
+      { value: journalStuckLoop, label: 'The stuck loop' },
+      { value: journalVitalLoop, label: 'The vital loop' },
+      { value: journalTension, label: 'The tension' },
+      { value: journalTowardMove, label: 'One toward move' },
+      { value: journalCompassion, label: 'Self-compassion note' },
+      { value: journalWholeness, label: 'Wholeness' },
+      { value: journalMessageFromHere, label: 'A message from here' },
+    ];
+
+    for (const { value, label } of journalSections) {
+      if (value.trim()) {
+        content += `\n${label}:\n${value.trim()}\n`;
+        hasContent = true;
+      }
     }
 
     if (hasContent) {
@@ -1337,7 +622,9 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
     // Save quadrant data to store for potential reconstruction
     updateCapture('quadrants', quadrants);
     updateCapture('completedAt', Date.now());
-  }, [quadrants, journalNoticing, journalTowardMove, journalCompassion, addEntry, sessionId, updateCapture]);
+    updateCapture('journalTowardMove', journalTowardMove);
+    updateCapture('journalMessageFromHere', journalMessageFromHere);
+  }, [quadrants, journalFirstImpression, journalStuckLoop, journalVitalLoop, journalTension, journalTowardMove, journalCompassion, journalWholeness, journalMessageFromHere, addEntry, sessionId, updateCapture]);
 
   // ── Completion ──
   const handleComplete = useCallback(async () => {
@@ -1354,7 +641,7 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
   const currentQuadrantId = phase.startsWith('q') && !phase.includes('transition') ? phase : null;
   const currentQuadrantConfig = currentQuadrantId ? QUADRANT_CONFIG[currentQuadrantId] : null;
   const currentQuadrantChips = currentQuadrantId ? quadrants[currentQuadrantId] : [];
-  const meetsMinimum = currentQuadrantConfig ? currentQuadrantChips.length >= currentQuadrantConfig.minItems : true;
+
 
   // ── Previous quadrants for reference chips ──
   const previousQuadrants = useMemo(() => {
@@ -1391,8 +678,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
     matrixCloseTimerRef.current = setTimeout(() => {
       setShowMatrix(false);
       setMatrixClosing(false);
-      // Jump straight to journal-a and fade it in (no double-fade)
-      setPhase('journal-a');
+      // Jump to observer-self interstitial and fade it in (no double-fade)
+      setPhase('observer-self');
       setIsVisible(true);
     }, FADE_MS);
   }, []);
@@ -1436,8 +723,16 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
   }, [phase]);
 
   // ── Journal text getters/setters ──
-  const journalValues = { 'noticing': journalNoticing, 'toward-move': journalTowardMove, 'compassion': journalCompassion };
-  const journalSetters = { 'noticing': setJournalNoticing, 'toward-move': setJournalTowardMove, 'compassion': setJournalCompassion };
+  const journalState = {
+    'first-impression': [journalFirstImpression, setJournalFirstImpression],
+    'stuck-loop': [journalStuckLoop, setJournalStuckLoop],
+    'vital-loop': [journalVitalLoop, setJournalVitalLoop],
+    'tension': [journalTension, setJournalTension],
+    'toward-move': [journalTowardMove, setJournalTowardMove],
+    'compassion': [journalCompassion, setJournalCompassion],
+    'wholeness': [journalWholeness, setJournalWholeness],
+    'message-from-here': [journalMessageFromHere, setJournalMessageFromHere],
+  };
 
   // ── Back navigation ──
   const getBackPhase = useCallback(() => {
@@ -1571,16 +866,9 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
             config={currentQuadrantConfig}
           />
 
-          {/* Minimum items hint */}
-          {!meetsMinimum && currentQuadrantChips.length > 0 && (
-            <p className="text-[9px] text-[var(--color-text-tertiary)] text-center normal-case">
-              Add at least {currentQuadrantConfig.minItems} item{currentQuadrantConfig.minItems > 1 ? 's' : ''} to continue
-            </p>
-          )}
-
           {/* Placement description */}
           {PLACEMENT_DESCRIPTIONS[currentQuadrantId] && (
-            <div className="border border-[var(--accent)] rounded-md px-2.5 pt-1.5 pb-1 mt-2">
+            <div className="border border-[var(--accent)] rounded-md px-2.5 pt-1.5 pb-0.5 mt-2">
               <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed text-left">
                 <span className="text-[var(--accent)] tracking-wider text-[10px]">TIP: </span>
                 {PLACEMENT_DESCRIPTIONS[currentQuadrantId]}
@@ -1633,21 +921,80 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
       return null;
     }
 
+    // ── Observer Self interstitial ──
+    if (phase === 'observer-self') {
+      return (
+        <div className="text-center">
+          <div className="flex justify-center pb-6">
+            <CompassAnimation />
+          </div>
+          {renderContentLines(OBSERVER_SELF_CONTENT.lines)}
+        </div>
+      );
+    }
+
     // ── Journaling ──
     if (phase.startsWith('journal-')) {
-      const journalIndex = { 'journal-a': 0, 'journal-b': 1, 'journal-c': 2 }[phase];
+      const journalIndex = {
+        'journal-a': 0, 'journal-b': 1, 'journal-c': 2,
+        'journal-d': 3, 'journal-e': 4, 'journal-f': 5,
+        'journal-g': 6, 'journal-h': 7,
+      }[phase];
       const screen = JOURNALING_SCREENS[journalIndex];
       if (!screen) return null;
 
-      const value = journalValues[screen.id] || '';
-      const setter = journalSetters[screen.id];
+      const [value, setter] = journalState[screen.id] || ['', null];
 
       return (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-32">
+          {/* Compass visual sits above the title */}
+          {screen.visual === 'compass' && (
+            <div className="flex justify-center py-2">
+              <CompassAnimation />
+            </div>
+          )}
+
+          {/* Title */}
           <h3 className="font-serif text-xl text-[var(--color-text-primary)] normal-case leading-snug">
             {screen.title}
           </h3>
-          <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed">
+
+          {/* Visual element */}
+          {screen.visual === 'stuck-loop' && (
+            <div className="relative my-5">
+              <FocusedMatrixSchematic side="left" quadrants={quadrants} />
+              <LoopArrowAnimation side="left" visible={showStuckLoopArrows} />
+            </div>
+          )}
+          {screen.visual === 'vital-loop' && (
+            <div className="relative my-5">
+              <FocusedMatrixSchematic side="right" quadrants={quadrants} />
+              <LoopArrowAnimation side="right" visible={showVitalLoopArrows} />
+            </div>
+          )}
+          {screen.visual === 'tension' && (
+            <div className="relative my-5">
+              <TensionSchematic />
+              <CrossQuadrantArrow visible={showTensionArrow} />
+            </div>
+          )}
+          {screen.visual === 'toward-focus' && (
+            <div className="my-5">
+              <FocusedSingleQuadrant quadrantId="q4" quadrants={quadrants} />
+            </div>
+          )}
+          {screen.visual === 'compassion-focus' && (
+            <div className="my-5">
+              <FocusedSingleQuadrant quadrantId="q3" quadrants={quadrants} />
+            </div>
+          )}
+          {screen.visual === 'wholeness' && (
+            <div className="my-5">
+              <MatrixGrid quadrants={quadrants} mode="view" onMoveChip={() => {}} />
+            </div>
+          )}
+
+          <p className="text-[var(--color-text-primary)] text-xs leading-relaxed">
             {screen.prompt.split('\n\n').map((para, i) => (
               <span key={i}>
                 {i > 0 && <><br /><br /></>}
@@ -1691,6 +1038,40 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
     <SlotButton icon={<ViewMatrixIcon />} label="Key" onClick={handleViewSchematic} />
   );
 
+  const getAnimationSlot = () => {
+    if (phase === 'journal-b') {
+      return (
+        <SlotButton
+          icon={<AnimationIcon visible={showStuckLoopArrows} />}
+          label={showStuckLoopArrows ? 'Hide animation' : 'Show animation'}
+          onClick={() => setShowStuckLoopArrows((v) => !v)}
+          active={showStuckLoopArrows}
+        />
+      );
+    }
+    if (phase === 'journal-c') {
+      return (
+        <SlotButton
+          icon={<AnimationIcon visible={showVitalLoopArrows} />}
+          label={showVitalLoopArrows ? 'Hide animation' : 'Show animation'}
+          onClick={() => setShowVitalLoopArrows((v) => !v)}
+          active={showVitalLoopArrows}
+        />
+      );
+    }
+    if (phase === 'journal-d') {
+      return (
+        <SlotButton
+          icon={<AnimationIcon visible={showTensionArrow} />}
+          label={showTensionArrow ? 'Hide animation' : 'Show animation'}
+          onClick={() => setShowTensionArrow((v) => !v)}
+          active={showTensionArrow}
+        />
+      );
+    }
+    return null;
+  };
+
   const getControlBarProps = () => {
     const base = { showSkip: true, onSkip: handleSkip, skipConfirmMessage: 'Skip this exercise?', rightSlot: matrixSlot };
 
@@ -1732,7 +1113,7 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
       const nextPhase = `${currentQuadrantId}-transition`;
       return {
         ...base, phase: 'active',
-        primary: { label: 'Continue', onClick: () => fadeToPhase(nextPhase), disabled: !meetsMinimum },
+        primary: { label: 'Continue', onClick: () => fadeToPhase(nextPhase) },
         showBack: true,
         onBack: handleBack,
       };
@@ -1758,11 +1139,18 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
         rightSlot: null,
       };
     }
+    if (phase === 'observer-self') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-a') },
+        showBack: true, onBack: () => { setShowMatrix(true); setPhase('reveal-modal'); },
+      };
+    }
     if (phase === 'journal-a') {
       return {
         ...base, phase: 'active',
         primary: { label: 'Continue', onClick: () => fadeToPhase('journal-b') },
-        showBack: true, onBack: () => { setShowMatrix(false); fadeToPhase('reveal-prompt'); },
+        showBack: true, onBack: () => fadeToPhase('observer-self'),
       };
     }
     if (phase === 'journal-b') {
@@ -1770,17 +1158,55 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
         ...base, phase: 'active',
         primary: { label: 'Continue', onClick: () => fadeToPhase('journal-c') },
         showBack: true, onBack: () => fadeToPhase('journal-a'),
+        leftSlot: getAnimationSlot(),
       };
     }
     if (phase === 'journal-c') {
       return {
         ...base, phase: 'active',
-        primary: { label: 'Continue', onClick: () => fadeToPhase('closing') },
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-d') },
         showBack: true, onBack: () => fadeToPhase('journal-b'),
+        leftSlot: getAnimationSlot(),
+      };
+    }
+    if (phase === 'journal-d') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-e') },
+        showBack: true, onBack: () => fadeToPhase('journal-c'),
+        leftSlot: getAnimationSlot(),
+      };
+    }
+    if (phase === 'journal-e') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-f') },
+        showBack: true, onBack: () => fadeToPhase('journal-d'),
+      };
+    }
+    if (phase === 'journal-f') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-g') },
+        showBack: true, onBack: () => fadeToPhase('journal-e'),
+      };
+    }
+    if (phase === 'journal-g') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('journal-h') },
+        showBack: true, onBack: () => fadeToPhase('journal-f'),
+      };
+    }
+    if (phase === 'journal-h') {
+      return {
+        ...base, phase: 'active',
+        primary: { label: 'Continue', onClick: () => fadeToPhase('closing') },
+        showBack: true, onBack: () => fadeToPhase('journal-g'),
       };
     }
     if (phase === 'closing') {
-      return { ...base, phase: 'completed', primary: { label: 'Complete', onClick: handleComplete }, showSkip: false, showBack: true, onBack: () => fadeToPhase('journal-c') };
+      return { ...base, phase: 'completed', primary: { label: 'Complete', onClick: handleComplete }, showSkip: false, showBack: true, onBack: () => fadeToPhase('journal-h') };
     }
 
     return base;

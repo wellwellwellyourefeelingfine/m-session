@@ -12,25 +12,33 @@ export const FOLLOW_UP_MODULES = {
     id: 'checkIn',
     title: 'Check-In',
     description: 'A brief check-in to see how you\'re feeling after your session.',
-    lockedDescription: 'This module will be available 24 hours after your session ended, giving your mind and body time to rest.',
+    lockedDescription: 'This module will be available 8 hours after your session ended, giving your mind and body time to rest.',
     duration: '3-5 minutes',
-    unlockHours: 24,
+    unlockHours: 8,
   },
   revisit: {
     id: 'revisit',
     title: 'Revisit',
     description: 'Revisit what you wrote during your session with fresh eyes.',
-    lockedDescription: 'This module will be available 24 hours after your session ended.',
+    lockedDescription: 'This module will be available 8 hours after your session ended.',
     duration: '5-10 minutes',
-    unlockHours: 24,
+    unlockHours: 8,
+  },
+  valuesCompassFollowUp: {
+    id: 'valuesCompassFollowUp',
+    title: 'Values Compass',
+    description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
+    lockedDescription: 'This module will be available 12 hours after your session ended.',
+    duration: '10-20 minutes',
+    unlockHours: 12,
   },
   integration: {
     id: 'integration',
     title: 'Integration Reflection',
     description: 'A deeper reflection on how integration is unfolding.',
-    lockedDescription: 'This module will be available 48 hours after your session ended.',
+    lockedDescription: 'This module will be available 24 hours after your session ended.',
     duration: '5-10 minutes',
-    unlockHours: 48,
+    unlockHours: 24,
   },
 };
 
@@ -244,6 +252,147 @@ export const INTEGRATION_PRACTICES = [
   'Talk to someone you trust about your experience',
   'Notice moments in daily life that connect back to what emerged',
   'Be patient\u2014some insights take weeks to fully land',
+];
+
+// ============================================
+// VALUES COMPASS FOLLOW-UP MODULE CONTENT
+// ============================================
+
+export const TOWARD_MOVE_STATUSES = [
+  { value: 'did-it', label: "I did it, or I've been doing it" },
+  { value: 'started', label: "I've started, with mixed results" },
+  { value: 'not-yet', label: "I haven't started yet" },
+  { value: 'reconsidered', label: "I've reconsidered — it doesn't fit" },
+];
+
+export const TOWARD_MOVE_RESPONSES = {
+  'did-it': {
+    text: 'Good. Toward moves compound.',
+    hasInput: false,
+  },
+  started: {
+    text: "That's honest. What's been getting in the way?",
+    hasInput: true,
+    placeholder: "What's been getting in the way...",
+  },
+  'not-yet': {
+    text: "That's okay. Is there a smaller version you could try today?",
+    hasInput: true,
+    placeholder: 'A smaller version...',
+  },
+  reconsidered: {
+    text: "Sometimes what made sense during the session doesn't fit ordinary life. Is there a different toward move that feels more true now?",
+    hasInput: true,
+    placeholder: 'What feels more true now...',
+  },
+};
+
+export const TIME_SPENT_OPTIONS = [
+  { value: 'mostly-left', label: 'Mostly on the left (away moves)' },
+  { value: 'mostly-right', label: 'Mostly on the right (toward moves)' },
+  { value: 'balanced', label: 'A mix of both sides' },
+  { value: 'hard-to-tell', label: "Hard to tell" },
+];
+
+export const TIME_SPENT_RESPONSES = {
+  'mostly-left': {
+    text: "That's worth noticing without judgment. Away moves are often automatic — seeing them is the first step.",
+    hasInput: true,
+    placeholder: 'What I notice about that...',
+  },
+  'mostly-right': {
+    text: "That's good to recognize. What's been helping you move toward what matters?",
+    hasInput: true,
+    placeholder: "What's been helping...",
+  },
+  balanced: {
+    text: "A mix is normal. Life involves both. The compass helps you notice the balance.",
+    hasInput: false,
+  },
+  'hard-to-tell': {
+    text: "That's okay. Noticing gets easier with practice. Even asking the question is a toward move.",
+    hasInput: false,
+  },
+};
+
+export const VALUES_COMPASS_FOLLOWUP_STEPS = [
+  {
+    id: 'welcome',
+    content: {
+      label: 'Values Compass',
+      title: 'Your Values Compass',
+      body: "During your session, you mapped out what matters to you, what gets in the way, and how you move through your life. Let's revisit that map with fresh eyes.",
+    },
+  },
+  {
+    id: 'matrix-revisit',
+    content: {
+      label: 'Values Compass',
+      title: 'Your Matrix',
+      body: 'Here is the matrix you created during your session. Take a moment to look at it. Does anything stand out differently now?',
+      placeholder: 'What I notice looking at this now...',
+    },
+  },
+  {
+    id: 'noticing-away',
+    content: {
+      label: 'Values Compass',
+      title: 'Away Moves',
+      body: "Since your session, have you noticed yourself making any of the away moves you identified? Or new ones you didn't map?",
+      placeholder: 'Away moves I\'ve noticed...',
+    },
+  },
+  {
+    id: 'noticing-toward',
+    content: {
+      label: 'Values Compass',
+      title: 'Toward Moves',
+      body: "Have you noticed yourself making any toward moves — even small ones — since your session?",
+      placeholder: 'Toward moves I\'ve noticed...',
+    },
+  },
+  {
+    id: 'stuck-loop-checkin',
+    content: {
+      label: 'Values Compass',
+      title: 'The Loop',
+      body: "During your session, we looked at the stuck loop — how inner obstacles and away moves can feed each other. Have you noticed this pattern playing out since then?",
+      placeholder: 'What I\'ve noticed about the loop...',
+    },
+  },
+  {
+    id: 'toward-move-status',
+    content: {
+      label: 'Values Compass',
+      title: 'Your Toward Move',
+      body: 'During your session, you chose a toward move to practice:',
+    },
+  },
+  {
+    id: 'time-spent',
+    content: {
+      label: 'Values Compass',
+      title: 'Where You\'ve Been',
+      body: 'Looking at your matrix, where would you say you\'ve been spending most of your time since the session?',
+    },
+  },
+  {
+    id: 'message-resurface',
+    content: {
+      label: 'Values Compass',
+      title: 'A Message From That Place',
+      body: 'During your session, you wrote a message to yourself from a place of clarity. Here it is:',
+      placeholder: 'Reading this now, I...',
+    },
+  },
+  {
+    id: 'closing',
+    content: {
+      label: 'Complete',
+      body: "The compass isn't something you complete — it's something you carry. Each time you notice a toward move or an away move, you're using it.",
+      bodySecondary: 'The awareness you practiced during your session is already working.',
+    },
+  },
 ];
 
 export const INTEGRATION_STEPS = [

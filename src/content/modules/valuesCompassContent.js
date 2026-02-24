@@ -225,30 +225,76 @@ export const REVEAL_CONTENT = {
   buttonLabel: 'Reveal My Matrix',
 };
 
+// ─── Observer Self interstitial ──────────────────────────────────────────────
+
+export const OBSERVER_SELF_CONTENT = {
+  lines: [
+    'Everything in your matrix. What matters, what gets in the way, what you do on both sides.',
+    '\u00a7',
+    'There\u2019s a you at the center of it.',
+    '\u00a7',
+    'The one who chose what matters. The one who feels what gets in the way. The one who gets to decide what comes next.',
+  ],
+};
+
 // ─── Journaling screens ─────────────────────────────────────────────────────
 
 export const JOURNALING_SCREENS = [
   {
-    id: 'noticing',
+    id: 'first-impression',
     title: 'What did you notice when you saw the full picture?',
-    prompt: 'A connection, a gap, a pattern, something surprising. Whatever stood out first.',
+    prompt: 'A connection, a gap, a pattern, something surprising. Whatever came up first.',
     placeholder: 'What stood out to you...',
-    required: false,
+    visual: 'compass',
+  },
+  {
+    id: 'stuck-loop',
+    title: 'The Loop on the Left',
+    prompt: 'Inner stuff shows up \u2014 fear, doubt, old stories. You do something to get away from it. It helps for a while. Then the inner stuff comes back.\n\nThis is a loop. Everybody has them. It only becomes a problem when you can\u2019t step out of it.\n\nLook at the left side of your matrix. Do you recognize this pattern? Is it working?',
+    placeholder: 'What you notice about the loop...',
+    visual: 'stuck-loop',
+  },
+  {
+    id: 'vital-loop',
+    title: 'The Loop on the Right',
+    prompt: 'This side works differently. When you act from what matters, it feeds the connection back. The things you care about become clearer. The moves become easier to see.\n\nThis loop doesn\u2019t need the inner stuff to go away first. It runs alongside it.',
+    placeholder: 'What this brings up for you...',
+    visual: 'vital-loop',
+  },
+  {
+    id: 'tension',
+    title: 'The Away Moves Have a Cost',
+    prompt: 'Time and energy spent on the left side is time and energy not spent on the right. Not because you\u2019re failing \u2014 because that\u2019s how the system works.\n\nWhen you look at your matrix, which side has been getting more of your life lately?',
+    placeholder: 'What you see when you look at both sides...',
+    visual: 'tension',
   },
   {
     id: 'toward-move',
-    title: 'Look at your toward moves, the top-right of your matrix.',
-    prompt: 'Pick the one that feels most alive right now. The one your body responds to.\n\nWhat would it look like to actually do this in the next week?',
+    title: 'One Toward Move',
+    prompt: 'Look at the top-right of your matrix \u2014 the toward moves.\n\nPick the one that feels most alive right now. The one your body responds to.\n\nWhat would it look like to actually do this in the next week? Be specific. Not the grand version \u2014 the real one.',
     placeholder: 'One toward move, made real...',
-    required: false,
+    visual: 'toward-focus',
   },
   {
     id: 'compassion',
-    title: 'The left side of your matrix isn\u2019t a failure. It\u2019s what you\u2019ve been doing to survive.',
-    prompt: 'Is there anything you want to say to yourself about those patterns?',
+    title: 'The Left Side Isn\u2019t a Failure',
+    prompt: 'Everything on the left side of your matrix \u2014 the fear, the avoidance, the loops \u2014 those are things you learned to do to protect yourself.\n\nThey made sense at some point. Some of them still do.\n\nIs there anything you want to say to yourself about those patterns?',
     placeholder: 'What you want to say to yourself...',
-    required: false,
-    skippable: true,
+    visual: 'compassion-focus',
+  },
+  {
+    id: 'wholeness',
+    title: 'This Is Your Whole Picture',
+    prompt: 'Both sides. The toward and the away. The things that matter and the things that make it hard. The loops and the moves.\n\nNone of it needs to be fixed right now. You mapped it. You see it clearly. That\u2019s not a small thing.',
+    placeholder: 'Anything you want to hold onto from what you\u2019ve seen...',
+    visual: 'wholeness',
+  },
+  {
+    id: 'message-from-here',
+    title: 'Write Something to Yourself From This Place',
+    prompt: 'Right now, you\u2019re seeing yourself clearly. That doesn\u2019t always happen.\n\nWhatever you want to remember, about who you are, what matters, what you\u2019re ready to do, or what you need to hear again on a harder day, write it here.',
+    placeholder: 'A message from you, to you...',
+    visual: 'compass',
   },
 ];
 
@@ -260,7 +306,7 @@ export const CLOSING_CONTENT = {
     '§',
     'Values aren\u2019t something you find once and keep forever. They\u2019re a direction you face, sometimes clearly, sometimes in the dark.',
     '§',
-    'The toward-moves are always available to you.',
+    'The toward moves are always available to you.',
   ],
 };
 

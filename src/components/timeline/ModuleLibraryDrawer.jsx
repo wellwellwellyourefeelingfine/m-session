@@ -88,6 +88,8 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
         return 'Integration';
       case 'follow-up':
         return 'Follow-Up';
+      case 'pre-session':
+        return 'Pre-Session';
       default:
         return p;
     }
@@ -113,12 +115,12 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
         </button>
 
         {/* Edit Timeline button - below close button (only for non-completed sessions and non-follow-up phases) */}
-        {onEnterEditMode && !isCompletedSession && phase !== 'follow-up' && (
+        {onEnterEditMode && !isCompletedSession && phase !== 'follow-up' && phase !== 'pre-session' && (
           <button
             onClick={onEnterEditMode}
             className="absolute top-12 right-4 px-3 py-1.5 text-[10px] uppercase tracking-wider border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)] transition-colors z-10"
           >
-            Edit Timeline
+            Edit
           </button>
         )}
 
@@ -203,7 +205,23 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
                                 {module.title}
                               </p>
                               {hasWarning && (
-                                <span className="text-[var(--accent)] text-xs">⚠</span>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  className="flex-shrink-0 -mt-0.5"
+                                >
+                                  <path
+                                    d="M12 2L1 21h22L12 2z"
+                                    stroke="var(--accent)"
+                                    strokeWidth="2"
+                                    strokeLinejoin="round"
+                                    fill="none"
+                                  />
+                                  <line x1="12" y1="10" x2="12" y2="15" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+                                  <circle cx="12" cy="18" r="1" fill="var(--accent)" />
+                                </svg>
                               )}
                             </div>
                             <p className="text-[var(--color-text-secondary)] text-sm mt-1">

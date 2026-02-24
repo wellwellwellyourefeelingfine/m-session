@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModuleById } from '../content/modules';
 import { useAppStore } from './useAppStore';
+import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Helper to generate unique IDs
@@ -240,6 +241,7 @@ export const useSessionStore = create(
         status: 'pending',            // 'pending' | 'prompted' | 'taken' | 'skipped' | 'snoozed' | 'expired'
         boosterTakenAt: null,         // Timestamp when booster was taken
         boosterDecisionAt: null,      // Timestamp when decision was made
+        boosterDoseMg: null,          // User-edited booster dose in mg; null = use calculateBoosterDose()
         snoozeCount: 0,               // Number of times snoozed
         nextPromptAt: null,           // When to re-prompt after snooze
         checkInResponses: {           // Responses from booster check-in questions
@@ -291,8 +293,9 @@ export const useSessionStore = create(
         },
         // Protector Dialogue captures (Part 1 → Part 2 data contract)
         protectorDialogue: {
-          protectorType: null,        // 'critic' | 'controller' | 'pleaser' | 'achiever' | 'avoider' | 'worrier' | 'caretaker' | 'other'
-          customProtectorName: '',    // Only if protectorType === 'other'
+          protectorName: '',          // Free-text user-written name
+          protectorDescription: '',   // Free-text description of the protector
+          feelToward: { initial: null, recheck: null }, // 'curious' | 'warm' | 'open' | 'frustrated' | 'afraid' | 'numb'
           bodyLocation: '',           // Free text
           protectorMessage: '',       // Free text
           completedAt: null,
@@ -306,6 +309,8 @@ export const useSessionStore = create(
         valuesCompass: {
           quadrants: null,    // { q1: [{id, text, x, y}], q2: [...], q3: [...], q4: [...] }
           completedAt: null,
+          journalTowardMove: null,    // journal-e text (toward move commitment)
+          journalMessageFromHere: null, // journal-h text (message to self)
         },
       },
 
@@ -330,9 +335,10 @@ export const useSessionStore = create(
       followUp: {
         // Unlock times calculated from session.closedAt
         unlockTimes: {
-          checkIn: null,      // closedAt + 24 hours
-          revisit: null,      // closedAt + 24 hours
-          integration: null,  // closedAt + 48 hours
+          checkIn: null,      // closedAt + 8 hours
+          revisit: null,      // closedAt + 8 hours
+          integration: null,  // closedAt + 24 hours
+          valuesCompassFollowUp: null, // closedAt + 12 hours (only if VC completed)
         },
         modules: {
           checkIn: {
@@ -354,11 +360,28 @@ export const useSessionStore = create(
             commitmentStatus: null,  // 'following' | 'trying' | 'not-started' | 'reconsidered' | 'forgot'
             commitmentResponse: null,
           },
+          valuesCompassFollowUp: {
+            status: 'locked',
+            completedAt: null,
+            matrixEdited: false,
+            editedQuadrants: null,
+            matrixRevisit: null,
+            noticingAway: null,
+            noticingToward: null,
+            stuckLoopCheckin: null,
+            towardMoveStatus: { selection: null, response: null },
+            timeSpent: { selection: null, response: null },
+            messageResponse: null,
+            currentScreen: null,
+          },
         },
       },
 
       // Active follow-up module (renders in Active tab)
-      activeFollowUpModule: null, // 'checkIn' | 'revisit' | 'integration' | null
+      activeFollowUpModule: null, // 'checkIn' | 'revisit' | 'integration' | 'valuesCompassFollowUp' | null
+
+      // Active pre-session module (renders in Active tab before session starts)
+      activePreSessionModule: null, // instanceId | null
 
       // ============================================
       // MEDITATION PLAYBACK STATE
@@ -1151,21 +1174,32 @@ export const useSessionStore = create(
         });
       },
 
+      setBoosterDose: (doseMg) => {
+        const state = get();
+        set({
+          booster: {
+            ...state.booster,
+            boosterDoseMg: doseMg,
+          },
+        });
+      },
+
       takeBooster: (timestamp = Date.now()) => {
         const state = get();
+        // Resolve final dose: user-edited or calculated from initial
+        const finalDose = state.booster.boosterDoseMg
+          ?? calculateBoosterDose(state.substanceChecklist.plannedDosageMg);
         set({
           booster: {
             ...state.booster,
             status: 'taken',
             boosterTakenAt: timestamp,
             boosterDecisionAt: Date.now(),
-            isModalVisible: false,
+            boosterDoseMg: finalDose,
+            // Keep modal visible — the confirmation page (step 5b) still needs to show.
+            // hideBoosterModal() handles dismissal + playback resume when user clicks Continue.
           },
         });
-        // Resume module timer
-        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
-          get().resumeMeditationPlayback();
-        }
       },
 
       confirmBoosterTime: (adjustedTime) => {
@@ -1255,6 +1289,32 @@ export const useSessionStore = create(
         if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
           get().resumeMeditationPlayback();
         }
+      },
+
+      // Re-open booster modal from timeline info popup (e.g. after accidental skip)
+      reopenBoosterModal: () => {
+        const state = get();
+        // Pause active module timer
+        if (state.meditationPlayback.isPlaying) {
+          get().pauseMeditationPlayback();
+        }
+        // Switch to Active tab so the modal is visible
+        useAppStore.getState().setCurrentTab('active');
+        set({
+          booster: {
+            ...state.booster,
+            status: 'prompted',
+            isModalVisible: true,
+            isMinimized: false,
+            snoozeCount: 0,
+            nextPromptAt: null,
+            checkInResponses: {
+              experienceQuality: null,
+              physicalState: null,
+              trajectory: null,
+            },
+          },
+        });
       },
 
       // Check if snooze would push past the window
@@ -1702,13 +1762,17 @@ export const useSessionStore = create(
       completeSession: () => {
         const state = get();
         const now = Date.now();
-        const DAY_MS = 24 * 60 * 60 * 1000;
+        const HOUR_MS = 60 * 60 * 1000;
+        const DAY_MS = 24 * HOUR_MS;
 
         // Calculate elapsed seconds
         const ingestionTime = state.substanceChecklist?.ingestionTime;
         const finalDurationSeconds = ingestionTime
           ? Math.floor((now - ingestionTime) / 1000)
           : null;
+
+        // Check if Values Compass was completed during this session
+        const vcCompleted = state.transitionCaptures.valuesCompass?.completedAt != null;
 
         set({
           sessionPhase: 'completed',
@@ -1743,9 +1807,10 @@ export const useSessionStore = create(
           followUp: {
             ...state.followUp,
             unlockTimes: {
-              checkIn: now + DAY_MS,
-              revisit: now + DAY_MS,
-              integration: now + 2 * DAY_MS,
+              checkIn: now + 8 * HOUR_MS,
+              revisit: now + 8 * HOUR_MS,
+              integration: now + DAY_MS,
+              ...(vcCompleted ? { valuesCompassFollowUp: now + 12 * HOUR_MS } : {}),
             },
           },
         });
@@ -1766,11 +1831,11 @@ export const useSessionStore = create(
         const updates = {};
 
         // Check each module's unlock status
-        ['checkIn', 'revisit', 'integration'].forEach((moduleId) => {
+        ['checkIn', 'revisit', 'integration', 'valuesCompassFollowUp'].forEach((moduleId) => {
           const unlockTime = unlockTimes[moduleId];
           const module = modules[moduleId];
 
-          if (module.status === 'locked' && unlockTime && now >= unlockTime) {
+          if (module && module.status === 'locked' && unlockTime && now >= unlockTime) {
             updates[moduleId] = { ...module, status: 'available' };
           }
         });
@@ -1837,6 +1902,194 @@ export const useSessionStore = create(
       // Exit follow-up module without completing (return to Home)
       exitFollowUpModule: () => {
         set({ activeFollowUpModule: null });
+        useAppStore.getState().setCurrentTab('home');
+      },
+
+      // ============================================
+      // PRE-SESSION MODULE ACTIONS
+      // ============================================
+
+      // Helper: mark journal entries created during a module run with PRE-SESSION header
+      _markPreSessionJournalEntries: (startedAt) => {
+        const journalState = useJournalStore.getState();
+        const now = Date.now();
+        journalState.entries.forEach((entry) => {
+          if (
+            entry.createdAt >= startedAt &&
+            entry.createdAt <= now &&
+            !entry.content.startsWith('PRE-SESSION\n\n')
+          ) {
+            journalState.updateEntry(entry.id, `PRE-SESSION\n\n${entry.content}`);
+          }
+        });
+      },
+
+      // Start a pre-session module (renders in Active tab)
+      startPreSessionModule: (instanceId) => {
+        const state = get();
+        const now = Date.now();
+        set({
+          activePreSessionModule: instanceId,
+          modules: {
+            ...state.modules,
+            items: state.modules.items.map((m) =>
+              m.instanceId === instanceId
+                ? { ...m, status: 'active', startedAt: now }
+                : m
+            ),
+          },
+        });
+        useAppStore.getState().setCurrentTab('active');
+      },
+
+      // Complete a pre-session module
+      completePreSessionModule: (instanceId) => {
+        const state = get();
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module) return;
+
+        const now = Date.now();
+
+        // Mark journal entries with PRE-SESSION header
+        if (module.startedAt) {
+          get()._markPreSessionJournalEntries(module.startedAt);
+        }
+
+        // Mark module as completed
+        const updatedItems = state.modules.items.map((m) =>
+          m.instanceId === instanceId
+            ? { ...m, status: 'completed', completedAt: now }
+            : m
+        );
+
+        // Find next upcoming pre-session module
+        const nextModule = updatedItems
+          .filter((m) => m.phase === 'pre-session' && m.status === 'upcoming')
+          .sort((a, b) => a.order - b.order)[0];
+
+        if (nextModule) {
+          // Auto-start next pre-session module
+          set({
+            activePreSessionModule: nextModule.instanceId,
+            modules: {
+              ...state.modules,
+              items: updatedItems.map((m) =>
+                m.instanceId === nextModule.instanceId
+                  ? { ...m, status: 'active', startedAt: now }
+                  : m
+              ),
+            },
+            meditationPlayback: {
+              moduleInstanceId: null,
+              isPlaying: false,
+              hasStarted: false,
+              startedAt: null,
+              accumulatedTime: 0,
+            },
+          });
+        } else {
+          // No more pre-session modules — return to home
+          set({
+            activePreSessionModule: null,
+            modules: {
+              ...state.modules,
+              items: updatedItems,
+            },
+            meditationPlayback: {
+              moduleInstanceId: null,
+              isPlaying: false,
+              hasStarted: false,
+              startedAt: null,
+              accumulatedTime: 0,
+            },
+          });
+          useAppStore.getState().setCurrentTab('home');
+        }
+      },
+
+      // Skip a pre-session module
+      skipPreSessionModule: (instanceId) => {
+        const state = get();
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module) return;
+
+        const now = Date.now();
+
+        // Mark journal entries with PRE-SESSION header
+        if (module.startedAt) {
+          get()._markPreSessionJournalEntries(module.startedAt);
+        }
+
+        // Mark module as skipped
+        const updatedItems = state.modules.items.map((m) =>
+          m.instanceId === instanceId
+            ? { ...m, status: 'skipped', completedAt: now }
+            : m
+        );
+
+        // Find next upcoming pre-session module
+        const nextModule = updatedItems
+          .filter((m) => m.phase === 'pre-session' && m.status === 'upcoming')
+          .sort((a, b) => a.order - b.order)[0];
+
+        if (nextModule) {
+          set({
+            activePreSessionModule: nextModule.instanceId,
+            modules: {
+              ...state.modules,
+              items: updatedItems.map((m) =>
+                m.instanceId === nextModule.instanceId
+                  ? { ...m, status: 'active', startedAt: now }
+                  : m
+              ),
+            },
+            meditationPlayback: {
+              moduleInstanceId: null,
+              isPlaying: false,
+              hasStarted: false,
+              startedAt: null,
+              accumulatedTime: 0,
+            },
+          });
+        } else {
+          set({
+            activePreSessionModule: null,
+            modules: {
+              ...state.modules,
+              items: updatedItems,
+            },
+            meditationPlayback: {
+              moduleInstanceId: null,
+              isPlaying: false,
+              hasStarted: false,
+              startedAt: null,
+              accumulatedTime: 0,
+            },
+          });
+          useAppStore.getState().setCurrentTab('home');
+        }
+      },
+
+      // Exit pre-session module without completing (return to Home)
+      exitPreSessionModule: () => {
+        const state = get();
+        const instanceId = state.activePreSessionModule;
+        if (instanceId) {
+          const module = state.modules.items.find((m) => m.instanceId === instanceId);
+          if (module?.startedAt) {
+            get()._markPreSessionJournalEntries(module.startedAt);
+          }
+        }
+        set({
+          activePreSessionModule: null,
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          },
+        });
         useAppStore.getState().setCurrentTab('home');
       },
 
@@ -2305,6 +2558,7 @@ export const useSessionStore = create(
             status: 'pending',
             boosterTakenAt: null,
             boosterDecisionAt: null,
+            boosterDoseMg: null,
             snoozeCount: 0,
             nextPromptAt: null,
             checkInResponses: {
@@ -2388,6 +2642,7 @@ export const useSessionStore = create(
             },
           },
           activeFollowUpModule: null,
+          activePreSessionModule: null,
           meditationPlayback: {
             moduleInstanceId: null,
             isPlaying: false,
@@ -2398,10 +2653,10 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 9, // Increment this when schema changes to force reset
+      version: 12, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
-        const { meditationPlayback, activeFollowUpModule, ...rest } = state;
+        const { meditationPlayback, activeFollowUpModule, activePreSessionModule, ...rest } = state;
         return {
           ...rest,
           // Reset transient flags within nested objects
@@ -2623,6 +2878,7 @@ export const useSessionStore = create(
             state.transitionCaptures = {};
           }
           if (!state.transitionCaptures.protectorDialogue) {
+            // Old schema — will be migrated to new shape in v10→v11
             state.transitionCaptures.protectorDialogue = {
               protectorType: null,
               customProtectorName: '',
@@ -2656,6 +2912,87 @@ export const useSessionStore = create(
               quadrants: null,
               completedAt: null,
             };
+          }
+        }
+
+        // Version 9 → 10: Add boosterDoseMg to booster state
+        if (version < 10) {
+          if (state.booster) {
+            state.booster = {
+              ...state.booster,
+              boosterDoseMg: state.booster.boosterDoseMg ?? null,
+            };
+          }
+        }
+
+        // Version 10 → 11: Migrate protectorDialogue from grid selection to open naming
+        if (version < 11) {
+          const pd = state.transitionCaptures?.protectorDialogue;
+          if (pd) {
+            const OLD_LABELS = {
+              critic: 'The Critic', controller: 'The Controller', pleaser: 'The Pleaser',
+              achiever: 'The Achiever', avoider: 'The Avoider', worrier: 'The Worrier',
+              caretaker: 'The Caretaker',
+            };
+            const oldName = pd.protectorType === 'other'
+              ? (pd.customProtectorName || '')
+              : (OLD_LABELS[pd.protectorType] || '');
+
+            state.transitionCaptures.protectorDialogue = {
+              protectorName: oldName,
+              protectorDescription: '',
+              feelToward: { initial: null, recheck: null },
+              bodyLocation: pd.bodyLocation || '',
+              protectorMessage: pd.protectorMessage || '',
+              completedAt: pd.completedAt || null,
+            };
+          }
+        }
+
+        // Version 11 → 12: Add valuesCompassFollowUp and journal fields
+        if (version < 12) {
+          // Add journal fields to valuesCompass transitionCaptures
+          if (state.transitionCaptures?.valuesCompass) {
+            state.transitionCaptures.valuesCompass = {
+              ...state.transitionCaptures.valuesCompass,
+              journalTowardMove: state.transitionCaptures.valuesCompass.journalTowardMove ?? null,
+              journalMessageFromHere: state.transitionCaptures.valuesCompass.journalMessageFromHere ?? null,
+            };
+          }
+
+          // Add valuesCompassFollowUp to followUp.modules
+          if (state.followUp?.modules && !state.followUp.modules.valuesCompassFollowUp) {
+            state.followUp = {
+              ...state.followUp,
+              modules: {
+                ...state.followUp.modules,
+                valuesCompassFollowUp: {
+                  status: 'locked',
+                  completedAt: null,
+                  matrixEdited: false,
+                  editedQuadrants: null,
+                  matrixRevisit: null,
+                  noticingAway: null,
+                  noticingToward: null,
+                  stuckLoopCheckin: null,
+                  towardMoveStatus: { selection: null, response: null },
+                  timeSpent: { selection: null, response: null },
+                  messageResponse: null,
+                  currentScreen: null,
+                },
+              },
+            };
+          }
+
+          // Ensure valuesCompassFollowUp exists in unlockTimes (as null if not set)
+          if (state.followUp?.unlockTimes && !('valuesCompassFollowUp' in state.followUp.unlockTimes)) {
+            state.followUp = {
+              ...state.followUp,
+              unlockTimes: {
+                ...state.followUp.unlockTimes,
+              },
+            };
+            // Don't add a valuesCompassFollowUp key — it stays absent for users who didn't use VC
           }
         }
 

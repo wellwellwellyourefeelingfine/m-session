@@ -24,6 +24,7 @@ import PhilosophyContent from '../shared/PhilosophyContent';
 import FollowUpCheckIn from '../followup/FollowUpCheckIn';
 import FollowUpRevisit from '../followup/FollowUpRevisit';
 import FollowUpIntegration from '../followup/FollowUpIntegration';
+import FollowUpValuesCompass from '../followup/FollowUpValuesCompass';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
@@ -46,6 +47,10 @@ export default function ActiveView() {
   const closingCheckIn = useSessionStore((state) => state.closingCheckIn);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const activeFollowUpModule = useSessionStore((state) => state.activeFollowUpModule);
+  const activePreSessionModule = useSessionStore((state) => state.activePreSessionModule);
+  const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
+  const skipPreSessionModule = useSessionStore((state) => state.skipPreSessionModule);
+  const exitPreSessionModule = useSessionStore((state) => state.exitPreSessionModule);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
@@ -185,6 +190,36 @@ export default function ActiveView() {
     if (activeFollowUpModule === 'checkIn') return <FollowUpCheckIn />;
     if (activeFollowUpModule === 'revisit') return <FollowUpRevisit />;
     if (activeFollowUpModule === 'integration') return <FollowUpIntegration />;
+    if (activeFollowUpModule === 'valuesCompassFollowUp') return <FollowUpValuesCompass />;
+
+    // Check for active pre-session module (renders in Active tab before session starts)
+    if (activePreSessionModule) {
+      const preSessionModule = _modules.items.find((m) => m.instanceId === activePreSessionModule);
+      if (preSessionModule) {
+        return (
+          <div className="relative">
+            {/* Pre-Session indicator bar */}
+            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+              <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">
+                Pre-Session
+              </span>
+              <button
+                onClick={exitPreSessionModule}
+                className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+              >
+                Exit
+              </button>
+            </div>
+            <ModuleRenderer
+              module={preSessionModule}
+              onTimerUpdate={handleModuleTimerUpdate}
+              onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
+              onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
+            />
+          </div>
+        );
+      }
+    }
 
     switch (sessionPhase) {
       case 'not-started':

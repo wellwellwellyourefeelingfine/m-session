@@ -14,7 +14,7 @@ import PhaseSection from './PhaseSection';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
 import FollowUpModuleModal from '../home/FollowUpModuleModal';
-import AddedFollowUpModuleModal from '../home/AddedFollowUpModuleModal';
+import AltSessionModuleModal from '../home/AltSessionModuleModal';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -26,6 +26,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
   const [followUpCountdown, setFollowUpCountdown] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedPreSessionModule, setSelectedPreSessionModule] = useState(null);
+  const [preSessionExpanded, setPreSessionExpanded] = useState(true);
 
   // Get current tab to detect tab switches
   const currentTab = useAppStore((state) => state.currentTab);
@@ -50,6 +52,13 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isEditMode]);
+
+  // Auto-collapse pre-session section when session starts
+  useEffect(() => {
+    if (isActiveSession || isCompletedSession) {
+      setPreSessionExpanded(false);
+    }
+  }, [isActiveSession, isCompletedSession]);
 
   // Function to enter edit mode (can be called from ModuleLibraryDrawer)
   const enterEditMode = useCallback(() => {
@@ -87,6 +96,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const comeUpModules = moduleItems.filter((m) => m.phase === 'come-up').sort((a, b) => a.order - b.order);
   const integrationModules = moduleItems.filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order);
   const followUpModules = moduleItems.filter((m) => m.phase === 'follow-up').sort((a, b) => a.order - b.order);
+  const preSessionModules = moduleItems.filter((m) => m.phase === 'pre-session').sort((a, b) => a.order - b.order);
+  const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
 
   const comeUpDuration = getPhaseDuration('come-up');
   const peakDuration = getPhaseDuration('peak');
@@ -129,11 +140,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       ...nonBoosterPeakModules.slice(boosterInsertIndex),
     ];
   }
-
-  // Calculate cumulative start times for each phase
-  const phase1StartTime = 0;
-  const phase2StartTime = comeUpDuration;
-  const phase3StartTime = comeUpDuration + peakDuration;
 
   // Safe access to phase durations with defaults
   const comeUpMaxDuration = timeline?.phases?.comeUp?.maxDuration || 60;
@@ -380,20 +386,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           >
             My Timeline
           </h2>
-
-          {/* Edit mode toggle - only show for pre-session or active session (not completed) */}
-          {!isCompletedSession && (
-            <button
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`px-3 py-1.5 text-xs uppercase tracking-wider transition-colors ${
-                isEditMode
-                  ? 'bg-[var(--accent)] text-white'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-              }`}
-            >
-              {isEditMode ? 'Done' : 'Edit'}
-            </button>
-          )}
         </div>
 
         {isActiveSession || isCompletedSession ? (
@@ -406,7 +398,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             </p>
             {booster?.status === 'taken' && booster?.boosterTakenAt && (
               <p className="text-[var(--color-text-secondary)]">
-                Booster: +{calculateBoosterDose(substanceChecklist?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
+                Booster: +{booster.boosterDoseMg || calculateBoosterDose(substanceChecklist?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
               </p>
             )}
             {(() => {
@@ -450,6 +442,106 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Timeline with integrated nodes in each phase section */}
       <div>
+        {/* Pre-Session Section — above Phase 1 (only before session starts) */}
+        {!isActiveSession && !isCompletedSession && (
+          <div className="mb-2">
+            <div className="relative flex">
+              {/* Timeline node and vertical bar */}
+              <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+                {preSessionModules.length > 0 && (
+                  <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                )}
+                {preSessionModules.length > 0 && (
+                  <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+                )}
+              </div>
+
+              {/* Pre-session content */}
+              <div className="flex-1 pb-2">
+                {preSessionModules.length > 0 && (
+                  <h3
+                    className="flex items-baseline gap-2"
+                    style={{ lineHeight: 1, marginBottom: '8px' }}
+                  >
+                    <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                      Pre-Session
+                    </span>
+                  </h3>
+                )}
+
+                {/* Module cards */}
+                {preSessionModules.length > 0 && (
+                  <div className="space-y-2">
+                    {preSessionModules.map((module) => {
+                      const libraryModule = getModuleById(module.libraryId);
+
+                      return (
+                        <div key={module.instanceId} className="relative flex items-start">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPreSessionModule(module)}
+                            className={`flex-1 text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${isEditMode ? 'border-dashed border-[var(--accent)]' : ''}`}
+                          >
+                            <div className="pl-3 pr-2 py-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-start flex-1 min-w-0">
+                                  <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                                    {module.title}
+                                  </p>
+                                </div>
+                                <div className="flex items-start space-x-1 flex-shrink-0 ml-2">
+                                  <span className="text-[var(--color-text-tertiary)] text-sm">
+                                    {module.duration}m
+                                  </span>
+                                  {isEditMode && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRemoveModule(module.instanceId);
+                                      }}
+                                      className="ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm
+                                                 bg-[var(--color-bg)] border border-[var(--accent)] text-[var(--accent)]
+                                                 hover:bg-[var(--accent)] hover:text-white transition-colors"
+                                      title="Remove"
+                                    >
+                                      ×
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 line-clamp-2">
+                                {libraryModule?.description || ''}
+                              </p>
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Add Pre-Session Activity button */}
+                <button
+                  onClick={() => handleAddModuleClick('pre-session')}
+                  className="mt-2 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
+                >
+                  + Add Pre-Session Activity
+                </button>
+              </div>
+            </div>
+
+            {/* Ending node for pre-session timeline */}
+            {preSessionModules.length > 0 && (
+              <div className="relative flex">
+                <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+                  <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Come-Up Phase */}
         <PhaseSection
           ref={phase1Ref}
@@ -457,6 +549,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           modules={comeUpModules}
           duration={comeUpDuration}
           maxDuration={comeUpMaxDuration}
+          isFirst={true}
           onAddModule={() => handleAddModuleClick('come-up')}
           onRemoveModule={handleRemoveModule}
           isActiveSession={isActiveSession}
@@ -464,8 +557,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('come-up')}
-          cumulativeStartTime={phase1StartTime}
           isEditMode={isEditMode}
+          onToggleEditMode={() => setIsEditMode(!isEditMode)}
+          isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
         />
@@ -484,8 +578,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('peak')}
-          cumulativeStartTime={phase2StartTime}
           isEditMode={isEditMode}
+          onToggleEditMode={() => setIsEditMode(!isEditMode)}
+          isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
         />
@@ -504,8 +599,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('integration')}
-          cumulativeStartTime={phase3StartTime}
           isEditMode={isEditMode}
+          onToggleEditMode={() => setIsEditMode(!isEditMode)}
+          isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
         />
@@ -514,6 +610,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         <div className="relative flex">
           {/* Timeline node - no vertical bar extending down (this is the end of the main timeline) */}
           <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+            <div className="w-0.5 h-1 bg-[var(--color-text-primary)]" />
             <div className={`w-3 h-3 rounded-full border-2 ${
               isCompletedSession
                 ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
@@ -548,7 +645,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               {/* Timeline node and vertical bar for Phase 4 */}
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
                 {/* Starting node */}
-                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
                 {/* Vertical bar extending down to modules */}
                 <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
               </div>
@@ -722,7 +819,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             {/* Ending node for Phase 4 timeline */}
             <div className="relative flex">
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-1 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
               </div>
               <div className="flex-1">
                 <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1 }}>
@@ -756,6 +853,107 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           >
             Begin Session
           </button>
+        </div>
+      )}
+
+      {/* Pre-Session Section — collapsed at bottom during/after session */}
+      {(isActiveSession || isCompletedSession) && preSessionModules.length > 0 && (
+        <div className="mt-6">
+          <div className="relative flex">
+            {/* Timeline node and vertical bar */}
+            <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+              <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 ${
+                preSessionExpanded
+                  ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+                  : 'bg-[var(--color-text-tertiary)] border-[var(--color-text-tertiary)]'
+              }`} />
+              {preSessionExpanded && (
+                <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+              )}
+            </div>
+
+            {/* Pre-session content */}
+            <div className="flex-1 pb-2">
+              <button
+                type="button"
+                onClick={() => setPreSessionExpanded(!preSessionExpanded)}
+                className="flex items-baseline gap-2 w-full text-left"
+                style={{ lineHeight: 1, marginBottom: preSessionExpanded ? '8px' : '0' }}
+              >
+                <span className={`font-serif text-lg ${preSessionExpanded ? '' : 'text-[var(--color-text-tertiary)]'}`} style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                  Pre-Session
+                </span>
+                <span className="text-[var(--color-text-tertiary)] text-xs">
+                  {preSessionModules.length} {preSessionModules.length === 1 ? 'activity' : 'activities'}
+                </span>
+                <span className="text-[var(--color-text-tertiary)] text-xs ml-auto">
+                  {preSessionExpanded ? '▾' : '▸'}
+                </span>
+              </button>
+
+              {preSessionExpanded && (
+                <div className="space-y-2">
+                  {preSessionModules.map((module) => {
+                    const isModuleCompleted = module.status === 'completed';
+                    const isModuleSkipped = module.status === 'skipped';
+                    const libraryModule = getModuleById(module.libraryId);
+
+                    // During active session, cards are display-only (not clickable)
+                    const isClickable = isCompletedSession;
+
+                    return (
+                      <div
+                        key={module.instanceId}
+                        role={isClickable ? 'button' : undefined}
+                        tabIndex={isClickable ? 0 : undefined}
+                        onClick={isClickable ? () => setSelectedPreSessionModule(module) : undefined}
+                        className={`w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] transition-colors ${
+                          (isModuleCompleted || isModuleSkipped) ? 'opacity-50' : ''
+                        } ${isClickable ? 'hover:bg-[var(--color-bg-secondary)] cursor-pointer' : ''}`}
+                      >
+                        <div className="pl-3 pr-2 py-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start flex-1 min-w-0">
+                              <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
+                                {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
+                                {isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
+                                {!isModuleCompleted && !isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">○</span>}
+                              </div>
+                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                                {module.title}
+                              </p>
+                            </div>
+                            <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
+                              {module.duration}m
+                            </span>
+                          </div>
+                          {(isModuleCompleted || isModuleSkipped) && module.startedAt ? (
+                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7">
+                              {formatTime(module.startedAt)}
+                              {module.completedAt && ` – ${formatTime(module.completedAt)}`}
+                            </p>
+                          ) : (
+                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
+                              {libraryModule?.description || ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Ending node for pre-session timeline */}
+          {preSessionExpanded && (
+            <div className="relative flex">
+              <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-text-primary)] border-[var(--color-text-primary)]" />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -836,9 +1034,24 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Added Follow-Up Module Modal (library modules) */}
       {selectedAddedFollowUpModule && (
-        <AddedFollowUpModuleModal
+        <AltSessionModuleModal
           module={selectedAddedFollowUpModule}
+          mode="follow-up"
+          onBegin={(mod) => {
+            useSessionStore.getState().startModule(mod.instanceId);
+            useAppStore.getState().setCurrentTab('active');
+          }}
           onClose={() => setSelectedAddedFollowUpModule(null)}
+        />
+      )}
+
+      {/* Pre-Session Module Modal */}
+      {selectedPreSessionModule && (
+        <AltSessionModuleModal
+          module={selectedPreSessionModule}
+          mode="pre-session"
+          onBegin={(mod) => startPreSessionModule(mod.instanceId)}
+          onClose={() => setSelectedPreSessionModule(null)}
         />
       )}
 

@@ -4,7 +4,7 @@
  * calming, instrumental or minimal-vocal, highly musical full albums.
  */
 
-export const musicRecommendations = [
+const _musicRecommendations = [
   {
     artist: 'Floating Points, Pharoah Sanders & LSO',
     title: 'Promises',
@@ -196,16 +196,60 @@ export const musicRecommendations = [
     },
   },
   {
-    artist: 'Maurice Ravel',
-    title: 'Boléro (Boulez/Berlin Philharmonic)',
-    description: 'Single crescendo built over 15 minutes; hypnotic repetition. (15 min)',
+    artist: 'Ravel / Monteux / Royal Philharmonic',
+    title: 'Boléro; La valse; Pavane pour une infante défunte',
+    description: 'Three of Ravel\'s most hypnotic orchestral works — the slow-building Boléro, the whirling La valse, and the tender Pavane. (34 min)',
     links: {
-      spotify: 'https://open.spotify.com/album/6nOlQ6TzBqM52Gqh3i16p4',
-      appleMusic: 'https://music.apple.com/us/search?term=Maurice%20Ravel%20Bol%C3%A9ro%20Boulez%20Berlin%20Philharmonic',
-      youtube: 'https://www.youtube.com/results?search_query=Maurice+Ravel+Bol%C3%A9ro+Boulez+Berlin+Philharmonic+full',
+      spotify: 'https://open.spotify.com/album/2mYzRFjs3Kg8qPeB1kSgNS',
+      appleMusic: 'https://music.apple.com/us/search?term=Ravel%20Bol%C3%A9ro%20La%20Valse%20Pavane%20Monteux%20Royal%20Philharmonic',
+      youtube: 'https://www.youtube.com/results?search_query=Ravel+Bol%C3%A9ro+La+Valse+Pavane+Monteux+Royal+Philharmonic',
+    },
+  },
+  {
+    artist: 'Lautten Compagney',
+    title: 'Timeless - Music by Merula and Glass',
+    description: 'A mix of modern contemplative Philip Glass with the baroque genius of Tarquinio Merula. (1hr 9min)',
+    links: {
+      spotify: 'https://open.spotify.com/album/7fbtXYs5dYRjUpiIlRcrUN',
+      appleMusic: 'https://music.apple.com/us/search?term=Lautten%20Compagney%20Timeless%20Merula%20Glass',
+      youtube: 'https://www.youtube.com/results?search_query=Lautten+Compagney+Timeless+Music+by+Merula+and+Glass+full+album',
+    },
+  },
+  {
+    artist: 'Beethoven / Bernstein / New York Philharmonic',
+    title: 'Symphony No. 3 "Eroica"',
+    description: 'Beethoven\'s revolutionary third symphony — heroic, grieving, and triumphant — conducted by Bernstein at his most passionate. (1hr 4min)',
+    links: {
+      spotify: 'https://open.spotify.com/album/2NPiFjalwMMRuBz1H9NuPZ',
+      appleMusic: 'https://music.apple.com/us/search?term=Beethoven%20Symphony%20No%203%20Eroica%20Bernstein%20New%20York%20Philharmonic',
+      youtube: 'https://www.youtube.com/results?search_query=Beethoven+Symphony+No+3+Eroica+Bernstein+New+York+Philharmonic+full',
+    },
+  },
+  {
+    artist: 'Beethoven / Scharoun Ensemble',
+    title: 'Septett, Op. 20 & Sextett, Op. 71',
+    description: 'Early Beethoven at his most graceful — warm chamber music for strings and winds that radiates joy. (59 min)',
+    links: {
+      spotify: 'https://open.spotify.com/album/5dqOAsnYcp8IpCVXJ5C2ON',
+      appleMusic: 'https://music.apple.com/us/search?term=Beethoven%20Septett%20Sextett%20Scharoun%20Ensemble',
+      youtube: 'https://www.youtube.com/results?search_query=Beethoven+Septett+Op+20+Sextett+Op+71+Scharoun+Ensemble+full+album',
     },
   },
 ];
+
+// Creator's pick — always appears last in the recommendations list
+const creatorPick = {
+  artist: 'Dasloops',
+  title: '11evenwave',
+  description: 'A song from the creator of this app :) enjoy!',
+  links: {
+    spotify: 'https://open.spotify.com/album/50Ee7CZjV3EybEsrREKYKv',
+    appleMusic: 'https://music.apple.com/us/search?term=Dasloops%2011evenwave',
+    youtube: 'https://www.youtube.com/results?search_query=Dasloops+11evenwave',
+  },
+};
+
+export const musicRecommendations = [..._musicRecommendations, creatorPick];
 
 /**
  * Get the default initial recommendations shown before the user refreshes.
@@ -219,15 +263,3 @@ export function getInitialRecommendations() {
   ];
 }
 
-/**
- * Get a random subset of recommendations.
- * Uses Fisher-Yates shuffle on a copy, returns first `count` items.
- */
-export function getRandomRecommendations(count = 3) {
-  const shuffled = [...musicRecommendations];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled.slice(0, count);
-}

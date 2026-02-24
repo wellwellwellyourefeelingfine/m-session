@@ -11,6 +11,7 @@
  * - Optional time display below
  */
 
+import { useState, useEffect } from 'react';
 import { formatTime } from '../../../content/meditations';
 
 /**
@@ -30,10 +31,26 @@ export default function ModuleProgressBar({
   showTime = false,
   isPaused = false,
 }) {
-  if (!visible) return null;
+  // Track mounted state to allow fade-out before unmounting
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+    } else {
+      // Delay unmount to allow fade-out transition
+      const timer = setTimeout(() => setMounted(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  if (!mounted) return null;
 
   return (
-    <div className="fixed left-0 right-0 z-40" style={{ top: 'var(--header-height)' }}>
+    <div
+      className="fixed left-0 right-0 z-40 transition-opacity duration-300"
+      style={{ top: 'var(--header-height)', opacity: visible ? 1 : 0 }}
+    >
       {/* Progress bar track - positioned below header */}
       <div className="h-0.5 bg-[var(--color-border)]">
         {/* Progress bar fill */}

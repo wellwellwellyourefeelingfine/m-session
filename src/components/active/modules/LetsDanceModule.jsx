@@ -1,18 +1,18 @@
 /**
- * MusicListeningModule Component
+ * LetsDanceModule Component
  *
- * A guided music immersion module featuring:
+ * A dance-focused music module (peak phase only) featuring:
  * - Duration picker (10–60 min) that syncs with session timeline
- * - Randomized album recommendations (3 at a time, refreshable)
+ * - Randomized dance music recommendations (3 at a time, refreshable)
  * - AlarmPrompt before beginning (away-from-screen module)
- * - MorphingShapes animation during active listening
+ * - MorphingShapes animation during active dancing
  * - Timestamp-based timer with auto-complete
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getModuleById } from '../../../content/modules';
 import { useSessionStore } from '../../../stores/useSessionStore';
-import { musicRecommendations, getInitialRecommendations } from '../../../content/modules/musicRecommendations';
+import { danceRecommendations, getInitialDanceRecommendations } from '../../../content/modules/danceRecommendations';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
@@ -24,12 +24,12 @@ import MorphingShapes from '../capabilities/animations/MorphingShapes';
 const DURATION_STEPS = [10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 105, 120];
 
 /**
- * RecommendationsWidget — shows 3 random albums with a show/refresh toggle.
+ * RecommendationsWidget — shows 3 random dance songs with a show/refresh toggle.
  * Reusable between the landing and active views.
  */
 function RecommendationsWidget({ initiallyOpen = false }) {
   const [visible, setVisible] = useState(initiallyOpen);
-  const [picks, setPicks] = useState(() => getInitialRecommendations());
+  const [picks, setPicks] = useState(() => getInitialDanceRecommendations());
   const [selectedAlbum, setSelectedAlbum] = useState(null);
 
   // Queue-based shuffle: cycles through all recommendations before repeating
@@ -37,7 +37,7 @@ function RecommendationsWidget({ initiallyOpen = false }) {
 
   const refresh = () => {
     if (queueRef.current.length < 3) {
-      const shuffled = [...musicRecommendations];
+      const shuffled = [...danceRecommendations];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -47,32 +47,39 @@ function RecommendationsWidget({ initiallyOpen = false }) {
     setPicks(queueRef.current.splice(0, 3));
   };
 
+  // Don't render the widget if there are no recommendations yet
+  if (picks.length === 0 && !visible) {
+    return null;
+  }
+
   return (
     <div className="w-full max-w-sm">
       {/* Toggle row */}
-      <div className="flex items-center justify-center gap-3">
-        <button
-          onClick={() => setVisible(!visible)}
-          className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]
-            hover:text-[var(--color-text-secondary)] transition-colors"
-        >
-          {visible ? 'Hide Recommendations' : 'Show Recommendations'}
-        </button>
-
-        {visible && (
+      {picks.length > 0 && (
+        <div className="flex items-center justify-center gap-3">
           <button
-            onClick={refresh}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
-            aria-label="Refresh recommendations"
+            onClick={() => setVisible(!visible)}
+            className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]
+              hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M2 8a6 6 0 0 1 10.3-4.2M14 8a6 6 0 0 1-10.3 4.2" />
-              <polyline points="2 3 2 6.5 5.5 6.5" />
-              <polyline points="14 13 14 9.5 10.5 9.5" />
-            </svg>
+            {visible ? 'Hide Recommendations' : 'Show Recommendations'}
           </button>
-        )}
-      </div>
+
+          {visible && (
+            <button
+              onClick={refresh}
+              className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+              aria-label="Refresh recommendations"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 8a6 6 0 0 1 10.3-4.2M14 8a6 6 0 0 1-10.3 4.2" />
+                <polyline points="2 3 2 6.5 5.5 6.5" />
+                <polyline points="14 13 14 9.5 10.5 9.5" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Recommendations list — slide down */}
       <div
@@ -188,7 +195,7 @@ const ListIcon = () => (
   </svg>
 );
 
-/** Full-page scrollable modal showing all recommendations */
+/** Full-page scrollable modal showing all dance recommendations */
 function AllRecommendationsModal({ isOpen, closing, onClose }) {
   const [entered, setEntered] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
@@ -239,11 +246,11 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
       <div className="flex-1 overflow-y-auto min-h-0">
         <div className="px-6 pb-12 pt-2">
           <div className="space-y-1 max-w-sm mx-auto">
-            {musicRecommendations.map((album, index) => (
+            {danceRecommendations.map((album, index) => (
               <button
                 key={`${album.artist}-${album.title}-${index}`}
                 onClick={() => setSelectedAlbum(album)}
-                className={`w-full text-left pt-1.5 pb-0.5 ${index < musicRecommendations.length - 1 ? 'border-b border-[var(--color-border)]' : ''} hover:opacity-70 transition-opacity`}
+                className={`w-full text-left pt-1.5 pb-0.5 ${index < danceRecommendations.length - 1 ? 'border-b border-[var(--color-border)]' : ''} hover:opacity-70 transition-opacity`}
               >
                 <p className="text-sm text-[var(--color-text-primary)]" style={{ textTransform: 'none' }}>
                   {album.artist} — {album.title}
@@ -329,7 +336,7 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
   );
 }
 
-export default function MusicListeningModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
 
   // Session store actions
@@ -352,13 +359,13 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
   const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
   const [showAddTime, setShowAddTime] = useState(false);
   const [addTimeAmount, setAddTimeAmount] = useState(5);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
 
   // All-recommendations modal state
   const [showAllRecs, setShowAllRecs] = useState(false);
   const [allRecsClosing, setAllRecsClosing] = useState(false);
   const allRecsCloseTimerRef = useRef(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
 
   const timerRef = useRef(null);
   const totalDurationSeconds = selectedDuration * 60;
@@ -523,7 +530,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         {!hasStarted && (
           <div className="flex flex-col items-center animate-fadeIn w-full px-4 -mt-2">
             <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
-              Music Time
+              Let's Dance
             </h2>
 
             <div className="mb-1">
@@ -543,7 +550,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
             </div>
 
             <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-2">
-              Set a duration, choose an album or pick from our recommendations, and let the music move through you.
+              Set a duration, pick a song or choose from our recommendations, and move your body.
             </p>
 
             {/* Recommendations widget */}
@@ -557,7 +564,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         {hasStarted && !isComplete && (
           <div className="flex flex-col items-center animate-fadeIn w-full px-4">
             <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
-              Music Time
+              Let's Dance
             </h2>
 
             <div className="mb-2">
@@ -565,7 +572,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
             </div>
 
             <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-2">
-              Relax, listen, and let the music move through you. Close your eyes or use an eye mask — there's nothing to do but feel.
+              Let the music move you. Dance however feels right — there's no wrong way.
             </p>
 
             {/* Add Time button */}
@@ -598,7 +605,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         showBack={false}
         showSkip={!isComplete}
         onSkip={handleSkip}
-        skipConfirmMessage="Skip this music session?"
+        skipConfirmMessage="Skip this dance session?"
         rightSlot={hasStarted && !isComplete ? (
           <SlotButton icon={<ListIcon />} label="All recommendations" onClick={handleOpenAllRecs} />
         ) : undefined}
@@ -627,7 +634,7 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onTim
         isOpen={showAlarmPrompt}
         onProceed={handleAlarmProceed}
         durationMinutes={selectedDuration}
-        activityName="Music Time"
+        activityName="Let's Dance"
       />
 
       {/* Add Time popup */}

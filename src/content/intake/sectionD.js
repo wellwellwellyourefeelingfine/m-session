@@ -136,8 +136,8 @@ export const sectionDQuestions = [
       { type: 'text', text: 'If you have any cardiovascular concerns, we strongly recommend consulting a healthcare provider before proceeding.', color: 'grey' },
     ],
     options: [
-      { value: 'no', label: 'No' },
       { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
     ],
   },
   {
@@ -157,8 +157,8 @@ export const sectionDQuestions = [
       { type: 'text', text: 'If any of these apply, please consult a mental health professional before proceeding. This is not about judgment \u2014 it\u2019s about ensuring your safety during a vulnerable experience.', color: 'grey' },
     ],
     options: [
-      { value: 'no', label: 'No' },
       { value: 'yes', label: 'Yes' },
+      { value: 'no', label: 'No' },
     ],
   },
 ];

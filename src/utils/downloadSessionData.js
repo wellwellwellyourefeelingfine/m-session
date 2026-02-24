@@ -5,7 +5,8 @@
 
 import { useSessionStore } from '../stores/useSessionStore';
 import { useJournalStore } from '../stores/useJournalStore';
-import { getProtectorLabel } from '../content/modules/protectorDialogueContent';
+import { getProtectorName } from '../content/modules/protectorDialogueContent';
+import { getImage } from './imageStorage';
 
 /**
  * Format a date nicely for display
@@ -79,6 +80,8 @@ function getSessionData() {
     booster: booster?.status !== 'pending' ? {
       status: booster?.status,
       takenAt: booster?.boosterTakenAt,
+      decisionAt: booster?.boosterDecisionAt,
+      doseMg: booster?.boosterDoseMg || null,
       checkInResponses: booster?.checkInResponses || null,
     } : null,
     intention: {
@@ -96,6 +99,7 @@ function getSessionData() {
       title: item.title,
       phase: item.phase,
       duration: item.duration,
+      actualDuration: item.actualDuration,
       status: item.status,
       startedAt: item.startedAt,
       completedAt: item.completedAt,
@@ -105,6 +109,7 @@ function getSessionData() {
       checkIn: followUp.modules.checkIn?.status === 'completed' ? {
         completedAt: followUp.modules.checkIn.completedAt,
         feeling: followUp.modules.checkIn.feeling,
+        bodyFeeling: followUp.modules.checkIn.bodyFeeling,
         note: followUp.modules.checkIn.note,
       } : null,
       revisit: followUp.modules.revisit?.status === 'completed' ? {
@@ -118,6 +123,16 @@ function getSessionData() {
         commitmentResponse: followUp.modules.integration.commitmentResponse,
       } : null,
     } : null,
+    // Include pre-session module data
+    preSessionModules: modules?.items?.filter((m) => m.phase === 'pre-session').length > 0
+      ? modules.items.filter((m) => m.phase === 'pre-session').map((item) => ({
+          title: item.title,
+          duration: item.duration,
+          status: item.status,
+          startedAt: item.startedAt,
+          completedAt: item.completedAt,
+        }))
+      : null,
     // Include ALL journal entries (session + manual)
     journalEntries: allJournalEntries.map((entry) => ({
       id: entry.id,
@@ -137,252 +152,334 @@ function getSessionData() {
  */
 export function generateTextExport() {
   const data = getSessionData();
-  const divider = '═'.repeat(60);
-  const subDivider = '─'.repeat(60);
+  const W = 60;
+  const border = '═'.repeat(W);
 
-  let text = `${divider}
-MDMA SESSION RECORD
-${divider}
+  function section(title) {
+    const prefix = '─── ';
+    const suffix = ' ';
+    const fill = W - prefix.length - title.length - suffix.length;
+    return `${prefix}${title}${suffix}${'─'.repeat(Math.max(3, fill))}`;
+  }
 
-Date: ${formatDate(data.session.startedAt)}
-Duration: ${formatDuration(data.session.finalDurationSeconds)}
-Started: ${formatDate(data.session.startedAt)}
-Ended: ${formatDate(data.session.closedAt)}
-`;
+  // ── Header ──────────────────────────────────────────────
 
-  // Dosage
+  const frameBar = `╔${'═'.repeat(W - 2)}╗`;
+  const frameEnd = `╚${'═'.repeat(W - 2)}╝`;
+
+  function centerText(str) {
+    return `${' '.repeat(Math.max(0, Math.floor((W - str.length) / 2)))}${str}`;
+  }
+
+  const exportDate = formatDate(new Date());
+
+  let text = `${frameBar}
+
+${centerText('┌┬┐    ┌─┐ ┌─┐ ┌─┐ ┌─┐ ┬ ┌─┐ ┌─┐')}
+${centerText('│││ ── └─┐ ├┤  └─┐ └─┐ │ │ │ │ │')}
+${centerText('┴ ┴    └─┘ └─┘ └─┘ └─┘ ┴ └─┘ ┘ └')}
+
+${frameEnd}
+
+${centerText('SESSION RECORD')}
+${centerText(`Exported ${exportDate}`)}
+
+  Started:   ${formatDate(data.session.startedAt)}
+  Ended:     ${formatDate(data.session.closedAt)}
+  Duration:  ${formatDuration(data.session.finalDurationSeconds)}`;
+
   if (data.substanceChecklist.plannedDosageMg) {
-    text += `\nDosage: ${data.substanceChecklist.plannedDosageMg}mg`;
+    text += `\n  Dosage:    ${data.substanceChecklist.plannedDosageMg}mg`;
     if (data.substanceChecklist.dosageFeedback) {
       text += ` (${data.substanceChecklist.dosageFeedback})`;
     }
   }
 
-  // Booster
-  if (data.booster && data.booster.status === 'taken') {
-    text += `\nBooster: Taken at ${formatDate(data.booster.takenAt)}`;
+  if (data.booster) {
+    if (data.booster.status === 'taken') {
+      text += `\n  Booster:   ${data.booster.doseMg ? data.booster.doseMg + 'mg taken' : 'Taken'} at ${formatDate(data.booster.takenAt)}`;
+    } else if (data.booster.status === 'skipped') {
+      text += `\n  Booster:   Skipped${data.booster.decisionAt ? ` at ${formatDate(data.booster.decisionAt)}` : ''}`;
+    } else if (data.booster.status === 'expired') {
+      text += `\n  Booster:   Expired (not taken within window)`;
+    }
   }
 
-  // Intention
+  // ── Intention (pre-session) ─────────────────────────────
+
   if (data.intention.original || data.intention.touchstone) {
-    text += `\n\n${subDivider}
-INTENTION
-${subDivider}
-`;
+    text += `\n\n\n${section('INTENTION')}\n`;
     if (data.intention.original) {
-      text += `\n${data.intention.original}`;
+      text += `\n  ${data.intention.original}`;
     }
     if (data.intention.touchstone) {
-      text += `\n\nTouchstone: ${data.intention.touchstone}`;
+      text += `\n\n  Touchstone: ${data.intention.touchstone}`;
     }
   }
 
-  // Peak Transition
+  // ── Come-up check-ins (onset phase) ─────────────────────
+
+  if (data.comeUpCheckIn?.responses?.length > 0) {
+    text += `\n\n\n${section('COME-UP CHECK-INS')}\n`;
+    const labels = {
+      'waiting': 'Still waiting',
+      'starting': 'Starting to feel it',
+      'fully-arrived': 'Fully arrived',
+    };
+    data.comeUpCheckIn.responses.forEach((r) => {
+      text += `\n  [${r.minutesSinceIngestion} min]  ${labels[r.response] || r.response}`;
+    });
+  }
+
+  // ── Peak transition ─────────────────────────────────────
+
   const peak = data.transitionCaptures?.peak;
   if (peak && (peak.bodySensations?.length || peak.oneWord)) {
-    text += `\n\n${subDivider}
-PEAK TRANSITION
-${subDivider}
-`;
+    text += `\n\n\n${section('PEAK TRANSITION')}\n`;
     if (peak.oneWord) {
-      text += `\nOne Word: ${peak.oneWord}`;
+      text += `\n  One Word:         ${peak.oneWord}`;
     }
     if (peak.bodySensations?.length) {
-      text += `\nBody Sensations: ${peak.bodySensations.join(', ')}`;
+      text += `\n  Body Sensations:  ${peak.bodySensations.join(', ')}`;
     }
   }
 
-  // Integration Transition
+  // ── Booster check-in (during peak) ──────────────────────
+
+  if (data.booster?.checkInResponses) {
+    const r = data.booster.checkInResponses;
+    if (r.experienceQuality || r.physicalState || r.trajectory) {
+      text += `\n\n\n${section('BOOSTER CHECK-IN')}\n`;
+      if (r.experienceQuality) text += `\n  Experience Quality:  ${r.experienceQuality}`;
+      if (r.physicalState) text += `\n  Physical State:      ${r.physicalState}`;
+      if (r.trajectory) text += `\n  Trajectory:          ${r.trajectory}`;
+    }
+  }
+
+  // ── Activity captures (chronological by completedAt) ────
+  // Protector Dialogue, Stay With It, Values Compass happen
+  // during peak/integration activities — sorted by timestamp.
+
+  const activityCaptures = [];
+
+  const protector = data.transitionCaptures?.protectorDialogue;
+  if (protector?.protectorName) {
+    activityCaptures.push({ type: 'protector', at: protector.completedAt, data: protector });
+  }
+
+  const stayWithIt = data.transitionCaptures?.stayWithIt;
+  if (stayWithIt?.checkInResponse) {
+    activityCaptures.push({ type: 'stayWithIt', at: stayWithIt.completedAt, data: stayWithIt });
+  }
+
+  const valuesCompass = data.transitionCaptures?.valuesCompass;
+  if (valuesCompass?.quadrants) {
+    const hasChips = ['q1', 'q2', 'q3', 'q4'].some((q) => valuesCompass.quadrants[q]?.length > 0);
+    if (hasChips) {
+      activityCaptures.push({ type: 'valuesCompass', at: valuesCompass.completedAt, data: valuesCompass });
+    }
+  }
+
+  activityCaptures.sort((a, b) => (a.at || Infinity) - (b.at || Infinity));
+
+  for (const capture of activityCaptures) {
+    if (capture.type === 'protector') {
+      const p = capture.data;
+      const label = getProtectorName(p.protectorName);
+      text += `\n\n\n${section('PROTECTOR DIALOGUE')}\n`;
+      text += `\n  Protector:      ${label}`;
+      if (p.protectorDescription) text += `\n  Description:    ${p.protectorDescription}`;
+      if (p.bodyLocation) text += `\n  Body Location:  ${p.bodyLocation}`;
+      if (p.protectorMessage) text += `\n\n  Message to Protector:\n  ${p.protectorMessage}`;
+    }
+
+    if (capture.type === 'stayWithIt') {
+      const responseLabels = {
+        'lighter': 'Lighter, like something loosened',
+        'still-processing': 'Still processing, not sure yet',
+        'heavy': 'Heavy or weighed down',
+        'numb': 'Blank or numb',
+        'activated': 'Anxious, restless, or stirred up',
+      };
+      text += `\n\n\n${section('STAY WITH IT')}\n`;
+      text += `\n  Response: ${responseLabels[capture.data.checkInResponse] || capture.data.checkInResponse}`;
+    }
+
+    if (capture.type === 'valuesCompass') {
+      const qLabels = { q1: 'What Matters', q2: 'Inner Obstacles', q3: 'Away Moves', q4: 'Toward Moves' };
+      text += `\n\n\n${section('VALUES COMPASS')}\n`;
+      for (const qId of ['q1', 'q2', 'q3', 'q4']) {
+        const chips = capture.data.quadrants[qId];
+        if (chips?.length > 0) {
+          text += `\n  ${qLabels[qId]}:`;
+          chips.forEach((chip) => { text += `\n    - ${chip.text}`; });
+        }
+      }
+    }
+  }
+
+  // ── Integration transition ──────────────────────────────
+
   const integration = data.transitionCaptures?.integration;
   if (integration && (integration.editedIntention || integration.tailoredActivityResponse)) {
-    text += `\n\n${subDivider}
-INTEGRATION TRANSITION
-${subDivider}
-`;
-    if (integration.editedIntention) {
-      text += `\nIntention Addition: ${integration.editedIntention}`;
+    text += `\n\n\n${section('INTEGRATION TRANSITION')}\n`;
+    if (integration.editedIntention) text += `\n  Intention Addition:  ${integration.editedIntention}`;
+    if (integration.newFocus) text += `\n  Focus Changed To:    ${integration.newFocus}`;
+    const ar = integration.tailoredActivityResponse;
+    if (ar && typeof ar === 'object' && Object.keys(ar).length > 0) {
+      text += `\n\n  Tailored Activity Response:`;
+      Object.entries(ar).forEach(([key, value]) => {
+        if (value) text += `\n    ${key}: ${value}`;
+      });
     }
-    if (integration.newFocus) {
-      text += `\nFocus Changed To: ${integration.newFocus}`;
+  }
+
+  // ── Closing reflections ─────────────────────────────────
+
+  const closing = data.transitionCaptures?.closing;
+  if (closing && (closing.selfGratitude || closing.futureMessage || closing.commitment)) {
+    text += `\n\n\n${section('CLOSING REFLECTIONS')}\n`;
+    if (closing.selfGratitude) {
+      text += `\n  One thing about myself I appreciate:\n  ${closing.selfGratitude}`;
     }
-    const activityResponse = integration.tailoredActivityResponse;
-    if (activityResponse && typeof activityResponse === 'object' && Object.keys(activityResponse).length > 0) {
-      text += `\n\nTailored Activity Response:`;
-      Object.entries(activityResponse).forEach(([key, value]) => {
-        if (value) {
-          text += `\n  ${key}: ${value}`;
+    if (closing.futureMessage) {
+      text += `\n\n  Message to my future self:\n  ${closing.futureMessage}`;
+    }
+    if (closing.commitment) {
+      text += `\n\n  One thing I want to do differently:\n  ${closing.commitment}`;
+    }
+  }
+
+  // ── Session activities (full timeline) ──────────────────
+
+  if (data.moduleHistory?.length > 0) {
+    text += `\n\n\n${section('SESSION ACTIVITIES')}\n`;
+    const phaseOrder = ['come-up', 'peak', 'integration'];
+    const phaseLabels = { 'come-up': 'Come-Up Phase', 'peak': 'Peak Phase', 'integration': 'Integration Phase' };
+
+    for (const phase of phaseOrder) {
+      const phaseModules = data.moduleHistory.filter((m) => m.phase === phase);
+      if (phaseModules.length === 0) continue;
+
+      text += `\n  ${phaseLabels[phase] || phase}:\n`;
+      phaseModules.forEach((module) => {
+        text += `\n  • ${module.title}`;
+        if (module.status === 'skipped') {
+          text += ' [skipped]';
+          if (module.completedAt) text += `\n    Skipped at:  ${formatDate(module.completedAt)}`;
+        } else {
+          if (module.startedAt) text += `\n    Started:     ${formatDate(module.startedAt)}`;
+          if (module.completedAt) {
+            text += `\n    Completed:   ${formatDate(module.completedAt)}`;
+            if (module.actualDuration) text += ` (${formatDuration(module.actualDuration)})`;
+          }
+        }
+      });
+      text += '\n';
+    }
+
+    const ungrouped = data.moduleHistory.filter((m) => !phaseOrder.includes(m.phase));
+    if (ungrouped.length > 0) {
+      ungrouped.forEach((module) => {
+        text += `\n  • ${module.title}`;
+        if (module.status === 'skipped') text += ' [skipped]';
+        if (module.startedAt) text += `\n    Started:     ${formatDate(module.startedAt)}`;
+        if (module.completedAt) {
+          text += `\n    Completed:   ${formatDate(module.completedAt)}`;
+          if (module.actualDuration) text += ` (${formatDuration(module.actualDuration)})`;
         }
       });
     }
   }
 
-  // Closing Ritual
-  const closing = data.transitionCaptures?.closing;
-  if (closing && (closing.selfGratitude || closing.futureMessage || closing.commitment)) {
-    text += `\n\n${subDivider}
-CLOSING REFLECTIONS
-${subDivider}
-`;
-    if (closing.selfGratitude) {
-      text += `\nOne thing about myself I appreciate:\n${closing.selfGratitude}`;
-    }
-    if (closing.futureMessage) {
-      text += `\n\nMessage to my future self:\n${closing.futureMessage}`;
-    }
-    if (closing.commitment) {
-      text += `\n\nOne thing I want to do differently:\n${closing.commitment}`;
-    }
-  }
+  // ── Journal entries (chronological, excluding pre-session) ─────────────────────
 
-  // Protector Dialogue
-  const protector = data.transitionCaptures?.protectorDialogue;
-  if (protector?.protectorType) {
-    const label = getProtectorLabel(protector.protectorType, protector.customProtectorName);
-    text += `\n\n${subDivider}
-PROTECTOR DIALOGUE
-${subDivider}
-`;
-    text += `\nProtector: ${label}`;
-    if (protector.bodyLocation) {
-      text += `\nBody Location: ${protector.bodyLocation}`;
-    }
-    if (protector.protectorMessage) {
-      text += `\n\nMessage to Protector:\n${protector.protectorMessage}`;
-    }
-  }
+  const PRE_SESSION_PREFIX = 'PRE-SESSION\n\n';
+  const regularEntries = data.journalEntries?.filter((e) => !e.content.startsWith(PRE_SESSION_PREFIX)) || [];
+  const preSessionEntries = data.journalEntries?.filter((e) => e.content.startsWith(PRE_SESSION_PREFIX)) || [];
 
-  // Stay With It Check-In
-  const stayWithIt = data.transitionCaptures?.stayWithIt;
-  if (stayWithIt?.checkInResponse) {
-    const responseLabels = {
-      'lighter': 'Lighter, like something loosened',
-      'still-processing': 'Still processing, not sure yet',
-      'heavy': 'Heavy or weighed down',
-      'numb': 'Blank or numb',
-      'activated': 'Anxious, restless, or stirred up',
-    };
-    text += `\n\n${subDivider}
-STAY WITH IT CHECK-IN
-${subDivider}
-`;
-    text += `\nResponse: ${responseLabels[stayWithIt.checkInResponse] || stayWithIt.checkInResponse}`;
-  }
-
-  // Come-Up Check-In Responses
-  if (data.comeUpCheckIn?.responses?.length > 0) {
-    text += `\n\n${subDivider}
-COME-UP CHECK-INS
-${subDivider}
-`;
-    data.comeUpCheckIn.responses.forEach((response) => {
-      const responseLabels = {
-        'waiting': 'Still waiting',
-        'starting': 'Starting to feel it',
-        'fully-arrived': 'Fully arrived',
-      };
-      text += `\n[${response.minutesSinceIngestion} min]: ${responseLabels[response.response] || response.response}`;
+  if (regularEntries.length > 0) {
+    text += `\n\n\n${section('JOURNAL ENTRIES')}\n`;
+    regularEntries.forEach((entry) => {
+      text += `\n  [${formatDate(entry.timestamp)}]`;
+      if (entry.moduleTitle) text += ` — ${entry.moduleTitle}`;
+      else if (entry.source === 'manual') text += ` — Personal Entry`;
+      text += `\n  ${entry.content}\n`;
     });
   }
 
-  // Booster Check-In Responses
-  if (data.booster?.checkInResponses) {
-    const responses = data.booster.checkInResponses;
-    const hasResponses = responses.experienceQuality || responses.physicalState || responses.trajectory;
-    if (hasResponses) {
-      text += `\n\nBooster Check-In Responses:`;
-      if (responses.experienceQuality) {
-        text += `\n  Experience Quality: ${responses.experienceQuality}`;
-      }
-      if (responses.physicalState) {
-        text += `\n  Physical State: ${responses.physicalState}`;
-      }
-      if (responses.trajectory) {
-        text += `\n  Trajectory: ${responses.trajectory}`;
-      }
-    }
-  }
+  // ── Follow-up reflections (24-48h after) ────────────────
 
-  // Module History
-  if (data.moduleHistory?.length > 0) {
-    text += `\n\n${subDivider}
-COMPLETED ACTIVITIES
-${subDivider}
-`;
-    data.moduleHistory.forEach((module) => {
-      text += `\n• ${module.title}`;
-      if (module.phase) {
-        text += ` (${module.phase})`;
-      }
-      if (module.status === 'skipped') {
-        text += ' [skipped]';
-      }
-      if (module.completedAt) {
-        text += `\n  Completed: ${formatDate(module.completedAt)}`;
-      }
-    });
-  }
-
-  // Follow-Up Module Responses
-  const hasFollowUpData = data.followUp?.checkIn || data.followUp?.revisit || data.followUp?.integration;
-  if (hasFollowUpData) {
-    text += `\n\n${subDivider}
-FOLLOW-UP REFLECTIONS
-${subDivider}
-`;
+  const hasFollowUp = data.followUp?.checkIn || data.followUp?.revisit || data.followUp?.integration;
+  if (hasFollowUp) {
+    text += `\n\n\n${section('FOLLOW-UP REFLECTIONS')}\n`;
     if (data.followUp.checkIn) {
-      text += `\n[Check-In — ${formatDate(data.followUp.checkIn.completedAt)}]`;
+      text += `\n  [Check-In — ${formatDate(data.followUp.checkIn.completedAt)}]`;
       if (data.followUp.checkIn.feeling) {
-        text += `\nFeeling: ${data.followUp.checkIn.feeling}`;
+        const fLabels = { 'settled': 'Settled', 'processing': 'Still processing', 'low': 'Low or flat', 'tender': 'Tender', 'energized': 'Energized', 'mixed': 'Mixed' };
+        text += `\n  Feeling:       ${fLabels[data.followUp.checkIn.feeling] || data.followUp.checkIn.feeling}`;
       }
-      if (data.followUp.checkIn.note) {
-        text += `\nNote: ${data.followUp.checkIn.note}`;
+      if (data.followUp.checkIn.bodyFeeling) {
+        const bLabels = { 'relaxed': 'Relaxed', 'heavy': 'Heavy', 'tense': 'Tense', 'normal': 'Normal' };
+        text += `\n  Body Feeling:  ${bLabels[data.followUp.checkIn.bodyFeeling] || data.followUp.checkIn.bodyFeeling}`;
       }
+      if (data.followUp.checkIn.note) text += `\n  Note:          ${data.followUp.checkIn.note}`;
     }
     if (data.followUp.revisit) {
-      text += `\n\n[Revisit — ${formatDate(data.followUp.revisit.completedAt)}]`;
-      if (data.followUp.revisit.reflection) {
-        text += `\nReflection: ${data.followUp.revisit.reflection}`;
-      }
+      text += `\n\n  [Revisit — ${formatDate(data.followUp.revisit.completedAt)}]`;
+      if (data.followUp.revisit.reflection) text += `\n  Reflection: ${data.followUp.revisit.reflection}`;
     }
     if (data.followUp.integration) {
-      text += `\n\n[Integration — ${formatDate(data.followUp.integration.completedAt)}]`;
-      if (data.followUp.integration.emerged) {
-        text += `\nWhat's Emerged: ${data.followUp.integration.emerged}`;
-      }
+      text += `\n\n  [Integration — ${formatDate(data.followUp.integration.completedAt)}]`;
+      if (data.followUp.integration.emerged) text += `\n  What's Emerged: ${data.followUp.integration.emerged}`;
       if (data.followUp.integration.commitmentStatus) {
-        const statusLabels = {
-          'following': 'Following through',
-          'trying': 'Trying to follow through',
-          'not-started': 'Haven\'t started yet',
-          'reconsidered': 'Reconsidered the commitment',
-          'forgot': 'Forgot about it',
-        };
-        text += `\nCommitment Status: ${statusLabels[data.followUp.integration.commitmentStatus] || data.followUp.integration.commitmentStatus}`;
+        const sLabels = { 'following': 'Following through', 'trying': 'Trying to follow through', 'not-started': "Haven't started yet", 'reconsidered': 'Reconsidered the commitment', 'forgot': 'Forgot about it' };
+        text += `\n  Commitment Status:   ${sLabels[data.followUp.integration.commitmentStatus] || data.followUp.integration.commitmentStatus}`;
       }
-      if (data.followUp.integration.commitmentResponse) {
-        text += `\nCommitment Response: ${data.followUp.integration.commitmentResponse}`;
-      }
+      if (data.followUp.integration.commitmentResponse) text += `\n  Commitment Response: ${data.followUp.integration.commitmentResponse}`;
     }
   }
 
-  // Journal Entries (ALL - session + manual)
-  if (data.journalEntries?.length > 0) {
-    text += `\n\n${subDivider}
-JOURNAL ENTRIES
-${subDivider}
-`;
-    data.journalEntries.forEach((entry) => {
-      text += `\n[${formatDate(entry.timestamp)}]`;
-      if (entry.moduleTitle) {
-        text += ` — ${entry.moduleTitle}`;
-      } else if (entry.source === 'manual') {
-        text += ` — Personal Entry`;
-      }
-      text += `\n${entry.content}\n`;
-    });
+  // ── Pre-session activities addendum ─────────────────────
+
+  const hasPreSession = data.preSessionModules?.length > 0 || preSessionEntries.length > 0;
+  if (hasPreSession) {
+    text += `\n\n\n${section('PRE-SESSION ACTIVITIES')}\n`;
+
+    if (data.preSessionModules?.length > 0) {
+      data.preSessionModules.forEach((mod) => {
+        text += `\n  ${mod.title}`;
+        text += `  (${mod.status})`;
+        if (mod.startedAt) text += `  ${formatDate(mod.startedAt)}`;
+        if (mod.completedAt) text += ` – ${formatDate(mod.completedAt)}`;
+      });
+      text += '\n';
+    }
+
+    if (preSessionEntries.length > 0) {
+      text += '\n  Journal entries from pre-session:\n';
+      preSessionEntries.forEach((entry) => {
+        text += `\n  [${formatDate(entry.timestamp)}]`;
+        if (entry.moduleTitle) text += ` — ${entry.moduleTitle}`;
+        // Strip the PRE-SESSION prefix from display
+        const content = entry.content.replace(PRE_SESSION_PREFIX, '');
+        text += `\n  ${content}\n`;
+      });
+    }
   }
 
-  text += `\n${divider}
+  // ── Footer ──────────────────────────────────────────────
+
+  text += `\n\n\n${border}
+
+  Generated by m-session  ·  m-session.com
+
+  m-session is a free, open-source harm reduction tool.
+  It is not a substitute for professional medical advice,
+  therapy, or clinical supervision. Use at your own
+  discretion and risk.
+
+${border}
 `;
 
   return text;
@@ -425,13 +522,41 @@ function getFilename(extension) {
 }
 
 /**
+ * Download any session images (Values Compass PNG) as separate files.
+ * Delayed slightly to avoid browser download-blocking when triggered
+ * alongside the main text/JSON download.
+ */
+async function downloadSessionImages() {
+  const journalState = useJournalStore.getState();
+  const imageEntries = journalState.entries.filter(
+    (e) => e.hasImage && e.source === 'session'
+  );
+
+  for (const entry of imageEntries) {
+    try {
+      const blob = await getImage(entry.id);
+      if (blob) {
+        const label = (entry.moduleTitle || 'image')
+          .toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const date = new Date().toISOString().split('T')[0];
+        downloadFile(blob, `${label}-${date}.png`, 'image/png');
+      }
+    } catch (err) {
+      console.warn('Failed to export image for entry', entry.id, err);
+    }
+  }
+}
+
+/**
  * Download session data in specified format
  * @param {'txt' | 'json'} format - The export format
  */
-export function downloadSessionData(format) {
+export async function downloadSessionData(format) {
   if (format === 'txt') {
     const content = generateTextExport();
     downloadFile(content, getFilename('txt'), 'text/plain');
+    // Download any associated images after a brief delay
+    setTimeout(() => downloadSessionImages(), 500);
   } else if (format === 'json') {
     const content = generateJsonExport();
     downloadFile(content, getFilename('json'), 'application/json');
