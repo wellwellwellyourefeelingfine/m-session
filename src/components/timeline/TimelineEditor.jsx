@@ -15,6 +15,7 @@ import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
 import FollowUpModuleModal from '../home/FollowUpModuleModal';
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
+import ClockNoteModal from './ClockNoteModal';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -28,6 +29,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedPreSessionModule, setSelectedPreSessionModule] = useState(null);
   const [preSessionExpanded, setPreSessionExpanded] = useState(true);
+  const [clockNoteOpen, setClockNoteOpen] = useState(false);
+  const [frozenTime, setFrozenTime] = useState('');
 
   // Get current tab to detect tab switches
   const currentTab = useAppStore((state) => state.currentTab);
@@ -425,13 +428,27 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 </p>
               ) : null;
             })()}
-            {/* Large elapsed time clock - frozen for completed sessions */}
-            <p
-              className="text-4xl tracking-wide"
-              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-            >
-              {formatElapsedClock(elapsedSeconds)}
-            </p>
+            {/* Large elapsed time clock - tappable during active session to open clock note */}
+            {isActiveSession && !isCompletedSession ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setFrozenTime(formatElapsedClock(elapsedSeconds));
+                  setClockNoteOpen(true);
+                }}
+                className="text-4xl tracking-wide text-[var(--color-text-primary)] active:opacity-60 transition-opacity"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                {formatElapsedClock(elapsedSeconds)}
+              </button>
+            ) : (
+              <p
+                className="text-4xl tracking-wide"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                {formatElapsedClock(elapsedSeconds)}
+              </p>
+            )}
           </div>
         ) : (
           <p className="text-[var(--color-text-secondary)]">
@@ -1052,6 +1069,15 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           mode="pre-session"
           onBegin={(mod) => startPreSessionModule(mod.instanceId)}
           onClose={() => setSelectedPreSessionModule(null)}
+        />
+      )}
+
+      {/* Clock Note Modal */}
+      {clockNoteOpen && (
+        <ClockNoteModal
+          isOpen={clockNoteOpen}
+          onClose={() => setClockNoteOpen(false)}
+          frozenTime={frozenTime}
         />
       )}
 
