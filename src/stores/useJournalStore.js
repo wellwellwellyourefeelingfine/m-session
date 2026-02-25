@@ -198,6 +198,16 @@ export const useJournalStore = create(
           },
         });
       },
+
+      // Clear all entries (used when archiving a session)
+      clearAllEntries: () => {
+        set({ entries: [] });
+      },
+
+      // Replace all entries (used when restoring an archived session)
+      replaceAllEntries: (entries) => {
+        set({ entries: entries || [] });
+      },
     }),
     {
       name: 'mdma-guide-journal-state',

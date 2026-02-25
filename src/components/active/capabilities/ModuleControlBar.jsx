@@ -374,6 +374,7 @@ function VolumeSliderPopup({ volume, onVolumeChange }) {
   useEffect(() => {
     const handleMove = (e) => {
       if (!isDragging.current) return;
+      e.preventDefault();
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       handleInteraction(clientY);
     };
@@ -381,7 +382,7 @@ function VolumeSliderPopup({ volume, onVolumeChange }) {
 
     document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', handleMove, { passive: true });
+    document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
 
     return () => {
@@ -396,14 +397,14 @@ function VolumeSliderPopup({ volume, onVolumeChange }) {
     <div
       className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2
         bg-[var(--color-bg)] border border-[var(--color-border)] rounded-full
-        p-2 animate-fadeIn"
-      style={{ zIndex: 40 }}
+        px-4 py-2 animate-fadeIn"
+      style={{ zIndex: 40, touchAction: 'none' }}
     >
       <div
         ref={trackRef}
         className="relative w-1.5 h-24 bg-[var(--color-border)] rounded-full cursor-pointer"
         onMouseDown={(e) => { isDragging.current = true; handleInteraction(e.clientY); }}
-        onTouchStart={(e) => { isDragging.current = true; handleInteraction(e.touches[0].clientY); }}
+        onTouchStart={(e) => { e.stopPropagation(); isDragging.current = true; handleInteraction(e.touches[0].clientY); }}
       >
         {/* Filled portion */}
         <div
@@ -412,9 +413,9 @@ function VolumeSliderPopup({ volume, onVolumeChange }) {
         />
         {/* Thumb */}
         <div
-          className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full
+          className="absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full
             bg-[var(--color-text-primary)] pointer-events-none"
-          style={{ bottom: `calc(${volume * 100}% - 6px)` }}
+          style={{ bottom: `calc(${volume * 100}% - 10px)` }}
         />
       </div>
     </div>

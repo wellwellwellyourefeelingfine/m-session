@@ -86,6 +86,9 @@ export const useSessionStore = create(
       // 'not-started' | 'intake' | 'pre-session' | 'substance-checklist' | 'active' | 'paused' | 'completed'
       sessionPhase: 'not-started',
 
+      // Unique session identifier — generated at intake start, used for archiving
+      sessionId: null,
+
       // ============================================
       // INTAKE QUESTIONNAIRE STATE
       // ============================================
@@ -399,6 +402,7 @@ export const useSessionStore = create(
       startIntake: () => {
         set({
           sessionPhase: 'intake',
+          sessionId: get().sessionId || generateId(),
           intake: { ...get().intake, currentSection: 'A' },
         });
       },
@@ -2452,9 +2456,51 @@ export const useSessionStore = create(
       // RESET
       // ============================================
 
+      /**
+       * Return a clean snapshot of the current session state for archiving.
+       * Strips transient UI state (same logic as the persist partialize config).
+       */
+      snapshotForArchive: () => {
+        const state = get();
+        const { meditationPlayback: _mp, activeFollowUpModule: _afu, activePreSessionModule: _aps, ...rest } = state;
+        // Strip all function-valued keys (actions) — keep only data
+        const snapshot = {};
+        for (const [key, value] of Object.entries(rest)) {
+          if (typeof value !== 'function') {
+            snapshot[key] = value;
+          }
+        }
+        // Reset transient flags (same as partialize)
+        return {
+          ...snapshot,
+          comeUpCheckIn: {
+            ...state.comeUpCheckIn,
+            currentResponse: null,
+            waitingForCheckIn: false,
+          },
+          peakCheckIn: { isVisible: false },
+          closingCheckIn: { isVisible: false },
+          booster: {
+            ...state.booster,
+            isModalVisible: state.booster.status === 'prompted' || state.booster.status === 'snoozed',
+            isMinimized: state.booster.status === 'snoozed',
+          },
+          phaseTransitions: {
+            ...state.phaseTransitions,
+            activeTransition: null,
+            transitionCompleted: false,
+          },
+          modules: {
+            ...state.modules,
+            inOpenSpace: false,
+          },
+        };
+      },
+
       resetSession: () => {
         set({
           sessionPhase: 'not-started',
+          sessionId: null,
           intake: {
             currentSection: 'A',
             responses: {
@@ -2653,7 +2699,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 12, // Increment this when schema changes to force reset
+      version: 13, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, activePreSessionModule, ...rest } = state;
@@ -2685,7 +2731,16 @@ export const useSessionStore = create(
           },
         };
       },
-      migrate: (persistedState, version) => {
+      migrate: migrateSessionState,
+    }
+  )
+);
+
+/**
+ * Session state migration function.
+ * Exported so useSessionHistoryStore can migrate archived sessions on restore.
+ */
+export function migrateSessionState(persistedState, version) {
         // If coming from version 1 or no version, reset to fresh state
         if (version < 2) {
           return undefined; // Return undefined to use initial state
@@ -2996,8 +3051,10 @@ export const useSessionStore = create(
           }
         }
 
+        // Version 12 → 13: Add sessionId
+        if (version < 13) {
+          state.sessionId = state.sessionId || null;
+        }
+
         return state;
-      },
-    }
-  )
-);
+}

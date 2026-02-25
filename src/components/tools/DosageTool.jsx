@@ -77,15 +77,26 @@ export default function DosageTool() {
         </label>
         <div className="flex items-center gap-3">
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
+            pattern="[0-9]*"
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
+            onChange={(e) => setWeight(e.target.value.replace(/[^0-9]/g, ''))}
             placeholder={unit === 'kg' ? '70' : '150'}
             className="w-20 bg-transparent border-b border-app-gray-300 dark:border-app-gray-700
                        py-3 text-lg focus:outline-none focus:border-app-black dark:focus:border-app-white
                        transition-colors duration-200"
           />
+          <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">
+            {unit === 'lb' ? 'pounds' : 'kilograms'}
+          </span>
+          <button
+            type="button"
+            onClick={() => document.activeElement?.blur()}
+            className="px-3 py-1.5 text-xs uppercase tracking-wider bg-[var(--color-text-primary)] text-[var(--color-bg)] transition-opacity hover:opacity-70"
+          >
+            enter
+          </button>
           <div className="flex text-sm">
             <button
               onClick={() => setUnit('lb')}

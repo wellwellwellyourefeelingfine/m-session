@@ -9,7 +9,8 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useToolsStore } from '../../stores/useToolsStore';
 import { useAIStore } from '../../stores/useAIStore';
-import { downloadSessionData } from '../../utils/downloadSessionData';
+import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
+import { downloadSessionData, downloadSessionImages } from '../../utils/downloadSessionData';
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
 import DebugModeTool from './DebugModeTool';
 
@@ -28,6 +29,7 @@ export default function SettingsTool() {
   const preferences = useAppStore((state) => state.preferences);
   const setPreference = useAppStore((state) => state.setPreference);
   const resetSession = useSessionStore((state) => state.resetSession);
+  const hasImages = useJournalStore((state) => state.entries.some((e) => e.hasImage && e.source === 'session'));
 
   // AI store state
   const provider = useAIStore((state) => state.provider);
@@ -51,7 +53,8 @@ export default function SettingsTool() {
 
   // Local state
   const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showDownloadConfirm, setShowDownloadConfirm] = useState(null); // null | 'txt' | 'json'
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
+  const [showDownloadConfirm, setShowDownloadConfirm] = useState(null); // null | 'txt' | 'images'
   const [selectedProvider, setSelectedProvider] = useState(provider || 'anthropic');
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [showSecurityNotice, setShowSecurityNotice] = useState(false);
@@ -74,8 +77,20 @@ export default function SettingsTool() {
     setShowResetConfirm(false);
   };
 
-  const handleDownloadConfirm = (format) => {
-    downloadSessionData(format);
+  const handleWipeAll = () => {
+    resetSession();
+    useJournalStore.setState({ entries: [], navigation: { currentView: 'editor', activeEntryId: null } });
+    useToolsStore.setState({ openTools: [], timerDuration: 0, timerRemaining: 0, timerActive: false, timerStartTime: null });
+    useSessionHistoryStore.setState({ sessions: [] });
+    setShowWipeConfirm(false);
+  };
+
+  const handleDownloadConfirm = async (type) => {
+    if (type === 'images') {
+      await downloadSessionImages();
+    } else {
+      downloadSessionData();
+    }
     setShowDownloadConfirm(null);
   };
 
@@ -221,14 +236,15 @@ export default function SettingsTool() {
               className="flex-1 py-2 text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity border border-[var(--color-border)]"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              Text File
+              Session Record
             </button>
             <button
-              onClick={() => setShowDownloadConfirm('json')}
-              className="flex-1 py-2 text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity border border-[var(--color-border)]"
+              onClick={() => setShowDownloadConfirm('images')}
+              disabled={!hasImages}
+              className="flex-1 py-2 text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity border border-[var(--color-border)] disabled:opacity-30 disabled:cursor-default"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              JSON File
+              {hasImages ? 'Images' : 'No Images'}
             </button>
           </div>
         </div>
@@ -473,7 +489,7 @@ export default function SettingsTool() {
           )}
         </div>
 
-        {/* Reset Session */}
+        {/* Reset Current Session */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Reset Session</span>
           <button
@@ -482,6 +498,18 @@ export default function SettingsTool() {
             style={{ fontFamily: 'Azeret Mono, monospace', color: 'var(--accent)' }}
           >
             RESET
+          </button>
+        </div>
+
+        {/* Wipe All Data */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Wipe All Data</span>
+          <button
+            onClick={() => setShowWipeConfirm(true)}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace', color: 'var(--accent)' }}
+          >
+            WIPE
           </button>
         </div>
 
@@ -519,12 +547,12 @@ export default function SettingsTool() {
       {showResetConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-            <p className="text-[12px] uppercase tracking-wider font-bold">Reset Session</p>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Reset Current Session</p>
             <p style={{ color: 'var(--text-primary)' }}>
-              This will reset the entire app and permanently delete all data, including your intake responses, session progress, and journal entries.
+              This will delete your current session data, including intake responses, session progress, and journal entries.
             </p>
             <p style={{ color: 'var(--text-tertiary)' }}>
-              This action cannot be undone.
+              Your saved past sessions will not be affected.
             </p>
             <div className="space-y-2 pt-2">
               <button
@@ -532,10 +560,41 @@ export default function SettingsTool() {
                 className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
                 style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
               >
-                Yes, reset everything
+                Yes, reset current session
               </button>
               <button
                 onClick={() => setShowResetConfirm(false)}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Wipe All Data Confirmation Modal */}
+      {showWipeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+          <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Wipe All Data</p>
+            <p style={{ color: 'var(--text-primary)' }}>
+              This will permanently delete all data from the app, including your current session, all saved past sessions, and all journal entries.
+            </p>
+            <p style={{ color: 'var(--text-tertiary)' }}>
+              This action cannot be undone.
+            </p>
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleWipeAll}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+              >
+                Yes, wipe everything
+              </button>
+              <button
+                onClick={() => setShowWipeConfirm(false)}
                 className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
                 style={{ border: '1px solid var(--border)' }}
               >
@@ -550,30 +609,35 @@ export default function SettingsTool() {
       {showDownloadConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-            <p className="text-[12px] uppercase tracking-wider font-bold">Download Session Data</p>
-            <p style={{ color: 'var(--text-primary)' }}>
-              Your download will include:
+            <p className="text-[12px] uppercase tracking-wider font-bold">
+              {showDownloadConfirm === 'images' ? 'Download Images' : 'Download Session Data'}
             </p>
-            <ul className="text-[13px] space-y-1" style={{ color: 'var(--text-secondary)' }}>
-              <li>• All journal entries (session & personal)</li>
-              <li>• Intention and touchstone</li>
-              <li>• Transition reflections (peak, integration, closing)</li>
-              <li>• Check-in responses</li>
-              <li>• Completed activities</li>
-              <li>• Follow-up reflections (if completed)</li>
-            </ul>
-            <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
-              {showDownloadConfirm === 'txt'
-                ? 'Text format is human-readable.'
-                : 'JSON format is useful for backup or import.'}
-            </p>
+            {showDownloadConfirm === 'images' ? (
+              <p style={{ color: 'var(--text-secondary)' }}>
+                This will download all images created during your session as separate PNG files.
+              </p>
+            ) : (
+              <>
+                <p style={{ color: 'var(--text-primary)' }}>
+                  Your download will include:
+                </p>
+                <ul className="text-[13px] space-y-1" style={{ color: 'var(--text-secondary)' }}>
+                  <li>• All journal entries (session & personal)</li>
+                  <li>• Intention and touchstone</li>
+                  <li>• Transition reflections (peak, integration, closing)</li>
+                  <li>• Check-in responses</li>
+                  <li>• Completed activities</li>
+                  <li>• Follow-up reflections (if completed)</li>
+                </ul>
+              </>
+            )}
             <div className="space-y-2 pt-2">
               <button
                 onClick={() => handleDownloadConfirm(showDownloadConfirm)}
                 className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
                 style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
               >
-                Yes, download {showDownloadConfirm === 'txt' ? 'text file' : 'JSON file'}
+                Yes, download {showDownloadConfirm === 'images' ? 'images' : 'session record'}
               </button>
               <button
                 onClick={() => setShowDownloadConfirm(null)}

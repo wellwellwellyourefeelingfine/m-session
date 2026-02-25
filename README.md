@@ -74,18 +74,21 @@ src/
 │   │   ├── AIAssistantModal.jsx   # Main chat interface
 │   │   ├── ChatWindow.jsx
 │   │   └── ChatSidebar.jsx
+│   ├── history/                   # Session history browsing
+│   │   └── SessionHistoryModal.jsx # Accordion-style past sessions panel
 │   ├── home/                      # Intake, timeline editor
 │   ├── journal/                   # Entry list + editor
 │   ├── tools/                     # FAQ, dosage, settings, data download
 │   ├── intake/                    # Questionnaire components
 │   ├── timeline/                  # Timeline editor components
-│   └── layout/                    # AppShell, Header, TabBar
+│   └── layout/                    # AppShell, Header, TabBar, SessionMenu
 ├── stores/
 │   ├── useSessionStore.js         # Core session logic (~2250 lines)
 │   ├── useAppStore.js             # Global state (tabs, dark mode)
 │   ├── useJournalStore.js         # Journal entries
 │   ├── useAIStore.js              # AI assistant state + conversations
-│   └── useToolsStore.js           # Tools panel state
+│   ├── useToolsStore.js           # Tools panel state
+│   └── useSessionHistoryStore.js  # Archived session management
 ├── services/
 │   ├── aiService.js               # AI provider API integration
 │   ├── audioComposerService.js    # Composes TTS clips + silence + gong into single MP3 blob
@@ -102,7 +105,7 @@ src/
 │   └── intake/                    # 4-section questionnaire
 ├── utils/
 │   ├── buildSystemPrompt.js       # AI context builder
-│   └── downloadSessionData.js     # Session data export (text + JSON)
+│   └── downloadSessionData.js     # Session data export (text + images)
 └── App.jsx                        # Tab routing (views kept mounted)
 
 public/
@@ -725,6 +728,7 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 | `mdma-guide-app-state` | useAppStore |
 | `mdma-guide-journal-state` | useJournalStore |
 | `mdma-guide-ai-state` | useAIStore |
+| `mdma-guide-session-history` | useSessionHistoryStore |
 
 ---
 
@@ -862,6 +866,9 @@ A reusable transition screen for smooth flow between sections:
 | Follow-up: Revisit | `src/components/followup/FollowUpRevisit.jsx` |
 | Follow-up: Integration | `src/components/followup/FollowUpIntegration.jsx` |
 | AI assistant | `src/components/ai/AIAssistantModal.jsx` |
+| Session menu (hamburger) | `src/components/layout/SessionMenu.jsx` |
+| Session history modal | `src/components/history/SessionHistoryModal.jsx` |
+| Session history store | `src/stores/useSessionHistoryStore.js` |
 
 ---
 
@@ -889,14 +896,15 @@ A reusable transition screen for smooth flow between sections:
 
 ## Data Export
 
-Session data can be downloaded in two places:
+Session data can be downloaded in three places:
 1. **Closing Ritual** (Step 6: "Before You Go") — via `DataDownloadModal`
 2. **Settings tool** (Tools tab) — via download buttons with confirmation
+3. **Hamburger menu** → "Export Session" — via `DataDownloadModal`
 
 ### Formats
 
 - **Text (.txt)**: Human-readable session record with divider-separated sections
-- **JSON (.json)**: Structured data for backup or import
+- **Images (.png)**: Session-created images (e.g. Values Compass) downloaded as separate PNG files
 
 ### Data Included
 
@@ -918,6 +926,27 @@ Follow-up data is included only if those modules have been completed. Downloads 
 ### Implementation
 
 `src/utils/downloadSessionData.js` reads directly from Zustand stores via `getState()` (no React hooks needed) and generates the export at download time.
+
+---
+
+## Session History
+
+Sessions can be archived and restored via the hamburger menu in the header.
+
+### How It Works
+- **Archive**: "New Session" saves the current session state + journal entries to `useSessionHistoryStore`, then resets both stores
+- **Restore**: "Past Sessions" opens an accordion panel where users can browse archived sessions and load them back (current session is auto-archived first)
+- **Storage**: All archived sessions are stored in localStorage under `mdma-guide-session-history`
+
+### Hamburger Menu (`SessionMenu`)
+The header hamburger menu provides four functions:
+1. **Dark/Light mode toggle** — pill-shaped switch with accent colors
+2. **New Session** — archive current session and start fresh
+3. **Past Sessions** — browse and load archived sessions (accordion UI)
+4. **Export Session** — download current session data (text/JSON)
+
+### Known Limitation
+Journal images stored in IndexedDB are not included in archives. Users should download images before archiving a session.
 
 ---
 
@@ -1018,7 +1047,7 @@ This approach aligns with the app's non-directive philosophy. Rigid timing isn't
 
 - PWA offline mode not fully tested
 - No user accounts or cloud sync
-- Single session at a time
+- Journal images (IndexedDB blobs) are not preserved when archiving sessions
 
 ---
 
@@ -1032,3 +1061,4 @@ When making changes:
 4. Test on both light and dark modes
 5. Verify tab switching doesn't break timer state
 6. For audio modules, ensure graceful fallback to text-only
+7. **Version numbers**: On significant releases, update both `version` in `package.json` and the display label in `src/components/layout/SessionMenu.jsx` (the `m-session v1.0` text in the hamburger menu)

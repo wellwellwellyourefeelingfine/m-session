@@ -50,6 +50,7 @@ const PhaseSection = forwardRef(function PhaseSection(
     onMoveModuleUp,
     onMoveModuleDown,
     isFirst = false,
+    previousPhaseCompleted = false,
   },
   ref
 ) {
@@ -114,18 +115,25 @@ const PhaseSection = forwardRef(function PhaseSection(
   // Determine if this phase's node should be filled (active or completed)
   const isNodeFilled = isActiveSession && (phaseStatus === 'active' || phaseStatus === 'completed');
 
+  // Top connector should match the previous phase's opacity, not this phase's
+  const getPrevPhaseOpacity = () => {
+    if (!isActiveSession) return 'opacity-100';
+    if (previousPhaseCompleted) return 'opacity-50';
+    return 'opacity-100';
+  };
+
   return (
-    <div ref={ref} className={`relative flex ${getPhaseOpacity()}`}>
+    <div ref={ref} className="relative flex">
       {/* Timeline node and vertical bar segment */}
       <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
         {/* Connecting bar from previous phase (invisible spacer when first) */}
         {isFirst
           ? <div className="h-2" />
-          : <div className="w-0.5 h-2 bg-[var(--color-text-primary)]" />
+          : <div className={`w-0.5 h-2 bg-[var(--color-text-primary)] ${getPrevPhaseOpacity()}`} />
         }
         {/* Node circle - aligned with phase header */}
         <div
-          className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+          className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${getPhaseOpacity()} ${
             isNodeFilled
               ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
               : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
@@ -133,12 +141,12 @@ const PhaseSection = forwardRef(function PhaseSection(
         />
         {/* Vertical bar extending down - no gap */}
         {!isLast && (
-          <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+          <div className={`w-0.5 flex-1 bg-[var(--color-text-primary)] ${getPhaseOpacity()}`} />
         )}
       </div>
 
       {/* Phase content */}
-      <div className="flex-1 pb-6">
+      <div className={`flex-1 pb-6 ${getPhaseOpacity()}`}>
         {/* Phase header - new design with DM Serif font */}
         <div className="mb-4">
           <div className="flex items-start justify-between">

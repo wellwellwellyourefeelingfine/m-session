@@ -125,11 +125,8 @@
   /* Prevent pull-to-refresh and bounce on the main container */
   #root {
     overscroll-behavior: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    height: 100vh;
+    height: 100dvh;
     overflow: hidden;
   }
 

@@ -235,6 +235,16 @@ const _musicRecommendations = [
       youtube: 'https://www.youtube.com/results?search_query=Beethoven+Septett+Op+20+Sextett+Op+71+Scharoun+Ensemble+full+album',
     },
   },
+  {
+    artist: 'The Beatles',
+    title: 'Abbey Road (Remastered)',
+    description: 'The Beatles\' final recorded masterpiece — from the luminous "Here Comes the Sun" to the legendary medley on side two. (47 min)',
+    links: {
+      spotify: 'https://open.spotify.com/album/0ETFjACtuP2ADo6LFhL6HN',
+      appleMusic: 'https://music.apple.com/us/search?term=The%20Beatles%20Abbey%20Road%20Remastered',
+      youtube: 'https://www.youtube.com/results?search_query=The+Beatles+Abbey+Road+full+album',
+    },
+  },
 ];
 
 // Creator's pick — always appears last in the recommendations list

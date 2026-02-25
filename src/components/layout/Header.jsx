@@ -8,6 +8,7 @@ import { useAppStore } from '../../stores/useAppStore';
 import { useAIStore } from '../../stores/useAIStore';
 import AIAssistantTab from '../ai/AIAssistantTab';
 import AIAssistantModal from '../ai/AIAssistantModal';
+import SessionMenu from './SessionMenu';
 
 export default function Header() {
   const darkMode = useAppStore((state) => state.darkMode);
@@ -39,7 +40,7 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
-        <div className="h-full flex items-end pl-0 pr-4">
+        <div className="h-full flex items-end pl-0 pr-0">
           {/* App Logo + "SESSION" text */}
           <div className="h-full flex items-end gap-1" style={{ padding: '0' }}>
             <img
@@ -56,14 +57,16 @@ export default function Header() {
           </div>
 
           {/* AI Assistant Tab (centered in remaining space, only visible when API key is configured) */}
-          {isKeyValid && (
+          {isKeyValid ? (
             <div className="flex-1 flex justify-center">
               <AIAssistantTab isOpen={isModalOpen} onClick={handleToggle} />
             </div>
+          ) : (
+            <div className="flex-1" />
           )}
 
-          {/* Spacer to balance the layout when AI tab is visible */}
-          {isKeyValid && <div className="w-16" />}
+          {/* Session Menu (hamburger) */}
+          <SessionMenu />
         </div>
       </header>
 

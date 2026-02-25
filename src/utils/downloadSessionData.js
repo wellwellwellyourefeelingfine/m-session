@@ -486,19 +486,6 @@ ${border}
 }
 
 /**
- * Generate JSON export
- */
-export function generateJsonExport() {
-  const data = getSessionData();
-
-  return JSON.stringify({
-    version: '1.0',
-    exportedAt: new Date().toISOString(),
-    ...data,
-  }, null, 2);
-}
-
-/**
  * Trigger file download in browser
  */
 export function downloadFile(content, filename, type) {
@@ -523,10 +510,8 @@ function getFilename(extension) {
 
 /**
  * Download any session images (Values Compass PNG) as separate files.
- * Delayed slightly to avoid browser download-blocking when triggered
- * alongside the main text/JSON download.
  */
-async function downloadSessionImages() {
+export async function downloadSessionImages() {
   const journalState = useJournalStore.getState();
   const imageEntries = journalState.entries.filter(
     (e) => e.hasImage && e.source === 'session'
@@ -548,17 +533,9 @@ async function downloadSessionImages() {
 }
 
 /**
- * Download session data in specified format
- * @param {'txt' | 'json'} format - The export format
+ * Download session data as a text file
  */
-export async function downloadSessionData(format) {
-  if (format === 'txt') {
-    const content = generateTextExport();
-    downloadFile(content, getFilename('txt'), 'text/plain');
-    // Download any associated images after a brief delay
-    setTimeout(() => downloadSessionImages(), 500);
-  } else if (format === 'json') {
-    const content = generateJsonExport();
-    downloadFile(content, getFilename('json'), 'application/json');
-  }
+export function downloadSessionData() {
+  const content = generateTextExport();
+  downloadFile(content, getFilename('txt'), 'text/plain');
 }

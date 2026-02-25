@@ -45,14 +45,12 @@ function formatDuration(seconds) {
 
 export default function HomeView() {
   const [isVisible, setIsVisible] = useState(false);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const session = useSessionStore((state) => state.session);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const startIntake = useSessionStore((state) => state.startIntake);
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
   const completeIntake = useSessionStore((state) => state.completeIntake);
-  const resetSession = useSessionStore((state) => state.resetSession);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
   // Handle Begin Session - moon transition then navigate to substance checklist
@@ -75,20 +73,6 @@ export default function HomeView() {
       setTimeout(() => setTransitionStep('reveal'), 3550),
       setTimeout(() => setTransitionStep(null), 4700),
     ];
-  };
-
-  // Handle reset with confirmation
-  const handleResetClick = () => {
-    setShowResetConfirm(true);
-  };
-
-  const handleResetConfirm = () => {
-    setShowResetConfirm(false);
-    resetSession();
-  };
-
-  const handleResetCancel = () => {
-    setShowResetConfirm(false);
   };
 
   // Intake → pre-session transition (moon buffer)
@@ -114,8 +98,8 @@ export default function HomeView() {
   }, []);
 
   // Trigger fade-in when component mounts
+  // (isVisible starts as false, so we just schedule the reveal)
   useEffect(() => {
-    setIsVisible(false);
     const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
   }, []);
@@ -207,45 +191,6 @@ export default function HomeView() {
 
             {/* Frozen Timeline with integrated Phase 4 Follow-Up */}
             <TimelineEditor isActiveSession={false} isCompletedSession={true} />
-
-            {/* Start New Session - smaller button */}
-            <div className="mt-8 pt-6 border-t border-[var(--color-border)] text-center">
-              <button
-                type="button"
-                onClick={handleResetClick}
-                className="px-4 py-2 text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider hover:text-[var(--color-text-secondary)] transition-colors"
-              >
-                Start New Session
-              </button>
-            </div>
-
-            {/* Reset Confirmation Modal */}
-            {showResetConfirm && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
-                <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
-                  <h3 className="mb-4 text-[var(--color-text-primary)]">Start New Session?</h3>
-                  <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-                    This will clear your current session data. Make sure you've downloaded any data you want to keep.
-                  </p>
-                  <div className="space-y-3">
-                    <button
-                      type="button"
-                      onClick={handleResetConfirm}
-                      className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
-                    >
-                      Yes, Start New Session
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleResetCancel}
-                      className="w-full py-2 text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider hover:text-[var(--color-text-secondary)]"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         );
 

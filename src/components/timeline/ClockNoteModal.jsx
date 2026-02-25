@@ -219,14 +219,19 @@ export default function ClockNoteModal({ isOpen, onClose, frozenTime }) {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-black/30"
         onClick={handleClose}
       />
 
       {/* Content */}
       <div
-        className="absolute flex flex-col bg-[var(--color-bg)] border border-[var(--color-border)] rounded-sm"
-        style={{ top: 24, left: 24, right: 24, bottom: 24 }}
+        className="relative flex flex-col bg-[var(--color-bg)] border border-[var(--color-border)] rounded-sm"
+        style={{
+          width: 'calc(100% - 48px)',
+          height: 'calc(100% - 250px)',
+          maxWidth: 430,
+          maxHeight: 682,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

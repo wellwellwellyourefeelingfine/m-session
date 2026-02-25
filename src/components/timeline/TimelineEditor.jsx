@@ -592,6 +592,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           onRemoveModule={handleRemoveModule}
           isActiveSession={isActiveSession}
           phaseStatus={getPhaseStatus('peak')}
+          previousPhaseCompleted={getPhaseStatus('come-up') === 'completed'}
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('peak')}
@@ -613,6 +614,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           onRemoveModule={handleRemoveModule}
           isActiveSession={isActiveSession}
           phaseStatus={getPhaseStatus('integration')}
+          previousPhaseCompleted={getPhaseStatus('peak') === 'completed'}
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('integration')}
@@ -627,7 +629,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         <div className="relative flex">
           {/* Timeline node - no vertical bar extending down (this is the end of the main timeline) */}
           <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-            <div className="w-0.5 h-1 bg-[var(--color-text-primary)]" />
+            <div className={`w-0.5 h-1 bg-[var(--color-text-primary)] ${isActiveSession && getPhaseStatus('integration') === 'completed' ? 'opacity-50' : ''}`} />
             <div className={`w-3 h-3 rounded-full border-2 ${
               isCompletedSession
                 ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
