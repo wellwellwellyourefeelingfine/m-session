@@ -140,7 +140,6 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   );
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-  const [isMeditationCompleteVisible, setIsMeditationCompleteVisible] = useState(true);
 
   // Reflection state
   const [reflectionStep, setReflectionStep] = useState(0);
@@ -235,19 +234,6 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     onSkip: handleMeditationSkip,
     onTimerUpdate,
   });
-
-  // Smooth fade from meditation-complete interstitial → reflection
-  const handleContinueToReflection = useCallback(() => {
-    setIsMeditationCompleteVisible(false);
-    setTimeout(() => {
-      playback.handleRestart(); // Hook cleanup (stop audio, revoke blob, reset store)
-      setPhase('reflection');
-      setReflectionStep(0);
-      setIsReflectionVisible(true);
-      setIsReflectionHeaderVisible(true);
-      setIsMeditationCompleteVisible(true);
-    }, 400);
-  }, [playback]);
 
   // ─── Phase transitions ────────────────────────────────────────────────
 
@@ -527,36 +513,6 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
         </>
       );
     }
-
-    // Meditation completed — interstitial with fade-out transition
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className={`text-center space-y-4 transition-opacity duration-[400ms] ${
-            isMeditationCompleteVisible ? 'opacity-100' : 'opacity-0'
-          }`}>
-            <h2
-              className="text-xl font-light mb-6"
-              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-            >
-              {meditation.title}
-            </h2>
-            <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)]">
-              Take a moment before moving on.
-            </p>
-          </div>
-        </ModuleLayout>
-
-        <ModuleControlBar
-          phase="completed"
-          primary={{ label: 'Continue', onClick: handleContinueToReflection }}
-          showBack={false}
-          showSkip={true}
-          onSkip={handleModuleSkip}
-          skipConfirmMessage="Skip the reflection and journaling?"
-        />
-      </>
-    );
   }
 
   // ─── Render: Reflection phase ─────────────────────────────────────────

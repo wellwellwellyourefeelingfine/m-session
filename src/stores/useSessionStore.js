@@ -11,6 +11,9 @@ import { useAppStore } from './useAppStore';
 import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
+// Session store schema version — exported so useSessionHistoryStore stays in sync
+export const SESSION_STORE_VERSION = 14;
+
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
@@ -2721,7 +2724,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 14, // Increment this when schema changes to force reset
+      version: SESSION_STORE_VERSION,
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, activePreSessionModule, ...rest } = state;

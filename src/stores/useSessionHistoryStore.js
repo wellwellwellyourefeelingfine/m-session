@@ -7,12 +7,9 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useSessionStore, migrateSessionState } from './useSessionStore';
+import { useSessionStore, migrateSessionState, SESSION_STORE_VERSION } from './useSessionStore';
 import { useJournalStore } from './useJournalStore';
 import { useAppStore } from './useAppStore';
-
-// Current session store schema version — must match useSessionStore's persist version
-const CURRENT_VERSION = 13;
 
 /**
  * Build lightweight metadata for the session list display.
@@ -92,7 +89,7 @@ export const useSessionHistoryStore = create(
           const archive = {
             sessionId,
             archivedAt: Date.now(),
-            version: CURRENT_VERSION,
+            version: SESSION_STORE_VERSION,
             metadata: buildMetadata(snapshot),
             sessionState: snapshot,
             journalEntries: [...journalStore.entries],
@@ -136,7 +133,7 @@ export const useSessionHistoryStore = create(
           const currentArchive = {
             sessionId: currentSessionId,
             archivedAt: Date.now(),
-            version: CURRENT_VERSION,
+            version: SESSION_STORE_VERSION,
             metadata: buildMetadata(snapshot),
             sessionState: snapshot,
             journalEntries: [...journalStore.entries],
@@ -165,7 +162,7 @@ export const useSessionHistoryStore = create(
 
         // Migrate archived state if needed
         let restoredState = target.sessionState;
-        if (target.version < CURRENT_VERSION) {
+        if (target.version < SESSION_STORE_VERSION) {
           restoredState = migrateSessionState(restoredState, target.version);
           // migrateSessionState returns undefined for very old versions — fall back to fresh state
           if (!restoredState) {
