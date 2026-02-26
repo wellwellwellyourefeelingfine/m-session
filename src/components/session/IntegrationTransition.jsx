@@ -708,7 +708,7 @@ export default function IntegrationTransition() {
         {/* Content area - directly below animation, scrollable if needed */}
         <div className="flex-1 overflow-auto px-6">
           <div
-            className={`w-full max-w-md mx-auto pb-6 transition-opacity duration-[400ms] ${
+            className={`w-full max-w-md mx-auto pb-24 transition-opacity duration-[400ms] ${
               isVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >

@@ -28,6 +28,7 @@
  */
 
 import MorphingShapes from './animations/MorphingShapes';
+import AsciiMoon from './animations/AsciiMoon';
 
 /**
  * @param {object} props
@@ -144,9 +145,17 @@ export function CompletionScreen({
 }) {
   return (
     <div className="text-center space-y-4 animate-fadeIn">
-      <h2 className="text-[var(--color-text-primary)]">
+      <h2
+        className="font-serif text-2xl text-[var(--color-text-primary)]"
+        style={{ textTransform: 'none' }}
+      >
         {title}
       </h2>
+
+      <div className="flex justify-center">
+        <AsciiMoon />
+      </div>
+
       <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)]">
         {message}
       </p>

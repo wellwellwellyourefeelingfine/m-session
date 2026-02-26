@@ -855,7 +855,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
       if (!screen.header) return null;
       if (screen.header === '{schemas_header}') {
         return (
-          <p className="text-[var(--accent)] text-xs uppercase tracking-wider mb-3">
+          <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
             a new handle
           </p>
         );

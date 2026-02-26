@@ -638,7 +638,7 @@ export default function PreSessionIntro() {
         </div>
 
         {/* Content area - scrollable, text fades */}
-        <div className="flex-1 overflow-auto px-6 pb-4">
+        <div className="flex-1 overflow-auto px-6 pb-20">
           <div className="max-w-md mx-auto">
             <div
               className={`transition-opacity duration-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}

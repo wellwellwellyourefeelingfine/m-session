@@ -315,6 +315,11 @@ export const useSessionStore = create(
           journalTowardMove: null,    // journal-e text (toward move commitment)
           journalMessageFromHere: null, // journal-h text (message to self)
         },
+        // Felt Sense captures (shift check-in response)
+        feltSense: {
+          shiftCheckIn: null,   // 'softened' | 'changed-unclear' | 'stayed-same' | 'surprised' | 'lost-track' | 'not-sure'
+          completedAt: null,
+        },
       },
 
       // ============================================
@@ -1735,6 +1740,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateFeltSenseCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            feltSense: {
+              ...state.transitionCaptures.feltSense,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2652,6 +2670,10 @@ export const useSessionStore = create(
               quadrants: null,
               completedAt: null,
             },
+            feltSense: {
+              shiftCheckIn: null,
+              completedAt: null,
+            },
           },
           closingCheckIn: {
             isVisible: false,
@@ -2699,7 +2721,7 @@ export const useSessionStore = create(
     }),
     {
       name: 'mdma-guide-session-state',
-      version: 13, // Increment this when schema changes to force reset
+      version: 14, // Increment this when schema changes to force reset
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
         const { meditationPlayback, activeFollowUpModule, activePreSessionModule, ...rest } = state;
@@ -3054,6 +3076,19 @@ export function migrateSessionState(persistedState, version) {
         // Version 12 → 13: Add sessionId
         if (version < 13) {
           state.sessionId = state.sessionId || null;
+        }
+
+        // Version 13 → 14: Add feltSense to transitionCaptures
+        if (version < 14) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.feltSense) {
+            state.transitionCaptures.feltSense = {
+              shiftCheckIn: null,
+              completedAt: null,
+            };
+          }
         }
 
         return state;

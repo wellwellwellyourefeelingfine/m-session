@@ -215,9 +215,10 @@ export default function FAQTool() {
           medications.
         </p>
         <p>
-          Testing your substance, staying hydrated (but not over-hydrated), using
-          reasonable doses, waiting adequate time between sessions, and avoiding
-          contraindicated medications significantly reduces risk.
+          Testing your substance, staying moderately hydrated (see the water
+          question below—overhydration is a real risk), using reasonable doses,
+          waiting adequate time between sessions, and avoiding contraindicated
+          medications significantly reduces risk.
         </p>
       </Question>
 
@@ -236,6 +237,35 @@ export default function FAQTool() {
           There's also a psychological case for spacing: integration takes time.
           Insights from one session benefit from weeks of processing before adding
           more material.
+        </p>
+      </Question>
+
+      <Question q="What about supplements?">
+        <p>
+          Some commonly discussed supplements in harm reduction communities:
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Magnesium glycinate</span> —
+          Taken before or during. May reduce jaw clenching and muscle tension.
+          One of the better-supported recommendations.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Vitamin C / Alpha-lipoic acid</span> —
+          Antioxidants sometimes taken before and during. Theoretical benefit
+          for reducing oxidative stress, though evidence in humans is limited.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">5-HTP</span> —
+          A serotonin precursor sometimes taken in the days after a session
+          to support recovery. <span className="text-[var(--color-text-primary)]">Do not
+          take 5-HTP within 24 hours of MDMA</span>—combining them risks
+          serotonin syndrome. Wait at least a day, ideally longer.
+        </p>
+        <p>
+          None of these are required, and evidence for most is anecdotal
+          or based on animal studies. If you do supplement, research
+          dosages carefully and be aware of interactions with any
+          medications you take.
         </p>
       </Question>
 
@@ -305,6 +335,34 @@ export default function FAQTool() {
           If you're solo, let someone know you're having a session (even if you
           don't share details), keep your phone accessible, and know who you'd
           call if you needed support.
+        </p>
+      </Question>
+
+      <Question q="How much water should I drink?">
+        <p>
+          Less than you probably think. One of the most common pieces of
+          advice around MDMA is "drink lots of water"—but overhydration
+          is actually a more realistic risk than dehydration, especially
+          in a calm home setting.
+        </p>
+        <p>
+          MDMA causes your body to release antidiuretic hormone, which
+          makes your kidneys retain water. If you drink large amounts on
+          top of this, your blood sodium can drop to dangerous levels—a
+          condition called <span className="text-[var(--color-text-primary)]">hyponatremia</span>.
+          Symptoms include headache, nausea, confusion, and in severe
+          cases, seizures.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">A good rule:</span> Sip
+          small amounts regularly rather than gulping large quantities.
+          About 250ml (one cup) per hour is reasonable if you're resting
+          at home. If you're more active—dancing, moving around—you may
+          need slightly more, but still moderate.
+        </p>
+        <p>
+          Electrolyte drinks or coconut water can help maintain sodium
+          balance. Avoid forcing yourself to drink if you're not thirsty.
         </p>
       </Question>
 
@@ -420,6 +478,27 @@ export default function FAQTool() {
         </p>
       </Question>
 
+      <Question q="How can I try out the activities beforehand?">
+        <p>
+          After completing the intake form, you'll see your session timeline
+          with modules assigned to each phase. You can also add modules to a
+          "pre-session" section at the top of the timeline—these run before
+          you take the substance, giving you a chance to experience any
+          activity in advance.
+        </p>
+        <p>
+          This is helpful for getting comfortable with guided meditations,
+          breathing exercises, or journaling prompts before you're in an
+          altered state. Anything you write during pre-session activities
+          is saved to your journal under its own section, separate from
+          your in-session entries.
+        </p>
+        <p>
+          Think of it as a dress rehearsal—familiarizing yourself with
+          the tools so you can use them more naturally when it matters.
+        </p>
+      </Question>
+
       <Question q="What if I want to skip something or change the plan?">
         <p>
           Most modules can be skipped with a skip button. A few pre-session
@@ -508,9 +587,15 @@ export default function FAQTool() {
 
       <Question q="Can I access my past sessions?">
         <p>
-          Yes. Your journal entries and session history are saved locally on your
-          device. You can review past sessions, reread what you wrote, and track
-          your experiences over time.
+          Yes. Tap the menu icon in the top corner and select "Past Sessions"
+          to browse your archived sessions. Each entry shows the date, status,
+          and duration. Expand any session to see details like your intention,
+          dose, and which activities you completed—then load it back to
+          review your journal entries and reflections.
+        </p>
+        <p>
+          When you start a new session, the current one is automatically
+          saved and can be returned to at any time.
         </p>
         <p>
           We encourage returning to your notes during integration—often you'll

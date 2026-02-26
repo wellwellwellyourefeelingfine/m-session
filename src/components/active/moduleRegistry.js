@@ -31,6 +31,7 @@ const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule
 const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
 const ValuesCompassModule = lazy(() => import('./modules/ValuesCompassModule'));
 const LetsDanceModule = lazy(() => import('./modules/LetsDanceModule'));
+const FeltSenseModule = lazy(() => import('./modules/FeltSenseModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -85,6 +86,9 @@ export const CUSTOM_MODULES = {
 
   // Let's Dance — dance-focused music module (peak phase only)
   'lets-dance': LetsDanceModule,
+
+  // Felt Sense (Focusing) — guided meditation + reflection + journaling
+  'felt-sense': FeltSenseModule,
 };
 
 /**
@@ -163,6 +167,7 @@ export const MODULE_CATEGORIES = {
     'stay-with-it',
     'values-compass',
     'leaves-on-a-stream',
+    'felt-sense',
   ],
   open: [
     'open-space',

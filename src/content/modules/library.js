@@ -47,6 +47,8 @@ export const MODULE_TYPES = {
   'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 'deep' },
   // Values Compass (ACT Matrix)
   'values-compass': { label: 'Values Compass', intensity: 'moderate' },
+  // Felt Sense (Focusing)
+  'felt-sense': { label: 'Felt Sense', intensity: 'moderate' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
@@ -299,6 +301,27 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['reconsolidation', 'schema', 'meditation', 'guided', 'stay-with-it', 'emotional-processing'],
+  },
+  {
+    id: 'felt-sense',
+    type: 'felt-sense',
+    category: 'activity',
+    title: 'Felt Sense',
+    description: 'Turn inward and let your body show you what it\u2019s holding. No words needed.',
+    defaultDuration: 12,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak', 'integration'],
+    hasVariableDuration: false,
+    meditationId: 'felt-sense',
+    capabilities: {
+      timer: { type: 'elapsed', showProgress: true, showTimeDisplay: true, autoComplete: true },
+      prompts: { type: 'timed', fadeTransition: true },
+      audio: { type: 'voiceover', showMuteButton: true },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['focusing', 'felt-sense', 'somatic', 'meditation', 'guided', 'Gendlin', 'journaling'],
   },
   {
     id: 'values-compass',

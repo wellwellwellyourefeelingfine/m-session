@@ -17,6 +17,7 @@ import { simpleGroundingMeditation } from './simple-grounding';
 import { protectorDialogueMeditation } from './protector-dialogue';
 import { leavesOnAStreamMeditation } from './leaves-on-a-stream';
 import { stayWithItMeditation } from './stay-with-it';
+import { feltSenseMeditation } from './felt-sense';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -30,6 +31,7 @@ export const meditationLibrary = {
   'protector-dialogue': protectorDialogueMeditation,
   'leaves-on-a-stream': leavesOnAStreamMeditation,
   'stay-with-it': stayWithItMeditation,
+  'felt-sense': feltSenseMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -58,6 +60,9 @@ export { leavesOnAStreamMeditation };
 
 // Re-export stay with it meditation
 export { stayWithItMeditation };
+
+// Re-export felt sense meditation
+export { feltSenseMeditation };
 
 /**
  * Get a meditation by its ID
