@@ -94,8 +94,8 @@ export const moduleLibrary = [
     type: 'simple-grounding',
     category: 'meditation',
     title: 'Simple Grounding',
-    description: 'A brief grounding practice to feel present and connected. Settle in, notice your senses, and return to the here and now.',
-    defaultDuration: 5,
+    description: 'A guided grounding practice to feel present and connected. Settle in, notice your body and senses, and return to the here and now.',
+    defaultDuration: 8,
     intensity: 'gentle',
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up'],
@@ -109,7 +109,7 @@ export const moduleLibrary = [
       controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
       layout: { centered: true, maxWidth: 'sm' },
     },
-    tags: ['grounding', 'brief', 'calming', 'come-up', 'guided'],
+    tags: ['grounding', 'calming', 'come-up', 'guided'],
   },
 
   // === BREATH MEDITATION (with BreathOrb animation) ===

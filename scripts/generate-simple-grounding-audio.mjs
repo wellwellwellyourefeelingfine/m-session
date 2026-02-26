@@ -21,19 +21,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
-const VOICE_ID = 'jfIS2w2yJi0grJZPyEsk'; // Oliver Silk
+const VOICE_ID = 'UmQN7jS1Ee8B1czsUtQh'; // Theo Silk
 const MODEL_ID = 'eleven_multilingual_v2';
 const OUTPUT_FORMAT = 'mp3_44100_128'; // High quality MP3
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
-// Voice settings tuned for slow, meditative speech
+// Voice settings tuned for Theo Silk meditative delivery
 // Speed: 0.7-1.2 (1.0 = normal pace; 0.7 = slowest allowed)
 const VOICE_SETTINGS = {
-  stability: 0.95,
-  similarity_boost: 0.95,
+  stability: 0.65,
+  similarity_boost: 0.70,
   style: 0.0,
-  use_speaker_boost: false,
-  speed: 0.7,
+  use_speaker_boost: true,
+  speed: 0.87,
 };
 
 // Delay between requests to respect rate limits (ms)
@@ -158,7 +158,7 @@ async function main() {
 
   console.log(`Simple Grounding Audio Generator`);
   console.log(`================================`);
-  console.log(`Voice: Oliver Silk (${VOICE_ID})`);
+  console.log(`Voice: Theo Silk (${VOICE_ID})`);
   console.log(`Model: ${MODEL_ID}`);
   console.log(`Total clips: ${allClips.length}`);
   console.log(`  Settling: ${allClips.filter(c => c.id.startsWith('settle-')).length}`);

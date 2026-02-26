@@ -207,7 +207,13 @@ const allPrompts = [
   },
   {
     id: 'being-09',
-    text: 'Notice what\u2019s happening now. Has anything shifted? Even slightly? The shape, the weight, the density, the temperature, the position. Sometimes the change is obvious. Sometimes it\u2019s barely perceptible. Sometimes nothing changes at all. And even that is information. You showed up. You stayed. That\u2019s not nothing.',
+    text: 'Notice what\u2019s happening now. Has anything shifted? Even slightly? The shape, the weight, the density, the temperature, the position.',
+    baseSilenceAfter: 20,
+    defaultSilenceAfter: 12,
+  },
+  {
+    id: 'being-10',
+    text: 'Sometimes the change is obvious. Sometimes it\u2019s barely perceptible. Sometimes nothing changes at all. And even that is information. You showed up. You stayed. That\u2019s not nothing.',
     baseSilenceAfter: 40,
     defaultSilenceAfter: 25,
   },

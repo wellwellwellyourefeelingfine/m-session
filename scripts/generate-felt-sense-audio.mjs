@@ -21,19 +21,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
-const VOICE_ID = 'jfIS2w2yJi0grJZPyEsk'; // Oliver Silk
+const VOICE_ID = 'UmQN7jS1Ee8B1czsUtQh'; // Theo Silk
 const MODEL_ID = 'eleven_multilingual_v2';
 const OUTPUT_FORMAT = 'mp3_44100_128'; // High quality MP3
 
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
-// Voice settings tuned for Oliver Silk meditative delivery
+// Voice settings tuned for Theo Silk meditative delivery
 const VOICE_SETTINGS = {
-  stability: 0.88,
-  similarity_boost: 0.88,
+  stability: 0.65,
+  similarity_boost: 0.70,
   style: 0.0,
-  use_speaker_boost: false,
-  speed: 0.70,
+  use_speaker_boost: true,
+  speed: 0.87,
 };
 
 // Delay between requests to respect rate limits (ms)
@@ -136,7 +136,7 @@ async function main() {
 
   console.log(`Felt Sense Meditation Audio Generator`);
   console.log(`=====================================`);
-  console.log(`Voice: Oliver Silk (${VOICE_ID})`);
+  console.log(`Voice: Theo Silk (${VOICE_ID})`);
   console.log(`Model: ${MODEL_ID}`);
   console.log(`Total prompts: ${allPrompts.length}`);
   console.log(`Total characters: ${totalChars}`);

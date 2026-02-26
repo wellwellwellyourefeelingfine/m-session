@@ -1,7 +1,7 @@
 /**
  * Generate Protector Dialogue Meditation Audio
  *
- * Calls the ElevenLabs TTS API to generate MP3 files for all 16 prompts.
+ * Calls the ElevenLabs TTS API to generate MP3 files for all 30 prompts.
  * "Meeting a Protector" — Part 1, Step 5
  *
  * Usage:
@@ -28,11 +28,11 @@ const API_BASE = 'https://api.elevenlabs.io/v1';
 // Voice settings tuned for Theo Silk meditative delivery
 // Speed: 0.7-1.2 (1.0 = normal pace; 0.7 = slowest allowed)
 const VOICE_SETTINGS = {
-  stability: 0.75,
+  stability: 0.65,
   similarity_boost: 0.70,
   style: 0.0,
   use_speaker_boost: true,
-  speed: 0.7,
+  speed: 0.87,
 };
 
 // Delay between requests to respect rate limits (ms)
