@@ -3,7 +3,7 @@
  *
  * A grounding practice with:
  * - 31 pre-recorded TTS audio prompts
- * - Fixed duration (~8 minutes)
+ * - Fixed duration (~9 minutes)
  * - No silence expansion (fixed pauses throughout)
  * - Audio-text sync via shared useMeditationPlayback hook
  *
@@ -48,7 +48,7 @@ export const simpleGroundingMeditation = {
 
   // Fixed duration — no DurationPicker
   isFixedDuration: true,
-  fixedDuration: 480, // ~8:00 in seconds
+  fixedDuration: 561, // ~9:21 in seconds (from actual MP3 durations + actual silence file durations)
 
   prompts: [
     // ============================================

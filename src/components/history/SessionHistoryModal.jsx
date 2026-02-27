@@ -213,11 +213,11 @@ export default function SessionHistoryModal({ onClose }) {
         style={{ animation: isClosingModal ? 'historyFadeOut 180ms ease-in forwards' : 'historyFadeIn 180ms ease-out' }}
       >
         {/* Accordion container */}
-        <div className="overflow-y-auto" style={{ border: '1px solid var(--color-text-primary)', backgroundColor: 'var(--color-bg)' }}>
+        <div className="overflow-y-auto" style={{ borderTop: '2px solid var(--color-text-primary)', borderLeft: '2px solid var(--color-text-primary)', borderRight: '2px solid var(--color-text-primary)', backgroundColor: 'var(--color-bg)' }}>
           {/* Header */}
           <div
             className="relative flex items-center justify-center px-4 sticky top-0 z-10"
-            style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text-primary)', borderBottom: '1px solid var(--color-text-primary)', minHeight: '52px' }}
+            style={{ backgroundColor: 'var(--color-bg)', color: 'var(--color-text-primary)', borderBottom: '2px solid var(--color-text-primary)', minHeight: '52px' }}
           >
             <h2
               className="uppercase tracking-widest text-[11px]"
@@ -240,7 +240,7 @@ export default function SessionHistoryModal({ onClose }) {
           {sortedSessions.length === 0 ? (
             <div
               className="px-6 py-12 text-center"
-              style={{ backgroundColor: 'var(--color-bg)' }}
+              style={{ backgroundColor: 'var(--color-bg)', borderBottom: '2px solid var(--color-text-primary)' }}
             >
               <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                 No past sessions yet.
@@ -263,11 +263,11 @@ export default function SessionHistoryModal({ onClose }) {
                   <button
                     type="button"
                     onClick={() => handleToggle(session.sessionId)}
-                    className={`w-full text-left px-4 flex items-center hover:opacity-70 transition-opacity ${isExpanded ? 'font-medium' : ''}`}
+                    className={`w-full text-left px-4 flex items-center ${isExpanded ? 'font-medium' : ''}`}
                     style={{
                       backgroundColor: 'var(--color-bg)',
                       color: 'var(--color-text-primary)',
-                      borderBottom: '1px solid var(--color-text-primary)',
+                      borderBottom: '2px solid var(--color-text-primary)',
                       minHeight: '52px',
                     }}
                   >
@@ -305,7 +305,7 @@ export default function SessionHistoryModal({ onClose }) {
 
                   {/* Expandable Detail Panel */}
                   <div
-                    className="grid"
+                    className="grid relative"
                     style={{
                       backgroundColor: 'var(--color-bg)',
                       gridTemplateRows: (isExpanded && !isClosingThis) ? '1fr' : '0fr',
@@ -318,7 +318,6 @@ export default function SessionHistoryModal({ onClose }) {
                           className="px-5 py-5 space-y-3"
                           style={{
                             backgroundColor: 'var(--color-bg)',
-                            borderBottom: '1px solid var(--color-text-primary)',
                             color: 'var(--color-text-primary)',
                             opacity: isClosingThis ? 0 : 1,
                             transition: isClosingThis
@@ -348,6 +347,13 @@ export default function SessionHistoryModal({ onClose }) {
                         </div>
                       )}
                     </div>
+                    {/* Bottom border outside overflow-hidden so it tracks the expanding edge */}
+                    {(isExpanded || isClosingThis) && (
+                      <div
+                        className="absolute bottom-0 left-0 right-0"
+                        style={{ borderBottom: '2px solid var(--color-text-primary)' }}
+                      />
+                    )}
                   </div>
                 </Fragment>
               );

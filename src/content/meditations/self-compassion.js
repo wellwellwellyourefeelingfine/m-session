@@ -431,12 +431,17 @@ function assembleVariation(variationKey) {
   }
 }
 
+import audioDurations from './audio-durations.json';
+
 /**
- * Calculate the speaking duration for a clip using word-count estimation
- * @param {Object} clip - Clip object with text
- * @returns {number} Estimated speaking duration in seconds
+ * Calculate the speaking duration for a clip, using actual MP3 duration
+ * from the audio manifest when available, falling back to word-count estimation.
+ * @param {Object} clip - Clip object with id and text
+ * @returns {number} Speaking duration in seconds
  */
 function calculateClipSpeakingDuration(clip) {
+  const manifestDuration = audioDurations['self-compassion']?.[clip.id];
+  if (manifestDuration) return manifestDuration;
   const wordCount = clip.text.split(' ').length;
   return (wordCount / SPEAKING_RATE) * 60;
 }

@@ -75,7 +75,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     });
 
     // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds);
+    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds, meditation.speakingRate, 'open-awareness');
 
     // Generate timed sequence
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {

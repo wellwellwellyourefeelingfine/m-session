@@ -13,6 +13,7 @@ import {
   getMeditationById,
   generateTimedSequence,
 } from '../../../content/meditations';
+import { getModuleById } from '../../../content/modules/library';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 
 // Shared UI components
@@ -22,7 +23,9 @@ import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
 
 export default function SimpleGroundingModule({ module, onComplete, onSkip, onTimerUpdate }) {
-  const meditation = getMeditationById('simple-grounding');
+  const libraryModule = getModuleById(module.libraryId);
+  const meditationId = libraryModule?.meditationId || 'simple-grounding';
+  const meditation = getMeditationById(meditationId);
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Transcript modal state
@@ -64,7 +67,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
 
   // Shared playback hook handles timer, audio-text sync, prompt progression, etc.
   const playback = useMeditationPlayback({
-    meditationId: 'simple-grounding',
+    meditationId,
     moduleInstanceId: module.instanceId,
     timedSequence,
     totalDuration,

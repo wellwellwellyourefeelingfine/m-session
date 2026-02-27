@@ -26,6 +26,64 @@ const SILENCE_FORMAT = 'mp3';
 const GONG_SOFT_SRC = '/audio/meditation-bell-soft.mp3';
 
 /**
+ * Detect and return the size of an ID3v2 tag at the start of an ArrayBuffer.
+ * Returns 0 if no ID3v2 tag is found.
+ *
+ * @param {ArrayBuffer} buffer - The MP3 file data
+ * @returns {number} Size of the ID3v2 tag in bytes (header + body), or 0
+ */
+function getID3TagSize(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 10) return 0;
+  // ID3v2 header: "ID3" magic bytes
+  if (bytes[0] === 0x49 && bytes[1] === 0x44 && bytes[2] === 0x33) {
+    // Size is a 28-bit synchsafe integer (4 bytes, 7 bits each)
+    const size = ((bytes[6] & 0x7F) << 21) |
+                 ((bytes[7] & 0x7F) << 14) |
+                 ((bytes[8] & 0x7F) << 7) |
+                 (bytes[9] & 0x7F);
+    return size + 10; // 10-byte header + declared size
+  }
+  return 0;
+}
+
+/**
+ * Strip the ID3v2 tag from an ArrayBuffer, returning only the audio data.
+ * Returns the original buffer if no ID3 tag is found.
+ *
+ * @param {ArrayBuffer} buffer - The MP3 file data
+ * @returns {ArrayBuffer} Audio data without ID3 tag
+ */
+function stripID3Tag(buffer) {
+  const tagSize = getID3TagSize(buffer);
+  if (tagSize > 0 && tagSize < buffer.byteLength) {
+    return buffer.slice(tagSize);
+  }
+  return buffer;
+}
+
+/**
+ * Compute the actual duration of silence blocks from their fetched buffers.
+ * Falls back to the nominal duration if buffers aren't available.
+ *
+ * @param {string[]} blockUrls - Silence block file URLs from decomposeSilence()
+ * @param {number} nominalDuration - The nominal silence duration in seconds
+ * @param {Map|null} bufferMap - Map of URL → ArrayBuffer
+ * @returns {number} Actual silence duration in seconds
+ */
+function actualSilenceDuration(blockUrls, nominalDuration, bufferMap) {
+  if (!bufferMap) return nominalDuration;
+  let total = 0;
+  for (const url of blockUrls) {
+    const buf = bufferMap.get(url);
+    if (buf) {
+      total += estimateMp3Duration(buf);
+    }
+  }
+  return total || nominalDuration;
+}
+
+/**
  * Decompose a duration (in seconds) into a list of silence block filenames.
  * Uses greedy algorithm with available block sizes.
  * Rounds to nearest 0.5s (our smallest block).
@@ -50,8 +108,27 @@ export function decomposeSilence(durationSeconds) {
 }
 
 /**
+ * Check if an ArrayBuffer starts with valid MP3 data (MPEG sync word or ID3v2 tag).
+ * Used to detect stale cache entries that contain HTML instead of audio.
+ *
+ * @param {ArrayBuffer} buffer
+ * @returns {boolean}
+ */
+function isValidMp3Buffer(buffer) {
+  if (buffer.byteLength < 3) return false;
+  const h = new Uint8Array(buffer, 0, 3);
+  // ID3v2 tag header
+  if (h[0] === 0x49 && h[1] === 0x44 && h[2] === 0x33) return true;
+  // MPEG audio frame sync word (11 bits set)
+  if (h[0] === 0xFF && (h[1] & 0xE0) === 0xE0) return true;
+  return false;
+}
+
+/**
  * Fetch an audio file as an ArrayBuffer.
  * Tries Cache API first (for offline/SW support), falls back to network fetch.
+ * Validates cached entries are actual MP3 data — evicts stale HTML responses
+ * that can occur when a service worker caches SPA fallback pages.
  *
  * @param {string} url - Audio file URL
  * @returns {Promise<ArrayBuffer>}
@@ -62,7 +139,12 @@ async function fetchAudioBuffer(url) {
     try {
       const cache = await caches.open('audio-cache');
       const cached = await cache.match(url);
-      if (cached) return cached.arrayBuffer();
+      if (cached) {
+        const buffer = await cached.arrayBuffer();
+        if (isValidMp3Buffer(buffer)) return buffer;
+        // Stale/invalid entry (e.g. HTML from SPA fallback) — evict and fetch fresh
+        await cache.delete(url);
+      }
     } catch {
       // Fall through to network
     }
@@ -174,7 +256,7 @@ export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPream
       for (const url of silenceBlocks) {
         plan.push({ type: 'silence', url });
       }
-      currentTime += silenceDuration;
+      currentTime += actualSilenceDuration(silenceBlocks, silenceDuration, bufferMap);
     }
 
     // Record prompt time position in the composed audio
@@ -195,7 +277,7 @@ export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPream
   for (const url of closingSilence) {
     plan.push({ type: 'silence', url });
   }
-  currentTime += 1;
+  currentTime += actualSilenceDuration(closingSilence, 1, bufferMap);
 
   plan.push({ type: 'gong', url: GONG_SOFT_SRC });
   currentTime += gongDuration;
@@ -243,6 +325,15 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
     }
   }
 
+  // Strip ID3 tags from all buffers to prevent mid-stream DEMUXER errors
+  // when concatenated bytes contain ID3 headers between audio frames
+  for (const [url, buffer] of bufferMap) {
+    const stripped = stripID3Tag(buffer);
+    if (stripped !== buffer) {
+      bufferMap.set(url, stripped);
+    }
+  }
+
   // Second pass: rebuild plan with real durations from fetched buffers
   const { plan, promptTimeMap, totalDuration } = buildConcatenationPlan(timedSequence, options, bufferMap);
 
@@ -250,7 +341,9 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
   let totalBytes = 0;
   for (const entry of plan) {
     const buffer = bufferMap.get(entry.url);
-    if (buffer) totalBytes += buffer.byteLength;
+    if (buffer) {
+      totalBytes += buffer.byteLength;
+    }
   }
 
   // Concatenate all buffers into a single Uint8Array

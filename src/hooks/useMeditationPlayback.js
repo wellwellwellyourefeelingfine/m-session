@@ -78,6 +78,8 @@ export function useMeditationPlayback({
   const lastPromptRef = useRef(-1);
   const textFadeTimeoutRef = useRef(null);
   const rafRef = useRef(null);
+  const onTimerUpdateRef = useRef(onTimerUpdate);
+  useEffect(() => { onTimerUpdateRef.current = onTimerUpdate; });
 
   // Audio playback hook (single-source continuous player)
   const audio = useAudioPlayback({
@@ -230,8 +232,10 @@ export function useMeditationPlayback({
   // Report timer state to parent for ModuleStatusBar.
   // Uses the real content duration (from actual MP3 byte lengths) when available,
   // falling back to the estimated totalDuration before composition completes.
+  // onTimerUpdate is stored in a ref to prevent re-render loops — parent creates
+  // a new function reference each render, which would cause infinite updates.
   useEffect(() => {
-    if (!onTimerUpdate) return;
+    if (!onTimerUpdateRef.current) return;
 
     // Subtract preamble so user-visible timer starts at 0 after gong
     const userElapsed = Math.max(0, elapsedTime - GONG_PREAMBLE);
@@ -240,14 +244,14 @@ export function useMeditationPlayback({
     const composedTotal = composedDurationRef.current;
     const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
 
-    onTimerUpdate({
+    onTimerUpdateRef.current({
       progress,
       elapsed: userElapsed,
       total: displayTotal,
       showTimer: hasStarted && !isComplete,
       isPaused: !isPlaying,
     });
-  }, [elapsedTime, totalDuration, hasStarted, isPlaying, onTimerUpdate]);
+  }, [elapsedTime, totalDuration, hasStarted, isPlaying]);
 
   // Cleanup on unmount
   useEffect(() => {

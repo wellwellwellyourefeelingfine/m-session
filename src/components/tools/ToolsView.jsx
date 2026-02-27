@@ -48,8 +48,9 @@ export default function ToolsView() {
     <div className={`max-w-2xl mx-auto px-6 py-8 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       {/* Accordion — each button is followed by its expandable panel */}
       <div className="border border-app-black dark:border-app-white overflow-hidden">
-        {tools.map((tool) => {
+        {tools.map((tool, index) => {
           const isOpen = openTools.includes(tool.id);
+          const isLast = index === tools.length - 1;
           return (
             <Fragment key={tool.id}>
               <button
@@ -59,7 +60,7 @@ export default function ToolsView() {
                   bg-app-black dark:bg-app-white
                   text-app-white dark:text-app-black
                   hover:opacity-70 transition-opacity
-                  border-b border-app-white/20 dark:border-app-black/20
+                  ${isLast ? '' : 'border-b border-app-white/20 dark:border-app-black/20'}
                   ${isOpen ? 'font-medium' : ''}
                 `}
               >
@@ -73,7 +74,7 @@ export default function ToolsView() {
                   <span className="text-sm tracking-wider">{tool.label}</span>
                 </span>
               </button>
-              <ToolPanel toolId={tool.id} ToolComponent={tool.component} />
+              <ToolPanel toolId={tool.id} ToolComponent={tool.component} isLast={isLast} />
             </Fragment>
           );
         })}

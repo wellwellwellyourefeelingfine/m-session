@@ -299,7 +299,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
     });
 
     // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds);
+    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds, meditation.speakingRate, 'stay-with-it');
 
     // Generate timed sequence
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {

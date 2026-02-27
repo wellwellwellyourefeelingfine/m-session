@@ -3,13 +3,13 @@
  *
  * A guided focusing meditation based on Eugene Gendlin's Focusing technique.
  * Two variations:
- * - Default (~12 min): Core practice, gentle introduction
- * - Going Deeper (~20 min): Full practice with extended silences and additional prompts
+ * - Default (~17 min): Core practice, gentle introduction
+ * - Going Deeper (~26 min): Full practice with extended silences and additional prompts
  *
  * All variations share a common set of prompts. Going Deeper adds
  * variationOnly prompts and uses longer base silences.
  *
- * 38 total unique prompts: 29 shared + 9 going-deeper only
+ * 44 total unique prompts: 35 shared + 9 going-deeper only
  *
  * Audio: /audio/meditations/felt-sense/{promptId}.mp3
  * Fixed duration per variation (no silence expansion)
@@ -304,12 +304,17 @@ function assembleVariation(variationKey) {
     });
 }
 
+import audioDurations from './audio-durations.json';
+
 /**
- * Calculate the speaking duration for a prompt using word-count estimation
- * @param {Object} prompt - Prompt object with text
- * @returns {number} Estimated speaking duration in seconds
+ * Calculate the speaking duration for a prompt, using actual MP3 duration
+ * from the audio manifest when available, falling back to word-count estimation.
+ * @param {Object} prompt - Prompt object with id and text
+ * @returns {number} Speaking duration in seconds
  */
 function calculatePromptSpeakingDuration(prompt) {
+  const manifestDuration = audioDurations['felt-sense']?.[prompt.id];
+  if (manifestDuration) return manifestDuration;
   const wordCount = prompt.text.split(' ').length;
   return (wordCount / SPEAKING_RATE) * 60;
 }
@@ -379,7 +384,7 @@ export const feltSenseMeditation = {
     },
   },
 
-  // All prompts (for audio generation — all 38 unique prompts)
+  // All prompts (for audio generation — all 44 unique prompts)
   prompts: allPrompts,
 
   // Assembly function (called by component with selected variation key)

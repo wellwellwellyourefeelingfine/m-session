@@ -12,7 +12,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 14;
+export const SESSION_STORE_VERSION = 15;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -323,6 +323,15 @@ export const useSessionStore = create(
           shiftCheckIn: null,   // 'softened' | 'changed-unclear' | 'stayed-same' | 'surprised' | 'lost-track' | 'not-sure'
           completedAt: null,
         },
+      },
+
+      // ============================================
+      // LIFE GRAPH STATE
+      // ============================================
+      lifeGraph: {
+        milestones: [],           // Array of { id, label, rating, note }
+        graphGenerated: false,
+        journalEntryId: null,
       },
 
       // ============================================
@@ -1091,6 +1100,50 @@ export const useSessionStore = create(
           preSubstanceActivity: {
             ...get().preSubstanceActivity,
             intentionJournalEntryId: id,
+          },
+        });
+      },
+
+      // ── Life Graph Actions ──────────────────────────────────────
+
+      addLifeGraphMilestone: (milestone) => {
+        const state = get();
+        set({
+          lifeGraph: {
+            ...state.lifeGraph,
+            milestones: [...state.lifeGraph.milestones, { ...milestone, id: generateId() }],
+          },
+        });
+      },
+
+      updateLifeGraphMilestone: (id, updates) => {
+        const state = get();
+        set({
+          lifeGraph: {
+            ...state.lifeGraph,
+            milestones: state.lifeGraph.milestones.map((m) =>
+              m.id === id ? { ...m, ...updates } : m
+            ),
+          },
+        });
+      },
+
+      removeLifeGraphMilestone: (id) => {
+        const state = get();
+        set({
+          lifeGraph: {
+            ...state.lifeGraph,
+            milestones: state.lifeGraph.milestones.filter((m) => m.id !== id),
+          },
+        });
+      },
+
+      setLifeGraphGenerated: (journalEntryId) => {
+        set({
+          lifeGraph: {
+            ...get().lifeGraph,
+            graphGenerated: true,
+            journalEntryId,
           },
         });
       },
@@ -1968,6 +2021,7 @@ export const useSessionStore = create(
       },
 
       // Complete a pre-session module
+      // Clears activePreSessionModule and stays on Active tab (Pre-Session Active Page)
       completePreSessionModule: (instanceId) => {
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
@@ -1980,59 +2034,29 @@ export const useSessionStore = create(
           get()._markPreSessionJournalEntries(module.startedAt);
         }
 
-        // Mark module as completed
-        const updatedItems = state.modules.items.map((m) =>
-          m.instanceId === instanceId
-            ? { ...m, status: 'completed', completedAt: now }
-            : m
-        );
-
-        // Find next upcoming pre-session module
-        const nextModule = updatedItems
-          .filter((m) => m.phase === 'pre-session' && m.status === 'upcoming')
-          .sort((a, b) => a.order - b.order)[0];
-
-        if (nextModule) {
-          // Auto-start next pre-session module
-          set({
-            activePreSessionModule: nextModule.instanceId,
-            modules: {
-              ...state.modules,
-              items: updatedItems.map((m) =>
-                m.instanceId === nextModule.instanceId
-                  ? { ...m, status: 'active', startedAt: now }
-                  : m
-              ),
-            },
-            meditationPlayback: {
-              moduleInstanceId: null,
-              isPlaying: false,
-              hasStarted: false,
-              startedAt: null,
-              accumulatedTime: 0,
-            },
-          });
-        } else {
-          // No more pre-session modules — return to home
-          set({
-            activePreSessionModule: null,
-            modules: {
-              ...state.modules,
-              items: updatedItems,
-            },
-            meditationPlayback: {
-              moduleInstanceId: null,
-              isPlaying: false,
-              hasStarted: false,
-              startedAt: null,
-              accumulatedTime: 0,
-            },
-          });
-          useAppStore.getState().setCurrentTab('home');
-        }
+        // Mark module as completed, clear active module, stay on Active tab
+        set({
+          activePreSessionModule: null,
+          modules: {
+            ...state.modules,
+            items: state.modules.items.map((m) =>
+              m.instanceId === instanceId
+                ? { ...m, status: 'completed', completedAt: now }
+                : m
+            ),
+          },
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          },
+        });
       },
 
       // Skip a pre-session module
+      // Clears activePreSessionModule and stays on Active tab (Pre-Session Active Page)
       skipPreSessionModule: (instanceId) => {
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
@@ -2045,54 +2069,25 @@ export const useSessionStore = create(
           get()._markPreSessionJournalEntries(module.startedAt);
         }
 
-        // Mark module as skipped
-        const updatedItems = state.modules.items.map((m) =>
-          m.instanceId === instanceId
-            ? { ...m, status: 'skipped', completedAt: now }
-            : m
-        );
-
-        // Find next upcoming pre-session module
-        const nextModule = updatedItems
-          .filter((m) => m.phase === 'pre-session' && m.status === 'upcoming')
-          .sort((a, b) => a.order - b.order)[0];
-
-        if (nextModule) {
-          set({
-            activePreSessionModule: nextModule.instanceId,
-            modules: {
-              ...state.modules,
-              items: updatedItems.map((m) =>
-                m.instanceId === nextModule.instanceId
-                  ? { ...m, status: 'active', startedAt: now }
-                  : m
-              ),
-            },
-            meditationPlayback: {
-              moduleInstanceId: null,
-              isPlaying: false,
-              hasStarted: false,
-              startedAt: null,
-              accumulatedTime: 0,
-            },
-          });
-        } else {
-          set({
-            activePreSessionModule: null,
-            modules: {
-              ...state.modules,
-              items: updatedItems,
-            },
-            meditationPlayback: {
-              moduleInstanceId: null,
-              isPlaying: false,
-              hasStarted: false,
-              startedAt: null,
-              accumulatedTime: 0,
-            },
-          });
-          useAppStore.getState().setCurrentTab('home');
-        }
+        // Mark module as skipped, clear active module, stay on Active tab
+        set({
+          activePreSessionModule: null,
+          modules: {
+            ...state.modules,
+            items: state.modules.items.map((m) =>
+              m.instanceId === instanceId
+                ? { ...m, status: 'skipped', completedAt: now }
+                : m
+            ),
+          },
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          },
+        });
       },
 
       // Exit pre-session module without completing (return to Home)
@@ -2678,6 +2673,11 @@ export const useSessionStore = create(
               completedAt: null,
             },
           },
+          lifeGraph: {
+            milestones: [],
+            graphGenerated: false,
+            journalEntryId: null,
+          },
           closingCheckIn: {
             isVisible: false,
           },
@@ -3091,6 +3091,13 @@ export function migrateSessionState(persistedState, version) {
               shiftCheckIn: null,
               completedAt: null,
             };
+          }
+        }
+
+        // Version 14 → 15: Add lifeGraph state
+        if (version < 15) {
+          if (!state.lifeGraph) {
+            state.lifeGraph = { milestones: [], graphGenerated: false, journalEntryId: null };
           }
         }
 

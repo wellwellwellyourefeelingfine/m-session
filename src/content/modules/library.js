@@ -32,6 +32,7 @@ export const MODULE_TYPES = {
   'open-awareness': { label: 'Open Awareness', intensity: 'moderate' },
   'body-scan': { label: 'Body Scan', intensity: 'gentle' },
   'simple-grounding': { label: 'Simple Grounding', intensity: 'gentle' },
+  'short-grounding': { label: 'Basic Grounding', intensity: 'gentle' },
   'light-journaling': { label: 'Light Journaling', intensity: 'moderate' },
   'deep-journaling': { label: 'Deep Journaling', intensity: 'deep' },
   'therapy-exercise': { label: 'Therapy Exercise', intensity: 'deep' },
@@ -50,6 +51,10 @@ export const MODULE_TYPES = {
   // Felt Sense (Focusing)
   'felt-sense': { label: 'Felt Sense', intensity: 'moderate' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
+  // Intention Setting (pre-session)
+  'intention-setting': { label: 'Intention Setting', intensity: 'gentle' },
+  // Life Graph (pre-session)
+  'life-graph': { label: 'Life Graph', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
@@ -88,6 +93,42 @@ export const PHASE_INTENSITY_RULES = {
  * All available modules users can add to their timeline
  */
 export const moduleLibrary = [
+  // === PRE-SESSION ===
+  {
+    id: 'intention-setting',
+    type: 'intention-setting',
+    category: 'pre-session',
+    title: 'Intention Setting',
+    description: 'A guided flow to refine your session intention. Includes optional grounding meditation, self-inquiry, and writing exercises.',
+    defaultDuration: 15,
+    intensity: 'gentle',
+    allowedPhases: ['pre-session'],
+    recommendedPhases: ['pre-session'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['intention', 'pre-session', 'writing', 'grounding', 'self-inquiry'],
+  },
+  {
+    id: 'life-graph',
+    type: 'life-graph',
+    category: 'pre-session',
+    title: 'Life Graph',
+    description: 'Chart significant life milestones against a well-being scale, then see your journey visualized as a life graph.',
+    defaultDuration: 15,
+    intensity: 'gentle',
+    allowedPhases: ['pre-session'],
+    recommendedPhases: ['pre-session'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['life-graph', 'pre-session', 'reflection', 'visualization', 'lifeline'],
+  },
+
   // === COME-UP APPROPRIATE (Gentle) ===
   {
     id: 'simple-grounding',
@@ -110,6 +151,27 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['grounding', 'calming', 'come-up', 'guided'],
+  },
+  {
+    id: 'short-grounding',
+    type: 'short-grounding',
+    category: 'meditation',
+    title: 'Basic Grounding',
+    description: 'A brief 5-minute grounding reset. Body contact, senses, and breath — just enough to come back to center.',
+    defaultDuration: 5,
+    intensity: 'gentle',
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['come-up', 'peak', 'integration'],
+    hasVariableDuration: false,
+    meditationId: 'short-grounding',
+    capabilities: {
+      timer: { type: 'elapsed', showProgress: true, showTimeDisplay: true, autoComplete: true },
+      prompts: { type: 'timed', fadeTransition: true },
+      audio: { type: 'voiceover', showMuteButton: true },
+      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['grounding', 'brief', 'calming', 'guided'],
   },
 
   // === BREATH MEDITATION (with BreathOrb animation) ===

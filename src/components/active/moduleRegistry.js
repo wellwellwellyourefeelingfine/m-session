@@ -32,6 +32,8 @@ const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
 const ValuesCompassModule = lazy(() => import('./modules/ValuesCompassModule'));
 const LetsDanceModule = lazy(() => import('./modules/LetsDanceModule'));
 const FeltSenseModule = lazy(() => import('./modules/FeltSenseModule'));
+const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
+const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -65,6 +67,9 @@ export const CUSTOM_MODULES = {
   // Simple grounding has fixed-duration audio-text sync
   'simple-grounding': SimpleGroundingModule,
 
+  // Basic grounding (short 5-min version) — reuses SimpleGroundingModule
+  'short-grounding': SimpleGroundingModule,
+
   // Music listening has duration picker, alarm prompt, and recommendations
   'music-listening': MusicListeningModule,
 
@@ -89,6 +94,12 @@ export const CUSTOM_MODULES = {
 
   // Felt Sense (Focusing) — guided meditation + reflection + journaling
   'felt-sense': FeltSenseModule,
+
+  // Intention Setting — pre-session guided intention refinement flow
+  'intention-setting': IntentionSettingActivity,
+
+  // Life Graph — pre-session lifeline exercise with PNG visualization
+  'life-graph': LifeGraphActivity,
 };
 
 /**
@@ -152,6 +163,7 @@ export const MODULE_CATEGORIES = {
     'body-scan',
     'self-compassion',
     'simple-grounding',
+    'short-grounding',
   ],
   journaling: [
     'journaling',
@@ -168,6 +180,8 @@ export const MODULE_CATEGORIES = {
     'values-compass',
     'leaves-on-a-stream',
     'felt-sense',
+    'intention-setting',
+    'life-graph',
   ],
   open: [
     'open-space',

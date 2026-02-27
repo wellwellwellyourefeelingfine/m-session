@@ -51,6 +51,7 @@ export default function ActiveView() {
   const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
   const skipPreSessionModule = useSessionStore((state) => state.skipPreSessionModule);
   const exitPreSessionModule = useSessionStore((state) => state.exitPreSessionModule);
+  const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
   const startModule = useSessionStore((state) => state.startModule);
@@ -223,8 +224,8 @@ export default function ActiveView() {
 
     switch (sessionPhase) {
       case 'not-started':
-      case 'intake':
-      case 'pre-session': {
+      case 'intake': {
+        // Before intake is complete — show Core Philosophy
         const setCurrentTab = useAppStore.getState().setCurrentTab;
         return (
           <div className="flex flex-col items-center px-6 pt-2 pb-12 gap-6">
@@ -241,6 +242,49 @@ export default function ActiveView() {
               </h1>
               <PhilosophyContent />
             </div>
+          </div>
+        );
+      }
+
+      case 'pre-session': {
+        // Intake complete, timeline generated — show Pre-Session Active Page
+        const setCurrentTab = useAppStore.getState().setCurrentTab;
+
+        // Find the first resumable pre-session module (active first, then upcoming)
+        const resumableModule = _modules.items
+          .filter((m) => m.phase === 'pre-session' && (m.status === 'active' || m.status === 'upcoming'))
+          .sort((a, b) => {
+            if (a.status === 'active' && b.status !== 'active') return -1;
+            if (b.status === 'active' && a.status !== 'active') return 1;
+            return a.order - b.order;
+          })[0];
+
+        return (
+          <div className="min-h-[60vh] flex flex-col items-center justify-center px-6">
+            <h2
+              className="text-2xl mb-8 text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Pre-Session
+            </h2>
+            <div className="mb-8">
+              <AsciiMoon />
+            </div>
+            <button
+              onClick={() => resumableModule
+                ? startPreSessionModule(resumableModule.instanceId)
+                : setCurrentTab('home')
+              }
+              className="mb-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] px-6 py-3 text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
+            >
+              Continue Pre-Session Activity
+            </button>
+            <button
+              onClick={() => setCurrentTab('home')}
+              className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider leading-relaxed max-w-[16rem] text-center hover:text-[var(--color-text-secondary)] transition-colors"
+            >
+              Click the <span className="text-[var(--accent)]">Begin Session</span> button at the bottom of your timeline when you're ready for the main session.
+            </button>
           </div>
         );
       }

@@ -98,8 +98,11 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
       return [[], durationSeconds];
     }
 
-    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds);
-    const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier);
+    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds, meditation.speakingRate, meditationId);
+    const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
+      speakingRate: meditation.speakingRate,
+      audioConfig: meditation.audio,
+    });
 
     const total = sequence.length > 0
       ? sequence[sequence.length - 1].endTime

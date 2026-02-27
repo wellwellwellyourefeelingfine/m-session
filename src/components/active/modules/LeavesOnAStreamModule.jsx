@@ -195,7 +195,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     });
 
     // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds);
+    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds, meditation.speakingRate, 'leaves-on-a-stream');
 
     // Generate timed sequence
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {

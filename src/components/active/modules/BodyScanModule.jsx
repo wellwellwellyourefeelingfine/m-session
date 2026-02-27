@@ -66,7 +66,7 @@ export default function BodyScanModule({ module, onComplete, onSkip, onTimerUpda
     const durationSeconds = selectedDuration * 60;
 
     // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds);
+    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds, meditation.speakingRate, 'body-scan');
 
     // Generate timed sequence
     const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {

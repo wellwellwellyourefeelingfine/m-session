@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import { useToolsStore } from '../../stores/useToolsStore';
 
-export default function ToolPanel({ toolId, ToolComponent }) {
+export default function ToolPanel({ toolId, ToolComponent, isLast = false }) {
   const isOpen = useToolsStore((state) => state.openTools.includes(toolId));
   const closeTool = useToolsStore((state) => state.closeTool);
   const canCloseTool = useToolsStore((state) => state.canCloseTool);
@@ -40,7 +40,7 @@ export default function ToolPanel({ toolId, ToolComponent }) {
 
   return (
     <div
-      className={`grid bg-app-white dark:bg-app-black ${renderedTool ? 'border-b border-app-black dark:border-app-white' : ''}`}
+      className={`grid bg-app-white dark:bg-app-black ${renderedTool && !isLast ? 'border-b border-app-black dark:border-app-white' : ''}`}
       style={{
         gridTemplateRows: isOpen ? '1fr' : '0fr',
         transition: isOpen
