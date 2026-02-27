@@ -2,18 +2,17 @@
  * Life Graph Activity Content
  * Step definitions for the pre-session life graph exercise.
  *
- * 7 user-facing pages:
+ * 6 user-facing pages:
  * 0: Welcome / Framing
- * 1: Guided Milestone — Childhood
- * 2: Guided Milestone — Young Adult Years
- * 3: Open Entry Mode
- * 4: Review & Generate
- * 5: Reflection
- * 6: Closing
+ * 1: Guided Entry (single page with cycling example placeholders)
+ * 2: Open Entry Mode
+ * 3: Review & Generate
+ * 4: Reflection
+ * 5: Closing
  */
 
 // User-facing step count — for progress bar
-export const PROGRESS_STEPS = 7;
+export const PROGRESS_STEPS = 6;
 
 // Rating scale anchors
 export const RATING_ANCHORS = {
@@ -21,8 +20,18 @@ export const RATING_ANCHORS = {
   high: 'Thriving',
 };
 
-// Soft maximum for open-entry milestones (14 total including guided)
-export const OPEN_ENTRY_SOFT_MAX = 12;
+// Total milestone soft maximum
+export const MILESTONE_SOFT_MAX = 14;
+
+// Cycling placeholder examples for the guided entry page
+export const GUIDED_EXAMPLES = [
+  'Childhood',
+  'Young adult years',
+  'College years',
+  'First real job',
+  'A turning point',
+  'Recent years',
+];
 
 // Step definitions
 export const LIFE_GRAPH_STEPS = [
@@ -37,31 +46,18 @@ export const LIFE_GRAPH_STEPS = [
     },
   },
 
-  // Step 1 — Guided Milestone: Childhood
+  // Step 1 — Guided Entry
   {
-    id: 'guided-childhood',
-    type: 'guidedMilestone',
+    id: 'guided-entry',
+    type: 'guidedEntry',
     content: {
-      title: 'Childhood',
-      defaultLabel: 'Childhood',
-      body: 'Think back to your childhood, roughly ages 5 to 12. How would you rate your overall well-being during that time?',
+      title: 'Your First Moment',
+      body: 'Think of a chapter, event, or time in your life. Give it a name and rate how you were doing.',
       notePrompt: 'A few words about this time (optional)',
     },
   },
 
-  // Step 2 — Guided Milestone: Young Adult Years
-  {
-    id: 'guided-young-adult',
-    type: 'guidedMilestone',
-    content: {
-      title: 'Young Adult Years',
-      defaultLabel: 'Young Adult Years',
-      body: 'Now think about your late teens and early twenties. How were you doing?',
-      notePrompt: 'A few words about this time (optional)',
-    },
-  },
-
-  // Step 3 — Open Entry Mode
+  // Step 2 — Open Entry Mode
   {
     id: 'open-entry',
     type: 'openEntry',
@@ -76,7 +72,7 @@ export const LIFE_GRAPH_STEPS = [
     },
   },
 
-  // Step 4 — Review & Generate
+  // Step 3 — Review & Generate
   {
     id: 'review',
     type: 'review',
@@ -87,7 +83,7 @@ export const LIFE_GRAPH_STEPS = [
     },
   },
 
-  // Step 5 — Reflection
+  // Step 4 — Reflection
   {
     id: 'reflection',
     type: 'reflection',
@@ -99,7 +95,7 @@ export const LIFE_GRAPH_STEPS = [
     },
   },
 
-  // Step 6 — Closing
+  // Step 5 — Closing
   {
     id: 'closing',
     type: 'closing',

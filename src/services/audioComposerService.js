@@ -191,6 +191,71 @@ export function findNextFrameBoundary(bytes, offset) {
 }
 
 /**
+ * Concatenate audio buffers from a plan into a single Uint8Array.
+ * Shared by composeMeditationAudio and composeSilenceTimer.
+ *
+ * @param {Array} plan - Ordered list of { url } entries
+ * @param {Map} bufferMap - Map of URL → ArrayBuffer
+ * @returns {Uint8Array} Concatenated audio data
+ */
+function concatenateBuffers(plan, bufferMap) {
+  let totalBytes = 0;
+  for (const entry of plan) {
+    const buffer = bufferMap.get(entry.url);
+    if (buffer) totalBytes += buffer.byteLength;
+  }
+  const composed = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const entry of plan) {
+    const buffer = bufferMap.get(entry.url);
+    if (buffer) {
+      composed.set(new Uint8Array(buffer), offset);
+      offset += buffer.byteLength;
+    }
+  }
+  return composed;
+}
+
+/**
+ * Collect all unique audio URLs needed for a meditation composition.
+ * Lightweight alternative to a full dry-run buildConcatenationPlan — returns
+ * only the URL set without building the plan or computing timings.
+ *
+ * @param {Array} timedSequence - From generateTimedSequence()
+ * @param {Object} options
+ * @param {number} options.gongDelay - Seconds of silence before opening gong (default 1)
+ * @param {number} options.gongPreamble - Total seconds before first TTS prompt (default 8)
+ * @returns {string[]} Array of unique audio URLs to fetch
+ */
+function collectAudioUrls(timedSequence, { gongDelay = 1, gongPreamble = 8 } = {}) {
+  const urls = new Set();
+  urls.add(GONG_SOFT_SRC);
+
+  // Preamble silence
+  if (gongDelay > 0) {
+    for (const url of decomposeSilence(gongDelay)) urls.add(url);
+  }
+  // Gap between gong end and first prompt (uses estimated gong duration for URL collection)
+  const estimatedGap = Math.max(0, gongPreamble - gongDelay - 7.5);
+  if (estimatedGap > 0) {
+    for (const url of decomposeSilence(estimatedGap)) urls.add(url);
+  }
+
+  // Clips + post-clip silence
+  for (const prompt of timedSequence) {
+    if (prompt.audioSrc) urls.add(prompt.audioSrc);
+    if (prompt.silenceDuration > 0) {
+      for (const url of decomposeSilence(prompt.silenceDuration)) urls.add(url);
+    }
+  }
+
+  // Closing silence
+  for (const url of decomposeSilence(1)) urls.add(url);
+
+  return [...urls];
+}
+
+/**
  * Build the concatenation plan from a timed sequence.
  * Returns an ordered list of { type, url, duration } entries describing
  * what to concatenate and where each prompt lands in the final audio.
@@ -299,9 +364,8 @@ export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPream
  * @returns {Promise<{ blobUrl: string, promptTimeMap: Array, totalDuration: number }>}
  */
 export async function composeMeditationAudio(timedSequence, options = {}) {
-  // First pass: collect all URLs we'll need (using estimated durations just for URL collection)
-  const { plan: dryRunPlan } = buildConcatenationPlan(timedSequence, options);
-  const uniqueUrls = [...new Set(dryRunPlan.map(entry => entry.url))];
+  // Collect all unique URLs needed (lightweight — no full plan build)
+  const uniqueUrls = collectAudioUrls(timedSequence, options);
 
   // Fetch all audio files in parallel
   const bufferMap = new Map();
@@ -334,30 +398,11 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
     }
   }
 
-  // Second pass: rebuild plan with real durations from fetched buffers
+  // Build plan with real durations from fetched buffers
   const { plan, promptTimeMap, totalDuration } = buildConcatenationPlan(timedSequence, options, bufferMap);
 
-  // Calculate total byte length
-  let totalBytes = 0;
-  for (const entry of plan) {
-    const buffer = bufferMap.get(entry.url);
-    if (buffer) {
-      totalBytes += buffer.byteLength;
-    }
-  }
-
-  // Concatenate all buffers into a single Uint8Array
-  const composed = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const entry of plan) {
-    const buffer = bufferMap.get(entry.url);
-    if (buffer) {
-      composed.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
-    }
-  }
-
-  // Create blob and URL
+  // Concatenate and create blob
+  const composed = concatenateBuffers(plan, bufferMap);
   const blob = new Blob([composed], { type: 'audio/mpeg' });
   const blobUrl = URL.createObjectURL(blob);
 
@@ -483,23 +528,8 @@ export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gong
   // Calculate total duration
   const totalDuration = preambleEnd + durationSeconds + 1 + gongDuration + 1;
 
-  // Concatenate all buffers
-  let totalBytes = 0;
-  for (const entry of plan) {
-    const buffer = bufferMap.get(entry.url);
-    if (buffer) totalBytes += buffer.byteLength;
-  }
-
-  const composed = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const entry of plan) {
-    const buffer = bufferMap.get(entry.url);
-    if (buffer) {
-      composed.set(new Uint8Array(buffer), offset);
-      offset += buffer.byteLength;
-    }
-  }
-
+  // Concatenate and create blob
+  const composed = concatenateBuffers(plan, bufferMap);
   const blob = new Blob([composed], { type: 'audio/mpeg' });
   const blobUrl = URL.createObjectURL(blob);
 

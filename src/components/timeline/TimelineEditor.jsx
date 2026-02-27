@@ -497,12 +497,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                           <button
                             type="button"
                             onClick={() => setSelectedPreSessionModule(module)}
-                            className={`flex-1 text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${isEditMode ? 'border-dashed border-[var(--accent)]' : ''}`}
+                            className={`flex-1 text-left border-2 border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${isEditMode ? 'border-dashed border-[var(--accent)]' : ''}`}
                           >
                             <div className="pl-3 pr-2 py-3">
                               <div className="flex items-start justify-between">
                                 <div className="flex items-start flex-1 min-w-0">
-                                  <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                                  <p className="text-[var(--color-text-primary)] flex-1 min-w-0 uppercase tracking-wider text-xs">
                                     {module.title}
                                   </p>
                                 </div>
@@ -527,7 +527,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                                   )}
                                 </div>
                               </div>
-                              <p className="text-[var(--color-text-tertiary)] text-xs mt-1 line-clamp-2">
+                              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 line-clamp-2">
                                 {libraryModule?.description || ''}
                               </p>
                             </div>
@@ -926,7 +926,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                         role={isClickable ? 'button' : undefined}
                         tabIndex={isClickable ? 0 : undefined}
                         onClick={isClickable ? () => setSelectedPreSessionModule(module) : undefined}
-                        className={`w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] transition-colors ${
+                        className={`w-full text-left border-2 border-[var(--color-border)] bg-[var(--color-bg)] transition-colors ${
                           (isModuleCompleted || isModuleSkipped) ? 'opacity-50' : ''
                         } ${isClickable ? 'hover:bg-[var(--color-bg-secondary)] cursor-pointer' : ''}`}
                       >
@@ -938,7 +938,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                                 {isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
                                 {!isModuleCompleted && !isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">○</span>}
                               </div>
-                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
+                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0 uppercase tracking-wider text-xs">
                                 {module.title}
                               </p>
                             </div>
@@ -947,12 +947,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                             </span>
                           </div>
                           {(isModuleCompleted || isModuleSkipped) && module.startedAt ? (
-                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7">
+                            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 ml-7">
                               {formatTime(module.startedAt)}
                               {module.completedAt && ` – ${formatTime(module.completedAt)}`}
                             </p>
                           ) : (
-                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
+                            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 ml-7 line-clamp-2">
                               {libraryModule?.description || ''}
                             </p>
                           )}

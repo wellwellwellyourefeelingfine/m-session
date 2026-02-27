@@ -11,18 +11,19 @@
  * Audio-text sync via shared useMeditationPlayback hook.
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
-import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 export default function SelfCompassionModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const meditation = getMeditationById('self-compassion');
@@ -34,28 +35,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Transcript modal state
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [transcriptClosing, setTranscriptClosing] = useState(false);
-  const transcriptCloseTimerRef = useRef(null);
-
-  const handleOpenTranscript = useCallback(() => {
-    setShowTranscript(true);
-  }, []);
-
-  const handleCloseTranscript = useCallback(() => {
-    setTranscriptClosing(true);
-    if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    transcriptCloseTimerRef.current = setTimeout(() => {
-      setShowTranscript(false);
-      setTranscriptClosing(false);
-    }, FADE_MS);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    };
-  }, []);
+  const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
   // Assemble clips for selected variation and generate timed sequence
   const [timedSequence, totalDuration] = useMemo(() => {

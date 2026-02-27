@@ -54,6 +54,7 @@ export function useSilenceTimer({
   const durationSecondsRef = useRef(durationSeconds);
   const isResizingRef = useRef(false);
   const elapsedOffsetRef = useRef(0); // Accumulated elapsed time from before resize
+  const lastPositionUpdateRef = useRef(0); // Throttle setPositionState to ~1/sec
 
   // Keep duration ref in sync
   durationSecondsRef.current = durationSeconds;
@@ -140,11 +141,16 @@ export function useSilenceTimer({
 
   // Update lock-screen position state so iOS displays duration and progress.
   // Position is the raw audio time (includes preamble) since that's what the
-  // audio element is actually playing.
+  // audio element is actually playing. Throttled to ~1/sec — lock-screen
+  // doesn't update faster than that.
   useEffect(() => {
     if (!hasStarted || !('mediaSession' in navigator)) return;
     const composed = composedTotalRef.current;
     if (composed <= 0) return;
+
+    const now = Date.now();
+    if (now - lastPositionUpdateRef.current < 1000) return;
+    lastPositionUpdateRef.current = now;
 
     // Raw audio position = elapsedTime (user-visible) - offset + preamble
     const rawPosition = elapsedTime - elapsedOffsetRef.current + preambleEndRef.current;
@@ -201,9 +207,6 @@ export function useSilenceTimer({
       preambleEndRef.current = preambleEnd;
       composedTotalRef.current = totalDuration;
 
-      // Store composed bytes for iOS blob-recreation resume
-      audio.storeComposedBytes(composedBytes);
-
       setElapsedTime(0);
       elapsedOffsetRef.current = 0;
       startMeditationPlayback(moduleInstanceId);
@@ -213,6 +216,9 @@ export function useSilenceTimer({
         console.error('[SilenceTimer] Failed to start audio playback');
         resetMeditationPlayback();
       }
+
+      // Store composed bytes AFTER loadAndPlay (which clears stale bytes)
+      audio.storeComposedBytes(composedBytes);
     } catch (err) {
       console.error('[SilenceTimer] Failed to compose silence timer:', err);
       resetMeditationPlayback();

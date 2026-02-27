@@ -189,6 +189,10 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
         audioRef.current.src = '';
         audioRef.current = null;
       }
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+        currentBlobUrlRef.current = null;
+      }
       composedBytesRef.current = null;
       timeOffsetRef.current = 0;
       wallStartRef.current = 0;
@@ -208,6 +212,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     timeOffsetRef.current = 0;
     wallStartRef.current = 0;
     wallAccumulatedRef.current = 0;
+    composedBytesRef.current = null; // Clear stale bytes — caller must storeComposedBytes() after loading
     currentBlobUrlRef.current = blobUrl;
     stopPolling();
 
@@ -441,11 +446,13 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     return audioRef.current?.paused ?? true;
   }, []);
 
-  // Seek to position
+  // Seek to position (syncs wall-clock timer so getWallTime() stays accurate)
   const seek = useCallback((time) => {
     if (audioRef.current && isFinite(time)) {
       audioRef.current.currentTime = Math.max(0, Math.min(time, audioRef.current.duration || 0));
       savedTimeRef.current = audioRef.current.currentTime + timeOffsetRef.current;
+      wallAccumulatedRef.current = savedTimeRef.current;
+      if (wallStartRef.current) wallStartRef.current = Date.now();
     }
   }, []);
 

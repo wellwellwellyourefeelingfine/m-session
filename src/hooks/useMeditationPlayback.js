@@ -77,7 +77,7 @@ export function useMeditationPlayback({
   // Refs for tracking
   const lastPromptRef = useRef(-1);
   const textFadeTimeoutRef = useRef(null);
-  const rafRef = useRef(null);
+  const lastPositionUpdateRef = useRef(0); // Throttle setPositionState to ~1/sec
   const onTimerUpdateRef = useRef(onTimerUpdate);
   useEffect(() => { onTimerUpdateRef.current = onTimerUpdate; });
 
@@ -159,11 +159,16 @@ export function useMeditationPlayback({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasStarted, meditation, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
 
-  // Update lock-screen position state so iOS displays duration and progress
+  // Update lock-screen position state so iOS displays duration and progress.
+  // Throttled to ~1/sec — the lock-screen UI doesn't update faster than that.
   useEffect(() => {
     if (!hasStarted || !('mediaSession' in navigator)) return;
     const composedTotal = composedDurationRef.current;
     if (composedTotal <= 0) return;
+
+    const now = Date.now();
+    if (now - lastPositionUpdateRef.current < 1000) return;
+    lastPositionUpdateRef.current = now;
 
     try {
       navigator.mediaSession.setPositionState({
@@ -182,11 +187,14 @@ export function useMeditationPlayback({
 
     const map = promptTimeMapRef.current;
 
-    // Find which prompt should be active
-    let targetIndex = -1;
-    for (let i = 0; i < map.length; i++) {
+    // Find which prompt should be active (forward-scan from last known index)
+    let targetIndex = lastPromptRef.current;
+    const startIdx = Math.max(0, targetIndex);
+    for (let i = startIdx; i < map.length; i++) {
       if (elapsedTime >= map[i].audioTimeStart) {
         targetIndex = i;
+      } else {
+        break; // Prompts are sequential — no need to scan further
       }
     }
 
@@ -259,9 +267,6 @@ export function useMeditationPlayback({
       if (textFadeTimeoutRef.current) {
         clearTimeout(textFadeTimeoutRef.current);
       }
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
       // Revoke blob URL to free memory
       if (blobUrlRef.current) {
         revokeMeditationBlobUrl(blobUrlRef.current);
@@ -293,9 +298,6 @@ export function useMeditationPlayback({
         realContentDurationRef.current = promptTimeMap[promptTimeMap.length - 1].slotEnd - GONG_PREAMBLE;
       }
 
-      // Store composed bytes for iOS blob-recreation resume
-      audio.storeComposedBytes(composedBytes);
-
       // Reset display state
       setElapsedTime(0);
       setCurrentPromptIndex(-1);
@@ -311,6 +313,9 @@ export function useMeditationPlayback({
         console.error('[MeditationPlayback] Failed to start audio playback');
         resetMeditationPlayback();
       }
+
+      // Store composed bytes AFTER loadAndPlay (which clears stale bytes)
+      audio.storeComposedBytes(composedBytes);
     } catch (err) {
       console.error('[MeditationPlayback] Failed to compose meditation audio:', err);
       resetMeditationPlayback();

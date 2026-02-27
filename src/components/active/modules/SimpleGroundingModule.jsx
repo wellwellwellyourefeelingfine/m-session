@@ -8,19 +8,20 @@
  * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
 } from '../../../content/meditations';
 import { getModuleById } from '../../../content/modules/library';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
-import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 export default function SimpleGroundingModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
@@ -29,28 +30,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Transcript modal state
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [transcriptClosing, setTranscriptClosing] = useState(false);
-  const transcriptCloseTimerRef = useRef(null);
-
-  const handleOpenTranscript = useCallback(() => {
-    setShowTranscript(true);
-  }, []);
-
-  const handleCloseTranscript = useCallback(() => {
-    setTranscriptClosing(true);
-    if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    transcriptCloseTimerRef.current = setTimeout(() => {
-      setShowTranscript(false);
-      setTranscriptClosing(false);
-    }, FADE_MS);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    };
-  }, []);
+  const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
   // Build timed sequence (fixed duration, no silence expansion — multiplier = 1.0)
   const [timedSequence, totalDuration] = useMemo(() => {

@@ -192,7 +192,7 @@ export default function ModuleCard({
                 )}
 
                 {/* Title - top left aligned */}
-                <p className={`${getTextClass()} flex-1 min-w-0`}>
+                <p className={`${getTextClass()} flex-1 min-w-0 uppercase tracking-wider text-xs`}>
                   {module.title}
                 </p>
               </div>
@@ -242,7 +242,7 @@ export default function ModuleCard({
               </p>
             ) : (
               libraryModule?.description && (
-                <p className={`text-[var(--color-text-tertiary)] text-xs mt-1 line-clamp-2 ${isActiveSession ? 'ml-7' : ''}`}>
+                <p className={`text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 line-clamp-2 ${isActiveSession ? 'ml-7' : ''}`}>
                   {libraryModule.description}
                 </p>
               )

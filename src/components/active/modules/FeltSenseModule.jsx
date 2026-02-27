@@ -12,12 +12,13 @@
  * - Going Deeper (~20 min): Full practice with extended silences and additional prompts
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
@@ -27,7 +28,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
-import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 // ─── Accent term map for renderContentLines ──────────────────────────────────
 
@@ -432,28 +433,7 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onTimerUpd
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Transcript modal state
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [transcriptClosing, setTranscriptClosing] = useState(false);
-  const transcriptCloseTimerRef = useRef(null);
-
-  const handleOpenTranscript = useCallback(() => {
-    setShowTranscript(true);
-  }, []);
-
-  const handleCloseTranscript = useCallback(() => {
-    setTranscriptClosing(true);
-    if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    transcriptCloseTimerRef.current = setTimeout(() => {
-      setShowTranscript(false);
-      setTranscriptClosing(false);
-    }, FADE_MS);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    };
-  }, []);
+  const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
   // Reflection state
   const [reflectionStep, setReflectionStep] = useState(0);

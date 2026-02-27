@@ -9,7 +9,7 @@
  * Creates a journal entry on completion.
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
@@ -26,6 +26,7 @@ import {
   generateTimedSequence,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useBreathController } from '../hooks/useBreathController';
 
 // Shared UI components
@@ -35,7 +36,7 @@ import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import BreathOrb from '../capabilities/animations/BreathOrb';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
-import TranscriptModal, { TranscriptIcon, FADE_MS } from '../capabilities/TranscriptModal';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 export default function ProtectorDialoguePart1Module({ module, onComplete, onSkip, onTimerUpdate }) {
   // ── Stores ──
@@ -110,28 +111,7 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
   const [readPromptIndex, setReadPromptIndex] = useState(0);
 
   // Transcript modal state
-  const [showTranscript, setShowTranscript] = useState(false);
-  const [transcriptClosing, setTranscriptClosing] = useState(false);
-  const transcriptCloseTimerRef = useRef(null);
-
-  const handleOpenTranscript = useCallback(() => {
-    setShowTranscript(true);
-  }, []);
-
-  const handleCloseTranscript = useCallback(() => {
-    setTranscriptClosing(true);
-    if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    transcriptCloseTimerRef.current = setTimeout(() => {
-      setShowTranscript(false);
-      setTranscriptClosing(false);
-    }, FADE_MS);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (transcriptCloseTimerRef.current) clearTimeout(transcriptCloseTimerRef.current);
-    };
-  }, []);
+  const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
   const meditation = getMeditationById('protector-dialogue');
 

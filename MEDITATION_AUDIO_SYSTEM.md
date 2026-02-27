@@ -157,7 +157,8 @@ Each module:
 1. Gets meditation content from its content file (via import or `getMeditationById()`)
 2. Builds `timedSequence` in `useMemo` (variable-duration: computes silence multiplier → generates sequence; fixed-duration: calls `assembleVariation()` → generates sequence with multiplier 1.0)
 3. Passes to `useMeditationPlayback` with `{ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onTimerUpdate }`
-4. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `getPrimaryButton()`)
+4. Uses `useTranscriptModal()` hook (`src/hooks/useTranscriptModal.js`) for transcript modal state — returns `{ showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript }`
+5. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `getPrimaryButton()`)
 
 ---
 
@@ -206,9 +207,11 @@ The `onTimerUpdate` callback from parent modules is stored in a ref (`onTimerUpd
 
 1. `composeMeditationAudio(timedSequence, { gongDelay: 1, gongPreamble: 8 })` — fetches all MP3s, builds blob
 2. Store refs: `blobUrlRef`, `promptTimeMapRef`, `composedDurationRef`
-3. `audio.storeComposedBytes(composedBytes)` — stores `Uint8Array` for iOS blob recreation
-4. `startMeditationPlayback(moduleInstanceId)` — store: `hasStarted=true`, `isPlaying=true`
-5. `audio.loadAndPlay(blobUrl)` — sets src, load, wait canplay, play
+3. `startMeditationPlayback(moduleInstanceId)` — store: `hasStarted=true`, `isPlaying=true`
+4. `audio.loadAndPlay(blobUrl)` — sets src, load, wait canplay, play (clears stale `composedBytesRef`)
+5. `audio.storeComposedBytes(composedBytes)` — stores `Uint8Array` for iOS blob recreation **after** loadAndPlay
+
+**Important:** `storeComposedBytes` must be called AFTER `loadAndPlay` because `loadAndPlay` clears `composedBytesRef` to prevent stale bytes from a previous meditation being used on resume. If called before, the bytes are immediately wiped.
 
 ### Blob structure
 
@@ -224,7 +227,7 @@ The `promptTimeMap` has absolute timestamps within the blob (e.g., first prompt 
 `elapsedTime` is set from the wall-clock timer in `useAudioPlayback` via the `onTimeUpdate` callback. The wall-clock tracks real elapsed time via `Date.now()` instead of relying on `audio.currentTime`, which is broken for blob URLs on iOS Safari (see Known Issues). Everything derives from `elapsedTime`:
 
 - **Timer:** `userElapsed = max(0, elapsedTime - GONG_PREAMBLE)` → reported to ModuleStatusBar
-- **Prompts:** Linear scan of `promptTimeMap` to find active prompt → triggers text fade sequence (`hidden` → `fading-in` → `visible` → `fading-out`)
+- **Prompts:** Forward-scan of `promptTimeMap` from last known index to find active prompt → triggers text fade sequence (`hidden` → `fading-in` → `visible` → `fading-out`)
 - **Completion:** `elapsedTime >= composedTotal && composedTotal > 0 && hasStarted`
 
 ### handlePauseResume
@@ -233,7 +236,7 @@ Uses `audio.isPaused()` (reads `<audio>.paused` directly) instead of store's `is
 
 ### Media Session API
 
-Sets `navigator.mediaSession.metadata`, registers play/pause handlers (using `audio.isPaused()`), and updates `setPositionState()` for lock-screen duration/progress. `isPlaying` is intentionally excluded from the handler effect's deps to prevent handler churn.
+Sets `navigator.mediaSession.metadata`, registers play/pause handlers (using `audio.isPaused()`), and updates `setPositionState()` for lock-screen duration/progress. `setPositionState()` is throttled to ~1 call/sec (lock-screen doesn't update faster). `isPlaying` is intentionally excluded from the handler effect's deps to prevent handler churn.
 
 ### Stale-state recovery
 
@@ -254,8 +257,9 @@ Used by OpenSpaceModule and MusicListeningModule. Same architecture as useMedita
 - No prompt progression or text fade logic
 
 ### Same patterns
+- `handleStart` calls `loadAndPlay()` before `storeComposedBytes()` (same ordering constraint as useMeditationPlayback)
 - `handlePauseResume` uses `audio.isPaused()`
-- Media Session handlers, `setPositionState()`, stale-state recovery all work identically
+- Media Session handlers, `setPositionState()` (throttled to ~1/sec), stale-state recovery all work identically
 
 ---
 
@@ -291,7 +295,7 @@ Both native `timeupdate` events and a 250ms `setInterval` polling fallback call 
 
 ### loadAndPlay(blobUrl)
 
-Resets position tracking (including wall-clock refs `wallStartRef` and `wallAccumulatedRef`), sets `audio.src`, loads, waits for `canplay` (with 5s timeout guarded by `settled` flag to prevent double-play on iOS), calls `play()`, starts polling (which sets `wallStartRef = Date.now()`).
+Resets position tracking (including wall-clock refs `wallStartRef` and `wallAccumulatedRef`), clears `composedBytesRef` (caller must call `storeComposedBytes()` after this returns), sets `audio.src`, loads, waits for `canplay` (with 5s timeout guarded by `settled` flag to prevent double-play on iOS), calls `play()`, starts polling (which sets `wallStartRef = Date.now()`). Also revokes the previous blob URL if one exists.
 
 ### pause()
 
@@ -318,8 +322,8 @@ A 10-min CBR 128kbps meditation ≈ 9.6MB in `composedBytesRef`. `subarray()` sh
 - `CBR_BYTES_PER_SECOND = 16000` — CBR 128kbps = 16000 bytes/sec
 - `decomposeSilence(seconds)` — Breaks duration into pre-generated silence block files (60s, 30s, 10s, 5s, 1s, 0.5s) via greedy algorithm
 - `findNextFrameBoundary(bytes, offset)` — Scans for next MPEG sync word (`0xFF 0xE0` mask) within 418 bytes
-- `buildConcatenationPlan(timedSequence, options, bufferMap)` — Builds ordered plan of `{ type, url }` entries. When `bufferMap` is provided, uses real byte lengths for duration tracking; otherwise uses estimates (dry run).
-- `composeMeditationAudio(timedSequence, options)` — Two-pass: dry run to collect URLs, fetch all in parallel, strip ID3 tags, second pass with real durations, concatenate into single `Uint8Array`, return `{ blobUrl, composedBytes, promptTimeMap, totalDuration }`
+- `buildConcatenationPlan(timedSequence, options, bufferMap)` — Builds ordered plan of `{ type, url }` entries with real byte lengths for duration tracking.
+- `composeMeditationAudio(timedSequence, options)` — Collects URLs via `collectAudioUrls()`, fetches all in parallel, strips ID3 tags, builds plan with real durations, concatenates into single `Uint8Array`, returns `{ blobUrl, composedBytes, promptTimeMap, totalDuration }`
 - `composeSilenceTimer(durationSeconds, options)` — Same pattern for silence-only blobs, supports `skipOpeningGong` option for resize
 - `revokeMeditationBlobUrl(blobUrl)` — `URL.revokeObjectURL` wrapper
 
@@ -330,20 +334,24 @@ A 10-min CBR 128kbps meditation ≈ 9.6MB in `composedBytesRef`. `subarray()` sh
 - `isValidMp3Buffer(buffer)` — Checks first 3 bytes for MPEG sync word (`0xFF 0xE0`) or ID3v2 tag header (`"ID3"`). Used to validate cached entries and detect stale HTML responses.
 - `actualSilenceDuration(blockUrls, nominalDuration, bufferMap)` — Computes real duration of decomposed silence blocks from fetched buffer byte lengths. Silence block files are slightly longer than their nominal values (~0.07s each due to MP3 frame alignment), so using nominal values for `currentTime` tracking would cause cumulative drift. Falls back to nominal if bufferMap is null.
 - `estimateMp3Duration(buffer)` — `buffer.byteLength / CBR_BYTES_PER_SECOND`
+- `concatenateBuffers(plan, bufferMap)` — Allocates a single `Uint8Array` and copies all plan entries' buffers into it sequentially. Shared by `composeMeditationAudio` and `composeSilenceTimer`.
+- `collectAudioUrls(timedSequence, options)` — Lightweight URL collector that returns all unique audio URLs needed for a composition without building the full plan. Replaces the former dry-run pass.
 
-### Two-pass composition
+### Composition pipeline
 
-`composeMeditationAudio` uses a two-pass architecture:
+`composeMeditationAudio` uses a single-pass architecture:
 
-1. **Dry run** (`buildConcatenationPlan(timedSequence, options)` with no bufferMap) — generates the plan using estimated durations. The plan entries (URLs) are extracted to determine what needs to be fetched. Duration tracking in this pass is approximate but the URLs are identical to the final plan.
+1. **Collect URLs** — `collectAudioUrls(timedSequence, options)` extracts all unique URLs (gong, silence blocks, TTS clips) without building the full plan.
 
 2. **Fetch + strip** — All unique URLs are fetched in parallel via `fetchAudioBuffer()`. Then all buffers are processed by `stripID3Tag()` to remove ID3v2 metadata headers that would corrupt mid-stream byte concatenation.
 
-3. **Real pass** (`buildConcatenationPlan(timedSequence, options, bufferMap)`) — rebuilds the plan with the same entries but uses actual byte lengths for accurate `currentTime` tracking and `promptTimeMap` timestamps.
+3. **Build plan** — `buildConcatenationPlan(timedSequence, options, bufferMap)` builds the plan with actual byte lengths for accurate `currentTime` tracking and `promptTimeMap` timestamps.
+
+4. **Concatenate** — `concatenateBuffers(plan, bufferMap)` assembles the final `Uint8Array`.
 
 ### Duration calculation
 
-All TTS clips and silence blocks are CBR 128kbps: `bytes / 16000 = seconds`. Duration is computed from actual byte lengths in the second pass, not from estimates. The same formula is used by the audio duration manifest (`scripts/generate-audio-durations.mjs`) to pre-compute clip durations for the timed sequence generation, ensuring that the pre-composition estimates match the post-composition reality.
+All TTS clips and silence blocks are CBR 128kbps: `bytes / 16000 = seconds`. Duration is computed from actual byte lengths, not from estimates. The same formula is used by the audio duration manifest (`scripts/generate-audio-durations.mjs`) to pre-compute clip durations for the timed sequence generation, ensuring that the pre-composition estimates match the post-composition reality.
 
 ### Fetching and cache validation
 

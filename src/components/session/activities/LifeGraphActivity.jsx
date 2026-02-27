@@ -1,11 +1,11 @@
 /**
  * LifeGraphActivity Component
  *
- * A 7-page pre-session flow where users chart life milestones against a
+ * A 6-page pre-session flow where users chart life milestones against a
  * 0-10 well-being scale and see the results visualized as a life graph PNG.
  *
- * Pages: welcome → guided childhood → guided young adult → open entry →
- * review & generate → reflection → closing.
+ * Pages: welcome → guided entry → open entry → review & generate →
+ * reflection → closing.
  *
  * Follows IntentionSettingActivity pattern for step navigation.
  */
@@ -17,7 +17,8 @@ import {
   PROGRESS_STEPS,
   LIFE_GRAPH_STEPS,
   RATING_ANCHORS,
-  OPEN_ENTRY_SOFT_MAX,
+  MILESTONE_SOFT_MAX,
+  GUIDED_EXAMPLES,
 } from './lifeGraphContent';
 import { exportLifeGraphAsPNG } from './exportLifeGraphAsPNG';
 import { saveImage } from '../../../utils/imageStorage';
@@ -93,9 +94,14 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
-  // ── Guided milestone form state ──
+  // ── Guided entry form state ──
+  const [guidedLabel, setGuidedLabel] = useState('');
   const [guidedRating, setGuidedRating] = useState(null);
   const [guidedNote, setGuidedNote] = useState('');
+
+  // ── Cycling placeholder for guided entry ──
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const [exampleVisible, setExampleVisible] = useState(true);
 
   // ── Open entry form state ──
   const [entryLabel, setEntryLabel] = useState('');
@@ -119,14 +125,36 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const graphModalTimerRef = useRef(null);
   const advanceTimerRef = useRef(null);
 
-  // Clean up object URL + timers on unmount
+  // Clean up object URL when it changes or on unmount
   useEffect(() => {
     return () => {
       if (graphUrl) URL.revokeObjectURL(graphUrl);
+    };
+  }, [graphUrl]);
+
+  // Clean up timers on unmount only
+  useEffect(() => {
+    return () => {
       if (graphModalTimerRef.current) clearTimeout(graphModalTimerRef.current);
       if (advanceTimerRef.current) clearTimeout(advanceTimerRef.current);
     };
-  }, [graphUrl]);
+  }, []);
+
+  // ── Cycling placeholder effect ──
+  useEffect(() => {
+    if (LIFE_GRAPH_STEPS[currentStepIndex]?.type !== 'guidedEntry') return;
+    if (guidedLabel) return; // stop cycling once user types
+
+    const timer = setInterval(() => {
+      setExampleVisible(false);
+      setTimeout(() => {
+        setExampleIndex((prev) => (prev + 1) % GUIDED_EXAMPLES.length);
+        setExampleVisible(true);
+      }, 400);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [currentStepIndex, guidedLabel]);
 
   // ── Derived ──
   const currentStep = LIFE_GRAPH_STEPS[currentStepIndex];
@@ -152,19 +180,19 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     }, FADE_MS);
   }, [currentStepIndex]);
 
-  // ── Guided milestone continue ──
+  // ── Guided entry continue ──
   const handleGuidedContinue = useCallback(() => {
-    if (guidedRating === null) return;
-    const step = LIFE_GRAPH_STEPS[currentStepIndex];
+    if (!guidedLabel.trim() || guidedRating === null) return;
     addLifeGraphMilestone({
-      label: step.content.defaultLabel,
+      label: guidedLabel.trim(),
       rating: guidedRating,
       note: guidedNote.trim(),
     });
+    setGuidedLabel('');
     setGuidedRating(null);
     setGuidedNote('');
     advanceStep();
-  }, [guidedRating, guidedNote, currentStepIndex, addLifeGraphMilestone, advanceStep]);
+  }, [guidedLabel, guidedRating, guidedNote, addLifeGraphMilestone, advanceStep]);
 
   // ── Open entry: add another ──
   const handleAddEntry = useCallback(() => {
@@ -263,7 +291,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     graphModalTimerRef.current = setTimeout(() => {
       setShowGraphModal(false);
       setGraphModalClosing(false);
-    }, FADE_MS);
+    }, FADE_MS + 50); // small buffer to let CSS transition complete
   }, []);
 
   // ── Open graph modal (from SlotButton) ──
@@ -305,7 +333,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     onComplete();
   }, [milestones, addEntry, sessionId, graphBlob, setLifeGraphGenerated, completePreSubstanceActivity, onComplete]);
 
-  // ── Skip handler ──
+  // ── Skip handler (exits module) ──
   const handleModuleSkip = useCallback(() => {
     onSkip();
   }, [onSkip]);
@@ -335,7 +363,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     );
   };
 
-  const renderGuidedMilestoneStep = () => {
+  const renderGuidedEntryStep = () => {
     const { content } = currentStep;
     return (
       <div className="space-y-6">
@@ -348,6 +376,31 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
         </p>
+
+        {/* Label input with cycling placeholder overlay */}
+        <div className="relative">
+          <input
+            type="text"
+            value={guidedLabel}
+            onChange={(e) => setGuidedLabel(e.target.value)}
+            maxLength={60}
+            className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+              focus:outline-none focus:border-[var(--accent)] text-[var(--color-text-primary)]
+              text-sm"
+            style={{ textTransform: 'none' }}
+          />
+          {!guidedLabel && (
+            <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
+              <span
+                className={`text-sm transition-opacity duration-[400ms]
+                  ${exampleVisible ? 'opacity-40' : 'opacity-0'}`}
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                {GUIDED_EXAMPLES[exampleIndex]}
+              </span>
+            </div>
+          )}
+        </div>
 
         <RatingDots value={guidedRating} onChange={setGuidedRating} />
 
@@ -362,17 +415,27 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
             text-sm placeholder:text-[var(--color-text-tertiary)]"
           style={{ textTransform: 'none' }}
         />
+
+        {/* Inline skip to free entry */}
+        <div className="flex justify-center pt-2">
+          <button
+            onClick={advanceStep}
+            className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider
+              hover:opacity-80 transition-opacity"
+          >
+            Skip to free entry
+          </button>
+        </div>
       </div>
     );
   };
 
   const renderOpenEntryStep = () => {
     const { content } = currentStep;
-    const openEntryCount = milestones.length - 2; // subtract 2 guided milestones
-    const atSoftMax = openEntryCount >= OPEN_ENTRY_SOFT_MAX;
+    const atSoftMax = milestones.length >= MILESTONE_SOFT_MAX;
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
@@ -430,10 +493,13 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
                       </button>
                       <button
                         onClick={() => handleDeleteMilestone(m.id)}
-                        className="py-2 px-3 text-[10px] uppercase tracking-wider
+                        className="w-8 h-8 flex items-center justify-center shrink-0
                           border border-[var(--color-border)] text-[var(--color-text-tertiary)]"
                       >
-                        Delete
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <line x1="1" y1="1" x2="9" y2="9" />
+                          <line x1="9" y1="1" x2="1" y2="9" />
+                        </svg>
                       </button>
                     </div>
                   </div>
@@ -537,7 +603,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const renderReviewStep = () => {
     const { content } = currentStep;
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
@@ -585,18 +651,21 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
                       Save
                     </button>
                     <button
-                      onClick={() => handleDeleteMilestone(m.id)}
-                      className="py-2 px-3 text-[10px] uppercase tracking-wider
-                        border border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                    >
-                      Delete
-                    </button>
-                    <button
                       onClick={cancelEdit}
-                      className="py-2 px-3 text-[10px] uppercase tracking-wider
+                      className="flex-1 py-2 text-[10px] uppercase tracking-wider
                         border border-[var(--color-border)] text-[var(--color-text-secondary)]"
                     >
                       Cancel
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMilestone(m.id)}
+                      className="w-8 h-8 flex items-center justify-center shrink-0
+                        border border-[var(--color-border)] text-[var(--color-text-tertiary)]"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <line x1="1" y1="1" x2="9" y2="9" />
+                        <line x1="9" y1="1" x2="1" y2="9" />
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -654,13 +723,16 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
         >
           {content.title}
         </h2>
+        <div className="flex justify-center">
+          <LeafDraw />
+        </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
         </p>
-        <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodySecondary}
         </p>
-        <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodyTertiary}
         </p>
       </div>
@@ -677,10 +749,13 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
         >
           {content.title}
         </h2>
+        <div className="flex justify-center">
+          <LeafDraw />
+        </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
         </p>
-        <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodySecondary}
         </p>
       </div>
@@ -690,7 +765,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const renderStepContent = () => {
     switch (currentStep.type) {
       case 'welcome': return renderWelcomeStep();
-      case 'guidedMilestone': return renderGuidedMilestoneStep();
+      case 'guidedEntry': return renderGuidedEntryStep();
       case 'openEntry': return renderOpenEntryStep();
       case 'review': return renderReviewStep();
       case 'reflection': return renderReflectionStep();
@@ -706,8 +781,8 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       case 'welcome':
         return { label: 'Continue', onClick: advanceStep };
 
-      case 'guidedMilestone':
-        return guidedRating !== null
+      case 'guidedEntry':
+        return (guidedLabel.trim() && guidedRating !== null)
           ? { label: 'Continue', onClick: handleGuidedContinue }
           : null;
 
@@ -754,6 +829,27 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     return true;
   };
 
+  // Contextual skip: guided → open entry, open entry → review, others → exit module
+  const getSkipHandler = () => {
+    switch (currentStep.type) {
+      case 'guidedEntry':
+      case 'openEntry':
+        return advanceStep;
+      default:
+        return handleModuleSkip;
+    }
+  };
+
+  const getSkipConfirmMessage = () => {
+    switch (currentStep.type) {
+      case 'guidedEntry':
+      case 'openEntry':
+        return null; // no confirmation for skipping forward
+      default:
+        return 'Exit life graph?';
+    }
+  };
+
   const getRightSlot = () => {
     if (graphUrl) {
       return (
@@ -788,8 +884,8 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
         onBack={handleBack}
         backConfirmMessage={currentStepIndex === 0 ? "Exit life graph? Your progress won't be saved." : null}
         showSkip={getShowSkip()}
-        onSkip={handleModuleSkip}
-        skipConfirmMessage="Exit life graph?"
+        onSkip={getSkipHandler()}
+        skipConfirmMessage={getSkipConfirmMessage()}
         rightSlot={getRightSlot()}
       />
 
