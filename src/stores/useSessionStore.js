@@ -2012,7 +2012,7 @@ export const useSessionStore = create(
             ...state.modules,
             items: state.modules.items.map((m) =>
               m.instanceId === instanceId
-                ? { ...m, status: 'active', startedAt: now }
+                ? { ...m, status: 'active', startedAt: m.startedAt || now }
                 : m
             ),
           },

@@ -18,7 +18,6 @@ import {
   LIFE_GRAPH_STEPS,
   RATING_ANCHORS,
   MILESTONE_SOFT_MAX,
-  GUIDED_EXAMPLES,
 } from './lifeGraphContent';
 import { exportLifeGraphAsPNG } from './exportLifeGraphAsPNG';
 import { saveImage } from '../../../utils/imageStorage';
@@ -122,6 +121,20 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const [showGraphModal, setShowGraphModal] = useState(false);
   const [graphModalClosing, setGraphModalClosing] = useState(false);
 
+  // ── Combined open entry + generate state ──
+  const [isDone, setIsDone] = useState(false);
+  const [showGenerateButton, setShowGenerateButton] = useState(false);
+
+  // Delayed reveal of generate button after isDone transition
+  useEffect(() => {
+    if (isDone) {
+      const timer = setTimeout(() => setShowGenerateButton(true), 800);
+      return () => clearTimeout(timer);
+    } else {
+      setShowGenerateButton(false);
+    }
+  }, [isDone]);
+
   const graphModalTimerRef = useRef(null);
   const advanceTimerRef = useRef(null);
 
@@ -142,13 +155,20 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
 
   // ── Cycling placeholder effect ──
   useEffect(() => {
-    if (LIFE_GRAPH_STEPS[currentStepIndex]?.type !== 'guidedEntry') return;
+    const step = LIFE_GRAPH_STEPS[currentStepIndex];
+    if (step?.type !== 'guidedEntry') return;
     if (guidedLabel) return; // stop cycling once user types
+
+    const examples = step.content.examples || [];
+    if (examples.length === 0) return;
+
+    setExampleIndex(0);
+    setExampleVisible(true);
 
     const timer = setInterval(() => {
       setExampleVisible(false);
       setTimeout(() => {
-        setExampleIndex((prev) => (prev + 1) % GUIDED_EXAMPLES.length);
+        setExampleIndex((prev) => (prev + 1) % examples.length);
         setExampleVisible(true);
       }, 400);
     }, 3000);
@@ -207,7 +227,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     setEntryNote('');
   }, [entryLabel, entryRating, entryNote, addLifeGraphMilestone]);
 
-  // ── Open entry: done ──
+  // ── Open entry: done → show generate button ──
   const handleOpenEntryDone = useCallback(() => {
     // If there's a partially filled form, save it first
     if (entryLabel.trim() && entryRating !== null) {
@@ -220,8 +240,8 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       setEntryRating(null);
       setEntryNote('');
     }
-    advanceStep();
-  }, [entryLabel, entryRating, entryNote, addLifeGraphMilestone, advanceStep]);
+    setIsDone(true);
+  }, [entryLabel, entryRating, entryNote, addLifeGraphMilestone]);
 
   // ── Edit milestone ──
   const startEditing = useCallback((milestone) => {
@@ -250,15 +270,16 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     if (editingMilestoneId === id) setEditingMilestoneId(null);
   }, [removeLifeGraphMilestone, editingMilestoneId]);
 
-  // ── Generate graph + reveal sequence ──
+  // ── Generate graph + reveal sequence + save to journal ──
   const handleGenerate = useCallback(async () => {
     setRevealKey((k) => k + 1);
     setShowRevealOverlay(true);
 
     const startTime = Date.now();
 
+    let blob;
     try {
-      const blob = await exportLifeGraphAsPNG(milestones);
+      blob = await exportLifeGraphAsPNG(milestones);
       setGraphBlob(blob);
       const url = URL.createObjectURL(blob);
       if (graphUrl) URL.revokeObjectURL(graphUrl);
@@ -267,6 +288,31 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       setShowRevealOverlay(false);
       console.warn('Life graph generation failed:', err);
       return;
+    }
+
+    // Save to journal immediately on generation
+    const lines = ['LIFE GRAPH\n'];
+    for (const m of milestones) {
+      lines.push(`${m.label}: ${m.rating}/10${m.note ? ` — ${m.note}` : ''}`);
+    }
+    const journalContent = lines.join('\n');
+
+    const entry = addEntry({
+      content: journalContent,
+      source: 'session',
+      sessionId,
+      moduleTitle: 'Life Graph',
+      isEdited: false,
+      hasImage: true,
+    });
+
+    if (entry?.id && blob) {
+      try {
+        await saveImage(entry.id, blob);
+      } catch (err) {
+        console.warn('Failed to save life graph image:', err);
+      }
+      setLifeGraphGenerated(entry.id);
     }
 
     // Wait until overlay is fully opaque (~900ms from start) before
@@ -278,7 +324,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       setCurrentStepIndex((prev) => prev + 1);
       setShowGraphModal(true);
     }, delay);
-  }, [milestones, graphUrl]);
+  }, [milestones, graphUrl, addEntry, sessionId, setLifeGraphGenerated]);
 
   const handleRevealDone = useCallback(() => {
     setShowRevealOverlay(false);
@@ -302,36 +348,11 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     }
   }, [graphUrl]);
 
-  // ── Module completion ──
-  const handleModuleComplete = useCallback(async () => {
-    // Build journal text
-    const lines = ['LIFE GRAPH\n'];
-    for (const m of milestones) {
-      lines.push(`${m.label}: ${m.rating}/10${m.note ? ` — ${m.note}` : ''}`);
-    }
-    const content = lines.join('\n');
-
-    const entry = addEntry({
-      content,
-      source: 'session',
-      sessionId,
-      moduleTitle: 'Life Graph',
-      isEdited: false,
-      hasImage: true,
-    });
-
-    if (entry?.id && graphBlob) {
-      try {
-        await saveImage(entry.id, graphBlob);
-      } catch (err) {
-        console.warn('Failed to save life graph image:', err);
-      }
-      setLifeGraphGenerated(entry.id);
-    }
-
+  // ── Module completion (journal already saved at generate time) ──
+  const handleModuleComplete = useCallback(() => {
     completePreSubstanceActivity('life-graph');
     onComplete();
-  }, [milestones, addEntry, sessionId, graphBlob, setLifeGraphGenerated, completePreSubstanceActivity, onComplete]);
+  }, [completePreSubstanceActivity, onComplete]);
 
   // ── Skip handler (exits module) ──
   const handleModuleSkip = useCallback(() => {
@@ -365,6 +386,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
 
   const renderGuidedEntryStep = () => {
     const { content } = currentStep;
+    const examples = content.examples || [];
     return (
       <div className="space-y-6">
         <h2
@@ -373,6 +395,9 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
         >
           {content.title}
         </h2>
+        <div className="flex justify-center">
+          <LeafDraw />
+        </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
         </p>
@@ -389,14 +414,14 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
               text-sm"
             style={{ textTransform: 'none' }}
           />
-          {!guidedLabel && (
+          {!guidedLabel && examples.length > 0 && (
             <div className="absolute inset-0 flex items-center px-4 pointer-events-none">
               <span
                 className={`text-sm transition-opacity duration-[400ms]
                   ${exampleVisible ? 'opacity-40' : 'opacity-0'}`}
                 style={{ color: 'var(--color-text-tertiary)' }}
               >
-                {GUIDED_EXAMPLES[exampleIndex]}
+                {examples[exampleIndex % examples.length]}
               </span>
             </div>
           )}
@@ -415,17 +440,6 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
             text-sm placeholder:text-[var(--color-text-tertiary)]"
           style={{ textTransform: 'none' }}
         />
-
-        {/* Inline skip to free entry */}
-        <div className="flex justify-center pt-2">
-          <button
-            onClick={advanceStep}
-            className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider
-              hover:opacity-80 transition-opacity"
-          >
-            Skip to free entry
-          </button>
-        </div>
       </div>
     );
   };
@@ -575,8 +589,13 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
           {!atSoftMax && entryLabel.trim() && entryRating !== null && (
             <button
               onClick={handleAddEntry}
-              className="w-full py-4 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300"
-              style={{
+              className={`w-full py-4 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300
+                ${isDone ? 'border' : ''}`}
+              style={isDone ? {
+                borderColor: 'var(--text-primary)',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
+              } : {
                 backgroundColor: 'var(--text-primary)',
                 color: 'var(--bg-primary)',
               }}
@@ -584,131 +603,41 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
               {content.addButton}
             </button>
           )}
-          <button
-            onClick={handleOpenEntryDone}
-            className="w-full py-4 border uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300"
-            style={{
-              borderColor: 'var(--text-primary)',
-              backgroundColor: 'var(--bg-primary)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            {content.doneButton}
-          </button>
-        </div>
-      </div>
-    );
-  };
 
-  const renderReviewStep = () => {
-    const { content } = currentStep;
-    return (
-      <div className="space-y-6 pb-24">
-        <h2
-          className="text-[var(--color-text-primary)] text-xl text-center"
-          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
-        >
-          {content.title}
-        </h2>
-        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
-          {content.body}
-        </p>
-
-        {/* Milestone list */}
-        <div className="space-y-2">
-          {milestones.map((m) => (
-            <div key={m.id}>
-              {editingMilestoneId === m.id ? (
-                <div className="space-y-3 p-3 border border-[var(--accent)] bg-[var(--accent-bg)]">
-                  <input
-                    type="text"
-                    value={editLabel}
-                    onChange={(e) => setEditLabel(e.target.value)}
-                    maxLength={60}
-                    className="w-full py-2 px-3 border border-[var(--color-border)] bg-transparent
-                      focus:outline-none focus:border-[var(--accent)] text-[var(--color-text-primary)]
-                      text-sm"
-                    style={{ textTransform: 'none' }}
-                  />
-                  <RatingDots value={editRating} onChange={setEditRating} />
-                  <input
-                    type="text"
-                    value={editNote}
-                    onChange={(e) => setEditNote(e.target.value)}
-                    placeholder="A few words (optional)"
-                    maxLength={120}
-                    className="w-full py-2 px-3 border border-[var(--color-border)] bg-transparent
-                      focus:outline-none focus:border-[var(--accent)] text-[var(--color-text-primary)]
-                      text-sm placeholder:text-[var(--color-text-tertiary)]"
-                    style={{ textTransform: 'none' }}
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={saveEdit}
-                      className="flex-1 py-2 text-[10px] uppercase tracking-wider
-                        bg-[var(--color-text-primary)] text-[var(--color-bg)]"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={cancelEdit}
-                      className="flex-1 py-2 text-[10px] uppercase tracking-wider
-                        border border-[var(--color-border)] text-[var(--color-text-secondary)]"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMilestone(m.id)}
-                      className="w-8 h-8 flex items-center justify-center shrink-0
-                        border border-[var(--color-border)] text-[var(--color-text-tertiary)]"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <line x1="1" y1="1" x2="9" y2="9" />
-                        <line x1="9" y1="1" x2="1" y2="9" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  onClick={() => startEditing(m)}
-                  className="w-full text-left py-3 px-4 border border-[var(--color-border)]
-                    hover:border-[var(--accent)] transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[var(--color-text-primary)] text-sm" style={{ textTransform: 'none' }}>
-                      {m.label}
-                    </span>
-                    <span className="text-[var(--color-text-tertiary)] text-xs">
-                      {m.rating}/10
-                    </span>
-                  </div>
-                  {m.note && (
-                    <p className="text-[var(--color-text-tertiary)] text-xs mt-1" style={{ textTransform: 'none' }}>
-                      {m.note}
-                    </p>
-                  )}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Generate button */}
-        {milestones.length > 0 && (
-          <div className="pt-2">
+          {/* I'm Done → Create My Life Graph cross-fade */}
+          <div className="relative w-full">
+            {/* I'm Done — fades out when isDone */}
             <button
-              onClick={handleGenerate}
-              className="w-full py-4 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300"
+              onClick={!isDone ? handleOpenEntryDone : undefined}
+              className={`w-full py-4 border uppercase tracking-wider text-xs
+                transition-opacity duration-[600ms] ease-in-out
+                ${isDone ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
               style={{
-                backgroundColor: 'var(--text-primary)',
-                color: 'var(--bg-primary)',
+                borderColor: 'var(--text-primary)',
+                backgroundColor: 'var(--bg-primary)',
+                color: 'var(--text-primary)',
               }}
             >
-              {content.buttonLabel}
+              {content.doneButton}
             </button>
+
+            {/* Create My Life Graph — fades in after delay, accent color */}
+            {isDone && milestones.length > 0 && (
+              <button
+                onClick={showGenerateButton ? handleGenerate : undefined}
+                className={`w-full py-4 uppercase tracking-wider text-xs absolute inset-0
+                  transition-opacity duration-[800ms] ease-in-out
+                  ${showGenerateButton ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                style={{
+                  backgroundColor: 'var(--accent)',
+                  color: 'white',
+                }}
+              >
+                {content.generateButton}
+              </button>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   };
@@ -767,7 +696,6 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       case 'welcome': return renderWelcomeStep();
       case 'guidedEntry': return renderGuidedEntryStep();
       case 'openEntry': return renderOpenEntryStep();
-      case 'review': return renderReviewStep();
       case 'reflection': return renderReflectionStep();
       case 'closing': return renderClosingStep();
       default: return null;
@@ -788,10 +716,6 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
 
       case 'openEntry':
         // Inline buttons handle this
-        return null;
-
-      case 'review':
-        // Inline Generate button handles this
         return null;
 
       case 'reflection':
@@ -829,11 +753,10 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     return true;
   };
 
-  // Contextual skip: guided → open entry, open entry → review, others → exit module
+  // Contextual skip: guided entries advance, others exit module
   const getSkipHandler = () => {
     switch (currentStep.type) {
       case 'guidedEntry':
-      case 'openEntry':
         return advanceStep;
       default:
         return handleModuleSkip;
@@ -843,7 +766,6 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const getSkipConfirmMessage = () => {
     switch (currentStep.type) {
       case 'guidedEntry':
-      case 'openEntry':
         return null; // no confirmation for skipping forward
       default:
         return 'Exit life graph?';

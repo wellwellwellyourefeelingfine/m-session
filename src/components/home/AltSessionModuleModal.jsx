@@ -191,6 +191,7 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
           {isActive && (
             <button
               onClick={() => {
+                if (onBegin) onBegin(module);
                 setCurrentTab('active');
                 onClose();
               }}

@@ -30,7 +30,7 @@ const PHASE_CONFIG = {
 /**
  * Format seconds to MM:SS or H:MM:SS
  */
-function formatTime(seconds) {
+export function formatTime(seconds) {
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);

@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore, shouldShowBooster } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
-import ModuleStatusBar from './ModuleStatusBar';
+import ModuleStatusBar, { formatTime } from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
 import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
@@ -199,24 +199,48 @@ export default function ActiveView() {
       if (preSessionModule) {
         return (
           <div className="relative">
-            {/* Pre-Session indicator bar */}
-            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]">
-              <span className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]">
-                Pre-Session
-              </span>
-              <button
-                onClick={exitPreSessionModule}
-                className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-              >
-                Exit
-              </button>
+            {/* Pre-Session indicator bar with optional timer */}
+            <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
+              {/* Progress bar */}
+              <div className="h-0.5 bg-[var(--color-border)]">
+                <div
+                  className={`h-full transition-all duration-200 ease-linear
+                    ${moduleTimerState.isPaused ? 'opacity-50' : 'opacity-100'}`}
+                  style={{
+                    width: `${Math.min(moduleTimerState.progress, 100)}%`,
+                    backgroundColor: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+              <div className="flex items-center px-4 py-2 gap-3">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] flex-shrink-0">
+                  Pre-Session
+                </span>
+                {/* Center: module timer */}
+                <div className="flex-1 flex justify-center min-w-0">
+                  {moduleTimerState.showTimer && (
+                    <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
+                      ${moduleTimerState.isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
+                      {formatTime(moduleTimerState.elapsed)} / {formatTime(moduleTimerState.total)}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={exitPreSessionModule}
+                  className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
-            <ModuleRenderer
-              module={preSessionModule}
-              onTimerUpdate={handleModuleTimerUpdate}
-              onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
-              onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
-            />
+            <div className="pt-9">
+              <ModuleRenderer
+                module={preSessionModule}
+                onTimerUpdate={handleModuleTimerUpdate}
+                onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
+                onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
+              />
+            </div>
           </div>
         );
       }

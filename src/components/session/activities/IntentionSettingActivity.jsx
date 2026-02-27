@@ -597,10 +597,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
         </p>
-        <div className="flex justify-center">
-          <div className="circle-spacer" />
-        </div>
-        <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodySecondary}
         </p>
 
@@ -940,7 +937,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         {/* Persistent moon area — title + moon shared across moon transition & intention page */}
         {showPersistentMoon && (
-          <div className="pt-2">
+          <div className={`pt-2 transition-opacity duration-[400ms] ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
             {/* Title — invisible during moon transition (reserves space), fades in on intention page */}
             <h2
               className="text-[var(--color-text-primary)] text-xl text-center transition-opacity duration-[600ms]"

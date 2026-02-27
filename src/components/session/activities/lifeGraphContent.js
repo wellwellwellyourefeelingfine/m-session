@@ -4,9 +4,9 @@
  *
  * 6 user-facing pages:
  * 0: Welcome / Framing
- * 1: Guided Entry (single page with cycling example placeholders)
- * 2: Open Entry Mode
- * 3: Review & Generate
+ * 1: Guided Entry — early life
+ * 2: Guided Entry — later life
+ * 3: Open Entry + Generate
  * 4: Reflection
  * 5: Closing
  */
@@ -23,16 +23,6 @@ export const RATING_ANCHORS = {
 // Total milestone soft maximum
 export const MILESTONE_SOFT_MAX = 14;
 
-// Cycling placeholder examples for the guided entry page
-export const GUIDED_EXAMPLES = [
-  'Childhood',
-  'Young adult years',
-  'College years',
-  'First real job',
-  'A turning point',
-  'Recent years',
-];
-
 // Step definitions
 export const LIFE_GRAPH_STEPS = [
   // Step 0 — Welcome / Framing
@@ -46,18 +36,31 @@ export const LIFE_GRAPH_STEPS = [
     },
   },
 
-  // Step 1 — Guided Entry
+  // Step 1 — First Guided Entry (early life)
   {
-    id: 'guided-entry',
+    id: 'guided-entry-1',
     type: 'guidedEntry',
     content: {
       title: 'Your First Moment',
-      body: 'Think of a chapter, event, or time in your life. Give it a name and rate how you were doing.',
-      notePrompt: 'A few words about this time (optional)',
+      body: "Start with something from earlier in your life — a chapter, event, or time that stands out. It can be as specific or as vague as you'd like. Give it a name and rate how you were doing.",
+      notePrompt: 'A few words (optional)',
+      examples: ['Childhood', 'Early school years', 'Growing up', 'Family life', 'Teenage years', 'First memories'],
     },
   },
 
-  // Step 2 — Open Entry Mode
+  // Step 2 — Second Guided Entry (later life)
+  {
+    id: 'guided-entry-2',
+    type: 'guidedEntry',
+    content: {
+      title: 'Your Next Moment',
+      body: "Now think of a time further along — something that came after your first entry. We're building forward in time, so your graph will tell a story.",
+      notePrompt: 'A few words (optional)',
+      examples: ['College years', 'First real job', 'A turning point', 'Moving away', 'Recent years', 'Last year'],
+    },
+  },
+
+  // Step 3 — Open Entry + Generate
   {
     id: 'open-entry',
     type: 'openEntry',
@@ -68,18 +71,8 @@ export const LIFE_GRAPH_STEPS = [
       notePrompt: 'A few words (optional)',
       addButton: 'Add Another',
       doneButton: "I'm Done",
+      generateButton: 'Create My Life Graph',
       softMaxMessage: "That's a good amount. You can always revisit this later.",
-    },
-  },
-
-  // Step 3 — Review & Generate
-  {
-    id: 'review',
-    type: 'review',
-    content: {
-      title: "Let's See What You've Drawn",
-      body: "Here's what you've mapped so far. Tap any entry to adjust it, or go ahead and create your graph.",
-      buttonLabel: 'Create My Life Graph',
     },
   },
 
@@ -102,7 +95,7 @@ export const LIFE_GRAPH_STEPS = [
     content: {
       title: "That's Enough",
       body: "Your life is more than any line can hold. But sometimes seeing the shape of it, even roughly, can show you something you didn't notice from inside it.",
-      bodySecondary: 'Your life graph has been saved to your journal. You can pull it up anytime using the graph button in the bottom bar.',
+      bodySecondary: 'Your life graph has been saved to your journal. You can review it there anytime.',
     },
   },
 ];
