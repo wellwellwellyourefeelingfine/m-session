@@ -256,7 +256,7 @@ export function useMeditationPlayback({
       progress,
       elapsed: userElapsed,
       total: displayTotal,
-      showTimer: hasStarted && !isComplete,
+      showTimer: hasStarted,
       isPaused: !isPlaying,
     });
   }, [elapsedTime, totalDuration, hasStarted, isPlaying]);
@@ -373,6 +373,57 @@ export function useMeditationPlayback({
     setIsLoading(false);
   }, [resetMeditationPlayback, audio]);
 
+  // Derived state
+  const composedTotal = composedDurationRef.current;
+  const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
+  const currentPrompt = promptTimeMapRef.current[currentPromptIndex];
+
+  // Seek relative to current position (e.g., -10 or +10 seconds)
+  const isSeekingRef = useRef(false);
+  const handleSeekRelative = useCallback(async (deltaSeconds) => {
+    if (!hasStarted || isLoading || isComplete || isSeekingRef.current) return;
+    isSeekingRef.current = true;
+
+    try {
+      const currentTime = audio.getCurrentTime();
+      const target = Math.max(0, Math.min(currentTime + deltaSeconds, composedDurationRef.current));
+
+      // Clear any pending text fade timeout
+      if (textFadeTimeoutRef.current) {
+        clearTimeout(textFadeTimeoutRef.current);
+        textFadeTimeoutRef.current = null;
+      }
+
+      // Directly compute the correct prompt for the new position
+      const map = promptTimeMapRef.current;
+      let targetPromptIndex = -1;
+      for (let i = 0; i < map.length; i++) {
+        if (target >= map[i].audioTimeStart) {
+          targetPromptIndex = i;
+        } else {
+          break;
+        }
+      }
+
+      // Update prompt state immediately for instant visual feedback
+      if (targetPromptIndex >= 0) {
+        lastPromptRef.current = targetPromptIndex;
+        setCurrentPromptIndex(targetPromptIndex);
+        setPromptPhase('visible');
+      } else {
+        lastPromptRef.current = -1;
+        setCurrentPromptIndex(-1);
+        setPromptPhase('hidden');
+      }
+
+      // Perform the audio seek
+      await audio.seekToTime(target);
+      setElapsedTime(target);
+    } finally {
+      isSeekingRef.current = false;
+    }
+  }, [hasStarted, isLoading, isComplete, audio]);
+
   const handleSkip = useCallback(() => {
     console.log('[MeditationPlayback] handleSkip called');
     try {
@@ -393,11 +444,6 @@ export function useMeditationPlayback({
       try { onSkip(); } catch (e2) { console.error('[MeditationPlayback] fallback onSkip ERROR:', e2); }
     }
   }, [resetMeditationPlayback, audio, onSkip]);
-
-  // Derived state
-  const composedTotal = composedDurationRef.current;
-  const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
-  const currentPrompt = promptTimeMapRef.current[currentPromptIndex];
 
   const getPhase = useCallback(() => {
     if (isLoading) return 'loading';
@@ -444,6 +490,7 @@ export function useMeditationPlayback({
     handleComplete,
     handleSkip,
     handleRestart,
+    handleSeekRelative,
 
     // UI helpers
     getPhase,

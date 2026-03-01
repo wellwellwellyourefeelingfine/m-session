@@ -67,10 +67,9 @@ export default function ModuleLayout({
 
   return (
     <div
-      className={`flex flex-col ${getPaddingClass()} pt-4 pb-8`}
+      className={`flex flex-col ${getPaddingClass()} pt-4 pb-20`}
       style={{
         minHeight: centered ? 'calc(100vh - var(--header-height) - var(--bottom-chrome))' : undefined,
-        paddingBottom: '2rem',
       }}
     >
       {/* Main content area */}
@@ -146,8 +145,8 @@ export function CompletionScreen({
   return (
     <div className="text-center space-y-4 animate-fadeIn">
       <h2
-        className="font-serif text-2xl text-[var(--color-text-primary)]"
-        style={{ textTransform: 'none' }}
+        className="text-2xl text-[var(--color-text-primary)]"
+        style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
       >
         {title}
       </h2>
@@ -176,8 +175,8 @@ export function IdleScreen({
     <div className="text-center space-y-4 animate-fadeIn">
       {title && (
         <h2
-          className="font-serif text-2xl text-[var(--color-text-primary)]"
-          style={{ textTransform: 'none' }}
+          className="text-2xl text-[var(--color-text-primary)]"
+          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
           {title}
         </h2>

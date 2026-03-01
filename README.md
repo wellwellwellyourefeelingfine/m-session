@@ -114,6 +114,11 @@ public/
         ├── open-awareness/        # 26 TTS audio files
         ├── body-scan/             # 54 TTS audio files
         ├── self-compassion/       # 70 TTS audio files
+        ├── simple-grounding/      # ~20 TTS audio files
+        ├── short-grounding/       # ~10 TTS audio files
+        ├── felt-sense/            # ~30 TTS audio files
+        ├── leaves-on-a-stream/    # ~15 TTS audio files
+        ├── stay-with-it/          # ~25 TTS audio files
         └── protector/             # 16 TTS audio files
 ```
 
@@ -205,8 +210,12 @@ public/
 - `OpenAwarenessModule` - Audio-synced guided meditation (shared `useMeditationPlayback` hook)
 - `BodyScanModule` - Audio-synced body scan (shared `useMeditationPlayback` hook)
 - `SelfCompassionModule` - Audio-synced self-compassion with variation selector (shared `useMeditationPlayback` hook)
+- `SimpleGroundingModule` - Fixed-duration grounding meditation with audio prompts
+- `FeltSenseModule` - Audio-synced felt sense meditation with variation selector
+- `LeavesOnAStreamModule` - Audio-synced ACT defusion exercise
+- `StayWithItModule` - Multi-phase module: meditation → check-in → psychoeducation → journaling
+- `ProtectorDialoguePart1Module` - 10-step IFS guided activity with embedded meditation (listen/read modes)
 - `JournalingModule` - Journal store integration (handles all journaling types: light, deep, letter-writing, parts-work, therapy-exercise)
-- `SimpleGroundingModule` - Sequential grounding steps with audio prompts
 - `MusicListeningModule` - Duration picker, alarm prompt, recommendations
 - `OpenSpaceModule` - Freeform rest with silence timer (`useSilenceTimer` hook)
 
@@ -324,7 +333,8 @@ import {
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { MuteButton } from '../capabilities/ModuleControlBar';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 import DurationPicker from '../../shared/DurationPicker';
 
 export default function MyMeditationModule({ module, onComplete, onSkip, onTimerUpdate }) {
@@ -415,9 +425,17 @@ export default function MyMeditationModule({ module, onComplete, onSkip, onTimer
         showSkip={!playback.isComplete}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"
+        showSeekControls={playback.hasStarted && !playback.isComplete && !playback.isLoading}
+        onSeekBack={() => playback.handleSeekRelative(-10)}
+        onSeekForward={() => playback.handleSeekRelative(10)}
+        leftSlot={
+          playback.hasStarted && !playback.isComplete ? (
+            <VolumeButton volume={playback.audio.volume} onVolumeChange={playback.audio.setVolume} />
+          ) : null
+        }
         rightSlot={
           playback.hasStarted && !playback.isComplete ? (
-            <MuteButton isMuted={playback.audio.isMuted} onToggle={playback.audio.toggleMute} />
+            <SlotButton icon={<TranscriptIcon />} label="View transcript" onClick={() => {}} />
           ) : null
         }
       />
@@ -462,7 +480,7 @@ export const CUSTOM_MODULES = { ...existing, 'my-meditation': MyMeditationModule
 
 ## Audio Meditation System
 
-Three meditation modules use pre-recorded TTS audio with synchronized text display, all sharing a unified playback architecture.
+Eight meditation modules use pre-recorded TTS audio with synchronized text display, all sharing a unified playback architecture. All support 10-second skip-back/skip-forward controls during playback.
 
 ### Meditations
 
@@ -471,7 +489,12 @@ Three meditation modules use pre-recorded TTS audio with synchronized text displ
 | Open Awareness | 26 | 10-30 min (variable) | Conditional prompts for longer sessions (20+ min) |
 | Body Scan | 54 | 10-15 min (variable) | Silence expansion concentrated in later body regions |
 | Self-Compassion | 70 | ~11-15 min (fixed per variation) | 3 variations assembled from shared core + variation clips |
-| Protector Dialogue | 16 | 8-12 min (fixed) | Part of 2-part IFS activity; expandable silences for peak state |
+| Simple Grounding | ~20 | ~9 min (fixed) | Sequential grounding steps |
+| Short Grounding | ~10 | ~5 min (fixed) | Compact grounding for come-up phase |
+| Felt Sense | ~30 | ~10-15 min (fixed per variation) | 2 variations: gentle practice + going deeper |
+| Leaves on a Stream | ~15 | ~8 min (fixed) | ACT defusion exercise |
+| Stay With It | ~25 | 10-25 min (variable) | Multi-phase: meditation → check-in → psychoeducation → journaling |
+| Protector Dialogue | 16 | 8-12 min (fixed) | Part of 2-part IFS activity; listen/read modes |
 
 ### Architecture
 
@@ -540,12 +563,13 @@ All TTS meditation components delegate playback to this shared hook. It handles:
 
 1. Session store integration (start/pause/resume/reset via Zustand)
 2. Single-blob audio composition (gong + TTS clips + silence via `audioComposerService`)
-3. Prompt progression based on `audio.currentTime` (iOS-resilient, survives screen lock)
+3. Prompt progression based on wall-clock time (iOS-resilient, survives screen lock)
 4. Audio-text synchronization (audio leads text by 200ms, fade in/out)
-5. Media Session API for iOS lock-screen play/pause controls
-6. Store-to-audio sync (bridges booster modal pause/resume to audio element)
-7. Timer reporting to parent via `onTimerUpdate`
-8. Phase derivation (`idle` / `loading` / `active` / `completed`) and primary button state
+5. 10-second skip-back/skip-forward seeking with instant prompt text sync
+6. Media Session API for iOS lock-screen play/pause controls
+7. Store-to-audio sync (bridges booster modal pause/resume to audio element)
+8. Timer reporting to parent via `onTimerUpdate`
+9. Phase derivation (`idle` / `loading` / `active` / `completed`) and primary button state
 
 **Parameters:**
 ```javascript
@@ -566,9 +590,10 @@ useMeditationPlayback({
   hasStarted, isPlaying, isComplete,    // state booleans
   elapsedTime, currentPrompt,           // playback position
   promptPhase,                          // 'hidden' | 'fading-in' | 'visible' | 'fading-out'
-  audio,                                // useAudioPlayback instance (isMuted, toggleMute)
+  audio,                                // useAudioPlayback instance (volume, setVolume, toggleMute)
   handleStart, handlePauseResume,       // control handlers
   handleComplete, handleSkip,
+  handleRestart, handleSeekRelative,    // restart from beginning, seek ±N seconds
   getPhase, getPrimaryButton,           // UI helpers
 }
 ```
@@ -577,13 +602,17 @@ useMeditationPlayback({
 
 Audio files are generated using ElevenLabs TTS via scripts in `scripts/`. Each meditation has its own generation script that imports prompts from the content definition and outputs MP3 files to the corresponding `public/audio/meditations/<name>/` directory.
 
-| Script | Voice | Prompts | Output Directory |
-|--------|-------|:-------:|------------------|
-| `generate-body-scan-audio.mjs` | Oliver Silk | 54 | `public/audio/meditations/body-scan/` |
-| `generate-self-compassion-audio.mjs` | Oliver Silk | 70 | `public/audio/meditations/self-compassion/` |
-| `generate-protector-audio.mjs` | Theo Silk | 16 | `public/audio/meditations/protector/` |
-| `generate-simple-grounding-audio.mjs` | Oliver Silk | — | `public/audio/meditations/simple-grounding/` |
-| `generate-silence-blocks.mjs` | — | — | Pre-rendered silence MP3 blocks for blob composition |
+| Script | Voice | Output Directory |
+|--------|-------|------------------|
+| `generate-body-scan-audio.mjs` | Oliver Silk | `public/audio/meditations/body-scan/` |
+| `generate-self-compassion-audio.mjs` | Oliver Silk | `public/audio/meditations/self-compassion/` |
+| `generate-simple-grounding-audio.mjs` | Oliver Silk | `public/audio/meditations/simple-grounding/` |
+| `generate-protector-audio.mjs` | Theo Silk | `public/audio/meditations/protector/` |
+| `generate-felt-sense-audio.mjs` | Theo Silk | `public/audio/meditations/felt-sense/` |
+| `generate-leaves-audio.mjs` | Theo Silk | `public/audio/meditations/leaves-on-a-stream/` |
+| `generate-stay-with-it-audio.mjs` | Theo Silk | `public/audio/meditations/stay-with-it/` |
+| `generate-short-grounding-audio.mjs` | Theo Silk | `public/audio/meditations/short-grounding/` |
+| `generate-silence-blocks.mjs` | — | Pre-rendered silence MP3 blocks for blob composition |
 
 **Voices:**
 

@@ -159,6 +159,7 @@ Each module:
 3. Passes to `useMeditationPlayback` with `{ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onTimerUpdate }`
 4. Uses `useTranscriptModal()` hook (`src/hooks/useTranscriptModal.js`) for transcript modal state — returns `{ showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript }`
 5. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `getPrimaryButton()`)
+6. Wires seek controls to `ModuleControlBar`: `showSeekControls`, `onSeekBack={() => playback.handleSeekRelative(-10)}`, `onSeekForward={() => playback.handleSeekRelative(10)}`
 
 ---
 
@@ -238,6 +239,20 @@ Uses `audio.isPaused()` (reads `<audio>.paused` directly) instead of store's `is
 
 Sets `navigator.mediaSession.metadata`, registers play/pause handlers (using `audio.isPaused()`), and updates `setPositionState()` for lock-screen duration/progress. `setPositionState()` is throttled to ~1 call/sec (lock-screen doesn't update faster). `isPlaying` is intentionally excluded from the handler effect's deps to prevent handler churn.
 
+### handleSeekRelative(deltaSeconds)
+
+Seeks forward or backward relative to the current position (e.g., `handleSeekRelative(-10)` for skip-back, `handleSeekRelative(10)` for skip-forward). Used by the `ModuleControlBar` seek buttons.
+
+**Logic:**
+1. Guard: return if `!hasStarted || isLoading || isComplete || isSeekingRef.current`
+2. Set `isSeekingRef.current = true` (prevents overlapping seeks from rapid taps)
+3. Compute target: `Math.max(0, Math.min(currentTime + deltaSeconds, composedDurationRef.current))`
+4. Clear any pending `textFadeTimeoutRef`
+5. **Direct prompt computation** — scans `promptTimeMapRef` to find the correct prompt for the new position and immediately sets `lastPromptRef`, `setCurrentPromptIndex()`, `setPromptPhase('visible'|'hidden')`. This bypasses the forward-scan effect (which guards on `!isPlaying`) to give instant visual feedback, especially when seeking while paused.
+6. `await audio.seekToTime(target)`
+7. `setElapsedTime(target)`
+8. `isSeekingRef.current = false` in `finally` block
+
 ### Stale-state recovery
 
 If the store says playback is active but there's no blob URL (page reload), resets to idle. Works because `meditationPlayback` is excluded from localStorage persistence.
@@ -255,6 +270,10 @@ Used by OpenSpaceModule and MusicListeningModule. Same architecture as useMedita
 - `GONG_PREAMBLE = 3` (not 8)
 - Supports `resize()` for mid-session duration changes (recomposes blob without opening gong, preserves elapsed time via `elapsedOffsetRef`)
 - No prompt progression or text fade logic
+
+### handleSeekRelative(deltaSeconds)
+
+Same pattern as `useMeditationPlayback.handleSeekRelative()` but simpler — no prompt tracking. Computes target clamped to `[0, composedTotalRef.current]`, calls `audio.seekToTime(target)`, then updates `setElapsedTime()` accounting for `preambleEndRef` and `elapsedOffsetRef`. Guarded by `isSeekingRef` to prevent overlapping seeks.
 
 ### Same patterns
 - `handleStart` calls `loadAndPlay()` before `storeComposedBytes()` (same ordering constraint as useMeditationPlayback)
@@ -307,9 +326,24 @@ Always uses `resumeFromBytes()` when composed bytes are available: calculate byt
 
 Direct seeking (`currentTime` assignment) is unreliable for composed blob URLs on both platforms — iOS resets `currentTime` to 0 (WebKit bug), and desktop browsers may accept the assignment while the decoder starts from byte 0 (headerless MP3 concatenation lacks a seek table). Blob recreation bypasses seeking entirely.
 
+### seekToTime(absoluteTime)
+
+Seeks to an arbitrary absolute position within the composed blob. Uses the same blob-recreation pattern as `resumeFromBytes()` — calculates byte offset from the target time, snaps to the next MP3 frame boundary via `findNextFrameBoundary()`, slices the remaining bytes, creates a new blob URL, and loads/plays it.
+
+**Logic:**
+1. Clamp target to `[0, composedBytesRef.current.length / CBR_BYTES_PER_SECOND]`
+2. Read `wasPaused` from `audioRef.current.paused`
+3. Stop polling, update wall-clock refs (`savedTimeRef`, `wallAccumulatedRef`, `wallStartRef`)
+4. Calculate byte offset → find next frame boundary → create new blob from `subarray()`
+5. Revoke old blob URL, load new one
+6. If was paused: fire synthetic `onTimeUpdate` at the new position, do NOT play
+7. If was playing: `await audio.play()`, start polling
+
+Returns `false` if no composed bytes or audio element available. This method is called by `handleSeekRelative()` in the orchestrator hooks.
+
 ### Memory
 
-A 10-min CBR 128kbps meditation ≈ 9.6MB in `composedBytesRef`. `subarray()` shares the `ArrayBuffer`. Worst case ~20MB briefly during fallback resume.
+A 10-min CBR 128kbps meditation ≈ 9.6MB in `composedBytesRef`. `subarray()` shares the `ArrayBuffer`. Worst case ~20MB briefly during fallback resume or seek.
 
 ---
 
@@ -590,6 +624,12 @@ All meditation scripts use the Theo Silk voice (`UmQN7jS1Ee8B1czsUtQh`) with `el
 8. **Lock screen controls:** Shows title, duration, advancing progress
 9. **Desktop regression:** All tests pass on Chrome/Firefox
 10. **Duration accuracy:** Timer total matches expected duration (within ~5s). Progress bar reaches 100% when audio ends, not before or after. For variable-duration meditations, selecting a duration (e.g., 10 min) should produce a meditation close to that length.
+11. **Skip forward 10s:** Timer jumps forward, prompt text syncs to correct prompt for new position
+12. **Skip back 10s:** Timer jumps backward, prompt text syncs to earlier prompt
+13. **Seek while paused:** Stays paused at new position, prompt text updates immediately, resume plays from new position
+14. **Seek near start:** Clamps to 0, plays from opening gong
+15. **Seek near end:** Clamps to composed duration, triggers completion
+16. **Rapid seek taps:** Tap skip-forward 5+ times quickly — no crash, advances correctly (`isSeekingRef` gate prevents overlapping seeks)
 
 ### After adding or replacing audio clips
 

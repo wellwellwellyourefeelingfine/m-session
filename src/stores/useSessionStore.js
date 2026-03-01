@@ -1280,12 +1280,30 @@ export const useSessionStore = create(
 
       skipBooster: () => {
         const state = get();
+
+        // Remove the booster module from the timeline
+        const boosterIdx = state.modules.items.findIndex((m) => m.isBoosterModule);
+        let updatedItems = state.modules.items;
+        if (boosterIdx !== -1) {
+          const boosterPhase = state.modules.items[boosterIdx].phase;
+          updatedItems = state.modules.items.filter((_, i) => i !== boosterIdx);
+          // Reorder remaining modules in that phase
+          updatedItems
+            .filter((m) => m.phase === boosterPhase)
+            .sort((a, b) => a.order - b.order)
+            .forEach((m, idx) => { m.order = idx; });
+        }
+
         set({
           booster: {
             ...state.booster,
             status: 'skipped',
             boosterDecisionAt: Date.now(),
             isModalVisible: false,
+          },
+          modules: {
+            ...state.modules,
+            items: updatedItems,
           },
         });
         // Resume module timer

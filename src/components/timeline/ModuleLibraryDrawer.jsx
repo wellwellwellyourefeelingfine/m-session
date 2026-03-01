@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES } from '../../content/modules';
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterEditMode, isCompletedSession = false }) {
-  const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | intensity
+  const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | phase filter
 
   // Get modules that can be added to this phase
   const availableModules = moduleLibrary.filter((module) => {
@@ -21,12 +21,17 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
   const filteredModules = availableModules.filter((module) => {
     if (filter === 'all') return true;
     if (filter === 'recommended') return module.recommendedPhases?.includes(phase);
-    return module.intensity === filter;
+    // Phase-based filter: show modules allowed in the selected phase
+    return module.allowedPhases?.includes(filter);
   });
 
-  // Group by category for display, sorted by category order
+  // Group by category for display, sorted by category order.
+  // Pre-session modules shown under "Activity" when browsing non-pre-session phases.
   const groupedModules = filteredModules.reduce((acc, module) => {
-    const category = module.category || 'other';
+    let category = module.category || 'other';
+    if (category === 'pre-session' && phase !== 'pre-session') {
+      category = 'activity';
+    }
     if (!acc[category]) acc[category] = [];
     acc[category].push(module);
     return acc;
@@ -153,25 +158,35 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
               Recommended
             </FilterButton>
             <FilterButton
-              active={filter === 'gentle'}
-              onClick={() => setFilter('gentle')}
+              active={filter === 'come-up'}
+              onClick={() => setFilter('come-up')}
             >
-              Gentle
+              Phase 1
             </FilterButton>
             <FilterButton
-              active={filter === 'moderate'}
-              onClick={() => setFilter('moderate')}
+              active={filter === 'peak'}
+              onClick={() => setFilter('peak')}
             >
-              Moderate
+              Phase 2
             </FilterButton>
-            {phase === 'integration' && (
-              <FilterButton
-                active={filter === 'deep'}
-                onClick={() => setFilter('deep')}
-              >
-                Deep
-              </FilterButton>
-            )}
+            <FilterButton
+              active={filter === 'integration'}
+              onClick={() => setFilter('integration')}
+            >
+              Phase 3
+            </FilterButton>
+            <FilterButton
+              active={filter === 'pre-session'}
+              onClick={() => setFilter('pre-session')}
+            >
+              Pre-Session
+            </FilterButton>
+            <FilterButton
+              active={filter === 'follow-up'}
+              onClick={() => setFilter('follow-up')}
+            >
+              Post-Session
+            </FilterButton>
           </div>
         </div>
 

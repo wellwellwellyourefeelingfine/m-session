@@ -2,12 +2,12 @@
  * Canvas-based PNG export for the Life Graph.
  *
  * Renders milestones as a smooth bezier curve on a 0-10 well-being scale.
- * 3× retina scale (1200×800 logical → 3600×2400 physical).
+ * 4× retina scale (1200×800 logical → 4800×3200 physical).
  * Theme-aware: reads dark class from <html>.
  */
 
 export async function exportLifeGraphAsPNG(milestones) {
-  const scale = 3;
+  const scale = 4;
   const W = 1200;
   const H = 800;
 
@@ -70,13 +70,13 @@ export async function exportLifeGraphAsPNG(milestones) {
   ctx.translate(18, TOP_PAD + CHART_H / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.fillText('STRUGGLING', 0 + CHART_H * 0.25, 0);
+  ctx.fillText('THRIVING', 0 + CHART_H * 0.25, 0);
   ctx.restore();
   ctx.save();
   ctx.translate(18, TOP_PAD + CHART_H / 2);
   ctx.rotate(-Math.PI / 2);
   ctx.textAlign = 'center';
-  ctx.fillText('THRIVING', 0 - CHART_H * 0.25, 0);
+  ctx.fillText('STRUGGLING', 0 - CHART_H * 0.25, 0);
   ctx.restore();
 
   // X-axis: milestone labels

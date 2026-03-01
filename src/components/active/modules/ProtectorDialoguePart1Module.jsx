@@ -1149,6 +1149,9 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
         showSkip={getSkipConfig()}
         onSkip={getSkipHandler()}
         skipConfirmMessage={getSkipMessage()}
+        showSeekControls={currentStep.type === 'meditation' && meditationMode === 'listen' && playback.hasStarted && !playback.isComplete && !playback.isLoading}
+        onSeekBack={() => playback.handleSeekRelative(-10)}
+        onSeekForward={() => playback.handleSeekRelative(10)}
         leftSlot={getLeftSlot()}
         rightSlot={getRightSlot()}
       />

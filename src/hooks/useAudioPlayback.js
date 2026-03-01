@@ -456,6 +456,96 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     }
   }, []);
 
+  // Seek to an absolute time using blob recreation.
+  // Works mid-playback or while paused. If paused, stays paused at new position.
+  // Uses the same proven blob-slicing pattern as resumeFromBytes() for iOS compatibility.
+  const seekToTime = useCallback(async (absoluteTime) => {
+    const bytes = composedBytesRef.current;
+    if (!bytes || !audioRef.current) return false;
+
+    // Clamp to valid range
+    const maxTime = bytes.length / CBR_BYTES_PER_SECOND;
+    const clamped = Math.max(0, Math.min(absoluteTime, maxTime));
+
+    const wasPaused = audioRef.current.paused;
+
+    // Stop polling during the seek
+    stopPolling();
+
+    // Update wall-clock refs to new position
+    savedTimeRef.current = clamped;
+    wallAccumulatedRef.current = clamped;
+    wallStartRef.current = 0;
+
+    try {
+      const rawByteOffset = Math.floor(clamped * CBR_BYTES_PER_SECOND);
+      const frameAlignedOffset = findNextFrameBoundary(bytes, Math.min(rawByteOffset, bytes.length - 1));
+
+      // Slice remaining bytes (subarray is zero-copy)
+      const remainingBytes = bytes.subarray(frameAlignedOffset);
+      const newBlob = new Blob([remainingBytes], { type: 'audio/mpeg' });
+      const newBlobUrl = URL.createObjectURL(newBlob);
+
+      // Revoke old blob URL
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+      }
+      currentBlobUrlRef.current = newBlobUrl;
+
+      // Set time offset so onTimeUpdate reports absolute position
+      timeOffsetRef.current = frameAlignedOffset / CBR_BYTES_PER_SECOND;
+
+      // Load the new blob
+      const audio = audioRef.current;
+      audio.preload = 'auto';
+      audio.src = newBlobUrl;
+      audio.load();
+
+      return new Promise((resolve) => {
+        let settled = false;
+        const settle = (value) => {
+          if (settled) return;
+          settled = true;
+          resolve(value);
+        };
+
+        const afterLoad = async () => {
+          if (wasPaused) {
+            // Stay paused — fire synthetic time update so UI reflects new position
+            onTimeUpdateRef.current?.(clamped);
+            settle(true);
+          } else {
+            try {
+              await audio.play();
+              startPolling();
+              settle(true);
+            } catch {
+              settle(false);
+            }
+          }
+        };
+
+        if (audio.readyState >= 3) {
+          afterLoad();
+        } else {
+          const onCanPlay = () => {
+            audio.removeEventListener('canplay', onCanPlay);
+            afterLoad();
+          };
+          audio.addEventListener('canplay', onCanPlay);
+          // Short timeout — data is already in memory
+          setTimeout(() => {
+            audio.removeEventListener('canplay', onCanPlay);
+            if (!settled) afterLoad();
+          }, 3000);
+        }
+      });
+    } catch (e) {
+      console.warn('[AudioPlayback] seekToTime failed:', e);
+      return false;
+    }
+  }, [startPolling, stopPolling]);
+
   // Store the raw composed bytes for iOS blob-recreation resume.
   // Called by orchestrator hooks after composing audio.
   const storeComposedBytes = useCallback((bytes) => {
@@ -477,6 +567,7 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     resume,
     stop,
     seek,
+    seekToTime,
     toggleMute,
     setVolume,
     storeComposedBytes,

@@ -323,6 +323,26 @@ export function useSilenceTimer({
     }
   }, [audio]);
 
+  // Seek relative to current position (e.g., -10 or +10 seconds)
+  const isSeekingRef = useRef(false);
+  const handleSeekRelative = useCallback(async (deltaSeconds) => {
+    if (!hasStarted || isLoading || isComplete || isSeekingRef.current) return;
+    isSeekingRef.current = true;
+
+    try {
+      const currentTime = audio.getCurrentTime();
+      const target = Math.max(0, Math.min(currentTime + deltaSeconds, composedTotalRef.current));
+
+      await audio.seekToTime(target);
+
+      // Update elapsed time accounting for preamble and offset
+      const userElapsed = Math.max(0, target - preambleEndRef.current) + elapsedOffsetRef.current;
+      setElapsedTime(userElapsed);
+    } finally {
+      isSeekingRef.current = false;
+    }
+  }, [hasStarted, isLoading, isComplete, audio]);
+
   // Phase helper
   const getPhase = useCallback(() => {
     if (isLoading) return 'loading';
@@ -347,6 +367,7 @@ export function useSilenceTimer({
     handlePauseResume,
     handleComplete,
     handleSkip,
+    handleSeekRelative,
     resize,
 
     // UI helpers

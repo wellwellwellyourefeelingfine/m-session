@@ -315,10 +315,11 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
       setLifeGraphGenerated(entry.id);
     }
 
-    // Wait until overlay is fully opaque (~900ms from start) before
-    // advancing to the next page and showing the modal behind the overlay
+    // Wait until overlay is solidly opaque (~1800ms from start) before
+    // advancing to the next page and showing the modal behind the overlay.
+    // RevealOverlay fade-in takes ~830ms; 1800ms ensures ~1s of full opacity buffer.
     const elapsed = Date.now() - startTime;
-    const delay = Math.max(0, 900 - elapsed);
+    const delay = Math.max(0, 1800 - elapsed);
 
     advanceTimerRef.current = setTimeout(() => {
       setCurrentStepIndex((prev) => prev + 1);
@@ -364,7 +365,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const renderWelcomeStep = () => {
     const { content } = currentStep;
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
@@ -388,7 +389,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
     const { content } = currentStep;
     const examples = content.examples || [];
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
@@ -645,7 +646,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const renderReflectionStep = () => {
     const { content } = currentStep;
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
@@ -671,7 +672,7 @@ export default function LifeGraphActivity({ module, onComplete, onSkip }) {
   const renderClosingStep = () => {
     const { content } = currentStep;
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 pb-24">
         <h2
           className="text-[var(--color-text-primary)] text-xl text-center"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}

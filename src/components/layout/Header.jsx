@@ -47,6 +47,7 @@ export default function Header() {
               src={darkMode ? '/m-session-logo-black-128.png' : '/m-session-logo-light-128.png'}
               alt="m-session"
               className="h-full w-auto"
+              style={darkMode ? { filter: 'brightness(1.3)' } : undefined}
             />
             <span
               className="uppercase tracking-wider leading-none"

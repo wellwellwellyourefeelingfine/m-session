@@ -4,17 +4,24 @@
  * A fixed-position control bar that sits above the tab bar.
  * Provides consistent module controls across all module types.
  *
- * Layout:
+ * Layout (default 5-column):
  * ┌──────────────────────────────────────────────────────────┐
  * │  <|     [Left Slot]    [Primary Button]   [Right Slot]  |>  │
  * │ back                                                   skip │
  * └──────────────────────────────────────────────────────────┘
  *
+ * Layout (with seek controls, 7-column):
+ * ┌──────────────────────────────────────────────────────────┐
+ * │  <|  [Left]  [←10]  [Primary Button]  [10→]  [Right]  |>  │
+ * │ back  vol    seek     Pause/Resume     seek   txpt   skip │
+ * └──────────────────────────────────────────────────────────┘
+ *
  * - Far left: Back button (|<) - small icon, shows confirmation
  * - Far right: Skip button (>|) - small icon, shows confirmation
  * - Center: Primary action button (Begin/Continue/Pause/Resume)
- * - Left slot: Optional secondary control (e.g., animation toggle)
- * - Right slot: Optional secondary control (e.g., mute button)
+ * - Left slot: Optional secondary control (e.g., volume)
+ * - Right slot: Optional secondary control (e.g., transcript)
+ * - Seek controls: ←10/10→ buttons flanking primary (conditionally rendered)
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -31,6 +38,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
  * @param {React.ReactNode} props.rightSlot - Optional right slot content
  * @param {string} props.backConfirmMessage - Custom back confirmation message
  * @param {string} props.skipConfirmMessage - Custom skip confirmation message
+ * @param {boolean} props.showSeekControls - Show skip-back/skip-forward buttons flanking primary
+ * @param {function} props.onSeekBack - Skip back handler (e.g., -10s)
+ * @param {function} props.onSeekForward - Skip forward handler (e.g., +10s)
  */
 export default function ModuleControlBar({
   phase = 'idle',
@@ -43,6 +53,9 @@ export default function ModuleControlBar({
   rightSlot,
   backConfirmMessage = 'Go back to the previous module?',
   skipConfirmMessage = 'Skip this module?',
+  showSeekControls = false,
+  onSeekBack,
+  onSeekForward,
 }) {
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
@@ -78,27 +91,39 @@ export default function ModuleControlBar({
       {/* pointer-events-none allows clicks to pass through transparent areas */}
       <div className="fixed left-0 right-0 h-14 z-30 pointer-events-none" style={{ bottom: 'var(--tabbar-height)' }}>
         <div className="h-full flex items-center justify-between px-4">
-          {/* Far left: Back button */}
-          <div className="w-10 flex justify-start">
-            {showBack && (
+          {/* Left group: Back button + left slot */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 flex justify-center">
+              {showBack && (
+                <button
+                  onClick={handleBackClick}
+                  className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
+                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                  aria-label="Go back"
+                >
+                  <BackIcon />
+                </button>
+              )}
+            </div>
+            <div className="w-8 flex justify-center">
+              {leftSlot}
+            </div>
+          </div>
+
+          {/* Center group: seek-back + primary + seek-forward (tight cluster) */}
+          <div className="flex items-center gap-2">
+            {showSeekControls && (
               <button
-                onClick={handleBackClick}
-                className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
-                  text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
-                aria-label="Go back"
+                onClick={onSeekBack}
+                className="w-8 h-8 flex items-center justify-center text-[var(--color-text-tertiary)]
+                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                aria-label="Skip back 10 seconds"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <BackIcon />
+                <SeekBackIcon />
               </button>
             )}
-          </div>
 
-          {/* Left slot for secondary controls */}
-          <div className="w-12 flex justify-center">
-            {leftSlot}
-          </div>
-
-          {/* Center: Primary button */}
-          <div className="flex-1 flex justify-center px-4">
             {primary?.label && !primary.disabled ? (
               <button
                 onClick={primary.onClick}
@@ -134,25 +159,37 @@ export default function ModuleControlBar({
           )}
               </button>
             )}
-          </div>
 
-          {/* Right slot for secondary controls */}
-          <div className="w-12 flex justify-center">
-            {rightSlot}
-          </div>
-
-          {/* Far right: Skip button */}
-          <div className="w-10 flex justify-end">
-            {showSkip && (
+            {showSeekControls && (
               <button
-                onClick={handleSkipClick}
-                className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
-                  text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
-                aria-label="Skip module"
+                onClick={onSeekForward}
+                className="w-8 h-8 flex items-center justify-center text-[var(--color-text-tertiary)]
+                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                aria-label="Skip forward 10 seconds"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <SkipIcon />
+                <SeekForwardIcon />
               </button>
             )}
+          </div>
+
+          {/* Right group: right slot + skip button */}
+          <div className="flex items-center gap-2">
+            <div className="w-8 flex justify-center">
+              {rightSlot}
+            </div>
+            <div className="w-8 flex justify-center">
+              {showSkip && (
+                <button
+                  onClick={handleSkipClick}
+                  className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
+                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                  aria-label="Skip module"
+                >
+                  <SkipIcon />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -224,6 +261,36 @@ function SkipIcon() {
       <polyline points="6,4 10,8 6,12" />
       {/* Vertical line */}
       <line x1="12" y1="4" x2="12" y2="12" />
+    </svg>
+  );
+}
+
+/**
+ * Seek Back Icon — circular arrow with "10"
+ */
+function SeekBackIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      {/* Circular arrow (counterclockwise) */}
+      <path d="M1 4v6h6" />
+      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+      {/* "10" text */}
+      <text x="12" y="15.5" textAnchor="middle" fontSize="7.5" fill="currentColor" stroke="none" fontFamily="system-ui, sans-serif" fontWeight="600">10</text>
+    </svg>
+  );
+}
+
+/**
+ * Seek Forward Icon — circular arrow with "10"
+ */
+function SeekForwardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      {/* Circular arrow (clockwise) */}
+      <path d="M23 4v6h-6" />
+      <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
+      {/* "10" text */}
+      <text x="12" y="15.5" textAnchor="middle" fontSize="7.5" fill="currentColor" stroke="none" fontFamily="system-ui, sans-serif" fontWeight="600">10</text>
     </svg>
   );
 }
@@ -441,4 +508,4 @@ function MutedIcon() {
   );
 }
 
-export { ConfirmationModal, BackIcon, SkipIcon };
+export { ConfirmationModal, BackIcon, SkipIcon, SeekBackIcon, SeekForwardIcon };

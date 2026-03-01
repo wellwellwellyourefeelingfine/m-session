@@ -8,7 +8,7 @@
  * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
@@ -28,6 +28,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
   const meditationId = libraryModule?.meditationId || 'simple-grounding';
   const meditation = getMeditationById(meditationId);
   const [isLeaving, setIsLeaving] = useState(false);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
@@ -66,7 +67,25 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
   const handleRestart = useCallback(() => {
     playback.handleRestart();
     setIsLeaving(false);
+    setShowCompletion(false);
   }, [playback]);
+
+  // Transition from completed meditation screen → CompletionScreen
+  const handleContinueToCompletion = useCallback(() => {
+    setShowCompletion(true);
+  }, []);
+
+  // Final completion — cleanup + advance to next module
+  const handleFinalComplete = useCallback(() => {
+    playback.handleComplete();
+  }, [playback]);
+
+  // Hide timer when entering CompletionScreen
+  useEffect(() => {
+    if (showCompletion) {
+      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+    }
+  }, [showCompletion, onTimerUpdate]);
 
   // Fallback if no meditation found
   if (!meditation) {
@@ -113,8 +132,8 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
           </div>
         )}
 
-        {/* Active state — title, animation, paused indicator, prompt display */}
-        {playback.hasStarted && !playback.isComplete && (
+        {/* Active/completed state — title, animation, paused indicator, prompt display */}
+        {playback.hasStarted && !showCompletion && (
           <div
             className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
@@ -133,7 +152,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
 
             {/* Paused indicator — below shapes with minimal gap */}
             <div className="h-5 flex items-center justify-center mt-3">
-              {!playback.isPlaying && (
+              {!playback.isPlaying && !playback.isComplete && (
                 <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
                   Paused
                 </p>
@@ -151,8 +170,8 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
           </div>
         )}
 
-        {/* Completed state */}
-        {playback.isComplete && (
+        {/* Completed state — "Well done." screen after Continue */}
+        {showCompletion && (
           <div className="animate-fadeIn">
             <CompletionScreen />
           </div>
@@ -162,18 +181,26 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
       {/* Control bar */}
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={playback.getPhase() === 'idle' || playback.isLoading
-          ? { label: 'Begin', onClick: handleBeginWithTransition }
-          : playback.getPrimaryButton()
+        primary={
+          showCompletion
+            ? { label: 'Complete', onClick: handleFinalComplete }
+            : !playback.hasStarted || playback.isLoading
+              ? { label: 'Begin', onClick: handleBeginWithTransition }
+              : playback.isComplete
+                ? { label: 'Continue', onClick: handleContinueToCompletion }
+                : playback.getPrimaryButton()
         }
-        showBack={playback.hasStarted && !playback.isComplete && !playback.isLoading}
+        showBack={playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion}
         onBack={handleRestart}
         backConfirmMessage="Restart this meditation from the beginning?"
-        showSkip={!playback.isComplete}
+        showSkip={!playback.isComplete && !showCompletion}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this meditation?"
+        showSeekControls={playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion}
+        onSeekBack={() => playback.handleSeekRelative(-10)}
+        onSeekForward={() => playback.handleSeekRelative(10)}
         leftSlot={
-          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
+          playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion ? (
             <VolumeButton
               volume={playback.audio.volume}
               onVolumeChange={playback.audio.setVolume}
@@ -181,7 +208,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
           ) : null
         }
         rightSlot={
-          playback.hasStarted && !playback.isComplete && !playback.isLoading ? (
+          playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion ? (
             <SlotButton
               icon={<TranscriptIcon />}
               label="View transcript"

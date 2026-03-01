@@ -417,9 +417,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   // ─── Render: Meditation phase ─────────────────────────────────────────
 
   if (phase === 'meditation') {
-    // Meditation still active (playing or paused)
-    if (!playback.isComplete) {
-      return (
+    return (
         <>
           <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
             <div
@@ -440,7 +438,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
 
               {/* Paused indicator */}
               <div className="h-5 flex items-center justify-center mt-3">
-                {!playback.isPlaying && (
+                {!playback.isPlaying && !playback.isComplete && (
                   <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
                     Paused
                   </p>
@@ -467,6 +465,9 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
             showSkip={true}
             onSkip={playback.handleSkip}
             skipConfirmMessage="Skip this meditation?"
+            showSeekControls={playback.hasStarted && !playback.isComplete && !playback.isLoading}
+            onSeekBack={() => playback.handleSeekRelative(-10)}
+            onSeekForward={() => playback.handleSeekRelative(10)}
             leftSlot={
               <VolumeButton
                 volume={playback.audio.volume}
@@ -492,7 +493,6 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
           />
         </>
       );
-    }
   }
 
   // ─── Render: Reflection phase ─────────────────────────────────────────
