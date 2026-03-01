@@ -1090,4 +1090,4 @@ When making changes:
 4. Test on both light and dark modes
 5. Verify tab switching doesn't break timer state
 6. For audio modules, ensure graceful fallback to text-only
-7. **Version numbers**: On significant releases, update both `version` in `package.json` and the display label in `src/components/layout/SessionMenu.jsx` (the `m-session v1.0` text in the hamburger menu)
+7. **Version numbers**: On significant releases, update both `version` in `package.json` and the display label in `src/components/layout/SessionMenu.jsx` (the `m-session vX.X` text in the hamburger menu)

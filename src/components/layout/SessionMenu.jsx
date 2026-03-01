@@ -166,7 +166,7 @@ export default function SessionMenu() {
               className="text-[9px] tracking-wider text-[var(--color-text-tertiary)]"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              m-session v1.0
+              m-session v1.2
             </span>
           </div>
           <div className="border-t border-[var(--color-border)]" />
