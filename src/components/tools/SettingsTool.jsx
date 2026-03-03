@@ -13,6 +13,7 @@ import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { downloadSessionData, downloadSessionImages } from '../../utils/downloadSessionData';
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
 import DebugModeTool from './DebugModeTool';
+import { APP_VERSION } from '../../constants';
 
 const EXPIRATION_OPTIONS = [
   { value: 12, label: '12 HOURS' },
@@ -513,15 +514,15 @@ export default function SettingsTool() {
           </button>
         </div>
 
-        {/* Report a Bug */}
+        {/* Provide Feedback */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Report a Bug</span>
+          <span className="text-[12px] uppercase tracking-wider">Provide Feedback</span>
           <button
             onClick={() => setShowBugReportConfirm(true)}
             className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
-            REPORT
+            FEEDBACK
           </button>
         </div>
 
@@ -651,17 +652,24 @@ export default function SettingsTool() {
         </div>
       )}
 
-      {/* Bug Report Confirmation Modal */}
+      {/* Feedback Modal */}
       {showBugReportConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
-            <p className="text-[12px] uppercase tracking-wider font-bold">Report a Bug</p>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Provide Feedback</p>
             <p style={{ color: 'var(--text-primary)' }}>
-              You&apos;ll be taken to our GitHub page to submit a bug report. A short form will help you describe what happened.
+              Choose how you&apos;d like to share:
             </p>
-            <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>
-              A free GitHub account is required to submit.
-            </p>
+            <div className="space-y-3 text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <div>
+                <p className="font-semibold mb-1">Bug Report</p>
+                <p className="text-xs">Submit a detailed issue with our template on GitHub (requires free GitHub account)</p>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">General Feedback</p>
+                <p className="text-xs">Quick survey about your experience (no account needed)</p>
+              </div>
+            </div>
             <div className="space-y-2 pt-2">
               <button
                 onClick={() => {
@@ -675,7 +683,22 @@ export default function SettingsTool() {
                 className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
                 style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
               >
-                Continue to GitHub
+                Report a Bug
+              </button>
+              <button
+                onClick={() => {
+                  const params = new URLSearchParams({ app_version: APP_VERSION });
+                  window.open(
+                    `https://tally.so/r/BzG9qN?${params}`,
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                  setShowBugReportConfirm(false);
+                }}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+              >
+                Share Feedback
               </button>
               <button
                 onClick={() => setShowBugReportConfirm(false)}

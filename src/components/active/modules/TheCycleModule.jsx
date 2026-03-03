@@ -1,0 +1,2041 @@
+/**
+ * TheCycleModule Component
+ *
+ * Part 2 of the linked EFT relationship module pair.
+ * Two modes:
+ * - Solo: journaling-first relationship pattern mapping
+ * - Couple: facilitated conversation guide with discussion prompts and turn-taking
+ *
+ * Phase sequence (~24 phases):
+ * framing → friction → your-move → your-underneath →
+ *   [couple: partner-turn → sharing]
+ *   [solo: their-move → their-underneath] →
+ * pre-reveal → reveal-anim → reveal-modal → sitting →
+ * med-intro → meditation →
+ * capture → checkin → response →
+ * psychoed-1 → psychoed-2 → psychoed-3 →
+ * reflect-1 → reflect-2 → reflect-3 →
+ * [conditional: journey-close] →
+ * closing
+ *
+ * Reads Part 1 data from transitionCaptures.theDescent for personalization.
+ */
+
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  getMeditationById,
+  generateTimedSequence,
+} from '../../../content/meditations';
+import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
+import { useJournalStore } from '../../../stores/useJournalStore';
+import { useSessionStore } from '../../../stores/useSessionStore';
+import { saveImage } from '../../../utils/imageStorage';
+
+import {
+  getMovesForPosition,
+  getPartnerPosition,
+  getMoveLabel,
+  POSITIONS,
+  CYCLE_ACCENT_TERMS,
+  FRAMING_CONTENT,
+  FRICTION_SCREEN,
+  YOUR_MOVE_SCREEN,
+  YOUR_UNDERNEATH_SCREEN,
+  PARTNER_TURN_SCREEN,
+  SHARING_SCREEN,
+  THEIR_MOVE_SCREEN,
+  THEIR_UNDERNEATH_SCREEN,
+  PRE_REVEAL_CONTENT,
+  CYCLE_NAMING_TEXT,
+  SITTING_CONTENT,
+  MEDITATION_INTRO_CONTENT,
+  CAPTURE_SCREEN,
+  CYCLE_CHECKIN_HEADER,
+  CYCLE_CHECKIN_SUBTEXT,
+  CYCLE_CHECKIN_COUPLE_NOTE,
+  CYCLE_CHECKIN_OPTIONS,
+  CYCLE_TAILORED_RESPONSES,
+  CYCLE_PSYCHOED_SCREENS,
+  REFLECT_1_SCREEN,
+  REFLECT_2_SCREEN,
+  REFLECT_3_SCREEN,
+  JOURNEY_CLOSE_SCREEN,
+  CLOSING_CONTENT,
+} from '../../../content/modules/theCycleContent';
+
+// Shared UI
+import ModuleLayout from '../capabilities/ModuleLayout';
+import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
+import MorphingShapes from '../capabilities/animations/MorphingShapes';
+import AsciiMoon from '../capabilities/animations/AsciiMoon';
+import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
+import RevealOverlay from '../capabilities/animations/RevealOverlay';
+import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+
+// Cycle-specific
+import CycleDiagram from './shared/cycle/CycleDiagram';
+import { exportCycleAsPNG } from './shared/cycle/exportCycleAsPNG';
+import CycleModal from './shared/cycle/CycleModal';
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const FADE_MS = 400;
+const CYCLE_NAME_MAX = 60;
+
+// ─── ViewCycleIcon (for control bar slot) ────────────────────────────────────
+
+function ViewCycleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <ellipse cx="8" cy="5" rx="5" ry="3.5" />
+      <ellipse cx="8" cy="11" rx="5" ry="3.5" />
+    </svg>
+  );
+}
+
+// ─── Render helpers ─────────────────────────────────────────────────────────
+
+function renderContentLines(lines) {
+  return (
+    <div className="space-y-0">
+      {lines.map((line, i) => {
+        // Circle spacer
+        if (line === '\u00A7') {
+          return (
+            <div key={i} className="flex justify-center my-4">
+              <div className="circle-spacer" />
+            </div>
+          );
+        }
+
+        // Numbered line with accent number
+        const numMatch = line.match(/^\{#(\d+)\}\s*(.*)/);
+        if (numMatch) {
+          return (
+            <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              <span className="text-[var(--accent)] font-medium">{numMatch[1]}</span>
+              {' \u2014 '}{numMatch[2]}
+            </p>
+          );
+        }
+
+        // Accent term highlighting
+        let hasAccent = false;
+        for (const key of Object.keys(CYCLE_ACCENT_TERMS)) {
+          if (line.includes(`{${key}}`)) {
+            hasAccent = true;
+            break;
+          }
+        }
+
+        if (hasAccent) {
+          const parts = [];
+          let remaining = line;
+          let partIndex = 0;
+
+          while (remaining.length > 0) {
+            let earliest = -1;
+            let earliestKey = null;
+            for (const key of Object.keys(CYCLE_ACCENT_TERMS)) {
+              const idx = remaining.indexOf(`{${key}}`);
+              if (idx !== -1 && (earliest === -1 || idx < earliest)) {
+                earliest = idx;
+                earliestKey = key;
+              }
+            }
+
+            if (earliest === -1) {
+              parts.push(<span key={partIndex++}>{remaining}</span>);
+              break;
+            }
+
+            if (earliest > 0) {
+              parts.push(<span key={partIndex++}>{remaining.substring(0, earliest)}</span>);
+            }
+
+            parts.push(
+              <span key={partIndex++} className="text-[var(--accent)]">
+                {CYCLE_ACCENT_TERMS[earliestKey]}
+              </span>
+            );
+
+            remaining = remaining.substring(earliest + earliestKey.length + 2);
+          }
+
+          return (
+            <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {parts}
+            </p>
+          );
+        }
+
+        return (
+          <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+            {line}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
+
+export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpdate }) {
+  const meditation = getMeditationById('the-cycle-closing');
+
+  // Store integration
+  const addEntry = useJournalStore((state) => state.addEntry);
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
+  const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
+  const updateTheCycleCapture = useSessionStore((s) => s.updateTheCycleCapture);
+
+  // Part 1 data
+  const descentCaptures = useSessionStore((s) => s.transitionCaptures?.theDescent);
+  const hasDescentData = descentCaptures?.completedAt != null;
+  const mode = descentCaptures?.mode || 'solo';
+
+  // ─── State ──────────────────────────────────────────────────────────────
+
+  const [phase, setPhase] = useState('framing');
+  const [isPhaseVisible, setIsPhaseVisible] = useState(true);
+
+  // Pre-meditation
+  const [myPosition, setMyPosition] = useState(null);
+  const [friction, setFriction] = useState('');
+  const [myMoveId, setMyMoveId] = useState(null);
+  const [myMoveMotivation, setMyMoveMotivation] = useState('');
+  const [yourUnderneath, setYourUnderneath] = useState('');
+
+  // Solo: guessed partner info
+  const [theirMoveId, setTheirMoveId] = useState(null);
+  const [theirUnderneath, setTheirUnderneath] = useState('');
+
+  // Couple: partner's actual info
+  const [partnerMoveId, setPartnerMoveId] = useState(null);
+  const [partnerUnderneath, setPartnerUnderneath] = useState('');
+  const [partnerStep, setPartnerStep] = useState(0);
+
+  // Naming + diagram
+  const [cycleName, setCycleName] = useState('');
+  const [diagramBlob, setDiagramBlob] = useState(null);
+  const [diagramUrl, setDiagramUrl] = useState(null);
+  const [showRevealOverlay, setShowRevealOverlay] = useState(false);
+  const [revealKey, setRevealKey] = useState(0);
+  const [showCycleModal, setShowCycleModal] = useState(false);
+  const [cycleModalClosing, setCycleModalClosing] = useState(false);
+
+  // Meditation
+  const [isMedLeaving, setIsMedLeaving] = useState(false);
+  const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
+
+  // Post-meditation
+  const [meditationCapture, setMeditationCapture] = useState('');
+  const [checkInResponse, setCheckInResponse] = useState(null);
+  const [psychoedStep, setPsychoedStep] = useState(0);
+  const [isPsychoedVisible, setIsPsychoedVisible] = useState(true);
+  const [isPsychoedHeaderVisible, setIsPsychoedHeaderVisible] = useState(false);
+
+  // Reflection journals
+  const [journalSurprise, setJournalSurprise] = useState('');
+  const [journalOtherSide, setJournalOtherSide] = useState('');
+  const [journalStepOut, setJournalStepOut] = useState('');
+  const [journeyReflection, setJourneyReflection] = useState('');
+
+  // Couple notepad toggle
+  const [notepadExpanded, setNotepadExpanded] = useState({});
+
+  // ─── Diagram data assembly ────────────────────────────────────────────
+
+  const diagramMyMoves = myMoveId ? [myMoveId] : [];
+  const diagramPartnerMoves = mode === 'couple'
+    ? (partnerMoveId ? [partnerMoveId] : [])
+    : (theirMoveId ? [theirMoveId] : []);
+
+  // ─── Phase transitions ────────────────────────────────────────────────
+
+  const fadeToPhase = useCallback((nextPhase) => {
+    setIsPhaseVisible(false);
+    setTimeout(() => {
+      document.querySelector('main')?.scrollTo(0, 0);
+      setPhase(nextPhase);
+      setIsPhaseVisible(true);
+    }, FADE_MS);
+  }, []);
+
+  // Hide timer for non-meditation phases
+  useEffect(() => {
+    if (phase !== 'meditation') {
+      onTimerUpdate?.({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
+    }
+  }, [phase, onTimerUpdate]);
+
+  // Clean up blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (diagramUrl) URL.revokeObjectURL(diagramUrl);
+    };
+  }, [diagramUrl]);
+
+  // ─── Navigation ───────────────────────────────────────────────────────
+
+  const getNextPhase = useCallback((current) => {
+    switch (current) {
+      case 'framing': return 'friction';
+      case 'friction': return 'your-move';
+      case 'your-move': return 'your-underneath';
+      case 'your-underneath': return mode === 'couple' ? 'partner-turn' : 'their-move';
+      case 'partner-turn': return 'sharing';
+      case 'sharing': return 'pre-reveal';
+      case 'their-move': return 'their-underneath';
+      case 'their-underneath': return 'pre-reveal';
+      case 'pre-reveal': return 'reveal-anim';
+      case 'reveal-modal': return 'sitting';
+      case 'sitting': return 'med-intro';
+      case 'capture': return 'checkin';
+      case 'checkin': return 'response';
+      case 'response': return 'psychoed-1';
+      case 'psychoed-1': return 'psychoed-2';
+      case 'psychoed-2': return 'psychoed-3';
+      case 'psychoed-3': return 'reflect-1';
+      case 'reflect-1': return 'reflect-2';
+      case 'reflect-2': return 'reflect-3';
+      case 'reflect-3': return hasDescentData ? 'journey-close' : 'closing';
+      case 'journey-close': return 'closing';
+      default: return current;
+    }
+  }, [mode, hasDescentData]);
+
+  const getPrevPhase = useCallback((current) => {
+    switch (current) {
+      case 'friction': return 'framing';
+      case 'your-move': return 'friction';
+      case 'your-underneath': return 'your-move';
+      case 'partner-turn': return 'your-underneath';
+      case 'sharing': return 'partner-turn';
+      case 'their-move': return 'your-underneath';
+      case 'their-underneath': return 'their-move';
+      case 'pre-reveal': return mode === 'couple' ? 'sharing' : 'their-underneath';
+      case 'sitting': return 'reveal-modal';
+      case 'med-intro': return 'sitting';
+      case 'checkin': return 'capture';
+      case 'response': return 'checkin';
+      case 'psychoed-1': return 'response';
+      case 'psychoed-2': return 'psychoed-1';
+      case 'psychoed-3': return 'psychoed-2';
+      case 'reflect-1': return 'psychoed-3';
+      case 'reflect-2': return 'reflect-1';
+      case 'reflect-3': return 'reflect-2';
+      case 'journey-close': return 'reflect-3';
+      case 'closing': return hasDescentData ? 'journey-close' : 'reflect-3';
+      default: return null;
+    }
+  }, [mode, hasDescentData]);
+
+  // ─── Timed sequence (closing meditation) ──────────────────────────────
+
+  const [timedSequence, totalDuration] = useMemo(() => {
+    if (!meditation) return [[], 0];
+    const clips = meditation.assembleVariation(mode);
+    const variationMeta = meditation.variations[mode];
+    const sequence = generateTimedSequence(clips, 1.0, {
+      speakingRate: meditation.speakingRate || 90,
+      audioConfig: meditation.audio,
+    });
+    return [sequence, variationMeta.duration];
+  }, [meditation, mode]);
+
+  const transcriptPrompts = useMemo(() => {
+    if (!meditation) return [];
+    return meditation.assembleVariation(mode);
+  }, [meditation, mode]);
+
+  const transcriptTitle = meditation
+    ? `${meditation.title} (${meditation.variations[mode]?.label || mode})`
+    : '';
+
+  // ─── Meditation playback ──────────────────────────────────────────────
+
+  const handleMeditationComplete = useCallback(() => {
+    fadeToPhase('capture');
+  }, [fadeToPhase]);
+
+  const handleMeditationSkip = useCallback(() => {
+    fadeToPhase('capture');
+  }, [fadeToPhase]);
+
+  const playback = useMeditationPlayback({
+    meditationId: 'the-cycle-closing',
+    moduleInstanceId: module.instanceId,
+    timedSequence,
+    totalDuration,
+    onComplete: handleMeditationComplete,
+    onSkip: handleMeditationSkip,
+    onTimerUpdate,
+  });
+
+  useEffect(() => {
+    if (playback.hasStarted && !playback.isLoading && phase === 'med-intro') {
+      setPhase('meditation');
+    }
+  }, [playback.hasStarted, playback.isLoading, phase]);
+
+  const handleBeginMeditation = useCallback(() => {
+    setIsMedLeaving(true);
+    setTimeout(() => playback.handleStart(), 300);
+  }, [playback]);
+
+  // ─── Diagram reveal sequence ──────────────────────────────────────────
+
+  const handleDiagramReveal = useCallback(async () => {
+    setRevealKey(k => k + 1);
+    setShowRevealOverlay(true);
+
+    const startTime = Date.now();
+
+    let blob;
+    try {
+      blob = await exportCycleAsPNG({
+        myMoves: diagramMyMoves,
+        partnerMoves: diagramPartnerMoves,
+        cycleName,
+        myPosition,
+      });
+      setDiagramBlob(blob);
+      const url = URL.createObjectURL(blob);
+      if (diagramUrl) URL.revokeObjectURL(diagramUrl);
+      setDiagramUrl(url);
+    } catch (err) {
+      setShowRevealOverlay(false);
+      console.warn('Cycle diagram generation failed:', err);
+      return;
+    }
+
+    // Save diagram to journal
+    try {
+      const partnerPos = getPartnerPosition(myPosition);
+      const myMoveLabel = myMoveId ? getMoveLabel(myPosition, myMoveId) : '';
+      const partnerLabel = mode === 'couple'
+        ? (partnerMoveId ? getMoveLabel(partnerPos, partnerMoveId) : '')
+        : (theirMoveId ? getMoveLabel(partnerPos, theirMoveId) : '');
+
+      let content = 'THE CYCLE\n';
+      content += `\nMode: ${mode}`;
+      if (friction.trim()) content += `\nFriction: ${friction.trim()}`;
+      content += `\nMy position: ${myPosition}`;
+      content += `\nMy move: ${myMoveLabel}`;
+      if (yourUnderneath.trim()) content += `\nMy underneath: ${yourUnderneath.trim()}`;
+      content += `\nTheir move: ${partnerLabel}`;
+      if (mode === 'couple' && partnerUnderneath.trim()) {
+        content += `\nTheir underneath: ${partnerUnderneath.trim()}`;
+      } else if (mode === 'solo' && theirUnderneath.trim()) {
+        content += `\nTheir underneath (imagined): ${theirUnderneath.trim()}`;
+      }
+      content += `\nCycle name: ${cycleName}`;
+
+      const entry = addEntry({
+        content,
+        source: 'session',
+        sessionId,
+        moduleTitle: 'The Cycle',
+        hasImage: true,
+      });
+      if (entry?.id && blob) {
+        await saveImage(entry.id, blob);
+      }
+    } catch (err) {
+      console.warn('Failed to save cycle diagram to journal:', err);
+    }
+
+    const elapsed = Date.now() - startTime;
+    const delay = Math.max(0, 1800 - elapsed);
+
+    setTimeout(() => {
+      setPhase('reveal-modal');
+      setShowCycleModal(true);
+    }, delay);
+  }, [diagramMyMoves, diagramPartnerMoves, cycleName, myPosition, diagramUrl, mode, friction, myMoveId, yourUnderneath, theirMoveId, theirUnderneath, partnerMoveId, partnerUnderneath, addEntry, sessionId]);
+
+  const handleRevealDone = useCallback(() => {
+    setShowRevealOverlay(false);
+  }, []);
+
+  // ─── Cycle modal controls ────────────────────────────────────────────
+
+  const handleCloseCycleModal = useCallback(() => {
+    setCycleModalClosing(true);
+    setTimeout(() => {
+      setShowCycleModal(false);
+      setCycleModalClosing(false);
+      fadeToPhase('sitting');
+    }, FADE_MS);
+  }, [fadeToPhase]);
+
+  const handleViewCycle = useCallback(() => {
+    if (diagramUrl) {
+      setShowCycleModal(true);
+      setCycleModalClosing(false);
+    }
+  }, [diagramUrl]);
+
+  // ─── Notepad toggle (couple mode) ─────────────────────────────────────
+
+  const toggleNotepad = useCallback((key) => {
+    setNotepadExpanded(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  // ─── Forward navigation ───────────────────────────────────────────────
+
+  const handleContinue = useCallback(() => {
+    const next = getNextPhase(phase);
+
+    // Special: entering psychoed from response
+    if (phase === 'response') {
+      setIsPhaseVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        setPhase('psychoed-1');
+        setPsychoedStep(0);
+        setIsPhaseVisible(true);
+        setIsPsychoedHeaderVisible(true);
+        setIsPsychoedVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    // Special: stepping within psychoed
+    if (phase === 'psychoed-1' || phase === 'psychoed-2') {
+      setIsPsychoedVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        const nextStep = psychoedStep + 1;
+        setPsychoedStep(nextStep);
+        setPhase(`psychoed-${nextStep + 1}`);
+        setIsPsychoedVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    // Special: exiting psychoed
+    if (phase === 'psychoed-3') {
+      setIsPsychoedVisible(false);
+      setIsPsychoedHeaderVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        setPhase('reflect-1');
+        setIsPhaseVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    // Special: pre-reveal triggers diagram build + reveal
+    if (phase === 'pre-reveal') {
+      setPhase('reveal-anim');
+      handleDiagramReveal();
+      return;
+    }
+
+    fadeToPhase(next);
+  }, [phase, psychoedStep, getNextPhase, fadeToPhase, handleDiagramReveal]);
+
+  // ─── Back navigation ──────────────────────────────────────────────────
+
+  const handleBack = useCallback(() => {
+    // Special: partner-turn sub-steps
+    if (phase === 'partner-turn' && partnerStep > 0) {
+      setPartnerStep(partnerStep - 1);
+      return;
+    }
+
+    const prev = getPrevPhase(phase);
+    if (!prev) return;
+
+    // Special: back from psychoed-1 → response (header fades out)
+    if (phase === 'psychoed-1') {
+      setIsPsychoedVisible(false);
+      setIsPsychoedHeaderVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        setPhase('response');
+        setIsPhaseVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    // Special: back within psychoed
+    if (phase === 'psychoed-2' || phase === 'psychoed-3') {
+      setIsPsychoedVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        const prevStep = psychoedStep - 1;
+        setPsychoedStep(prevStep);
+        setPhase(`psychoed-${prevStep + 1}`);
+        setIsPsychoedVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    // Special: back to psychoed from reflect-1
+    if (phase === 'reflect-1') {
+      setIsPhaseVisible(false);
+      setTimeout(() => {
+        document.querySelector('main')?.scrollTo(0, 0);
+        setPhase('psychoed-3');
+        setPsychoedStep(2);
+        setIsPsychoedVisible(true);
+        setIsPsychoedHeaderVisible(true);
+      }, FADE_MS);
+      return;
+    }
+
+    fadeToPhase(prev);
+  }, [phase, partnerStep, psychoedStep, getPrevPhase, fadeToPhase]);
+
+  // ─── Save + complete ──────────────────────────────────────────────────
+
+  const saveAllCaptures = useCallback(() => {
+    updateTheCycleCapture('mode', mode);
+    updateTheCycleCapture('myPosition', myPosition);
+    if (friction.trim()) updateTheCycleCapture('friction', friction.trim());
+    if (myMoveId) updateTheCycleCapture('myMoveId', myMoveId);
+    if (myMoveMotivation.trim()) updateTheCycleCapture('myMoveMotivation', myMoveMotivation.trim());
+    if (yourUnderneath.trim()) updateTheCycleCapture('yourUnderneath', yourUnderneath.trim());
+    if (theirMoveId) updateTheCycleCapture('theirMoveId', theirMoveId);
+    if (theirUnderneath.trim()) updateTheCycleCapture('theirUnderneath', theirUnderneath.trim());
+    if (partnerMoveId) updateTheCycleCapture('partnerMoveId', partnerMoveId);
+    if (partnerUnderneath.trim()) updateTheCycleCapture('partnerUnderneath', partnerUnderneath.trim());
+    updateTheCycleCapture('cycleName', cycleName);
+    if (meditationCapture.trim()) updateTheCycleCapture('meditationCapture', meditationCapture.trim());
+    if (checkInResponse) updateTheCycleCapture('checkInResponse', checkInResponse);
+    if (journalSurprise.trim()) updateTheCycleCapture('journalSurprise', journalSurprise.trim());
+    if (journalOtherSide.trim()) updateTheCycleCapture('journalOtherSide', journalOtherSide.trim());
+    if (journalStepOut.trim()) updateTheCycleCapture('journalStepOut', journalStepOut.trim());
+    if (journeyReflection.trim()) updateTheCycleCapture('journeyReflection', journeyReflection.trim());
+    updateTheCycleCapture('completedAt', Date.now());
+  }, [mode, myPosition, friction, myMoveId, myMoveMotivation, yourUnderneath, theirMoveId, theirUnderneath, partnerMoveId, partnerUnderneath, cycleName, meditationCapture, checkInResponse, journalSurprise, journalOtherSide, journalStepOut, journeyReflection, updateTheCycleCapture]);
+
+  const buildReflectionJournal = useCallback(() => {
+    let content = 'THE CYCLE \u2014 Reflections\n';
+
+    if (meditationCapture.trim()) {
+      content += `\nFirst impressions\n${meditationCapture.trim()}\n`;
+    }
+    if (checkInResponse) {
+      const option = CYCLE_CHECKIN_OPTIONS.find(o => o.id === checkInResponse);
+      content += `\nCheck-in: ${option?.label || checkInResponse}\n`;
+    }
+    if (journalSurprise.trim()) {
+      content += `\nWhat surprised me\n${journalSurprise.trim()}\n`;
+    }
+    if (journalOtherSide.trim()) {
+      content += `\nThe other side\n${journalOtherSide.trim()}\n`;
+    }
+    if (journalStepOut.trim()) {
+      content += `\nOne different move\n${journalStepOut.trim()}\n`;
+    }
+    if (journeyReflection.trim()) {
+      content += `\nCarrying forward\n${journeyReflection.trim()}\n`;
+    }
+
+    return content.trim();
+  }, [meditationCapture, checkInResponse, journalSurprise, journalOtherSide, journalStepOut, journeyReflection]);
+
+  const handleComplete = useCallback(() => {
+    const content = buildReflectionJournal();
+    if (content.length > 'THE CYCLE \u2014 Reflections'.length) {
+      addEntry({
+        content,
+        source: 'session',
+        sessionId,
+        moduleTitle: 'The Cycle',
+      });
+    }
+
+    saveAllCaptures();
+    setIsPhaseVisible(false);
+    setTimeout(() => onComplete(), FADE_MS);
+  }, [buildReflectionJournal, addEntry, sessionId, saveAllCaptures, onComplete]);
+
+  const handleModuleSkip = useCallback(() => {
+    if (myPosition) updateTheCycleCapture('myPosition', myPosition);
+    if (mode) updateTheCycleCapture('mode', mode);
+    if (myMoveId) updateTheCycleCapture('myMoveId', myMoveId);
+    if (cycleName) updateTheCycleCapture('cycleName', cycleName);
+    onSkip();
+  }, [myPosition, mode, myMoveId, cycleName, updateTheCycleCapture, onSkip]);
+
+  // ─── Shared control bar props ─────────────────────────────────────────
+
+  const cycleSlot = diagramUrl ? (
+    <SlotButton
+      icon={<ViewCycleIcon />}
+      label="View cycle"
+      onClick={handleViewCycle}
+    />
+  ) : null;
+
+  // ─── Preamble selection helpers ───────────────────────────────────────
+
+  const getReflect2Preamble = () => {
+    return checkInResponse === 'heavy'
+      ? REFLECT_2_SCREEN.solo.preamble.heavy
+      : REFLECT_2_SCREEN.solo.preamble.default;
+  };
+
+  const getReflect3Preamble = () => {
+    if (checkInResponse === 'ready') return REFLECT_3_SCREEN.solo.preamble.ready;
+    if (checkInResponse === 'heavy') return REFLECT_3_SCREEN.solo.preamble.heavy;
+    return REFLECT_3_SCREEN.solo.preamble.default;
+  };
+
+  const getReflect3Instruction = () => {
+    if (checkInResponse === 'ready') return REFLECT_3_SCREEN.couple.instruction.ready;
+    if (checkInResponse === 'heavy') return REFLECT_3_SCREEN.couple.instruction.heavy;
+    return REFLECT_3_SCREEN.couple.instruction.default;
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // ─── Framing (intro) ──────────────────────────────────────────────────
+
+  if (phase === 'framing') {
+    const content = hasDescentData ? FRAMING_CONTENT.withPartData : FRAMING_CONTENT.withoutPartData;
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <div
+            className={`text-center transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`}
+            style={{ marginTop: '-2rem' }}
+          >
+            <div className="space-y-2 mb-6">
+              <h2 className="font-serif text-2xl text-[var(--color-text-primary)]" style={{ textTransform: 'none' }}>
+                {FRAMING_CONTENT.header}
+              </h2>
+              <p className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
+                {FRAMING_CONTENT.subtitle}
+              </p>
+            </div>
+
+            <div className="flex justify-center mb-6">
+              <div className="circle-spacer" />
+            </div>
+
+            <div className="text-left">
+              {renderContentLines(content.lines)}
+            </div>
+
+            {mode === 'couple' && (
+              <div className="text-left mt-4">
+                <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed italic">
+                  {FRAMING_CONTENT.coupleNote}
+                </p>
+              </div>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="idle"
+          primary={{ label: 'Begin', onClick: () => fadeToPhase('friction') }}
+          showSkip={true}
+          onSkip={onSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Friction ─────────────────────────────────────────────────────────
+
+  if (phase === 'friction') {
+    const modeContent = mode === 'couple' ? FRICTION_SCREEN.couple : FRICTION_SCREEN.solo;
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {FRICTION_SCREEN.header}
+            </h2>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+              {mode === 'couple' ? modeContent.instruction : modeContent.prompt}
+            </p>
+
+            <textarea
+              value={friction}
+              onChange={(e) => setFriction(e.target.value)}
+              placeholder={modeContent.placeholder}
+              rows={modeContent.rows}
+              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                focus:outline-none focus:border-[var(--accent)]
+                text-[var(--color-text-primary)] text-sm leading-relaxed
+                placeholder:text-[var(--color-text-tertiary)] resize-none"
+            />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Your Move (position + single move select + motivation) ───────────
+
+  if (phase === 'your-move') {
+    const modeContent = mode === 'couple' ? YOUR_MOVE_SCREEN.couple : YOUR_MOVE_SCREEN.solo;
+    const availableMoves = myPosition ? getMovesForPosition(myPosition) : [];
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-2 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
+            <h2 className="font-serif text-xl text-[var(--color-text-primary)] text-center mb-4" style={{ textTransform: 'none' }}>
+              {modeContent.header}
+            </h2>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+              {modeContent.prompt}
+            </p>
+
+            {/* Position selector */}
+            <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+              When things get hard, I tend to...
+            </p>
+            <div className="space-y-2 mb-6">
+              {Object.values(POSITIONS).map(pos => (
+                <button
+                  key={pos.key}
+                  onClick={() => { setMyPosition(pos.key); setMyMoveId(null); }}
+                  className={`w-full text-left px-4 py-3 border transition-colors ${
+                    myPosition === pos.key
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                      : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
+                  }`}
+                >
+                  <p className="text-base text-[var(--color-text-primary)] font-['DM_Serif_Text']">
+                    {pos.label}
+                  </p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5 uppercase tracking-wider">
+                    {pos.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+
+            {/* Single move selection */}
+            {myPosition && (
+              <div className="animate-fadeIn">
+                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+                  Select your primary move
+                </p>
+                <div className="space-y-2">
+                  {availableMoves.map(move => (
+                    <button
+                      key={move.id}
+                      onClick={() => setMyMoveId(move.id)}
+                      className={`w-full text-left px-4 py-3 border transition-colors ${
+                        myMoveId === move.id
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                          : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
+                      }`}
+                    >
+                      <p className="text-sm text-[var(--color-text-primary)]">{move.label}</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                        {move.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Motivation textarea (shown after move selected) */}
+            {myMoveId && (
+              <div className="animate-fadeIn mt-6">
+                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                  {modeContent.journalPrompt}
+                </p>
+                <textarea
+                  value={myMoveMotivation}
+                  onChange={(e) => setMyMoveMotivation(e.target.value)}
+                  placeholder={modeContent.journalPlaceholder}
+                  rows={3}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </div>
+            )}
+
+            {mode === 'couple' && myMoveId && (
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-4 italic">
+                {modeContent.note}
+              </p>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Continue',
+            onClick: handleContinue,
+            disabled: !myPosition || !myMoveId,
+          }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Your Underneath ──────────────────────────────────────────────────
+
+  if (phase === 'your-underneath') {
+    const modeContent = mode === 'couple' ? YOUR_UNDERNEATH_SCREEN.couple : YOUR_UNDERNEATH_SCREEN.solo;
+    const prompt = hasDescentData ? modeContent.prompt.withPart1 : modeContent.prompt.withoutPart1;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {modeContent.header}
+            </h2>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+              {prompt}
+            </p>
+
+            {mode === 'couple' && (
+              <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                {modeContent.note}
+              </p>
+            )}
+
+            <textarea
+              value={yourUnderneath}
+              onChange={(e) => setYourUnderneath(e.target.value)}
+              placeholder={modeContent.placeholder}
+              rows={modeContent.rows}
+              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                focus:outline-none focus:border-[var(--accent)]
+                text-[var(--color-text-primary)] text-sm leading-relaxed
+                placeholder:text-[var(--color-text-tertiary)] resize-none"
+            />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Partner Turn (couple only — 2 sub-steps) ────────────────────────
+
+  if (phase === 'partner-turn') {
+    const partnerPosition = getPartnerPosition(myPosition);
+    const partnerMovesOptions = getMovesForPosition(partnerPosition);
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {PARTNER_TURN_SCREEN.header}
+            </h2>
+
+            <p className="text-[var(--color-text-secondary)] text-sm text-center mb-6">
+              {PARTNER_TURN_SCREEN.intro}
+            </p>
+
+            {partnerStep === 0 && (
+              <div className="animate-fadeIn">
+                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2">
+                  {PARTNER_TURN_SCREEN.step1.subheader}
+                </p>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {PARTNER_TURN_SCREEN.step1.prompt}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-3 italic">
+                  {PARTNER_TURN_SCREEN.step1.note}
+                </p>
+                <div className="space-y-2">
+                  {partnerMovesOptions.map(move => (
+                    <button
+                      key={move.id}
+                      onClick={() => setPartnerMoveId(move.id)}
+                      className={`w-full text-left px-4 py-3 border transition-colors ${
+                        partnerMoveId === move.id
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                          : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
+                      }`}
+                    >
+                      <p className="text-sm text-[var(--color-text-primary)]">{move.label}</p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                        {move.description}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {partnerStep === 1 && (
+              <div className="animate-fadeIn">
+                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2">
+                  {PARTNER_TURN_SCREEN.step2.subheader}
+                </p>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {PARTNER_TURN_SCREEN.step2.prompt}
+                </p>
+                <textarea
+                  value={partnerUnderneath}
+                  onChange={(e) => setPartnerUnderneath(e.target.value)}
+                  placeholder={PARTNER_TURN_SCREEN.step2.placeholder}
+                  rows={PARTNER_TURN_SCREEN.step2.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-3 italic">
+                  {PARTNER_TURN_SCREEN.step2.note}
+                </p>
+              </div>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Continue',
+            onClick: () => {
+              if (partnerStep === 0) {
+                setPartnerStep(1);
+              } else {
+                handleContinue();
+              }
+            },
+            disabled: partnerStep === 0 ? !partnerMoveId : false,
+          }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Sharing (couple only) ────────────────────────────────────────────
+
+  if (phase === 'sharing') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {SHARING_SCREEN.header}
+            </h2>
+
+            {renderContentLines(SHARING_SCREEN.lines)}
+
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mt-6 italic">
+              {SHARING_SCREEN.postShare}
+            </p>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Their Move (solo only) ───────────────────────────────────────────
+
+  if (phase === 'their-move') {
+    const partnerPosition = getPartnerPosition(myPosition);
+    const availableMoves = getMovesForPosition(partnerPosition);
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-2 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
+            <h2 className="font-serif text-xl text-[var(--color-text-primary)] text-center mb-4" style={{ textTransform: 'none' }}>
+              {THEIR_MOVE_SCREEN.header}
+            </h2>
+
+            <div className="mb-4">
+              {renderContentLines(THEIR_MOVE_SCREEN.lines)}
+            </div>
+
+            <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+              {THEIR_MOVE_SCREEN.prompt}
+            </p>
+            <div className="space-y-2">
+              {availableMoves.map(move => (
+                <button
+                  key={move.id}
+                  onClick={() => setTheirMoveId(move.id)}
+                  className={`w-full text-left px-4 py-3 border transition-colors ${
+                    theirMoveId === move.id
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                      : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
+                  }`}
+                >
+                  <p className="text-sm text-[var(--color-text-primary)]">{move.label}</p>
+                  <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                    {move.description}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Continue',
+            onClick: handleContinue,
+            disabled: !theirMoveId,
+          }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Their Underneath (solo only) ─────────────────────────────────────
+
+  if (phase === 'their-underneath') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {THEIR_UNDERNEATH_SCREEN.header}
+            </h2>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+              {THEIR_UNDERNEATH_SCREEN.prompt}
+            </p>
+
+            <textarea
+              value={theirUnderneath}
+              onChange={(e) => setTheirUnderneath(e.target.value)}
+              placeholder={THEIR_UNDERNEATH_SCREEN.placeholder}
+              rows={THEIR_UNDERNEATH_SCREEN.rows}
+              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                focus:outline-none focus:border-[var(--accent)]
+                text-[var(--color-text-primary)] text-sm leading-relaxed
+                placeholder:text-[var(--color-text-tertiary)] resize-none"
+            />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Pre-Reveal (naming + diagram preview) ────────────────────────────
+
+  if (phase === 'pre-reveal') {
+    const preRevealText = mode === 'couple' ? PRE_REVEAL_CONTENT.couple : PRE_REVEAL_CONTENT.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-2 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-6 text-center">
+              {preRevealText}
+            </p>
+
+            <input
+              type="text"
+              value={cycleName}
+              onChange={(e) => setCycleName(e.target.value.slice(0, CYCLE_NAME_MAX))}
+              placeholder={CYCLE_NAMING_TEXT.placeholder}
+              maxLength={CYCLE_NAME_MAX}
+              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                focus:outline-none focus:border-[var(--accent)]
+                text-[var(--color-text-primary)] text-sm text-center
+                placeholder:text-[var(--color-text-tertiary)] mb-2"
+            />
+            <p className="text-[10px] text-[var(--color-text-tertiary)] text-center mb-6">
+              {cycleName.length}/{CYCLE_NAME_MAX}
+            </p>
+
+            <CycleDiagram
+              myMoves={diagramMyMoves}
+              partnerMoves={diagramPartnerMoves}
+              cycleName={cycleName}
+              myPosition={myPosition}
+              animate={true}
+            />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Reveal',
+            onClick: handleContinue,
+            disabled: !cycleName.trim(),
+          }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Reveal Animation ─────────────────────────────────────────────────
+
+  if (phase === 'reveal-anim') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <div className="text-center">
+            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider animate-pulse">
+              Revealing...
+            </p>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar phase="active" primary={{ label: 'Continue', disabled: true }} />
+
+        <RevealOverlay
+          key={revealKey}
+          isActive={showRevealOverlay}
+          onDone={handleRevealDone}
+        />
+      </>
+    );
+  }
+
+  // ─── Reveal Modal ─────────────────────────────────────────────────────
+
+  if (phase === 'reveal-modal') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <div className="text-center">
+            <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider">
+              Your cycle diagram has been saved to your journal.
+            </p>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Continue',
+            onClick: () => {
+              if (showCycleModal) {
+                handleCloseCycleModal();
+              } else {
+                fadeToPhase('sitting');
+              }
+            },
+          }}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+
+        <CycleModal
+          isOpen={showCycleModal}
+          closing={cycleModalClosing}
+          onClose={handleCloseCycleModal}
+          imageUrl={diagramUrl}
+          imageBlob={diagramBlob}
+        />
+      </>
+    );
+  }
+
+  // ─── Sitting (post-reveal reflection) ─────────────────────────────────
+
+  if (phase === 'sitting') {
+    const sittingContent = mode === 'couple' ? SITTING_CONTENT.couple : SITTING_CONTENT.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              The Cycle
+            </h2>
+
+            <div className="flex justify-center mb-4">
+              <AsciiMoon />
+            </div>
+
+            {renderContentLines(sittingContent.lines)}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Meditation Intro ─────────────────────────────────────────────────
+
+  if (phase === 'med-intro') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          {!playback.isLoading ? (
+            <div className={`text-center ${isMedLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
+              <h2 className="font-serif text-xl text-[var(--color-text-primary)] mb-4" style={{ textTransform: 'none' }}>
+                {MEDITATION_INTRO_CONTENT.header}
+              </h2>
+
+              <div className="text-left mb-6">
+                {renderContentLines(MEDITATION_INTRO_CONTENT.lines)}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center animate-fadeIn">
+              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
+                Preparing meditation...
+              </p>
+            </div>
+          )}
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Begin',
+            onClick: playback.isLoading ? () => {} : handleBeginMeditation,
+          }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the closing meditation?"
+        />
+      </>
+    );
+  }
+
+  // ─── Meditation (playback) ────────────────────────────────────────────
+
+  if (phase === 'meditation') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <div
+            className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
+            style={{
+              alignSelf: 'stretch',
+              minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
+            }}
+          >
+            <h2
+              className="text-xl font-light mb-6"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {meditation?.title || 'Closing Meditation'}
+            </h2>
+
+            <MorphingShapes />
+
+            <div className="h-5 flex items-center justify-center mt-3">
+              {!playback.isPlaying && !playback.isComplete && (
+                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider animate-pulse">
+                  Paused
+                </p>
+              )}
+            </div>
+
+            <p
+              className={`mt-1 px-4 text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
+                playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {playback.currentPrompt?.text || ''}
+            </p>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={playback.getPrimaryButton()}
+          showSkip={true}
+          onSkip={playback.handleSkip}
+          skipConfirmMessage="Skip this meditation?"
+          showSeekControls={playback.hasStarted && !playback.isComplete && !playback.isLoading}
+          onSeekBack={() => playback.handleSeekRelative(-10)}
+          onSeekForward={() => playback.handleSeekRelative(10)}
+          leftSlot={
+            <VolumeButton
+              volume={playback.audio.volume}
+              onVolumeChange={playback.audio.setVolume}
+            />
+          }
+          rightSlot={
+            <SlotButton
+              icon={<TranscriptIcon />}
+              label="View transcript"
+              onClick={handleOpenTranscript}
+            />
+          }
+        />
+
+        <TranscriptModal
+          isOpen={showTranscript}
+          closing={transcriptClosing}
+          onClose={handleCloseTranscript}
+          title={transcriptTitle}
+          prompts={transcriptPrompts}
+        />
+      </>
+    );
+  }
+
+  // ─── Capture ──────────────────────────────────────────────────────────
+
+  if (phase === 'capture') {
+    const captureContent = mode === 'couple' ? CAPTURE_SCREEN.couple : CAPTURE_SCREEN.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {captureContent.header}
+            </h2>
+
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+              {mode === 'couple' ? captureContent.instruction : captureContent.preamble}
+            </p>
+
+            <textarea
+              value={meditationCapture}
+              onChange={(e) => setMeditationCapture(e.target.value)}
+              placeholder={captureContent.placeholder}
+              rows={captureContent.rows}
+              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                focus:outline-none focus:border-[var(--accent)]
+                text-[var(--color-text-primary)] text-sm leading-relaxed
+                placeholder:text-[var(--color-text-tertiary)] resize-none"
+            />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={false}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Check-In ─────────────────────────────────────────────────────────
+
+  if (phase === 'checkin') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-3 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {CYCLE_CHECKIN_HEADER}
+            </h2>
+
+            <p className="text-[var(--color-text-secondary)] text-sm text-center mb-6">
+              {mode === 'couple' ? CYCLE_CHECKIN_COUPLE_NOTE : CYCLE_CHECKIN_SUBTEXT}
+            </p>
+
+            <div className="space-y-2">
+              {CYCLE_CHECKIN_OPTIONS.map((option) => {
+                const isSelected = checkInResponse === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setCheckInResponse(option.id)}
+                    className={`w-full text-left px-4 py-3 border transition-colors duration-150 ${
+                      isSelected
+                        ? 'border-[var(--accent)] bg-[var(--accent-bg)]'
+                        : 'border-[var(--color-border)] bg-transparent hover:border-[var(--color-text-tertiary)]'
+                    }`}
+                  >
+                    <span className="text-[var(--color-text-primary)] text-sm">
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{
+            label: 'Continue',
+            onClick: handleContinue,
+            disabled: !checkInResponse,
+          }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Tailored Response ────────────────────────────────────────────────
+
+  if (phase === 'response') {
+    const responseContent = CYCLE_TAILORED_RESPONSES[checkInResponse];
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {responseContent?.header}
+            </h2>
+
+            <div className="space-y-4">
+              {responseContent?.paragraphs.map((para, i) => (
+                <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                  {para}
+                </p>
+              ))}
+            </div>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Psychoeducation (3 screens with persistent header) ───────────────
+
+  if (phase === 'psychoed-1' || phase === 'psychoed-2' || phase === 'psychoed-3') {
+    const screen = CYCLE_PSYCHOED_SCREENS[psychoedStep];
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className="pt-2">
+            {/* Persistent header + animation */}
+            <div className={`transition-opacity duration-[${FADE_MS}ms] ${
+              isPsychoedHeaderVisible ? 'opacity-100' : 'opacity-0'
+            }`}>
+              <h2
+                className="text-xl font-light mb-2 text-center"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                The Cycle
+              </h2>
+              <div className="flex justify-center mb-4">
+                <AsciiMoon />
+              </div>
+            </div>
+
+            {/* Body — fades out/in on step change */}
+            <div className={`transition-opacity duration-[${FADE_MS}ms] ${
+              isPsychoedVisible ? 'opacity-100' : 'opacity-0'
+            }`} style={{ paddingBottom: '8rem' }}>
+              <div key={psychoedStep} className="animate-fadeIn">
+                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+                  {screen.header}
+                </p>
+                {renderContentLines(screen.lines)}
+
+                {/* Couple addition on screen 2 */}
+                {mode === 'couple' && screen.coupleAddition && (
+                  <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mt-4 italic">
+                    {screen.coupleAddition}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Reflect 1: What surprised you ────────────────────────────────────
+
+  if (phase === 'reflect-1') {
+    const content = mode === 'couple' ? REFLECT_1_SCREEN.couple : REFLECT_1_SCREEN.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {content.header}
+            </h2>
+
+            {mode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {content.preamble}
+                </p>
+                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                  {content.prompt}
+                </p>
+                <textarea
+                  value={journalSurprise}
+                  onChange={(e) => setJournalSurprise(e.target.value)}
+                  placeholder={content.placeholder}
+                  rows={content.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {content.instruction}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {content.timeSuggestion}
+                </p>
+                <button
+                  onClick={() => toggleNotepad('reflect-1')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {notepadExpanded['reflect-1'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {notepadExpanded['reflect-1'] && (
+                  <textarea
+                    value={journalSurprise}
+                    onChange={(e) => setJournalSurprise(e.target.value)}
+                    placeholder={content.placeholder}
+                    rows={content.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Reflect 2: The other side / Seeing each other ────────────────────
+
+  if (phase === 'reflect-2') {
+    const content = mode === 'couple' ? REFLECT_2_SCREEN.couple : REFLECT_2_SCREEN.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {content.header}
+            </h2>
+
+            {mode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {getReflect2Preamble()}
+                </p>
+                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                  {content.prompt}
+                </p>
+                <textarea
+                  value={journalOtherSide}
+                  onChange={(e) => setJournalOtherSide(e.target.value)}
+                  placeholder={content.placeholder}
+                  rows={content.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-2">
+                  {content.instruction}
+                </p>
+                <div className="space-y-3 mb-4">
+                  {content.steps.map((step, i) => (
+                    <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed pl-4 border-l-2 border-[var(--color-border)]">
+                      {step}
+                    </p>
+                  ))}
+                </div>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {content.timeSuggestion}
+                </p>
+                <button
+                  onClick={() => toggleNotepad('reflect-2')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {notepadExpanded['reflect-2'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {notepadExpanded['reflect-2'] && (
+                  <textarea
+                    value={journalOtherSide}
+                    onChange={(e) => setJournalOtherSide(e.target.value)}
+                    placeholder={content.placeholder}
+                    rows={content.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Reflect 3: One different move ────────────────────────────────────
+
+  if (phase === 'reflect-3') {
+    const content = mode === 'couple' ? REFLECT_3_SCREEN.couple : REFLECT_3_SCREEN.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {content.header}
+            </h2>
+
+            {mode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {getReflect3Preamble()}
+                </p>
+                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                  {content.prompt}
+                </p>
+                <textarea
+                  value={journalStepOut}
+                  onChange={(e) => setJournalStepOut(e.target.value)}
+                  placeholder={content.placeholder}
+                  rows={content.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {getReflect3Instruction()}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {content.timeSuggestion}
+                </p>
+                <button
+                  onClick={() => toggleNotepad('reflect-3')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {notepadExpanded['reflect-3'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {notepadExpanded['reflect-3'] && (
+                  <textarea
+                    value={journalStepOut}
+                    onChange={(e) => setJournalStepOut(e.target.value)}
+                    placeholder={content.placeholder}
+                    rows={content.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Journey Close (conditional — only if Part 1 completed) ───────────
+
+  if (phase === 'journey-close') {
+    const content = mode === 'couple' ? JOURNEY_CLOSE_SCREEN.couple : JOURNEY_CLOSE_SCREEN.solo;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {content.header}
+            </h2>
+
+            {renderContentLines(content.lines)}
+
+            {mode === 'solo' ? (
+              <div className="mt-6">
+                <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+                  {content.prompt}
+                </p>
+                <textarea
+                  value={journeyReflection}
+                  onChange={(e) => setJourneyReflection(e.target.value)}
+                  placeholder={content.placeholder}
+                  rows={content.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </div>
+            ) : (
+              <div className="mt-6">
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-2">
+                  {content.instruction}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {content.timeSuggestion}
+                </p>
+                <button
+                  onClick={() => toggleNotepad('journey-close')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {notepadExpanded['journey-close'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {notepadExpanded['journey-close'] && (
+                  <textarea
+                    value={journeyReflection}
+                    onChange={(e) => setJourneyReflection(e.target.value)}
+                    placeholder={content.placeholder}
+                    rows={content.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip the remaining content?"
+        />
+      </>
+    );
+  }
+
+  // ─── Closing ──────────────────────────────────────────────────────────
+
+  if (phase === 'closing') {
+    const modeClosing = mode === 'couple' ? CLOSING_CONTENT.couple : CLOSING_CONTENT.solo;
+    const closingLines = hasDescentData ? modeClosing.withJourney : modeClosing.standalone;
+
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <div className="flex justify-center mb-6">
+              <AsciiDiamond />
+            </div>
+
+            {renderContentLines(closingLines)}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="completed"
+          primary={{ label: 'Complete', onClick: handleComplete }}
+          showBack={true}
+          onBack={handleBack}
+          rightSlot={cycleSlot}
+          showSkip={false}
+        />
+      </>
+    );
+  }
+
+  return null;
+}

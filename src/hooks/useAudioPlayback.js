@@ -135,6 +135,10 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
       // (e.g., when Audio element is created before a blob URL is loaded)
       if (!audio.src || audio.src === '' || audio.src === window.location.href) return;
 
+      // Chrome's FFmpeg decoder fires DEMUXER_ERROR at end-of-stream for concatenated
+      // MP3 blobs. This is a known browser artifact, not an actionable playback error.
+      if (audio.error?.message?.includes('DEMUXER_ERROR')) return;
+
       stopPolling();
       const errorInfo = {
         code: audio.error?.code,
@@ -405,7 +409,6 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     wallAccumulatedRef.current = 0;
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
       savedTimeRef.current = 0;
       timeOffsetRef.current = 0;
       setIsPlaying(false);

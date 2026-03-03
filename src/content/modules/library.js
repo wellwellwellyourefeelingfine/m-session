@@ -50,6 +50,9 @@ export const MODULE_TYPES = {
   'values-compass': { label: 'Values Compass', intensity: 'moderate' },
   // Felt Sense (Focusing)
   'felt-sense': { label: 'Felt Sense', intensity: 'moderate' },
+  // The Deep Dive (EFT) — linked two-part module
+  'the-descent': { label: 'The Deep Dive', intensity: 'moderate' },
+  'the-cycle': { label: 'The Cycle', intensity: 'moderate' },
   'booster-consideration': { label: 'Booster Check-In', intensity: 'gentle' },
   // Intention Setting (pre-session)
   'intention-setting': { label: 'Intention Setting', intensity: 'gentle' },
@@ -179,6 +182,7 @@ export const moduleLibrary = [
     id: 'breath-meditation-calm',
     type: 'breath-meditation',
     category: 'meditation',
+    hidden: true,
     title: 'Calming Breath',
     description: 'A 15-minute guided breathing meditation that progressively deepens your breath, then gently returns to natural breathing.',
     defaultDuration: 15,
@@ -385,6 +389,64 @@ export const moduleLibrary = [
     },
     tags: ['focusing', 'felt-sense', 'somatic', 'meditation', 'guided', 'Gendlin', 'journaling'],
   },
+  // === THE DEEP DIVE (EFT Relationship) — Linked Two-Part Module ===
+  // Parent entry — shown in ModuleLibraryDrawer. Adding creates both Part 1 and Part 2.
+  {
+    id: 'the-descent',
+    type: 'the-descent',
+    category: 'activity',
+    title: 'The Deep Dive',
+    description: 'A two-part relationship-guided audio meditation for one person or two. Discover what lies beneath your surface reactions, then map the cycle that plays out between you.',
+    defaultDuration: 45,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak'],
+    isLinkedParent: true,
+    linkedParts: [
+      { id: 'the-descent-p1', title: 'The Deep Dive (Part 1)', duration: 25, phase: 'same' },
+      { id: 'the-cycle-p2', title: 'The Cycle (Part 2)', duration: 25, phase: 'integration' },
+    ],
+    tags: ['EFT', 'relationship', 'attachment', 'emotion', 'guided', 'meditation', 'couples'],
+  },
+  // Part 1 — hidden from drawer, added automatically by linked parent
+  {
+    id: 'the-descent-p1',
+    type: 'the-descent',
+    category: 'activity',
+    title: 'The Deep Dive (Part 1)',
+    description: 'A relationship-guided audio meditation for one person or two. Explore what lies beneath surface-level reactions.',
+    defaultDuration: 25,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    hidden: true,
+    isLinkedPart: true,
+    linkedParentId: 'the-descent',
+    meditationId: 'the-descent',
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['EFT', 'relationship', 'attachment', 'meditation'],
+  },
+  // Part 2 — hidden from drawer, added automatically by linked parent
+  {
+    id: 'the-cycle-p2',
+    type: 'the-cycle',
+    category: 'activity',
+    title: 'The Cycle (Part 2)',
+    description: 'Map the repeating pattern in your relationship and see it from above.',
+    defaultDuration: 25,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    hidden: true,
+    isLinkedPart: true,
+    linkedParentId: 'the-descent',
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['EFT', 'relationship', 'cycle', 'mapping', 'journaling'],
+  },
   {
     id: 'values-compass',
     type: 'values-compass',
@@ -467,6 +529,7 @@ export const moduleLibrary = [
     id: 'parts-work',
     type: 'parts-work',
     category: 'journaling',
+    hidden: true,
     title: 'Parts Work',
     description: 'Explore and dialogue with different aspects of yourself.',
     defaultDuration: 30,

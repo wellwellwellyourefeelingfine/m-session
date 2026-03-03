@@ -36,9 +36,17 @@ export const useAppStore = create(
         set((state) => ({
           dismissedBanners: { ...state.dismissedBanners, [id]: true },
         })),
+
+      // Transient: force-show install prompt from menu (not persisted)
+      showInstallPrompt: false,
+      setShowInstallPrompt: (show) => set({ showInstallPrompt: show }),
     }),
     {
       name: 'mdma-guide-app-state',
+      partialize: (state) => {
+        const { showInstallPrompt, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

@@ -304,7 +304,7 @@ function assembleVariation(variationKey) {
     });
 }
 
-import audioDurations from './audio-durations.json';
+import audioDurations from './audio-durations.json' with { type: 'json' };
 
 /**
  * Calculate the speaking duration for a prompt, using actual MP3 duration

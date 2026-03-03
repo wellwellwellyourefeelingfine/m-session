@@ -4,11 +4,14 @@ A React-based progressive web app that guides users through therapeutic MDMA ses
 
 ## Quick Start
 
+**Requires Node.js 22 LTS** (pinned in `.nvmrc`). Node 25+ introduces breaking changes to JSON imports.
+
 ```bash
+nvm use           # Switch to pinned Node version (22)
 npm install
-npm run dev      # Start dev server at localhost:5173
-npm run build    # Production build
-npm run preview  # Preview production build
+npm run dev       # Start dev server at localhost:5173
+npm run build     # Production build
+npm run preview   # Preview production build
 ```
 
 ---
@@ -28,6 +31,7 @@ This app follows a **modular, capability-based architecture** where:
 
 | Category | Technology | Why |
 |----------|------------|-----|
+| Runtime | Node.js 22 LTS | Pinned via `.nvmrc` + `engines` in package.json |
 | Framework | React 19 | Latest features, improved performance |
 | Build | Vite 7 | Fast HMR, modern ES modules |
 | State | Zustand | Minimal boilerplate, built-in persistence |

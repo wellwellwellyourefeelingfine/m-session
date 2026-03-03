@@ -32,6 +32,8 @@ const StayWithItModule = lazy(() => import('./modules/StayWithItModule'));
 const ValuesCompassModule = lazy(() => import('./modules/ValuesCompassModule'));
 const LetsDanceModule = lazy(() => import('./modules/LetsDanceModule'));
 const FeltSenseModule = lazy(() => import('./modules/FeltSenseModule'));
+const TheDescentModule = lazy(() => import('./modules/TheDescentModule'));
+const TheCycleModule = lazy(() => import('./modules/TheCycleModule'));
 const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
 
@@ -94,6 +96,12 @@ export const CUSTOM_MODULES = {
 
   // Felt Sense (Focusing) — guided meditation + reflection + journaling
   'felt-sense': FeltSenseModule,
+
+  // The Deep Dive (EFT Relationship) — guided meditation + journaling (Part 1 of linked pair)
+  'the-descent': TheDescentModule,
+
+  // The Cycle (EFT Relationship) — cycle mapping + diagram + closing meditation (Part 2 of linked pair)
+  'the-cycle': TheCycleModule,
 
   // Intention Setting — pre-session guided intention refinement flow
   'intention-setting': IntentionSettingActivity,
@@ -182,6 +190,8 @@ export const MODULE_CATEGORIES = {
     'felt-sense',
     'intention-setting',
     'life-graph',
+    'the-descent',
+    'the-cycle',
   ],
   open: [
     'open-space',

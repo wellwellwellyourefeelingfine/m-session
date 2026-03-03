@@ -27,7 +27,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
 import { getMeditationById } from '../content/meditations';
 import { useAudioPlayback } from './useAudioPlayback';
-import { composeMeditationAudio, revokeMeditationBlobUrl } from '../services/audioComposerService';
+import { composeMeditationAudio, revokeMeditationBlobUrl, CBR_BYTES_PER_SECOND } from '../services/audioComposerService';
 
 // Constants
 const TEXT_FADE_IN_DELAY = 200;           // ms after audio starts before text fades in
@@ -66,8 +66,7 @@ export function useMeditationPlayback({
   const [isLoading, setIsLoading] = useState(false);
   const blobUrlRef = useRef(null);
   const promptTimeMapRef = useRef([]);
-  const composedDurationRef = useRef(0);
-  const realContentDurationRef = useRef(0); // Actual content duration from composed blob (excludes preamble + closing gong)
+  const composedDurationRef = useRef(0); // Actual physical blob duration from real byte count
 
   // Prompt display state
   const [currentPromptIndex, setCurrentPromptIndex] = useState(-1);
@@ -238,16 +237,15 @@ export function useMeditationPlayback({
   }, [elapsedTime, hasStarted, isPlaying, currentPromptIndex, audio.isMuted]);
 
   // Report timer state to parent for ModuleStatusBar.
-  // Uses the real content duration (from actual MP3 byte lengths) when available,
-  // falling back to the estimated totalDuration before composition completes.
+  // Timer shows full duration including gongs — elapsed and total are both
+  // derived from the physical blob, so they always match and elapsed never overshoots.
   // onTimerUpdate is stored in a ref to prevent re-render loops — parent creates
   // a new function reference each render, which would cause infinite updates.
   useEffect(() => {
     if (!onTimerUpdateRef.current) return;
 
-    // Subtract preamble so user-visible timer starts at 0 after gong
-    const userElapsed = Math.max(0, elapsedTime - GONG_PREAMBLE);
-    const displayTotal = realContentDurationRef.current || totalDuration;
+    const displayTotal = composedDurationRef.current || totalDuration;
+    const userElapsed = Math.min(elapsedTime, displayTotal);
     const progress = displayTotal > 0 ? Math.min((userElapsed / displayTotal) * 100, 100) : 0;
     const composedTotal = composedDurationRef.current;
     const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
@@ -289,14 +287,7 @@ export function useMeditationPlayback({
       // Store refs for playback
       blobUrlRef.current = blobUrl;
       promptTimeMapRef.current = promptTimeMap;
-      composedDurationRef.current = composedTotal;
-
-      // Compute real content duration from the composed prompt map.
-      // This is the actual duration of all TTS clips + silences, derived from
-      // real MP3 byte lengths — not the word-count estimate.
-      if (promptTimeMap.length > 0) {
-        realContentDurationRef.current = promptTimeMap[promptTimeMap.length - 1].slotEnd - GONG_PREAMBLE;
-      }
+      composedDurationRef.current = composedBytes.byteLength / CBR_BYTES_PER_SECOND;
 
       // Reset display state
       setElapsedTime(0);
@@ -339,11 +330,12 @@ export function useMeditationPlayback({
   }, [pauseMeditationPlayback, resumeMeditationPlayback, audio]);
 
   const handleComplete = useCallback(() => {
+    const blobUrl = blobUrlRef.current;
+    blobUrlRef.current = null;
     audio.stop();
     resetMeditationPlayback();
-    if (blobUrlRef.current) {
-      revokeMeditationBlobUrl(blobUrlRef.current);
-      blobUrlRef.current = null;
+    if (blobUrl) {
+      revokeMeditationBlobUrl(blobUrl);
     }
     onComplete();
   }, [resetMeditationPlayback, audio, onComplete]);
@@ -352,11 +344,12 @@ export function useMeditationPlayback({
   // Same cleanup as handleSkip/handleComplete but does NOT navigate away —
   // the module re-renders its idle/Begin screen.
   const handleRestart = useCallback(() => {
+    const blobUrl = blobUrlRef.current;
+    blobUrlRef.current = null;
     audio.stop();
     resetMeditationPlayback();
-    if (blobUrlRef.current) {
-      revokeMeditationBlobUrl(blobUrlRef.current);
-      blobUrlRef.current = null;
+    if (blobUrl) {
+      revokeMeditationBlobUrl(blobUrl);
     }
     // Clear prompt state
     if (textFadeTimeoutRef.current) {
@@ -365,7 +358,6 @@ export function useMeditationPlayback({
     }
     promptTimeMapRef.current = [];
     composedDurationRef.current = 0;
-    realContentDurationRef.current = 0;
     lastPromptRef.current = -1;
     setCurrentPromptIndex(-1);
     setPromptPhase('hidden');
@@ -425,22 +417,17 @@ export function useMeditationPlayback({
   }, [hasStarted, isLoading, isComplete, audio]);
 
   const handleSkip = useCallback(() => {
-    console.log('[MeditationPlayback] handleSkip called');
     try {
+      const blobUrl = blobUrlRef.current;
+      blobUrlRef.current = null;
       audio.stop();
-      console.log('[MeditationPlayback] audio.stop() done');
       resetMeditationPlayback();
-      console.log('[MeditationPlayback] resetMeditationPlayback() done');
-      if (blobUrlRef.current) {
-        revokeMeditationBlobUrl(blobUrlRef.current);
-        blobUrlRef.current = null;
+      if (blobUrl) {
+        revokeMeditationBlobUrl(blobUrl);
       }
-      console.log('[MeditationPlayback] calling onSkip()...');
       onSkip();
-      console.log('[MeditationPlayback] onSkip() done — skip complete');
     } catch (err) {
       console.error('[MeditationPlayback] handleSkip ERROR:', err);
-      // Ensure skip completes even if cleanup fails
       try { onSkip(); } catch (e2) { console.error('[MeditationPlayback] fallback onSkip ERROR:', e2); }
     }
   }, [resetMeditationPlayback, audio, onSkip]);

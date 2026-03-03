@@ -10,8 +10,10 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useAppStore } from '../../stores/useAppStore';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import SessionHistoryModal from '../history/SessionHistoryModal';
 import DataDownloadModal from '../session/DataDownloadModal';
+import { APP_VERSION } from '../../constants';
 
 export default function SessionMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +29,9 @@ export default function SessionMenu() {
   const archivedSessions = useSessionHistoryStore((s) => s.sessions);
   const darkMode = useAppStore((s) => s.darkMode);
   const toggleDarkMode = useAppStore((s) => s.toggleDarkMode);
+  const setShowInstallPrompt = useAppStore((s) => s.setShowInstallPrompt);
+  const { canPromptNatively, promptNativeInstall, isIOS, isAndroid, isStandalone } = useInstallPrompt();
+  const showInstallButton = !isStandalone;
 
   const hasData = sessionPhase !== 'not-started' || journalEntries.length > 0;
   const hasImages = journalEntries.some((e) => e.hasImage);
@@ -86,6 +91,15 @@ export default function SessionMenu() {
   const handleExport = () => {
     closeMenu();
     setShowDownload(true);
+  };
+
+  const handleInstall = async () => {
+    closeMenu();
+    if (canPromptNatively) {
+      await promptNativeInstall();
+    } else {
+      setShowInstallPrompt(true);
+    }
   };
 
   // Warning message based on session phase
@@ -166,9 +180,22 @@ export default function SessionMenu() {
               className="text-[9px] tracking-wider text-[var(--color-text-tertiary)]"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              m-session v1.2
+              m-session v{APP_VERSION}
             </span>
           </div>
+          {showInstallButton && (
+            <>
+              <div className="border-t border-[var(--color-border)]" />
+              <button
+                type="button"
+                onClick={handleInstall}
+                className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                style={{ fontFamily: 'Azeret Mono, monospace' }}
+              >
+                Install App
+              </button>
+            </>
+          )}
           <div className="border-t border-[var(--color-border)]" />
           <button
             type="button"
@@ -203,6 +230,23 @@ export default function SessionMenu() {
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Export Session
+          </button>
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={() => {
+              const params = new URLSearchParams({ app_version: APP_VERSION });
+              window.open(
+                `https://tally.so/r/BzG9qN?${params}`,
+                '_blank',
+                'noopener,noreferrer'
+              );
+              closeMenu();
+            }}
+            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            Give Feedback
           </button>
           </div>
         </div>

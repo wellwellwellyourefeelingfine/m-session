@@ -135,7 +135,7 @@ This scans all `public/audio/meditations/*/` directories, strips ID3 tag bytes f
 
 ### What happens if the manifest is stale
 
-If audio files are added/changed without regenerating the manifest, the old durations remain in the JSON. The pre-composition estimate (timer on idle screen, silence multiplier calibration) will use stale values. The post-composition timer (`realContentDurationRef` in `useMeditationPlayback`) will still be accurate since it derives from actual fetched byte lengths. So playback works correctly — only the pre-composition estimates and silence calibration would be slightly off.
+If audio files are added/changed without regenerating the manifest, the old durations remain in the JSON. The pre-composition estimate (timer on idle screen, silence multiplier calibration) will use stale values. The post-composition timer (`composedDurationRef` in `useMeditationPlayback`) will still be accurate since it derives from actual composed byte lengths. So playback works correctly — only the pre-composition estimates and silence calibration would be slightly off.
 
 ---
 
@@ -207,7 +207,7 @@ The `onTimerUpdate` callback from parent modules is stored in a ref (`onTimerUpd
 ### handleStart flow
 
 1. `composeMeditationAudio(timedSequence, { gongDelay: 1, gongPreamble: 8 })` — fetches all MP3s, builds blob
-2. Store refs: `blobUrlRef`, `promptTimeMapRef`, `composedDurationRef`
+2. Store refs: `blobUrlRef`, `promptTimeMapRef`, `composedDurationRef` (set to `composedBytes.byteLength / CBR_BYTES_PER_SECOND` — the actual physical blob duration from real byte count)
 3. `startMeditationPlayback(moduleInstanceId)` — store: `hasStarted=true`, `isPlaying=true`
 4. `audio.loadAndPlay(blobUrl)` — sets src, load, wait canplay, play (clears stale `composedBytesRef`)
 5. `audio.storeComposedBytes(composedBytes)` — stores `Uint8Array` for iOS blob recreation **after** loadAndPlay
@@ -227,7 +227,7 @@ The `promptTimeMap` has absolute timestamps within the blob (e.g., first prompt 
 
 `elapsedTime` is set from the wall-clock timer in `useAudioPlayback` via the `onTimeUpdate` callback. The wall-clock tracks real elapsed time via `Date.now()` instead of relying on `audio.currentTime`, which is broken for blob URLs on iOS Safari (see Known Issues). Everything derives from `elapsedTime`:
 
-- **Timer:** `userElapsed = max(0, elapsedTime - GONG_PREAMBLE)` → reported to ModuleStatusBar
+- **Timer:** `userElapsed = Math.min(elapsedTime, displayTotal)` → reported to ModuleStatusBar. The timer shows the full blob duration including gongs. The clamp prevents the wall-clock from displaying past the total (Chrome's MP3 decoder plays concatenated blobs slightly longer than `bytes/16000` predicts).
 - **Prompts:** Forward-scan of `promptTimeMap` from last known index to find active prompt → triggers text fade sequence (`hidden` → `fading-in` → `visible` → `fading-out`)
 - **Completion:** `elapsedTime >= composedTotal && composedTotal > 0 && hasStarted`
 
@@ -432,10 +432,12 @@ Several store actions (booster show/hide/take/skip/snooze/maximize/expire) call 
 Date.now() wall-clock (via native timeupdate OR 250ms setInterval polling)
   → useAudioPlayback: getWallTime() → reports to onTimeUpdate callback
     → useMeditationPlayback: setElapsedTime(wallClockTime)
-      → useEffect: userElapsed = max(0, elapsedTime - GONG_PREAMBLE)
+      → useEffect: userElapsed = Math.min(elapsedTime, displayTotal)
         → onTimerUpdate({ elapsed, total, progress, showTimer, isPaused })
           → ActiveView → ModuleStatusBar: "2:30 / 10:00"
 ```
+
+Timer shows the full blob duration including gongs. `displayTotal` comes from `composedDurationRef` (actual blob bytes / 16000). The `Math.min` clamp prevents the wall-clock elapsed from displaying past the total — Chrome's MP3 decoder plays concatenated blobs slightly longer (~3s) than the byte count predicts due to decoder overhead at frame boundaries.
 
 Note: `audio.currentTime` is NOT used for timer display. It is only used by `resume()` for seek-before-play (fast path) and by `resumeFromBytes()` for byte-offset calculation.
 
@@ -553,6 +555,12 @@ The `fetchAudioBuffer()` function checks the browser's Cache API (`audio-cache`)
 **Debugging tip:** If audio issues occur, check the browser's Cache Storage (DevTools → Application → Cache Storage → `audio-cache`) for entries that are suspiciously small or uniform in size. All MP3 clip buffers should be at least 10KB and vary in size. If many entries are the exact same size (especially a few KB), they're likely cached HTML pages.
 
 **Manual cache clear:** DevTools → Application → Cache Storage → right-click `audio-cache` → Delete. Or in the console: `caches.delete('audio-cache')`
+
+### Chrome DEMUXER_ERROR at end-of-stream
+
+Chrome's FFmpeg decoder fires 10-20+ `DEMUXER_ERROR_COULD_NOT_OPEN` events when it reaches the end of a concatenated MP3 blob. This is a known browser artifact — our composed meditation audio is a headerless concatenation of MP3 frames, and Chrome's demuxer encounters boundary issues at end-of-stream. These error events are queued to the main thread **before** the `ended` event, so the audio element's `src` is still set when they fire.
+
+**Status: SOLVED** — the error listener in `useAudioPlayback.js` filters `DEMUXER_ERROR` by checking `audio.error?.message?.includes('DEMUXER_ERROR')` and returning early. This prevents state churn (`setError`, `setIsPlaying`, `setIsLoaded`) and suppresses the console warnings. These errors are never actionable — they only occur at natural end-of-stream for concatenated MP3 blobs.
 
 ### Booster modal store/audio desync
 

@@ -12,7 +12,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 15;
+export const SESSION_STORE_VERSION = 19;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -321,6 +321,37 @@ export const useSessionStore = create(
         // Felt Sense captures (shift check-in response)
         feltSense: {
           shiftCheckIn: null,   // 'softened' | 'changed-unclear' | 'stayed-same' | 'surprised' | 'lost-track' | 'not-sure'
+          completedAt: null,
+        },
+        // The Deep Dive captures (Part 1 → Part 2 data contract)
+        theDescent: {
+          mode: null,              // 'solo' | 'couple'
+          quickCapture: '',        // raw post-meditation notes
+          checkInResponse: null,   // 'softened' | 'hurt' | 'clarity' | 'stuck' | 'unsure'
+          surfaceReaction: '',
+          primaryEmotion: '',
+          unsaidMessage: '',
+          completedAt: null,
+        },
+        // The Cycle captures (Part 2 → cycle mapping data)
+        theCycle: {
+          mode: null,              // 'solo' | 'couple'
+          myPosition: null,        // 'pursuer' | 'withdrawer'
+          friction: '',            // the recurring tension
+          myMoveId: null,          // single move ID
+          myMoveMotivation: '',    // "what are you hoping will happen"
+          yourUnderneath: '',      // primary emotion underneath your move
+          theirMoveId: null,       // solo: guessed move
+          theirUnderneath: '',     // solo: imagined emotion
+          partnerMoveId: null,     // couple: partner's actual move
+          partnerUnderneath: '',   // couple: partner's actual emotion
+          cycleName: '',
+          meditationCapture: '',
+          checkInResponse: null,   // 'softer'|'clearer'|'heavy'|'ready'|'processing'
+          journalSurprise: '',
+          journalOtherSide: '',
+          journalStepOut: '',      // replaces closingIntention
+          journeyReflection: '',
           completedAt: null,
         },
       },
@@ -717,14 +748,6 @@ export const useSessionStore = create(
         // Adding the parent creates both Part 1 and Part 2 as separate instances.
         // ============================================
         if (libraryModule.isLinkedParent && libraryModule.linkedParts) {
-          // Prevent duplicate linked module pairs
-          const existingPart = state.modules.items.find(
-            m => m.libraryId === libraryModule.linkedParts[0].id || m.libraryId === libraryModule.linkedParts[1].id
-          );
-          if (existingPart) {
-            return { success: false, error: `${libraryModule.title} is already in your timeline.` };
-          }
-
           const part1Lib = getModuleById(libraryModule.linkedParts[0].id);
           const part2Lib = getModuleById(libraryModule.linkedParts[1].id);
           if (!part1Lib || !part2Lib) return { success: false, error: 'Linked module parts not found' };
@@ -1827,6 +1850,32 @@ export const useSessionStore = create(
         });
       },
 
+      updateTheDescentCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            theDescent: {
+              ...state.transitionCaptures.theDescent,
+              [field]: value,
+            },
+          },
+        });
+      },
+
+      updateTheCycleCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            theCycle: {
+              ...state.transitionCaptures.theCycle,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2690,6 +2739,35 @@ export const useSessionStore = create(
               shiftCheckIn: null,
               completedAt: null,
             },
+            theDescent: {
+              mode: null,
+              quickCapture: '',
+              checkInResponse: null,
+              surfaceReaction: '',
+              primaryEmotion: '',
+              unsaidMessage: '',
+              completedAt: null,
+            },
+            theCycle: {
+              mode: null,
+              myPosition: null,
+              friction: '',
+              myMoveId: null,
+              myMoveMotivation: '',
+              yourUnderneath: '',
+              theirMoveId: null,
+              theirUnderneath: '',
+              partnerMoveId: null,
+              partnerUnderneath: '',
+              cycleName: '',
+              meditationCapture: '',
+              checkInResponse: null,
+              journalSurprise: '',
+              journalOtherSide: '',
+              journalStepOut: '',
+              journeyReflection: '',
+              completedAt: null,
+            },
           },
           lifeGraph: {
             milestones: [],
@@ -3117,6 +3195,94 @@ export function migrateSessionState(persistedState, version) {
           if (!state.lifeGraph) {
             state.lifeGraph = { milestones: [], graphGenerated: false, journalEntryId: null };
           }
+        }
+
+        // Version 15 → 16: Add theDescent to transitionCaptures
+        if (version < 16) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.theDescent) {
+            state.transitionCaptures.theDescent = {
+              mode: null,
+              surfaceReaction: '',
+              primaryEmotion: '',
+              unsaidMessage: '',
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 16 → 17: Add theCycle to transitionCaptures
+        if (version < 17) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.theCycle) {
+            state.transitionCaptures.theCycle = {
+              myPosition: null,
+              myMoves: [],
+              partnerMoves: [],
+              cycleName: '',
+              reflectionChoice: null,
+              reflectionText: '',
+              closingIntention: '',
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 17 → 18: Add quickCapture and checkInResponse to theDescent
+        if (version < 18) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.theDescent) {
+            state.transitionCaptures.theDescent = {
+              mode: null,
+              quickCapture: '',
+              checkInResponse: null,
+              surfaceReaction: '',
+              primaryEmotion: '',
+              unsaidMessage: '',
+              completedAt: null,
+            };
+          } else {
+            if (state.transitionCaptures.theDescent.quickCapture === undefined) {
+              state.transitionCaptures.theDescent.quickCapture = '';
+            }
+            if (state.transitionCaptures.theDescent.checkInResponse === undefined) {
+              state.transitionCaptures.theDescent.checkInResponse = null;
+            }
+          }
+        }
+
+        // Version 18 → 19: Expand theCycle schema for mode-aware redesign
+        if (version < 19) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          const tc = state.transitionCaptures.theCycle || {};
+          state.transitionCaptures.theCycle = {
+            mode: tc.mode || null,
+            myPosition: tc.myPosition || null,
+            friction: tc.friction || '',
+            myMoveId: tc.myMoveId || (tc.myMoves && tc.myMoves[0]) || null,
+            myMoveMotivation: tc.myMoveMotivation || '',
+            yourUnderneath: tc.yourUnderneath || '',
+            theirMoveId: tc.theirMoveId || (tc.partnerMoves && tc.partnerMoves[0]) || null,
+            theirUnderneath: tc.theirUnderneath || '',
+            partnerMoveId: tc.partnerMoveId || null,
+            partnerUnderneath: tc.partnerUnderneath || '',
+            cycleName: tc.cycleName || '',
+            meditationCapture: tc.meditationCapture || '',
+            checkInResponse: tc.checkInResponse || null,
+            journalSurprise: tc.journalSurprise || '',
+            journalOtherSide: tc.journalOtherSide || '',
+            journalStepOut: tc.journalStepOut || tc.closingIntention || '',
+            journeyReflection: tc.journeyReflection || '',
+            completedAt: tc.completedAt || null,
+          };
         }
 
         return state;

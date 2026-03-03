@@ -3,7 +3,7 @@
  * Central hub for all guided meditation content and utilities
  */
 
-import audioDurations from './audio-durations.json';
+import audioDurations from './audio-durations.json' with { type: 'json' };
 import { breathAwarenessMeditation } from './breath-awareness';
 import {
   guidedBreathOrbMeditation,
@@ -20,6 +20,8 @@ import { leavesOnAStreamMeditation } from './leaves-on-a-stream';
 import { stayWithItMeditation } from './stay-with-it';
 import { feltSenseMeditation } from './felt-sense';
 import { shortGroundingMeditation } from './short-grounding';
+import { theDescentMeditation } from './the-descent';
+import { theCycleClosingMeditation } from './the-cycle-closing';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -35,6 +37,8 @@ export const meditationLibrary = {
   'stay-with-it': stayWithItMeditation,
   'felt-sense': feltSenseMeditation,
   'short-grounding': shortGroundingMeditation,
+  'the-descent': theDescentMeditation,
+  'the-cycle-closing': theCycleClosingMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -69,6 +73,12 @@ export { feltSenseMeditation };
 
 // Re-export short grounding meditation
 export { shortGroundingMeditation };
+
+// Re-export the descent meditation
+export { theDescentMeditation };
+
+// Re-export the cycle closing meditation
+export { theCycleClosingMeditation };
 
 // Re-export audio duration utilities
 export { audioDurations };

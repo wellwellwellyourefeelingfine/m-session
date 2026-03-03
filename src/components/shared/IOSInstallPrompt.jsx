@@ -29,8 +29,12 @@ function isStandalone() {
 export default function IOSInstallPrompt() {
   const dismissed = useAppStore((state) => state.dismissedBanners[BANNER_ID]);
   const dismissBanner = useAppStore((state) => state.dismissBanner);
+  const showInstallPrompt = useAppStore((state) => state.showInstallPrompt);
+  const setShowInstallPrompt = useAppStore((state) => state.setShowInstallPrompt);
   const [show, setShow] = useState(false);
   const [hiding, setHiding] = useState(false);
+
+  const forceShow = showInstallPrompt && isIOSSafari() && !isStandalone();
 
   useEffect(() => {
     // Only show on iOS Safari when not already installed as PWA
@@ -41,11 +45,20 @@ export default function IOSInstallPrompt() {
     }
   }, [dismissed]);
 
-  if (!show || dismissed) return null;
+  const isVisible = (show && !dismissed) || forceShow;
+  if (!isVisible) return null;
 
   const handleDismiss = () => {
     setHiding(true);
-    setTimeout(() => dismissBanner(BANNER_ID), 300);
+    setTimeout(() => {
+      if (forceShow) {
+        setShowInstallPrompt(false);
+      }
+      if (show && !dismissed) {
+        dismissBanner(BANNER_ID);
+      }
+      setHiding(false);
+    }, 300);
   };
 
   return (
