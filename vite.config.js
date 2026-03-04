@@ -4,6 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/app/',
   plugins: [
     react(),
     VitePWA({
@@ -17,8 +18,9 @@ export default defineConfig({
         background_color: '#1A1A1A',
         display: 'standalone',
         orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
+        scope: '/app/',
+        start_url: '/app/',
+        id: '/app/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -88,6 +90,9 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    outDir: 'dist/app',
+  },
   server: {
     allowedHosts: ['.ngrok-free.app'],
   },

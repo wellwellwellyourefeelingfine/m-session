@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>m-session — Guided MDMA Session Companion</title>
+    <meta
+      name="description"
+      content="A free, open-source guided companion for MDMA sessions focused on personal growth. Use alone, with a partner, or with a sitter. Meditation, breathwork, IFS parts work, ACT exercises, journaling, harm reduction, and integration tools. Runs locally in your browser. No accounts, no data collection."
+    />
+    <link rel="canonical" href="https://m-session.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://m-session.com/" />
+    <meta
+      property="og:title"
+      content="m-session — Guided MDMA Session Companion"
+    />
+    <meta
+      property="og:description"
+      content="Structure and support for MDMA sessions focused on personal growth. Meditation, breathwork, IFS, ACT, journaling, and integration tools. Free, open-source, completely private."
+    />
+    <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="m-session — Guided MDMA Session Companion"
+    />
+    <meta
+      name="twitter:description"
+      content="Structure and support for MDMA sessions. Meditation, breathwork, IFS, ACT, journaling, integration. Free, private, open-source."
+    />
+    <meta name="twitter:image" content="https://m-session.com/og-image.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/app/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/app/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/app/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/app/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/app/apple-touch-icon.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "m-session",
+        "url": "https://m-session.com",
+        "description": "A free, open-source guided session companion for MDMA-assisted experiences. Use alone, with a partner, or with a sitter. Guided meditation, breathwork, IFS parts work, ACT Matrix exercises, journaling, and harm reduction tools.",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": [
+          "Guided meditation with audio",
+          "Breathwork with visual animation",
+          "IFS parts work and protector dialogue",
+          "ACT Matrix values mapping",
+          "Coherence Therapy exercises",
+          "Focusing (Gendlin method)",
+          "Cognitive defusion",
+          "Guided journaling and letter writing",
+          "Dosage calculator with safety warnings",
+          "Medication interaction checks",
+          "Time-locked follow-up integration modules",
+          "Offline-capable PWA",
+          "No data collection"
+        ]
+      }
+    </script>
+
+    <!-- Redirect existing standalone PWA installs to /app/ -->
+    <script>
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        window.location.replace('/app/');
+      }
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      /* ═══════════════════════════════════════════
+       RESET & VARIABLES
+       ═══════════════════════════════════════════ */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg: #0a0a0c;
+        --bg-elevated: #111114;
+        --bg-surface: #17171b;
+        --bg-hover: #1e1e23;
+        --text-primary: #e8e6e1;
+        --text-secondary: #8a8880;
+        --text-tertiary: #55534e;
+        --accent: #b8a9e8;
+        --accent-dim: rgba(184, 169, 232, 0.12);
+        --accent-glow: rgba(184, 169, 232, 0.25);
+        --warm: #e8a87c;
+        --border: rgba(255, 255, 255, 0.06);
+        --border-accent: rgba(184, 169, 232, 0.15);
+        --mono: "JetBrains Mono", monospace;
+        --serif: "Newsreader", serif;
+        --phone-bg: #0e0e11;
+        --phone-text: #e8e6e1;
+        --phone-accent: #b8a9e8;
+        --phone-secondary: #6a6860;
+        --phone-border: rgba(255, 255, 255, 0.06);
+        --phone-chip-sel-bg: rgba(184, 169, 232, 0.15);
+        --phone-chip-sel-border: rgba(184, 169, 232, 0.3);
+        --phone-chip-bg: rgba(255, 255, 255, 0.03);
+        --phone-chip-border: rgba(255, 255, 255, 0.06);
+        --phone-field-bg: rgba(255, 255, 255, 0.03);
+        --phone-field-border: rgba(255, 255, 255, 0.06);
+        --phone-line-grid: rgba(255, 255, 255, 0.06);
+        --phone-away: #e8a87c;
+        --noise-opacity: 0.03;
+      }
+
+      /* Light mode overrides */
+      html.light {
+        --bg: #f2f0eb;
+        --bg-elevated: #e9e7e2;
+        --bg-surface: #dfddd8;
+        --bg-hover: #d6d4cf;
+        --text-primary: #2a2a28;
+        --text-secondary: #7a7870;
+        --text-tertiary: #a5a39c;
+        --accent: #d4946a;
+        --accent-dim: rgba(212, 148, 106, 0.12);
+        --accent-glow: rgba(212, 148, 106, 0.25);
+        --warm: #b8a9e8;
+        --border: rgba(0, 0, 0, 0.07);
+        --border-accent: rgba(212, 148, 106, 0.2);
+        --phone-bg: #f5f3ee;
+        --phone-text: #2a2a28;
+        --phone-accent: #d4946a;
+        --phone-secondary: #9a9890;
+        --phone-border: rgba(0, 0, 0, 0.08);
+        --phone-chip-sel-bg: rgba(212, 148, 106, 0.12);
+        --phone-chip-sel-border: rgba(212, 148, 106, 0.3);
+        --phone-chip-bg: rgba(0, 0, 0, 0.03);
+        --phone-chip-border: rgba(0, 0, 0, 0.08);
+        --phone-field-bg: rgba(0, 0, 0, 0.03);
+        --phone-field-border: rgba(0, 0, 0, 0.08);
+        --phone-line-grid: rgba(0, 0, 0, 0.07);
+        --phone-away: #8a7ec0;
+        --noise-opacity: 0.025;
+      }
+      html.light header {
+        background: rgba(242, 240, 235, 0.8);
+      }
+      html.light .btn-primary {
+        color: #f2f0eb;
+      }
+      html.light .phone {
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.12),
+          0 16px 32px rgba(0, 0, 0, 0.08);
+      }
+      html.light .preview-phone {
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+      }
+      html.light .hero::after {
+        background: linear-gradient(
+          transparent 0%,
+          rgba(212, 148, 106, 0.015) 50%,
+          transparent 100%
+        );
+      }
+      html.light .hero::before {
+        background: radial-gradient(
+          ellipse,
+          rgba(212, 148, 106, 0.06) 0%,
+          transparent 70%
+        );
+      }
+      html.light .cta::before {
+        background: radial-gradient(
+          ellipse,
+          rgba(212, 148, 106, 0.04) 0%,
+          transparent 70%
+        );
+      }
+      html.light .btn-outline {
+        border-color: rgba(0, 0, 0, 0.18);
+        color: var(--text-primary);
+      }
+      html.light .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      html.light ::selection {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* Smooth transition on theme change */
+      html.theme-transitioning,
+      html.theme-transitioning *,
+      html.theme-transitioning *::before,
+      html.theme-transitioning *::after {
+        transition: background 0.5s ease, color 0.4s ease,
+          border-color 0.4s ease, box-shadow 0.5s ease, fill 0.4s ease,
+          stroke 0.4s ease !important;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        overflow-x: hidden;
+      }
+
+      body {
+        font-family: var(--mono);
+        background: var(--bg);
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.7;
+        letter-spacing: 0.02em;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+
+      /* Noise overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: var(--noise-opacity);
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        background-repeat: repeat;
+        background-size: 256px;
+      }
+
+      ::selection {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 32px;
+      }
+
+      /* ═══════════════════════════════════════════
+       SCROLL REVEAL
+       ═══════════════════════════════════════════ */
+      .rv {
+        opacity: 0;
+        transform: translateY(24px);
+        transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .rv.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .rv-d1 {
+        transition-delay: 0.08s;
+      }
+      .rv-d2 {
+        transition-delay: 0.16s;
+      }
+      .rv-d3 {
+        transition-delay: 0.24s;
+      }
+      .rv-d4 {
+        transition-delay: 0.32s;
+      }
+      .rv-d5 {
+        transition-delay: 0.4s;
+      }
+
+      /* ═══════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════ */
+      header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 18px 0;
+        background: rgba(10, 10, 12, 0.8);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-bottom: 1px solid var(--border);
+      }
+      header .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .header-nav {
+        display: flex;
+        gap: 28px;
+        align-items: center;
+      }
+      .header-nav a {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        transition: color 0.3s;
+      }
+      .header-nav a:hover {
+        color: var(--text-primary);
+        text-decoration: none;
+      }
+
+      /* Logo */
+      .logo {
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: baseline;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .logo-m {
+        color: var(--accent);
+      }
+      .logo-collapse {
+        display: inline-flex;
+        overflow: hidden;
+        max-width: 3.6ch;
+        opacity: 1;
+        transition: max-width 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+          opacity 0.6s ease;
+      }
+      .logo-collapse.collapsed {
+        max-width: 0;
+        opacity: 0;
+      }
+      .logo-hyphen {
+        display: inline-block;
+        overflow: hidden;
+        max-width: 0;
+        opacity: 0;
+        transition: max-width 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.1s,
+          opacity 0.5s ease 0.15s;
+      }
+      .logo-hyphen.visible {
+        max-width: 1ch;
+        opacity: 1;
+      }
+      .logo-session {
+        color: var(--accent);
+      }
+
+      /* Buttons */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 28px;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        border: none;
+        cursor: pointer;
+        transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .btn-primary:hover {
+        filter: brightness(1.15);
+        box-shadow: 0 0 32px var(--accent-glow);
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+      }
+      .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        text-decoration: none;
+        transform: translateY(-1px);
+      }
+
+      /* ═══════════════════════════════════════════
+       HERO
+       ═══════════════════════════════════════════ */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding-top: 80px;
+        position: relative;
+      }
+      /* Radial gradient glow behind hero */
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -20%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 800px;
+        background: radial-gradient(
+          ellipse,
+          rgba(184, 169, 232, 0.06) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 64px;
+        align-items: center;
+        width: 100%;
+        position: relative;
+      }
+      .hero-text h1 {
+        font-family: var(--serif);
+        font-size: clamp(38px, 5vw, 60px);
+        font-weight: 300;
+        line-height: 1.15;
+        margin-bottom: 28px;
+        letter-spacing: -0.01em;
+      }
+      .hero-text h1 .accent {
+        color: var(--accent);
+      }
+      .hero-tagline {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.85;
+        margin-bottom: 44px;
+        max-width: 440px;
+      }
+      .hero-actions {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .hero-stats {
+        margin-top: 56px;
+        display: flex;
+        gap: 48px;
+        padding-top: 32px;
+        border-top: 1px solid var(--border);
+      }
+      .hero-stat-label {
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+      .hero-stat-value {
+        display: block;
+        font-family: var(--serif);
+        font-weight: 300;
+        font-size: 22px;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+
+      /* ═══════════════════════════════════════════
+       PHONE MOCKUPS
+       ═══════════════════════════════════════════ */
+      .phone-showcase {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        padding-top: 24px;
+      }
+      .phone {
+        width: 270px;
+        height: 560px;
+        background: var(--phone-bg);
+        border-radius: 40px;
+        border: 2px solid var(--phone-border);
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.4),
+          0 16px 32px rgba(0, 0, 0, 0.3),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: background 0.5s ease, border-color 0.4s ease;
+      }
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100px;
+        height: 28px;
+        background: var(--phone-bg);
+        border-radius: 0 0 18px 18px;
+        z-index: 2;
+      }
+      .phone-screen {
+        padding: 36px 20px 16px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--mono);
+        font-size: 10px;
+        color: var(--phone-text);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        overflow: hidden;
+      }
+      .phone-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0 12px;
+        border-bottom: 1px solid var(--phone-border);
+      }
+      .phone-header-title {
+        font-family: var(--serif);
+        font-size: 15px;
+        color: var(--phone-text);
+        text-transform: none;
+      }
+      .phone-header-tag {
+        font-size: 8px;
+        color: var(--phone-secondary);
+        letter-spacing: 0.08em;
+      }
+      .phone-nav {
+        display: flex;
+        justify-content: space-around;
+        padding: 12px 0 4px;
+        border-top: 1px solid var(--phone-border);
+        margin-top: auto;
+      }
+      .phone-nav span {
+        font-size: 8px;
+        letter-spacing: 0.06em;
+        color: var(--phone-secondary);
+      }
+      .phone-nav span.active {
+        color: var(--phone-accent);
+      }
+
+      /* Moon animation inside phone */
+      #moon-pre {
+        font-family: var(--mono);
+        font-size: 5.5px;
+        line-height: 0.93;
+        letter-spacing: 0.22em;
+        white-space: pre;
+        user-select: none;
+        color: var(--phone-accent);
+        opacity: 0.7;
+        text-align: center;
+      }
+
+      /* ═══════════════════════════════════════════
+       PRINCIPLES STRIP
+       ═══════════════════════════════════════════ */
+      .principles {
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .principles-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .principle {
+        padding: 56px 36px;
+        border-right: 1px solid var(--border);
+        transition: background 0.3s;
+      }
+      .principle:last-child {
+        border-right: none;
+      }
+      .principle:hover {
+        background: var(--bg-elevated);
+      }
+      .principle-icon {
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: var(--accent);
+        opacity: 0.8;
+        font-family: var(--mono);
+      }
+      .principle-title {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        color: var(--text-primary);
+      }
+      .principle-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.8;
+      }
+
+      /* ═══════════════════════════════════════════
+       SECTION BASICS
+       ═══════════════════════════════════════════ */
+      section {
+        padding: 140px 0;
+      }
+      .section-label {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-family: var(--serif);
+        font-size: clamp(30px, 3.5vw, 46px);
+        font-weight: 300;
+        line-height: 1.2;
+        margin-bottom: 24px;
+        letter-spacing: -0.01em;
+      }
+      .section-body {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.85;
+        max-width: 560px;
+      }
+
+      /* ═══════════════════════════════════════════
+       SCREENSHOTS / APP PREVIEW
+       ═══════════════════════════════════════════ */
+      .preview-section {
+        background: var(--bg-elevated);
+      }
+      .preview-phones {
+        display: flex;
+        justify-content: center;
+        gap: 32px;
+        margin-top: 72px;
+        flex-wrap: wrap;
+      }
+      .preview-phone {
+        width: 240px;
+        height: 500px;
+        background: var(--phone-bg);
+        border-radius: 36px;
+        border: 2px solid var(--phone-border);
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+          background 0.5s ease, border-color 0.4s ease;
+      }
+      .preview-phone:hover {
+        transform: translateY(-8px);
+      }
+      .preview-phone::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90px;
+        height: 24px;
+        background: var(--phone-bg);
+        border-radius: 0 0 14px 14px;
+        z-index: 2;
+      }
+      .preview-screen {
+        padding: 32px 18px 14px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--mono);
+        font-size: 9px;
+        color: var(--phone-text);
+        overflow: hidden;
+      }
+      .preview-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-secondary);
+        text-align: center;
+        margin-top: 16px;
+      }
+
+      /* ═══════════════════════════════════════════
+       SESSION FLOW
+       ═══════════════════════════════════════════ */
+      .flow-timeline {
+        margin-top: 64px;
+        position: relative;
+      }
+      .flow-timeline::before {
+        content: "";
+        position: absolute;
+        left: 44px;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: var(--border);
+      }
+      .flow-step {
+        display: grid;
+        grid-template-columns: 88px 1fr;
+        gap: 36px;
+        padding: 36px 0;
+        position: relative;
+      }
+      .flow-step + .flow-step {
+        border-top: 1px solid var(--border);
+      }
+      .flow-num {
+        font-family: var(--serif);
+        font-size: 28px;
+        font-weight: 300;
+        color: var(--text-tertiary);
+        text-align: center;
+        position: relative;
+      }
+      .flow-num::after {
+        content: "";
+        position: absolute;
+        right: -18px;
+        top: 50%;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        transform: translateY(-50%);
+      }
+      .flow-title {
+        font-family: var(--serif);
+        font-size: 20px;
+        font-weight: 300;
+        margin-bottom: 8px;
+        letter-spacing: -0.01em;
+      }
+      .flow-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.8;
+        max-width: 500px;
+      }
+
+      /* ═══════════════════════════════════════════
+       MODULE GRID
+       ═══════════════════════════════════════════ */
+      .modules-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        margin-top: 64px;
+      }
+      .module-card {
+        background: var(--bg);
+        padding: 36px;
+        transition: background 0.3s;
+      }
+      .module-card:hover {
+        background: var(--bg-elevated);
+      }
+      .module-phase {
+        font-size: 9px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        margin-bottom: 14px;
+        opacity: 0.8;
+      }
+      .module-title {
+        font-family: var(--serif);
+        font-size: 18px;
+        font-weight: 300;
+        margin-bottom: 10px;
+        letter-spacing: -0.01em;
+      }
+      .module-desc {
+        font-size: 11px;
+        color: var(--text-secondary);
+        line-height: 1.75;
+      }
+      .module-framework {
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid var(--border);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+
+      /* ═══════════════════════════════════════════
+       PRIVACY / TRUST
+       ═══════════════════════════════════════════ */
+      /* Compass SVG theme-aware fills */
+      .compass-grid-line {
+        stroke: var(--phone-border);
+      }
+      .compass-accent-text {
+        fill: var(--phone-accent);
+      }
+      .compass-dim-text {
+        fill: var(--phone-secondary);
+      }
+      .compass-accent-dot {
+        fill: var(--phone-accent);
+      }
+      .compass-away-dot {
+        fill: var(--phone-away);
+      }
+      .compass-label-text {
+        fill: var(--phone-text);
+      }
+      .trust-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1px;
+        background: var(--border);
+        border: 1px solid var(--border);
+        margin-top: 64px;
+      }
+      .trust-item {
+        background: var(--bg);
+        padding: 48px 40px;
+      }
+      .trust-icon {
+        font-family: var(--mono);
+        font-size: 16px;
+        color: var(--accent);
+        margin-bottom: 16px;
+        opacity: 0.7;
+      }
+      .trust-title {
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .trust-desc {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.8;
+      }
+
+      /* ═══════════════════════════════════════════
+       INSTALL
+       ═══════════════════════════════════════════ */
+      .install-section {
+        text-align: center;
+        padding: 140px 32px;
+        background: var(--bg-elevated);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+      .install-steps {
+        display: flex;
+        justify-content: center;
+        gap: 72px;
+        margin-top: 56px;
+        flex-wrap: wrap;
+      }
+      .install-step {
+        max-width: 200px;
+      }
+      .install-num {
+        width: 40px;
+        height: 40px;
+        border: 1.5px solid var(--accent);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+        font-size: 14px;
+        color: var(--accent);
+        font-family: var(--serif);
+      }
+      .install-text {
+        font-size: 12px;
+        color: var(--text-secondary);
+        line-height: 1.75;
+      }
+
+      /* ═══════════════════════════════════════════
+       CTA
+       ═══════════════════════════════════════════ */
+      .cta {
+        text-align: center;
+        padding: 160px 32px;
+        position: relative;
+      }
+      .cta::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 400px;
+        background: radial-gradient(
+          ellipse,
+          rgba(184, 169, 232, 0.04) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .cta .section-body {
+        margin: 0 auto 48px;
+        text-align: center;
+      }
+
+      /* ═══════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════ */
+      footer {
+        padding: 48px 0;
+        border-top: 1px solid var(--border);
+      }
+      footer .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      .footer-text {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .footer-links {
+        display: flex;
+        gap: 28px;
+      }
+      .footer-links a {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        transition: color 0.3s;
+      }
+      .footer-links a:hover {
+        color: var(--text-primary);
+      }
+
+      /* ═══════════════════════════════════════════
+       THEME TOGGLE — vertical pill
+       ═══════════════════════════════════════════ */
+      .theme-toggle {
+        width: 18px;
+        height: 36px;
+        border-radius: 9px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        cursor: pointer;
+        position: relative;
+        flex-shrink: 0;
+        margin-left: -12px;
+        transition: background 0.4s ease, border-color 0.4s ease;
+      }
+      html.light .theme-toggle {
+        background: rgba(0, 0, 0, 0.06);
+        border-color: rgba(0, 0, 0, 0.12);
+      }
+      .theme-toggle-thumb {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 2px;
+        transition: top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+          background 0.3s ease, box-shadow 0.3s ease;
+        background: var(--text-tertiary);
+      }
+      /* Light state: thumb at bottom */
+      html.light .theme-toggle-thumb {
+        top: 20px;
+        background: var(--accent);
+        box-shadow: 0 0 6px rgba(212, 148, 106, 0.4);
+      }
+
+      /* ═══════════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════════ */
+      @media (max-width: 900px) {
+        .container {
+          padding: 0 24px;
+        }
+        section {
+          padding: 80px 0;
+        }
+        .hero {
+          min-height: auto;
+          padding-top: 72px;
+          padding-bottom: 24px;
+        }
+        .hero-grid {
+          grid-template-columns: 1fr;
+          gap: 40px;
+          text-align: center;
+        }
+        .hero-tagline {
+          margin: 0 auto 36px;
+        }
+        .hero-actions {
+          justify-content: center;
+        }
+        .hero-stats {
+          justify-content: center;
+          margin-top: 40px;
+          gap: 36px;
+        }
+        .phone-showcase {
+          order: -1;
+        }
+        .phone {
+          width: 220px;
+          height: 460px;
+        }
+        .principles-grid {
+          grid-template-columns: 1fr;
+        }
+        .principle {
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          padding: 40px 24px;
+        }
+        .principle:last-child {
+          border-bottom: none;
+        }
+        .trust-grid {
+          grid-template-columns: 1fr;
+          margin-top: 48px;
+        }
+        .trust-item {
+          padding: 36px 24px;
+        }
+        .modules-grid {
+          grid-template-columns: 1fr;
+          margin-top: 48px;
+        }
+        .module-card {
+          padding: 28px 24px;
+        }
+        .flow-timeline {
+          margin-top: 48px;
+        }
+        .flow-step {
+          grid-template-columns: 56px 1fr;
+          gap: 24px;
+          padding: 28px 0;
+        }
+        .flow-num {
+          font-size: 22px;
+        }
+        .flow-timeline::before {
+          left: 28px;
+        }
+        .flow-num::after {
+          right: -12px;
+        }
+        .preview-phones {
+          gap: 24px;
+          margin-top: 56px;
+        }
+        .preview-phone {
+          width: 200px;
+          height: 420px;
+        }
+        .header-nav a:not(.btn) {
+          display: none;
+        }
+        .header-nav {
+          gap: 16px;
+        }
+        .install-section {
+          padding: 80px 24px;
+        }
+        .install-steps {
+          flex-direction: column;
+          align-items: center;
+          gap: 32px;
+          margin-top: 40px;
+        }
+        .cta {
+          padding: 100px 24px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .container {
+          padding: 0 20px;
+        }
+        section {
+          padding: 64px 0;
+        }
+        .hero {
+          padding-top: 64px;
+        }
+        .hero-grid {
+          gap: 32px;
+        }
+        .hero-text h1 {
+          margin-bottom: 20px;
+        }
+        .hero-tagline {
+          margin-bottom: 28px;
+          max-width: 100%;
+        }
+        .hero-actions {
+          gap: 12px;
+        }
+        .hero-stats {
+          margin-top: 32px;
+          padding-top: 24px;
+          gap: 20px;
+          flex-wrap: wrap;
+        }
+        .hero-stat-value {
+          font-size: 19px;
+        }
+        .hero-stat-label {
+          font-size: 9px;
+        }
+        .phone {
+          width: 190px;
+          height: 400px;
+        }
+        .phone::before {
+          width: 80px;
+          height: 24px;
+        }
+        .phone-screen {
+          padding: 30px 16px 12px;
+        }
+        #moon-pre {
+          font-size: 4.5px;
+        }
+        .principle {
+          padding: 32px 20px;
+        }
+        .trust-item {
+          padding: 28px 20px;
+        }
+        .module-card {
+          padding: 24px 20px;
+        }
+        .flow-step {
+          grid-template-columns: 44px 1fr;
+          gap: 20px;
+          padding: 24px 0;
+        }
+        .flow-num {
+          font-size: 20px;
+        }
+        .flow-timeline::before {
+          left: 22px;
+        }
+        .flow-title {
+          font-size: 17px;
+        }
+        .flow-desc {
+          font-size: 11px;
+        }
+        .preview-phones {
+          flex-direction: column;
+          align-items: center;
+          gap: 28px;
+          margin-top: 40px;
+        }
+        .preview-phone {
+          width: 200px;
+          height: 420px;
+        }
+        .install-section {
+          padding: 64px 20px;
+        }
+        .install-steps {
+          gap: 28px;
+          margin-top: 32px;
+        }
+        .cta {
+          padding: 72px 20px;
+        }
+        footer .container {
+          flex-direction: column;
+          text-align: center;
+          gap: 12px;
+        }
+      }
+
+      /* ═══════════════════════════════════════════
+       SCANLINE ANIMATION (subtle)
+       ═══════════════════════════════════════════ */
+      @keyframes scanline {
+        0% {
+          transform: translateY(-100%);
+        }
+        100% {
+          transform: translateY(100vh);
+        }
+      }
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          transparent 0%,
+          rgba(184, 169, 232, 0.015) 50%,
+          transparent 100%
+        );
+        height: 200px;
+        width: 100%;
+        animation: scanline 8s linear infinite;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ─── HEADER ─── -->
+    <header>
+      <div class="container">
+        <div class="logo" id="logo">
+          <span class="logo-m">M</span
+          ><span class="logo-collapse" id="logo-dma">DMA</span
+          ><span class="logo-hyphen" id="logo-hyphen">-</span
+          ><span class="logo-session">SESSION</span>
+        </div>
+        <div class="header-nav">
+          <a href="#about">About</a>
+          <a href="#modules">Modules</a>
+          <a href="#install">Install</a>
+          <a href="/app" class="btn btn-primary" style="padding: 8px 22px"
+            >Launch App &rarr;</a
+          >
+          <div
+            class="theme-toggle"
+            id="theme-toggle"
+            role="button"
+            aria-label="Toggle light and dark mode"
+            tabindex="0"
+          >
+            <div class="theme-toggle-thumb"></div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ─── HERO ─── -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-text">
+            <h1 class="rv visible">
+              Your pace.<br />Your intention.<br />Your
+              <span class="accent">session</span>.
+            </h1>
+            <p class="hero-tagline rv visible rv-d1">
+              A guided companion for MDMA sessions focused on personal growth.
+              Use it on your own, with a partner, or with a sitter. Meditation,
+              breathwork, parts work, values mapping, journaling, and
+              integration. From preparation through follow-up.
+            </p>
+            <div class="hero-actions rv visible rv-d2">
+              <a href="/app" class="btn btn-primary">Launch App &rarr;</a>
+              <a href="#install" class="btn btn-outline">Install on Phone</a>
+            </div>
+            <div class="hero-stats rv visible rv-d3">
+              <div>
+                <span class="hero-stat-value">30+</span>
+                <span class="hero-stat-label">Guided activities</span>
+              </div>
+              <div>
+                <span class="hero-stat-value">6</span>
+                <span class="hero-stat-label">Session phases</span>
+              </div>
+              <div>
+                <span class="hero-stat-value">0</span>
+                <span class="hero-stat-label">Data collected</span>
+              </div>
+            </div>
+          </div>
+          <div class="phone-showcase rv visible rv-d2">
+            <div class="phone" id="hero-phone">
+              <div class="phone-screen" id="phone-screen"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PRINCIPLES STRIP ─── -->
+    <div class="principles">
+      <div class="container">
+        <div class="principles-grid">
+          <div class="principle rv">
+            <div class="principle-icon">&gt;_</div>
+            <div class="principle-title">Non-directive</div>
+            <div class="principle-desc">
+              Structure, not instructions. The app trusts your inner wisdom and
+              follows your pace rather than imposing a rigid protocol.
+            </div>
+          </div>
+          <div class="principle rv rv-d1">
+            <div class="principle-icon">{ }</div>
+            <div class="principle-title">Research-grounded</div>
+            <div class="principle-desc">
+              Built on established therapeutic frameworks: Internal Family
+              Systems, ACT, Coherence Therapy, and Focusing. Adapted for
+              self-guided use.
+            </div>
+          </div>
+          <div class="principle rv rv-d2">
+            <div class="principle-icon">~/</div>
+            <div class="principle-title">Fully private</div>
+            <div class="principle-desc">
+              No accounts, no analytics, no data leaves your device. Everything
+              runs locally in your browser. Open source.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ABOUT ─── -->
+    <section id="about">
+      <div class="container">
+        <div class="section-label rv">What this is</div>
+        <h2 class="section-title rv rv-d1">
+          A session guide for self-understanding
+        </h2>
+        <p class="section-body rv rv-d2">
+          m-session provides structure and support for MDMA sessions focused on
+          personal growth. Not therapy. Not treatment. A companion for honest
+          self-reflection, whether you're on your own, with a partner, or with a
+          trusted sitter. Built for people exploring relationships,
+          self-awareness, and inner landscape through intentional experience.
+        </p>
+        <p class="section-body rv rv-d3" style="margin-top: 20px">
+          Designed for altered states: minimal cognitive load, non-stimulating
+          visuals, offline-capable, and always respectful of wherever you are in
+          your process.
+        </p>
+
+        <div class="trust-grid rv rv-d4">
+          <div class="trust-item">
+            <div class="trust-icon">[*]</div>
+            <div class="trust-title">No accounts</div>
+            <div class="trust-desc">
+              No signup, no email, no login. Open the app and begin. Your
+              identity stays yours.
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">&lt;/&gt;</div>
+            <div class="trust-title">Open source</div>
+            <div class="trust-desc">
+              Every line of code is auditable. Licensed under AGPL-3.0. You can
+              verify exactly what runs on your device.
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">//0</div>
+            <div class="trust-title">Zero telemetry</div>
+            <div class="trust-desc">
+              No analytics, no tracking pixels, no error reporting. We don't
+              know who you are or what you do in the app.
+            </div>
+          </div>
+          <div class="trust-item">
+            <div class="trust-icon">[~]</div>
+            <div class="trust-title">Works offline</div>
+            <div class="trust-desc">
+              Install it as a PWA and it works without internet. Your session
+              won't be interrupted by connectivity.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── APP PREVIEW ─── -->
+    <section class="preview-section" id="preview">
+      <div class="container">
+        <div style="text-align: center">
+          <div class="section-label rv">Inside the app</div>
+          <h2 class="section-title rv rv-d1">Designed for the experience</h2>
+          <p class="section-body rv rv-d2" style="margin: 0 auto">
+            Low-stimulation design. Generous spacing. Content that meets you
+            where you are without overwhelming the moment.
+          </p>
+        </div>
+
+        <div class="preview-phones">
+          <!-- Phone 1: Peak transition w/ moon -->
+          <div class="rv rv-d1">
+            <div class="preview-phone">
+              <div class="preview-screen" id="preview-moon-screen"></div>
+            </div>
+            <div class="preview-label">Peak transition</div>
+          </div>
+          <!-- Phone 2: Body sensations -->
+          <div class="rv rv-d2">
+            <div class="preview-phone">
+              <div class="preview-screen" id="preview-body-screen"></div>
+            </div>
+            <div class="preview-label">Body check-in</div>
+          </div>
+          <!-- Phone 3: Closing ritual -->
+          <div class="rv rv-d3">
+            <div class="preview-phone">
+              <div class="preview-screen" id="preview-closing-screen"></div>
+            </div>
+            <div class="preview-label">Closing ritual</div>
+          </div>
+          <!-- Phone 4: Values Compass -->
+          <div class="rv rv-d4">
+            <div class="preview-phone">
+              <div class="preview-screen" id="preview-values-screen"></div>
+            </div>
+            <div class="preview-label">Values compass</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── SESSION FLOW ─── -->
+    <section id="flow">
+      <div class="container">
+        <div class="section-label rv">Session flow</div>
+        <h2 class="section-title rv rv-d1">Preparation through integration</h2>
+        <p class="section-body rv rv-d2">
+          Six phases guide you from intention setting to the days that follow.
+          Each phase adapts to your choices and timing.
+        </p>
+
+        <div class="flow-timeline">
+          <div class="flow-step rv">
+            <div class="flow-num">01</div>
+            <div>
+              <div class="flow-title">Preparation</div>
+              <div class="flow-desc">
+                Intake questionnaire, intention setting, harm reduction
+                information, dosage guidance, and medication interaction checks.
+                Build a personalized session timeline.
+              </div>
+            </div>
+          </div>
+          <div class="flow-step rv">
+            <div class="flow-num">02</div>
+            <div>
+              <div class="flow-title">Come-up</div>
+              <div class="flow-desc">
+                Grounding meditations and body awareness exercises for the onset
+                period. Breathwork, body scan, and gentle guidance to ease into
+                the experience.
+              </div>
+            </div>
+          </div>
+          <div class="flow-step rv">
+            <div class="flow-num">03</div>
+            <div>
+              <div class="flow-title">Peak</div>
+              <div class="flow-desc">
+                The heart of the session. IFS parts work, ACT values mapping,
+                self-compassion meditation, coherence therapy, cognitive
+                defusion, journaling, and open space.
+              </div>
+            </div>
+          </div>
+          <div class="flow-step rv">
+            <div class="flow-num">04</div>
+            <div>
+              <div class="flow-title">Integration</div>
+              <div class="flow-desc">
+                As the experience evolves, reflective modules help you make
+                sense of what surfaced. Letter writing, gratitude practices, and
+                gentle re-grounding.
+              </div>
+            </div>
+          </div>
+          <div class="flow-step rv">
+            <div class="flow-num">05</div>
+            <div>
+              <div class="flow-title">Closing</div>
+              <div class="flow-desc">
+                Honoring what happened. A message to your future self. One
+                commitment to carry forward. A structured ending that creates a
+                bridge to tomorrow.
+              </div>
+            </div>
+          </div>
+          <div class="flow-step rv">
+            <div class="flow-num">06</div>
+            <div>
+              <div class="flow-title">Follow-up</div>
+              <div class="flow-desc">
+                Five time-locked modules that unlock over the following days.
+                Check-ins, journal revisits, values compass follow-up, and
+                integration reflection during the neuroplasticity window.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── MODULES ─── -->
+    <section
+      id="modules"
+      style="
+        background: var(--bg-elevated);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      "
+    >
+      <div class="container">
+        <div class="section-label rv">Toolkit</div>
+        <h2 class="section-title rv rv-d1">30+ guided activities</h2>
+        <p class="section-body rv rv-d2">
+          Each module is grounded in an established therapeutic framework. Use
+          them in sequence or choose your own path.
+        </p>
+
+        <div class="modules-grid rv rv-d3">
+          <div class="module-card">
+            <div class="module-phase">Peak</div>
+            <div class="module-title">Stay With It</div>
+            <div class="module-desc">
+              Surface a felt sense, find its emotional signature, and explore
+              the original learning beneath it. Guided memory reconsolidation
+              process.
+            </div>
+            <div class="module-framework">Coherence Therapy</div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">Peak / Integration</div>
+            <div class="module-title">Values Compass</div>
+            <div class="module-desc">
+              Build an interactive four-quadrant map of your toward-moves,
+              away-moves, values, and inner obstacles. Guided journaling
+              follows.
+            </div>
+            <div class="module-framework">ACT Matrix</div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">Peak &rarr; Integration</div>
+            <div class="module-title">Protector Dialogue</div>
+            <div class="module-desc">
+              Meet a protective part through guided meditation. Deepen the
+              dialogue with structured journaling and visualization.
+            </div>
+            <div class="module-framework">IFS</div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">Peak / Integration</div>
+            <div class="module-title">Leaves on a Stream</div>
+            <div class="module-desc">
+              A cognitive defusion exercise. Place each thought on a leaf and
+              watch it float downstream. Practice observing without holding on.
+            </div>
+            <div class="module-framework">ACT</div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">All Phases</div>
+            <div class="module-title">Self-Compassion</div>
+            <div class="module-desc">
+              Guided meditation drawing on Kristin Neff's framework.
+              Mindfulness, common humanity, and self-kindness practices.
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">All Phases</div>
+            <div class="module-title">Body Scan</div>
+            <div class="module-desc">
+              Audio-guided body awareness. Move attention slowly through the
+              body, noticing whatever is present without trying to change it.
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">All Phases</div>
+            <div class="module-title">Journaling &amp; Letters</div>
+            <div class="module-desc">
+              Multiple modes: light journaling, deep journaling, letter writing,
+              parts work. Write to a person, to yourself, or to a feeling.
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">Pre-Session</div>
+            <div class="module-title">Life Graph</div>
+            <div class="module-desc">
+              Chart your life milestones against a well-being scale on an
+              interactive graph. See the shape of your story.
+            </div>
+          </div>
+          <div class="module-card">
+            <div class="module-phase">Follow-Up</div>
+            <div class="module-title">Integration Modules</div>
+            <div class="module-desc">
+              Five time-locked modules that unlock after session close.
+              Check-in, journal revisit, values compass follow-up, and open
+              reflection.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── INSTALL ─── -->
+    <section id="install" class="install-section">
+      <div class="container">
+        <div class="section-label rv" style="text-align: center">
+          Designed for mobile
+        </div>
+        <h2 class="section-title rv rv-d1" style="text-align: center">
+          Install on your phone
+        </h2>
+        <p
+          class="section-body rv rv-d2"
+          style="margin: 0 auto; text-align: center"
+        >
+          Add m-session to your home screen for a full-screen experience that
+          works offline. No app store needed.
+        </p>
+        <div class="install-steps rv rv-d3">
+          <div class="install-step">
+            <div class="install-num">1</div>
+            <div class="install-text">
+              Open m-session.com in Safari (iOS) or Chrome (Android)
+            </div>
+          </div>
+          <div class="install-step">
+            <div class="install-num">2</div>
+            <div class="install-text">Tap share, then "Add to Home Screen"</div>
+          </div>
+          <div class="install-step">
+            <div class="install-num">3</div>
+            <div class="install-text">
+              Launch from home screen. Works fully offline.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CTA ─── -->
+    <div class="cta">
+      <div class="section-label rv" style="text-align: center">
+        Your session, your way
+      </div>
+      <h2 class="section-title rv rv-d1" style="text-align: center">
+        Ready when you are
+      </h2>
+      <p
+        class="section-body rv rv-d2"
+        style="margin: 0 auto; text-align: center"
+      >
+        Whether you're exploring self-understanding, working through something
+        specific, or simply creating space to be honest with yourself.
+      </p>
+      <div class="rv rv-d3" style="margin-top: 48px; text-align: center">
+        <a
+          href="/app"
+          class="btn btn-primary"
+          style="padding: 14px 36px; font-size: 12px"
+          >Launch App &rarr;</a
+        >
+      </div>
+    </div>
+
+    <!-- ─── FOOTER ─── -->
+    <footer>
+      <div class="container">
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-links">
+          <a href="https://github.com/" target="_blank" rel="noopener"
+            >GitHub</a
+          >
+          <a href="/app">Launch App</a>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // ═══════════════════════════════════════
+      // SCROLL REVEAL
+      // ═══════════════════════════════════════
+      var obs = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) e.target.classList.add("visible");
+          });
+        },
+        { threshold: 0.08, rootMargin: "0px 0px -30px 0px" }
+      );
+      document.querySelectorAll(".rv").forEach(function (el) {
+        if (!el.closest(".hero")) obs.observe(el);
+      });
+
+      // Smooth scroll for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          var t = document.querySelector(a.getAttribute("href"));
+          if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+      });
+
+      // ═══════════════════════════════════════
+      // LOGO ANIMATION: MDMA-SESSION <-> M-SESSION
+      // ═══════════════════════════════════════
+      (function () {
+        var dma = document.getElementById("logo-dma");
+        var hyphen = document.getElementById("logo-hyphen");
+        var collapsed = false;
+        function toggle() {
+          collapsed = !collapsed;
+          if (collapsed) {
+            dma.classList.add("collapsed");
+            hyphen.classList.add("visible");
+          } else {
+            dma.classList.remove("collapsed");
+            hyphen.classList.remove("visible");
+          }
+        }
+        function cycle() {
+          toggle();
+          setTimeout(function () {
+            toggle();
+            setTimeout(cycle, 3000);
+          }, 4000);
+        }
+        setTimeout(cycle, 2500);
+      })();
+
+      // ═══════════════════════════════════════
+      // THEME TOGGLE
+      // ═══════════════════════════════════════
+      (function () {
+        var toggle = document.getElementById("theme-toggle");
+        var html = document.documentElement;
+
+        function switchTheme() {
+          html.classList.add("theme-transitioning");
+          html.classList.toggle("light");
+          // Remove transition class after animation completes
+          setTimeout(function () {
+            html.classList.remove("theme-transitioning");
+          }, 550);
+        }
+
+        toggle.addEventListener("click", switchTheme);
+        toggle.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            switchTheme();
+          }
+        });
+      })();
+
+      // ═══════════════════════════════════════
+      // ASCII MOON — hero phone
+      // ═══════════════════════════════════════
+      (function () {
+        var screen = document.getElementById("phone-screen");
+
+        // Header
+        var hdr = document.createElement("div");
+        hdr.className = "phone-header";
+        hdr.innerHTML =
+          '<span class="phone-header-title">m-session</span><span class="phone-header-tag">ACTIVE</span>';
+        screen.appendChild(hdr);
+
+        // Moon area
+        var moonWrap = document.createElement("div");
+        moonWrap.style.cssText =
+          "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center";
+        screen.appendChild(moonWrap);
+
+        var moonPre = document.createElement("pre");
+        moonPre.id = "moon-pre";
+        moonWrap.appendChild(moonPre);
+
+        var title = document.createElement("div");
+        title.style.cssText = "text-align:center;margin-top:16px";
+        title.innerHTML =
+          '<div style="font-family:var(--serif);font-size:15px;color:var(--phone-text);margin-bottom:6px">You\'ve Arrived</div><div style="font-size:9px;color:var(--phone-secondary);line-height:1.6">Let the experience unfold.<br>Be open to what arises.</div>';
+        moonWrap.appendChild(title);
+
+        // Nav
+        var nav = document.createElement("div");
+        nav.className = "phone-nav";
+        ["HOME", "ACTIVE", "JOURNAL", "TOOLS"].forEach(function (l, i) {
+          var s = document.createElement("span");
+          s.textContent = l;
+          if (i === 1) s.className = "active";
+          nav.appendChild(s);
+        });
+        screen.appendChild(nav);
+
+        // Moon render engine
+        var DENSE = ["M", "D", "M", "A"],
+          SPARSE = [".", ":", ";", ",", "'", "`"],
+          MID = ["+", "=", "*", "~", "-"];
+        var SIZE = 20,
+          CX = 10,
+          CY = 10,
+          R = 8,
+          RENDER_MS = 50,
+          ROT_DUR = 120000,
+          CHAR_MS = 150,
+          PAUSE_MS = 800;
+        var PHASE_DUR = 10000,
+          SWEEP_DUR = (PHASE_DUR - 2 * PAUSE_MS) / 2;
+        var pick = function (a) {
+          return a[Math.floor(Math.random() * a.length)];
+        };
+
+        function smoothEase(t) {
+          var c = Math.max(0, Math.min(1, t));
+          if (c < 0.5) return Math.pow(2 * c, 1.75) / 2;
+          return 1 - Math.pow(2 * (1 - c), 1.75) / 2;
+        }
+
+        var grid = [];
+        for (var y = 0; y < SIZE; y++) {
+          var row = [];
+          for (var x = 0; x < SIZE; x++) {
+            var dx = (x - CX + 0.5) / R,
+              dy = (y - CY + 0.5) / R,
+              dist = Math.sqrt(dx * dx + dy * dy);
+            row.push({
+              dx: dx,
+              dy: dy,
+              ic: dist <= 1,
+              ro: Math.random() * 0.25 - 0.125,
+              to: Math.random() * CHAR_MS,
+              c: null,
+            });
+          }
+          grid.push(row);
+        }
+
+        var st = { phase: "waxing", sp: 0, pt: null, lt: Date.now() };
+
+        function render(now) {
+          var dt = now - st.lt;
+          st.lt = now;
+          var rp = (now % ROT_DUR) / ROT_DUR,
+            ra = rp * 2 * Math.PI;
+          var cosR = Math.cos(ra),
+            sinR = Math.sin(ra);
+          var swp;
+          if (st.phase === "full-pause") swp = 1.15;
+          else if (st.phase === "new-pause") swp = 1.15;
+          else swp = smoothEase(st.sp);
+
+          var isWax = st.phase === "waxing" || st.phase === "full-pause";
+          var allDone = true,
+            out = "";
+
+          for (var y = 0; y < SIZE; y++) {
+            for (var x = 0; x < SIZE; x++) {
+              var cell = grid[y][x];
+              var ct = now + cell.to;
+              var upd =
+                Math.floor(ct / CHAR_MS) !==
+                Math.floor((ct - RENDER_MS) / CHAR_MS);
+              if (!cell.ic) {
+                if (upd || cell.c === null) cell.c = pick(MID);
+                out += cell.c;
+                continue;
+              }
+              var proj = cell.dx * cosR + cell.dy * sinR;
+              var norm = (proj + 1) / 2;
+              var thresh = norm + cell.ro;
+              var lit = isWax ? thresh < swp : thresh >= swp;
+              if (st.phase === "waxing" && st.sp >= 1 && !lit) allDone = false;
+              else if (st.phase === "waning" && st.sp >= 1 && lit)
+                allDone = false;
+              if (upd || cell.c === null) {
+                cell.c = lit ? pick(SPARSE) : pick(DENSE);
+              } else {
+                var cs = lit ? SPARSE : DENSE;
+                if (cs.indexOf(cell.c) < 0) cell.c = pick(cs);
+              }
+              out += cell.c;
+            }
+            out += "\n";
+          }
+
+          if (st.phase === "waxing") {
+            st.sp += dt / SWEEP_DUR;
+            if (st.sp >= 1 && allDone) {
+              st.phase = "full-pause";
+              st.pt = now;
+              st.sp = 0;
+            }
+          } else if (st.phase === "full-pause") {
+            if (now - st.pt >= PAUSE_MS) {
+              st.phase = "waning";
+              st.sp = 0;
+            }
+          } else if (st.phase === "waning") {
+            st.sp += dt / SWEEP_DUR;
+            if (st.sp >= 1 && allDone) {
+              st.phase = "new-pause";
+              st.pt = now;
+              st.sp = 1;
+            }
+          } else if (st.phase === "new-pause") {
+            if (now - st.pt >= PAUSE_MS) {
+              st.phase = "waxing";
+              st.sp = 0;
+            }
+          }
+          return out;
+        }
+
+        var lr = 0;
+        function loop() {
+          var now = Date.now();
+          if (now - lr >= RENDER_MS) {
+            moonPre.textContent = render(now);
+            lr = now;
+          }
+          requestAnimationFrame(loop);
+        }
+        document.fonts.ready.then(loop);
+      })();
+
+      // ═══════════════════════════════════════
+      // PREVIEW PHONE SCREENS (static mockups)
+      // Uses CSS vars so they respond to theme
+      // ═══════════════════════════════════════
+      (function () {
+        var serif = "'Newsreader', serif";
+        var mono = "'JetBrains Mono', monospace";
+
+        // Helper: mini nav bar
+        function makeNav(parent, activeIdx) {
+          var nav = document.createElement("div");
+          nav.style.cssText =
+            "display:flex;justify-content:space-around;padding:10px 0 4px;border-top:1px solid var(--phone-border);margin-top:auto;font-family:" +
+            mono +
+            ";font-size:7px;letter-spacing:0.06em;text-transform:uppercase";
+          ["HOME", "ACTIVE", "JOURNAL", "TOOLS"].forEach(function (l, i) {
+            var s = document.createElement("span");
+            s.textContent = l;
+            s.style.color =
+              i === activeIdx
+                ? "var(--phone-accent)"
+                : "var(--phone-secondary)";
+            nav.appendChild(s);
+          });
+          parent.appendChild(nav);
+        }
+
+        // Helper: header
+        function makeHeader(parent, title, tag) {
+          var h = document.createElement("div");
+          h.style.cssText =
+            "display:flex;justify-content:space-between;align-items:center;padding:4px 0 10px;border-bottom:1px solid var(--phone-border);font-family:" +
+            mono;
+          h.innerHTML =
+            '<span style="font-family:' +
+            serif +
+            ';font-size:13px;color:var(--phone-text)">' +
+            title +
+            '</span><span style="font-size:7px;color:var(--phone-secondary);letter-spacing:0.08em;text-transform:uppercase">' +
+            tag +
+            "</span>";
+          parent.appendChild(h);
+        }
+
+        // ── Phone 1: Moon (smaller static version) ──
+        var moonScreen = document.getElementById("preview-moon-screen");
+        makeHeader(moonScreen, "m-session", "PEAK");
+        var moonContent = document.createElement("div");
+        moonContent.style.cssText =
+          "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center";
+        var moonArt = document.createElement("pre");
+        moonArt.style.cssText =
+          "font-family:" +
+          mono +
+          ";font-size:4.5px;line-height:0.93;letter-spacing:0.22em;white-space:pre;color:var(--phone-accent);opacity:0.7;text-align:center";
+        // Static moon snapshot
+        var moonLines = [];
+        var SIZE2 = 18,
+          CX2 = 9,
+          CY2 = 9,
+          R2 = 7;
+        var SP = [".", ":", ";", ",", "'", "`"],
+          DN = ["M", "D", "M", "A"],
+          MD = ["+", "=", "*", "~", "-"];
+        var pk = function (a) {
+          return a[Math.floor(Math.random() * a.length)];
+        };
+        for (var yy = 0; yy < SIZE2; yy++) {
+          var line = "";
+          for (var xx = 0; xx < SIZE2; xx++) {
+            var ddx = (xx - CX2 + 0.5) / R2,
+              ddy = (yy - CY2 + 0.5) / R2;
+            var dd = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dd > 1) {
+              line += pk(MD);
+            } else {
+              var proj2 = ddx * 0.7 + ddy * 0.3;
+              line += proj2 < 0.15 ? pk(SP) : pk(DN);
+            }
+          }
+          moonLines.push(line);
+        }
+        moonArt.textContent = moonLines.join("\n");
+        moonContent.appendChild(moonArt);
+        var moonTitle = document.createElement("div");
+        moonTitle.style.cssText = "text-align:center;margin-top:14px";
+        moonTitle.innerHTML =
+          '<div style="font-family:' +
+          serif +
+          ';font-size:13px;color:var(--phone-text);margin-bottom:4px">You\'ve Arrived</div><div style="font-size:8px;color:var(--phone-secondary);line-height:1.5">Let the experience unfold.</div>';
+        moonContent.appendChild(moonTitle);
+        moonScreen.appendChild(moonContent);
+        makeNav(moonScreen, 1);
+
+        // ── Phone 2: Body sensations grid ──
+        var bodyScreen = document.getElementById("preview-body-screen");
+        makeHeader(bodyScreen, "m-session", "PEAK");
+        var bodyContent = document.createElement("div");
+        bodyContent.style.cssText =
+          "flex:1;display:flex;flex-direction:column;padding-top:16px;overflow:hidden";
+        bodyContent.innerHTML =
+          '<div style="font-size:8px;letter-spacing:0.12em;color:var(--phone-accent);text-transform:uppercase;margin-bottom:8px;font-family:' +
+          mono +
+          '">Body Check-in</div>' +
+          '<div style="font-family:' +
+          serif +
+          ";font-size:14px;color:var(--phone-text);margin-bottom:4px\">What's Present in Your Body?</div>" +
+          '<div style="font-size:8px;color:var(--phone-secondary);margin-bottom:14px;line-height:1.5;font-family:' +
+          mono +
+          '">Select all that feel true right now.</div>' +
+          '<div id="body-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:' +
+          mono +
+          '"></div>';
+        bodyScreen.appendChild(bodyContent);
+
+        var sensations = [
+          "Warmth",
+          "Tingling",
+          "Openness",
+          "Lightness",
+          "Heaviness",
+          "Buzzing",
+          "Softness",
+          "Tension",
+          "Expansion",
+          "Flowing",
+        ];
+        var selected = [0, 2, 3, 6, 8];
+        var gridEl = bodyContent.querySelector("#body-grid");
+        sensations.forEach(function (s, i) {
+          var chip = document.createElement("div");
+          var isSel = selected.indexOf(i) >= 0;
+          chip.style.cssText =
+            "padding:8px 6px;text-align:center;font-size:8px;letter-spacing:0.04em;border-radius:4px;" +
+            (isSel
+              ? "background:var(--phone-chip-sel-bg);color:var(--phone-accent);border:1px solid var(--phone-chip-sel-border)"
+              : "background:var(--phone-chip-bg);color:var(--phone-secondary);border:1px solid var(--phone-chip-border)");
+          chip.textContent = s;
+          gridEl.appendChild(chip);
+        });
+        makeNav(bodyScreen, 1);
+
+        // ── Phone 3: Closing ritual ──
+        var closingScreen = document.getElementById("preview-closing-screen");
+        makeHeader(closingScreen, "m-session", "CLOSING");
+        var closingContent = document.createElement("div");
+        closingContent.style.cssText =
+          "flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 4px;overflow:hidden";
+        closingContent.innerHTML =
+          '<div style="font-size:8px;letter-spacing:0.12em;color:var(--phone-accent);text-transform:uppercase;margin-bottom:12px;font-family:' +
+          mono +
+          '">Future Self</div>' +
+          '<div style="font-family:' +
+          serif +
+          ';font-size:15px;color:var(--phone-text);margin-bottom:10px;line-height:1.3">A Message Forward</div>' +
+          '<div style="font-size:8px;color:var(--phone-secondary);line-height:1.6;margin-bottom:16px;font-family:' +
+          mono +
+          '">Imagine yourself one week from now. What do you want to remember from today?</div>' +
+          '<div style="background:var(--phone-field-bg);border:1px solid var(--phone-field-border);border-radius:6px;padding:12px;min-height:80px;font-family:' +
+          mono +
+          ';font-size:8px;color:var(--phone-secondary);font-style:italic">What I want to remember...</div>' +
+          '<div style="font-size:7px;color:var(--phone-secondary);margin-top:10px;font-family:' +
+          mono +
+          ";opacity:0.6;line-height:1.5\">Write as if you're leaving a note for yourself to find.</div>";
+        closingScreen.appendChild(closingContent);
+        makeNav(closingScreen, 1);
+
+        // ── Phone 4: Values Compass ──
+        var valuesScreen = document.getElementById("preview-values-screen");
+        makeHeader(valuesScreen, "m-session", "PEAK");
+        var valuesContent = document.createElement("div");
+        valuesContent.style.cssText =
+          "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 4px;overflow:hidden";
+
+        // Mini compass — uses CSS-var-aware classes instead of inline fills
+        var compassSize = 160;
+        valuesContent.innerHTML =
+          '<div style="font-size:8px;letter-spacing:0.12em;color:var(--phone-accent);text-transform:uppercase;margin-bottom:10px;font-family:' +
+          mono +
+          '">Values Compass</div>' +
+          '<svg width="' +
+          compassSize +
+          '" height="' +
+          compassSize +
+          '" viewBox="0 0 160 160" style="overflow:visible" class="compass-svg">' +
+          '<line x1="80" y1="0" x2="80" y2="160" class="compass-grid-line" stroke-width="1"/>' +
+          '<line x1="0" y1="80" x2="160" y2="80" class="compass-grid-line" stroke-width="1"/>' +
+          '<text x="40" y="16" class="compass-accent-text" font-size="6" font-family="JetBrains Mono" text-anchor="middle" letter-spacing="0.08em" opacity="0.6">TOWARD</text>' +
+          '<text x="120" y="16" class="compass-dim-text" font-size="6" font-family="JetBrains Mono" text-anchor="middle" letter-spacing="0.08em" opacity="0.6">AWAY</text>' +
+          '<text x="40" y="156" class="compass-accent-text" font-size="6" font-family="JetBrains Mono" text-anchor="middle" letter-spacing="0.08em" opacity="0.6">VALUES</text>' +
+          '<text x="120" y="156" class="compass-dim-text" font-size="6" font-family="JetBrains Mono" text-anchor="middle" letter-spacing="0.08em" opacity="0.6">OBSTACLES</text>' +
+          '<circle cx="30" cy="35" r="3" class="compass-accent-dot" opacity="0.5"/>' +
+          '<circle cx="55" cy="50" r="3" class="compass-accent-dot" opacity="0.5"/>' +
+          '<circle cx="25" cy="60" r="3" class="compass-accent-dot" opacity="0.5"/>' +
+          '<circle cx="110" cy="40" r="3" class="compass-away-dot" opacity="0.4"/>' +
+          '<circle cx="130" cy="55" r="3" class="compass-away-dot" opacity="0.4"/>' +
+          '<circle cx="35" cy="110" r="3" class="compass-accent-dot" opacity="0.5"/>' +
+          '<circle cx="50" cy="125" r="3" class="compass-accent-dot" opacity="0.5"/>' +
+          '<circle cx="115" cy="115" r="3" class="compass-away-dot" opacity="0.4"/>' +
+          '<circle cx="135" cy="105" r="3" class="compass-away-dot" opacity="0.4"/>' +
+          '<text x="30" y="32" class="compass-label-text" font-size="5" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">openness</text>' +
+          '<text x="55" y="47" class="compass-label-text" font-size="5" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">connection</text>' +
+          '<text x="110" y="37" class="compass-label-text" font-size="5" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">withdraw</text>' +
+          '<text x="35" y="107" class="compass-label-text" font-size="5" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">honesty</text>' +
+          '<text x="115" y="112" class="compass-label-text" font-size="5" font-family="JetBrains Mono" text-anchor="middle" opacity="0.7">fear</text>' +
+          "</svg>" +
+          '<div style="font-size:7px;color:var(--phone-secondary);margin-top:12px;font-family:' +
+          mono +
+          ';text-align:center;line-height:1.5">Tap a quadrant to add entries</div>';
+        valuesScreen.appendChild(valuesContent);
+        makeNav(valuesScreen, 1);
+      })();
+    </script>
+  </body>
+</html>

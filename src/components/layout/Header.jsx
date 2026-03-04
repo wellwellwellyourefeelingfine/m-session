@@ -44,7 +44,7 @@ export default function Header() {
           {/* App Logo + "SESSION" text */}
           <div className="h-full flex items-end gap-1" style={{ padding: '0' }}>
             <img
-              src={darkMode ? '/m-session-logo-black-128.png' : '/m-session-logo-light-128.png'}
+              src={`${import.meta.env.BASE_URL}${darkMode ? 'm-session-logo-black-128.png' : 'm-session-logo-light-128.png'}`}
               alt="m-session"
               className="h-full w-auto"
               style={darkMode ? { filter: 'brightness(1.3)' } : undefined}

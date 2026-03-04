@@ -20,7 +20,7 @@ import ClosingCheckIn from '../session/ClosingCheckIn';
 import ClosingRitual from '../session/ClosingRitual';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
-import PhilosophyContent from '../shared/PhilosophyContent';
+import ActiveEmptyState from './ActiveEmptyState';
 import FollowUpCheckIn from '../followup/FollowUpCheckIn';
 import FollowUpRevisit from '../followup/FollowUpRevisit';
 import FollowUpIntegration from '../followup/FollowUpIntegration';
@@ -248,27 +248,8 @@ export default function ActiveView() {
 
     switch (sessionPhase) {
       case 'not-started':
-      case 'intake': {
-        // Before intake is complete — show Core Philosophy
-        const setCurrentTab = useAppStore.getState().setCurrentTab;
-        return (
-          <div className="flex flex-col items-center px-6 pt-2 pb-12 gap-6">
-            <button
-              onClick={() => setCurrentTab('home')}
-              className="border border-[var(--accent)] bg-[var(--accent-bg)] px-5 py-2.5 text-[var(--color-text-secondary)] text-center hover:opacity-70 transition-opacity uppercase tracking-wider text-xs"
-            >
-              Complete your intake on the Home tab to begin your session.
-            </button>
-            <AsciiMoon />
-            <div className="max-w-xl w-full">
-              <h1 className="text-xl font-serif text-center mb-8 text-[var(--color-text-primary)]">
-                Core Philosophy
-              </h1>
-              <PhilosophyContent />
-            </div>
-          </div>
-        );
-      }
+      case 'intake':
+        return <ActiveEmptyState />;
 
       case 'pre-session': {
         // Intake complete, timeline generated — show Pre-Session Active Page

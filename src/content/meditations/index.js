@@ -4,6 +4,7 @@
  */
 
 import audioDurations from './audio-durations.json' with { type: 'json' };
+import { audioPath } from '../../utils/audioPath';
 import { breathAwarenessMeditation } from './breath-awareness';
 import {
   guidedBreathOrbMeditation,
@@ -250,7 +251,7 @@ export function generateTimedSequence(prompts, silenceMultiplier = 1.0, { speaki
       startTime: currentTime,
       endTime: currentTime + totalDuration,
       audioSrc: audioConfig
-        ? `${audioConfig.basePath}${prompt.id}.${audioConfig.format}`
+        ? audioPath(`${audioConfig.basePath}${prompt.id}.${audioConfig.format}`)
         : null,
     });
 

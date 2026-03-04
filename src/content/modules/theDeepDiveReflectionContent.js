@@ -1,7 +1,10 @@
 /**
  * The Deep Dive — Post-Meditation Reflection Content
  * All screen text for the 10-screen reflection flow after the meditation.
- * Follows the theCycleContent.js pattern of externalizing content.
+ *
+ * Screens 1-6 are shared (with minor couple additions on 1-2).
+ * Screens 7-9 diverge: solo = journal prompts, couple = discussion prompts.
+ * Screen 10 has 4 variants (mode x hasPart2).
  */
 
 // ============================================
@@ -9,16 +12,24 @@
 // ============================================
 
 export const QUICK_CAPTURE_SCREEN = {
-  header: 'While it\u2019s fresh',
-  lines: [
-    'Take a moment before anything else. Whatever just happened during the meditation, get it down in a few words before it fades.',
-    '\u00A7',
-    'No need for complete sentences. This is just for you.',
-  ],
-  journal: {
-    key: 'quickCapture',
-    placeholder: 'Whatever is most alive right now...',
-    rows: 5,
+  solo: {
+    header: 'While it\u2019s fresh',
+    body: 'Take a moment before anything else. Whatever just happened during the meditation, get it down in a few words before it fades.',
+    hint: 'No need for complete sentences. This is just for you.',
+    journal: {
+      key: 'quickCapture',
+      placeholder: 'Whatever is most alive right now...',
+      rows: 5,
+    },
+  },
+  couple: {
+    header: 'While it\u2019s fresh',
+    instruction: 'Take a quiet moment before you talk. If either of you wants to write something down from the meditation, do that now. This one is individual.',
+    journal: {
+      key: 'quickCapture',
+      placeholder: 'Whatever is most alive right now...',
+      rows: 4,
+    },
   },
 };
 
@@ -27,7 +38,7 @@ export const QUICK_CAPTURE_SCREEN = {
 // ============================================
 
 export const CHECKIN_HEADER = 'What happened when you went underneath?';
-export const CHECKIN_SUBTEXT = 'There is no wrong answer. Just pick whichever feels closest to what you experienced.';
+export const CHECKIN_SUBTEXT = 'There is no wrong answer. Just pick whichever feels closest.';
 
 export const CHECKIN_OPTIONS = [
   { id: 'softened', label: 'Something softened or opened up' },
@@ -36,6 +47,8 @@ export const CHECKIN_OPTIONS = [
   { id: 'stuck', label: 'I couldn\u2019t get past my usual reactions' },
   { id: 'unsure', label: 'I\u2019m not sure what happened' },
 ];
+
+export const CHECKIN_COUPLE_NOTE = 'Pick whichever feels closest for the person holding the device. You will have a chance to discuss where you each landed.';
 
 // ============================================
 // TAILORED RESPONSES (Screen 3)
@@ -53,7 +66,7 @@ export const TAILORED_RESPONSES = {
     header: 'You made contact with something real',
     paragraphs: [
       'The pain you found is probably what has been driving your reactions all along. Most people spend years building walls around exactly this feeling. Fear of being left. Grief about a disconnection you cannot fix. The raw question of whether you are enough.',
-      'The fact that you could feel it, even for a moment, without being destroyed by it, is significant. That is not a small thing. Your nervous system just learned that this feeling can be survivable.',
+      'The fact that you could feel it, even for a moment, without being destroyed by it, is significant. Your nervous system just learned that this feeling can be survivable.',
     ],
   },
   clarity: {
@@ -128,56 +141,97 @@ export const ACCENT_TERMS = {
 };
 
 // ============================================
-// JOURNAL SCREENS (Screens 7-9)
+// REFLECT SCREENS (Screens 7-9)
 // ============================================
 
-export const JOURNAL_SURFACE_SCREEN = {
-  header: 'The surface',
-  preamble: {
-    default: 'Now that you have a frame for what just happened, let\u2019s look at both layers in your own relationship. Start with the surface. When things get difficult between you and this person, what is the reaction you usually show?',
-    stuck: 'You noticed that the surface reactions held strong during the meditation. That is useful information. Let\u2019s look at what kept showing up. When things get difficult with this person, what is the reaction that dominates?',
+export const REFLECT_SURFACE_SCREEN = {
+  solo: {
+    header: 'The surface',
+    preamble: {
+      default: 'Now that you have a frame for what just happened, start with the surface. When things get difficult between you and this person, what is the reaction you usually show?',
+      stuck: 'You noticed that the surface reactions held strong during the meditation. That is useful information. When things get difficult with this person, what is the reaction that dominates?',
+    },
+    journal: {
+      key: 'surfaceReaction',
+      prompt: 'What do I usually show on the surface when things get hard between us?',
+      placeholder: 'The reaction, the pattern, what I do or say...',
+      rows: 4,
+    },
   },
-  journal: {
-    key: 'surfaceReaction',
-    prompt: 'What do I usually show on the surface when things get hard between us?',
-    placeholder: 'The reaction, the pattern, what I do or say...',
+  couple: {
+    header: 'The surface',
+    instruction: 'You just read about two layers: the surface reaction and the feeling underneath. Before going deeper, name the surface layer to each other.',
+    steps: [
+      'Each of you: tell your partner what YOUR surface pattern looks like. What do you do when the tension starts? Do you push? Go quiet? Criticize? Shut down? Be honest. You are not confessing. You are describing a pattern you both already recognize.',
+      'After you have each named yours, see if you can describe it without blame. Not \u201CI shut down because you push me.\u201D Just \u201CI shut down.\u201D',
+    ],
+    timeSuggestion: 'Take a few minutes with this.',
+    placeholder: 'What we each named as our surface patterns...',
+    rows: 3,
+  },
+};
+
+export const REFLECT_UNDERNEATH_SCREEN = {
+  solo: {
+    header: 'Underneath',
+    preamble: {
+      softened: 'During the meditation, something softened. A tenderness or a closeness came through. Stay with that for a moment. What was the feeling that showed up when the walls came down?',
+      hurt: 'You made contact with something raw during the meditation. A pain that your usual reactions have been trying to protect you from. Can you put words to it? Even rough ones.',
+      clarity: 'You saw something clearly that you had not been able to see before. Now see if you can go one layer deeper. Underneath the insight, is there a feeling? A fear, a sadness, a need that the clarity is pointing toward?',
+      stuck: 'Even when the defenses hold, there are usually glimpses. A flash of something before the wall went back up. If you sensed anything at all underneath the surface reaction, try to describe it here. And if you did not, write about what the wall itself felt like.',
+      unsure: 'Something happened during the meditation, even if you cannot quite name it. Try to describe the texture of it. Not what you think it means. Just what it felt like. A heaviness, a pulling, a blankness, a flicker of something.',
+    },
+    journal: {
+      key: 'primaryEmotion',
+      prompt: {
+        default: 'What did I find underneath my usual reactions?',
+        stuck: 'What did I notice, even briefly, underneath the surface?',
+        unsure: 'What was the quality of what I experienced?',
+      },
+      placeholder: {
+        default: 'The feeling that was there before the defense...',
+        stuck: 'Any flicker, any glimpse, or what the wall itself felt like...',
+        unsure: 'The texture, the sensation, whatever words come...',
+      },
+      rows: 5,
+    },
+  },
+  couple: {
+    header: 'What you heard',
+    instruction: 'At the end of the meditation, you each shared one sentence about what you found underneath. Now take turns reflecting that back.',
+    steps: [
+      'Tell your partner: this is what I heard you say. Not your interpretation. Not your response. Just what you heard.',
+      'Then your partner tells you if you got it right. If you missed something, they can say what it actually was.',
+      'Switch. The other person reflects back what they heard. Same process.',
+    ],
+    timeSuggestion: 'This is not a debate. It is an exercise in hearing each other.',
+    placeholder: 'What we each heard and what was clarified...',
     rows: 4,
   },
 };
 
-export const JOURNAL_UNDERNEATH_SCREEN = {
-  header: 'Underneath',
-  preamble: {
-    softened: 'During the meditation, something softened. A tenderness or a closeness came through. Stay with that for a moment. What was the feeling that showed up when the walls came down?',
-    hurt: 'You made contact with something raw during the meditation. A pain that your usual reactions have been trying to protect you from. Can you put words to it? Even rough ones. What was the feeling underneath?',
-    clarity: 'You saw something clearly that you had not been able to see before. Now see if you can go one layer deeper. Underneath the insight, is there a feeling? A fear, a sadness, a need that the clarity is pointing toward?',
-    stuck: 'Even when the defenses hold, there are usually glimpses. A flash of something before the wall went back up. A feeling you caught for half a second. If you sensed anything at all underneath the surface reaction, try to describe it here. And if you did not, that is okay. Write about what the wall itself felt like.',
-    unsure: 'Something happened during the meditation, even if you cannot quite name it. Try to describe the texture of it. Not what you think it means. Just what it felt like. A heaviness, a pulling, a blankness, a flicker of something. Start there and see if words come.',
-  },
-  journal: {
-    key: 'primaryEmotion',
-    prompt: {
-      default: 'What did I find underneath my usual reactions?',
-      stuck: 'What did I notice, even briefly, underneath the surface?',
-      unsure: 'What was the quality of what I experienced?',
+export const REFLECT_UNSAID_SCREEN = {
+  solo: {
+    header: 'The unsaid',
+    preamble: 'From this place, knowing what you now know about what is really happening underneath, is there something you want to say to this person? Not the complaint. Not the defense. The thing you have never been able to say because it was too close to the bone.',
+    journal: {
+      key: 'unsaidMessage',
+      prompt: 'What do I need this person to know that I have not been able to say?',
+      placeholder: 'The truest thing...',
+      rows: 5,
     },
-    placeholder: {
-      default: 'The feeling that was there before the defense...',
-      stuck: 'Any flicker, any glimpse, or what the wall itself felt like...',
-      unsure: 'The texture, the sensation, whatever words come...',
-    },
-    rows: 5,
   },
-};
-
-export const JOURNAL_UNSAID_SCREEN = {
-  header: 'The unsaid',
-  preamble: 'From this place, knowing what you now know about what is really happening underneath, is there something you want to say to this person? Not the complaint. Not the defense. The thing you have never been able to say because it was too close to the bone.',
-  journal: {
-    key: 'unsaidMessage',
-    prompt: 'What do I need this person to know that I have not been able to say?',
-    placeholder: 'The truest thing...',
-    rows: 5,
+  couple: {
+    header: 'Saying it',
+    instruction: 'During the meditation, you each said one sentence. Now, with new language for what is happening underneath your patterns, the door is open a little wider.',
+    steps: [
+      'Take turns. Say anything else you want your partner to know from this place. Not the familiar complaints. Not a response to what they said. The thing underneath that you have had trouble putting into words.',
+      'The listener\u2019s only job is to receive it. No fixing. No defending. No reassuring. Just hearing.',
+    ],
+    note: 'This can be one sentence or many. It can also be silence. If there is nothing else to say right now, that is enough. What you shared during the meditation already counted.',
+    timeSuggestion: 'Take as much time as you need.',
+    placeholder: 'What was said, what it felt like...',
+    rows: 4,
   },
 };
 
@@ -186,18 +240,31 @@ export const JOURNAL_UNSAID_SCREEN = {
 // ============================================
 
 export const CLOSING_CONTENT = {
-  withPart2: [
-    'The feeling you found underneath does not just sit there quietly. It shapes how you react, what you say, what you avoid. Over time, it creates a pattern between you and this person that can repeat for years.',
-    '\u00A7',
-    'In Part 2, you will map that pattern. You will see the whole cycle from above. And that changes everything.',
-    '\u00A7',
-    'For now, just let what you found settle. It will keep working on its own.',
-  ],
-  withoutPart2: [
-    'The feeling you found underneath does not just sit there quietly. It shapes how you react, what you say, what you avoid. Over time, it creates a pattern between you and this person that can repeat for years.',
-    '\u00A7',
-    'What you found here does not need to be resolved today. Just knowing it is there, knowing what the surface reactions are actually protecting, changes how the pattern operates. Even without doing anything else.',
-    '\u00A7',
-    'For now, just let what you found settle. It will keep working on its own.',
-  ],
+  header: 'What comes next',
+  solo: {
+    withPart2: [
+      'The feeling you found underneath does not just sit there quietly. It shapes how you react, what you say, what you avoid. Over time, it creates a pattern between you and this person that can repeat for years.',
+      '\u00A7',
+      'In Part 2, you will map that pattern. You will see the whole cycle from above. And that changes everything.',
+      '\u00A7',
+      'For now, just let what you found settle. It will keep working on its own.',
+    ],
+    withoutPart2: [
+      'What you found here does not need to be resolved today. Just knowing it is there, knowing what the surface reactions are actually protecting, changes how the pattern operates. Even without doing anything else.',
+    ],
+  },
+  couple: {
+    withPart2: [
+      'What you just did is hard. Finding the feeling underneath your defenses, saying it out loud, and hearing your partner do the same. Most couples never get here.',
+      '\u00A7',
+      'In Part 2, you will map the pattern these feelings create between you. You will see the whole cycle from above. And you will do that together too.',
+      '\u00A7',
+      'For now, let what you found settle. You do not need to solve anything tonight.',
+    ],
+    withoutPart2: [
+      'What you just did is hard. Finding the feeling underneath your defenses, saying it out loud, and hearing your partner do the same. Most couples never get here.',
+      '\u00A7',
+      'You do not need to resolve anything tonight. Just knowing what is underneath, and knowing that your partner knows it too, changes how the pattern operates. Even without doing anything else.',
+    ],
+  },
 };

@@ -7,6 +7,7 @@
 
 import { getModuleById } from '../content/modules/library';
 import { getMeditationById } from '../content/meditations';
+import { audioPath } from '../utils/audioPath';
 
 const CACHE_NAME = 'audio-cache';
 
@@ -19,7 +20,7 @@ const COMPOSER_ASSETS = [
   '/audio/silence/silence-30s.mp3',
   '/audio/silence/silence-60s.mp3',
   '/audio/meditation-bell-soft.mp3',
-];
+].map(audioPath);
 
 /**
  * Precache the silence blocks and soft gong used by the audio composer.
@@ -80,7 +81,7 @@ function getAudioUrlsForModule(libraryId) {
     });
   }
 
-  return Array.from(allClipIds).map((id) => `${basePath}${id}.${format}`);
+  return Array.from(allClipIds).map((id) => audioPath(`${basePath}${id}.${format}`));
 }
 
 /**

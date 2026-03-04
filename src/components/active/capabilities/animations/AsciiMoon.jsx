@@ -58,7 +58,7 @@ const smoothEase = (t) => {
   return -0.15 + eased * 1.3;
 };
 
-export default memo(function AsciiMoon({ className = '' }) {
+export default memo(function AsciiMoon({ className = '', opacity = 0.7 }) {
   const [output, setOutput] = useState('');
   const animationRef = useRef(null);
   const lastRenderRef = useRef(0);
@@ -233,7 +233,7 @@ export default memo(function AsciiMoon({ className = '' }) {
   return (
     <pre
       className={`font-mono text-[8px] leading-[0.93] tracking-[0.3em] whitespace-pre select-none ${className}`}
-      style={{ color: 'var(--accent)', opacity: 0.7 }}
+      style={{ color: 'var(--accent)', opacity }}
     >
       {output}
     </pre>

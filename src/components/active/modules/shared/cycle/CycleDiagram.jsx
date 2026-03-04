@@ -10,6 +10,7 @@
  * - partnerMoves: array of move IDs selected for the partner
  * - cycleName: user-given name for the cycle
  * - myPosition: 'pursuer' | 'withdrawer'
+ * - partnerPosition: optional 'pursuer' | 'withdrawer' (defaults to opposite of myPosition)
  * - animate: boolean — whether to animate the build sequence
  * - className: optional class
  */
@@ -54,17 +55,18 @@ export default function CycleDiagram({
   partnerMoves = [],
   cycleName = '',
   myPosition = 'pursuer',
+  partnerPosition: partnerPositionProp,
   animate = false,
   className = '',
 }) {
-  // Determine which loop is pursuer vs withdrawer
-  const isPursuerTop = myPosition === 'pursuer';
-  const topMoves = isPursuerTop ? myMoves : partnerMoves;
-  const botMoves = isPursuerTop ? partnerMoves : myMoves;
-  const topPosition = isPursuerTop ? 'pursuer' : 'withdrawer';
-  const botPosition = isPursuerTop ? 'withdrawer' : 'pursuer';
-  const topLabel = isPursuerTop ? 'I move toward' : 'They move toward';
-  const botLabel = isPursuerTop ? 'They move away' : 'I move away';
+  // My moves on top, partner moves on bottom
+  const resolvedPartnerPosition = partnerPositionProp || (myPosition === 'pursuer' ? 'withdrawer' : 'pursuer');
+  const topMoves = myMoves;
+  const botMoves = partnerMoves;
+  const topPosition = myPosition;
+  const botPosition = resolvedPartnerPosition;
+  const topLabel = myPosition === 'pursuer' ? 'I move toward' : 'I move away';
+  const botLabel = resolvedPartnerPosition === 'pursuer' ? 'They move toward' : 'They move away';
 
   // Calculate label positions
   const topLabelPositions = distributeLabels(topMoves.length, CX, TOP_CY, LABEL_RX, LABEL_RY, -Math.PI);

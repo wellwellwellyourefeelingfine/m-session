@@ -95,11 +95,20 @@ export const CYCLE_ACCENT_TERMS = {
 export const FRAMING_CONTENT = {
   header: 'The Cycle',
   subtitle: 'Part II',
+  description: 'Map the repeating cycle in a relationship. See the pattern from above — and begin to loosen its grip.',
+  modeNote: {
+    solo: 'You are exploring this relationship pattern on your own.',
+    coupleWithPart1: 'In The Deep Dive, you chose to participate as a couple. This exercise will guide you through taking turns so that you each have a chance to participate and connect.',
+    coupleWithoutPart1: 'You are participating as a couple. This exercise will guide you through taking turns so that you each have a chance to participate and connect.',
+  },
+};
+
+export const BRIDGE_CONTENT = {
   withPartData: {
     lines: [
       'In The Deep Dive, you went beneath the surface of what happens between you and this person. You found the feelings underneath your familiar reactions.',
       '\u00A7',
-      'Now we are going to map the pattern itself. The repeating cycle that you and this person get caught in.',
+      'Now we are going to map the pattern itself. The repeating cycle that you and this person get caught in when things get hard.',
       '\u00A7',
       'Every relationship has one. It runs faster than either of you can think. And once you can see it from above, it starts to lose some of its grip.',
     ],
@@ -111,7 +120,6 @@ export const FRAMING_CONTENT = {
       'Every relationship has one. It runs faster than either of you can think. And once you can see it from above, it starts to lose some of its grip.',
     ],
   },
-  coupleNote: 'You are going to map this together. The app will guide you through taking turns. One of you will hold the device. Both of you will participate.',
 };
 
 export const FRICTION_SCREEN = {
@@ -126,6 +134,19 @@ export const FRICTION_SCREEN = {
     placeholder: 'The pattern you both recognize...',
     rows: 3,
   },
+};
+
+export const POSITIONS_INTRO = {
+  header: 'Two moves',
+  lines: [
+    'When friction shows up in a relationship, people tend to respond in one of two ways.',
+    '\u00A7',
+    'Some move toward \u2014 they reach, push, pursue, demand. The pain underneath says: I need you to respond. I need to know you are still here.',
+    '\u00A7',
+    'Some move away \u2014 they pull back, shut down, go quiet. The pain underneath says: I cannot handle this intensity. I need space to feel safe.',
+    '\u00A7',
+    'Neither is wrong. Both are attempts to manage the same disconnection. They just look different from the outside.',
+  ],
 };
 
 export const YOUR_MOVE_SCREEN = {
@@ -148,7 +169,9 @@ export const YOUR_UNDERNEATH_SCREEN = {
   solo: {
     header: 'Your underneath',
     prompt: {
-      withPart1: 'In The Deep Dive, you found a deeper feeling underneath your surface reactions. Does it connect to the pattern you just described? What is the feeling that drives your move?',
+      withPart1: 'In The Deep Dive, you wrote about the feeling underneath your surface reactions. Now think about the move you just selected. What is the deeper emotion driving it? Not the frustration or the defense \u2014 what is underneath that?',
+      withPart1Quote: 'In The Deep Dive, you wrote this about what lives underneath your reactions:',
+      withPart1After: 'Does that connect to the move you just described? What is the deeper feeling driving it?',
       withoutPart1: 'Underneath the move you just described, what is the deeper feeling driving it? A fear. A sadness. A question you keep asking.',
     },
     placeholder: 'The feeling underneath my reaction...',
@@ -157,7 +180,9 @@ export const YOUR_UNDERNEATH_SCREEN = {
   couple: {
     header: 'Your underneath',
     prompt: {
-      withPart1: 'This is just for you. You found this deeper feeling in the first part of the exercise. Does it connect to the pattern you just described?',
+      withPart1: 'This is just for you right now. In The Deep Dive, you explored what lives underneath your familiar reactions. Now connect that to the move you just described. What is the feeling that drives it?',
+      withPart1Quote: 'In The Deep Dive, you wrote this about what lives underneath:',
+      withPart1After: 'Does that connect to the move you just described? What is the deeper feeling driving it?',
       withoutPart1: 'This is just for you right now. Underneath the move you just described, what is the deeper feeling driving it? A fear. A sadness. A question you keep asking.',
     },
     note: 'You will have a chance to share this with your partner before you see the full cycle.',

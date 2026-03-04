@@ -7,12 +7,13 @@
  * 2. Audio-guided meditation (useMeditationPlayback)
  * 3. Post-meditation reflection flow (10 screens):
  *    capture → checkin → response → psychoed (×3) →
- *    journal-surface → journal-under → journal-unsaid → closing
+ *    reflect-surface → reflect-under → reflect-unsaid → closing
  *
  * Two modes:
- * - Solo (~20 min): Exploring a relationship internally
- * - Couple (~23 min): Doing this with a partner present
+ * - Solo: journal-based personal reflection on screens 7-9
+ * - Couple: discussion prompts with collapsible notepads on screens 7-9
  *
+ * Screens 1-6 are shared (with minor couple additions on 1-2).
  * Data saved to transitionCaptures.theDescent for Part 2 (The Cycle).
  */
 
@@ -35,9 +36,10 @@ import {
   TAILORED_RESPONSES,
   PSYCHOED_SCREENS,
   ACCENT_TERMS,
-  JOURNAL_SURFACE_SCREEN,
-  JOURNAL_UNDERNEATH_SCREEN,
-  JOURNAL_UNSAID_SCREEN,
+  CHECKIN_COUPLE_NOTE,
+  REFLECT_SURFACE_SCREEN,
+  REFLECT_UNDERNEATH_SCREEN,
+  REFLECT_UNSAID_SCREEN,
   CLOSING_CONTENT,
 } from '../../../content/modules/theDeepDiveReflectionContent';
 
@@ -47,6 +49,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
+import LeafDraw from '../capabilities/animations/LeafDraw';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -56,7 +59,7 @@ const FADE_MS = 400;
 const POST_MED_PHASES = [
   'capture', 'checkin', 'response',
   'psychoed-1', 'psychoed-2', 'psychoed-3',
-  'journal-surface', 'journal-under', 'journal-unsaid', 'closing',
+  'reflect-surface', 'reflect-under', 'reflect-unsaid', 'closing',
 ];
 
 // ─── Render helpers ─────────────────────────────────────────────────────────
@@ -149,6 +152,23 @@ function renderContentLines(lines) {
   );
 }
 
+/**
+ * Renders numbered discussion steps for couple mode.
+ * Accent-colored step numbers + left border, matching TheCycleModule pattern.
+ */
+function renderSteps(steps) {
+  return (
+    <div className="space-y-3 mb-4">
+      {steps.map((step, i) => (
+        <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed pl-4 border-l-2 border-[var(--color-border)]">
+          <span className="text-[var(--accent)] font-medium">{i + 1}</span>
+          {' \u2014 '}{step}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function TheDescentModule({ module, onComplete, onSkip, onTimerUpdate }) {
@@ -190,6 +210,12 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     primaryEmotion: '',
     unsaidMessage: '',
   });
+
+  // Couple notepad toggle (matches TheCycleModule pattern)
+  const [openNotepads, setOpenNotepads] = useState({});
+  const toggleNotepad = useCallback((key) => {
+    setOpenNotepads(prev => ({ ...prev, [key]: !prev[key] }));
+  }, []);
 
   // ─── Timed sequence (variation assembly) ────────────────────────────────
 
@@ -320,17 +346,17 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
         setIsPsychoedHeaderVisible(false);
         setTimeout(() => {
           document.querySelector('main')?.scrollTo(0, 0);
-          setPhase('journal-surface');
+          setPhase('reflect-surface');
           setIsPhaseVisible(true);
         }, FADE_MS);
         break;
-      case 'journal-surface':
-        fadeToPhase('journal-under');
+      case 'reflect-surface':
+        fadeToPhase('reflect-under');
         break;
-      case 'journal-under':
-        fadeToPhase('journal-unsaid');
+      case 'reflect-under':
+        fadeToPhase('reflect-unsaid');
         break;
-      case 'journal-unsaid':
+      case 'reflect-unsaid':
         fadeToPhase('closing');
         break;
       default:
@@ -370,7 +396,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
           setIsPsychoedVisible(true);
         }, FADE_MS);
         break;
-      case 'journal-surface':
+      case 'reflect-surface':
         // Back to psychoed (re-enter at last step)
         setIsPhaseVisible(false);
         setTimeout(() => {
@@ -381,14 +407,14 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
           setIsPsychoedHeaderVisible(true);
         }, FADE_MS);
         break;
-      case 'journal-under':
-        fadeToPhase('journal-surface');
+      case 'reflect-under':
+        fadeToPhase('reflect-surface');
         break;
-      case 'journal-unsaid':
-        fadeToPhase('journal-under');
+      case 'reflect-unsaid':
+        fadeToPhase('reflect-under');
         break;
       case 'closing':
-        fadeToPhase('journal-unsaid');
+        fadeToPhase('reflect-unsaid');
         break;
       default:
         break;
@@ -398,6 +424,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
   // ─── Journal entry builder ──────────────────────────────────────────────
 
   const buildJournalContent = useCallback(() => {
+    const isCouple = selectedMode === 'couple';
     let content = 'THE DEEP DIVE\n';
 
     if (quickCapture.trim()) {
@@ -410,17 +437,20 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     }
 
     if (journalValues.surfaceReaction.trim()) {
-      content += `\nOn the surface\n${journalValues.surfaceReaction.trim()}\n`;
+      const label = isCouple ? 'Our surface patterns' : 'On the surface';
+      content += `\n${label}\n${journalValues.surfaceReaction.trim()}\n`;
     }
     if (journalValues.primaryEmotion.trim()) {
-      content += `\nUnderneath\n${journalValues.primaryEmotion.trim()}\n`;
+      const label = isCouple ? 'What we heard from each other' : 'Underneath';
+      content += `\n${label}\n${journalValues.primaryEmotion.trim()}\n`;
     }
     if (journalValues.unsaidMessage.trim()) {
-      content += `\nThe unsaid\n${journalValues.unsaidMessage.trim()}\n`;
+      const label = isCouple ? 'What was said' : 'The unsaid';
+      content += `\n${label}\n${journalValues.unsaidMessage.trim()}\n`;
     }
 
     return content.trim();
-  }, [quickCapture, checkInSelection, journalValues]);
+  }, [selectedMode, quickCapture, checkInSelection, journalValues]);
 
   const saveJournalEntry = useCallback(() => {
     const content = buildJournalContent();
@@ -494,23 +524,23 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
 
   const getSurfacePreamble = () => {
     return checkInSelection === 'stuck'
-      ? JOURNAL_SURFACE_SCREEN.preamble.stuck
-      : JOURNAL_SURFACE_SCREEN.preamble.default;
+      ? REFLECT_SURFACE_SCREEN.solo.preamble.stuck
+      : REFLECT_SURFACE_SCREEN.solo.preamble.default;
   };
 
   const getUnderneathPreamble = () => {
-    return JOURNAL_UNDERNEATH_SCREEN.preamble[checkInSelection] || JOURNAL_UNDERNEATH_SCREEN.preamble.softened;
+    return REFLECT_UNDERNEATH_SCREEN.solo.preamble[checkInSelection] || REFLECT_UNDERNEATH_SCREEN.solo.preamble.softened;
   };
 
   const getUnderneathPrompt = () => {
-    const prompts = JOURNAL_UNDERNEATH_SCREEN.journal.prompt;
+    const prompts = REFLECT_UNDERNEATH_SCREEN.solo.journal.prompt;
     if (checkInSelection === 'stuck') return prompts.stuck;
     if (checkInSelection === 'unsure') return prompts.unsure;
     return prompts.default;
   };
 
   const getUnderneathPlaceholder = () => {
-    const placeholders = JOURNAL_UNDERNEATH_SCREEN.journal.placeholder;
+    const placeholders = REFLECT_UNDERNEATH_SCREEN.solo.journal.placeholder;
     if (checkInSelection === 'stuck') return placeholders.stuck;
     if (checkInSelection === 'unsure') return placeholders.unsure;
     return placeholders.default;
@@ -697,6 +727,10 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
   // ─── Render: Quick Capture ────────────────────────────────────────────
 
   if (phase === 'capture') {
+    const captureContent = selectedMode === 'couple'
+      ? QUICK_CAPTURE_SCREEN.couple
+      : QUICK_CAPTURE_SCREEN.solo;
+
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
@@ -707,17 +741,34 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
               className="text-xl font-light mb-4 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
-              {QUICK_CAPTURE_SCREEN.header}
+              {captureContent.header}
             </h2>
 
-            {renderContentLines(QUICK_CAPTURE_SCREEN.lines)}
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
 
-            <div className="mt-4">
+            {selectedMode === 'couple' ? (
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-3">
+                {captureContent.instruction}
+              </p>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                  {captureContent.body}
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-xs mt-3 mb-1">
+                  {captureContent.hint}
+                </p>
+              </>
+            )}
+
+            <div className="mt-2">
               <textarea
                 value={quickCapture}
                 onChange={(e) => setQuickCapture(e.target.value)}
-                placeholder={QUICK_CAPTURE_SCREEN.journal.placeholder}
-                rows={QUICK_CAPTURE_SCREEN.journal.rows}
+                placeholder={captureContent.journal.placeholder}
+                rows={captureContent.journal.rows}
                 className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
                   focus:outline-none focus:border-[var(--accent)]
                   text-[var(--color-text-primary)] text-sm leading-relaxed
@@ -749,11 +800,15 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             isPhaseVisible ? 'opacity-100' : 'opacity-0'
           }`} style={{ paddingBottom: '8rem' }}>
             <h2
-              className="text-xl font-light mb-3 text-center"
+              className="text-xl font-light mb-4 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
               {CHECKIN_HEADER}
             </h2>
+
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
 
             <p className="text-[var(--color-text-secondary)] text-sm text-center mb-6">
               {CHECKIN_SUBTEXT}
@@ -780,6 +835,12 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
                 );
               })}
             </div>
+
+            {selectedMode === 'couple' && (
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-4 italic">
+                {CHECKIN_COUPLE_NOTE}
+              </p>
+            )}
           </div>
         </ModuleLayout>
 
@@ -861,7 +922,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
                 The Deep Dive
               </h2>
               <div className="flex justify-center mb-4">
-                <AsciiMoon />
+                <LeafDraw />
               </div>
             </div>
 
@@ -892,9 +953,13 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     );
   }
 
-  // ─── Render: Journal — The Surface ────────────────────────────────────
+  // ─── Render: Reflect — The Surface ────────────────────────────────────
 
-  if (phase === 'journal-surface') {
+  if (phase === 'reflect-surface') {
+    const surfaceContent = selectedMode === 'couple'
+      ? REFLECT_SURFACE_SCREEN.couple
+      : REFLECT_SURFACE_SCREEN.solo;
+
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
@@ -905,27 +970,67 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
               className="text-xl font-light mb-4 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
-              {JOURNAL_SURFACE_SCREEN.header}
+              {surfaceContent.header}
             </h2>
 
-            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
-              {getSurfacePreamble()}
-            </p>
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
 
-            <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-              {JOURNAL_SURFACE_SCREEN.journal.prompt}
-            </p>
+            {selectedMode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {getSurfacePreamble()}
+                </p>
 
-            <textarea
-              value={journalValues.surfaceReaction}
-              onChange={(e) => setJournalValues(prev => ({ ...prev, surfaceReaction: e.target.value }))}
-              placeholder={JOURNAL_SURFACE_SCREEN.journal.placeholder}
-              rows={JOURNAL_SURFACE_SCREEN.journal.rows}
-              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
-                focus:outline-none focus:border-[var(--accent)]
-                text-[var(--color-text-primary)] text-sm leading-relaxed
-                placeholder:text-[var(--color-text-tertiary)] resize-none"
-            />
+                <p className="text-[var(--color-text-primary)] text-lg leading-relaxed mb-3"
+                   style={{ textTransform: 'none', fontFamily: 'DM Serif Text, serif' }}>
+                  {surfaceContent.journal.prompt}
+                </p>
+
+                <textarea
+                  value={journalValues.surfaceReaction}
+                  onChange={(e) => setJournalValues(prev => ({ ...prev, surfaceReaction: e.target.value }))}
+                  placeholder={surfaceContent.journal.placeholder}
+                  rows={surfaceContent.journal.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-2">
+                  {surfaceContent.instruction}
+                </p>
+
+                {renderSteps(surfaceContent.steps)}
+
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {surfaceContent.timeSuggestion}
+                </p>
+
+                <button
+                  onClick={() => toggleNotepad('reflect-surface')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {openNotepads['reflect-surface'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {openNotepads['reflect-surface'] && (
+                  <textarea
+                    value={journalValues.surfaceReaction}
+                    onChange={(e) => setJournalValues(prev => ({ ...prev, surfaceReaction: e.target.value }))}
+                    placeholder={surfaceContent.placeholder}
+                    rows={surfaceContent.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
           </div>
         </ModuleLayout>
 
@@ -942,9 +1047,13 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     );
   }
 
-  // ─── Render: Journal — Underneath ─────────────────────────────────────
+  // ─── Render: Reflect — Underneath / What You Heard ────────────────────
 
-  if (phase === 'journal-under') {
+  if (phase === 'reflect-under') {
+    const underContent = selectedMode === 'couple'
+      ? REFLECT_UNDERNEATH_SCREEN.couple
+      : REFLECT_UNDERNEATH_SCREEN.solo;
+
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
@@ -955,27 +1064,67 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
               className="text-xl font-light mb-4 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
-              {JOURNAL_UNDERNEATH_SCREEN.header}
+              {underContent.header}
             </h2>
 
-            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
-              {getUnderneathPreamble()}
-            </p>
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
 
-            <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-              {getUnderneathPrompt()}
-            </p>
+            {selectedMode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {getUnderneathPreamble()}
+                </p>
 
-            <textarea
-              value={journalValues.primaryEmotion}
-              onChange={(e) => setJournalValues(prev => ({ ...prev, primaryEmotion: e.target.value }))}
-              placeholder={getUnderneathPlaceholder()}
-              rows={JOURNAL_UNDERNEATH_SCREEN.journal.rows}
-              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
-                focus:outline-none focus:border-[var(--accent)]
-                text-[var(--color-text-primary)] text-sm leading-relaxed
-                placeholder:text-[var(--color-text-tertiary)] resize-none"
-            />
+                <p className="text-[var(--color-text-primary)] text-lg leading-relaxed mb-3"
+                   style={{ textTransform: 'none', fontFamily: 'DM Serif Text, serif' }}>
+                  {getUnderneathPrompt()}
+                </p>
+
+                <textarea
+                  value={journalValues.primaryEmotion}
+                  onChange={(e) => setJournalValues(prev => ({ ...prev, primaryEmotion: e.target.value }))}
+                  placeholder={getUnderneathPlaceholder()}
+                  rows={underContent.journal.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-2">
+                  {underContent.instruction}
+                </p>
+
+                {renderSteps(underContent.steps)}
+
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {underContent.timeSuggestion}
+                </p>
+
+                <button
+                  onClick={() => toggleNotepad('reflect-under')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {openNotepads['reflect-under'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {openNotepads['reflect-under'] && (
+                  <textarea
+                    value={journalValues.primaryEmotion}
+                    onChange={(e) => setJournalValues(prev => ({ ...prev, primaryEmotion: e.target.value }))}
+                    placeholder={underContent.placeholder}
+                    rows={underContent.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
           </div>
         </ModuleLayout>
 
@@ -992,9 +1141,13 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     );
   }
 
-  // ─── Render: Journal — The Unsaid ─────────────────────────────────────
+  // ─── Render: Reflect — The Unsaid / Saying It ────────────────────────
 
-  if (phase === 'journal-unsaid') {
+  if (phase === 'reflect-unsaid') {
+    const unsaidContent = selectedMode === 'couple'
+      ? REFLECT_UNSAID_SCREEN.couple
+      : REFLECT_UNSAID_SCREEN.solo;
+
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
@@ -1005,27 +1158,71 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
               className="text-xl font-light mb-4 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
-              {JOURNAL_UNSAID_SCREEN.header}
+              {unsaidContent.header}
             </h2>
 
-            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
-              {JOURNAL_UNSAID_SCREEN.preamble}
-            </p>
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
 
-            <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
-              {JOURNAL_UNSAID_SCREEN.journal.prompt}
-            </p>
+            {selectedMode === 'solo' ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {unsaidContent.preamble}
+                </p>
 
-            <textarea
-              value={journalValues.unsaidMessage}
-              onChange={(e) => setJournalValues(prev => ({ ...prev, unsaidMessage: e.target.value }))}
-              placeholder={JOURNAL_UNSAID_SCREEN.journal.placeholder}
-              rows={JOURNAL_UNSAID_SCREEN.journal.rows}
-              className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
-                focus:outline-none focus:border-[var(--accent)]
-                text-[var(--color-text-primary)] text-sm leading-relaxed
-                placeholder:text-[var(--color-text-tertiary)] resize-none"
-            />
+                <p className="text-[var(--color-text-primary)] text-lg leading-relaxed mb-3"
+                   style={{ textTransform: 'none', fontFamily: 'DM Serif Text, serif' }}>
+                  {unsaidContent.journal.prompt}
+                </p>
+
+                <textarea
+                  value={journalValues.unsaidMessage}
+                  onChange={(e) => setJournalValues(prev => ({ ...prev, unsaidMessage: e.target.value }))}
+                  placeholder={unsaidContent.journal.placeholder}
+                  rows={unsaidContent.journal.rows}
+                  className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                    focus:outline-none focus:border-[var(--accent)]
+                    text-[var(--color-text-primary)] text-sm leading-relaxed
+                    placeholder:text-[var(--color-text-tertiary)] resize-none"
+                />
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-2">
+                  {unsaidContent.instruction}
+                </p>
+
+                {renderSteps(unsaidContent.steps)}
+
+                <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-4 italic">
+                  {unsaidContent.note}
+                </p>
+
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
+                  {unsaidContent.timeSuggestion}
+                </p>
+
+                <button
+                  onClick={() => toggleNotepad('reflect-unsaid')}
+                  className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2"
+                >
+                  {openNotepads['reflect-unsaid'] ? '\u25BE Hide notepad' : '\u25B8 Write something down'}
+                </button>
+                {openNotepads['reflect-unsaid'] && (
+                  <textarea
+                    value={journalValues.unsaidMessage}
+                    onChange={(e) => setJournalValues(prev => ({ ...prev, unsaidMessage: e.target.value }))}
+                    placeholder={unsaidContent.placeholder}
+                    rows={unsaidContent.rows}
+                    className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+                      focus:outline-none focus:border-[var(--accent)]
+                      text-[var(--color-text-primary)] text-sm leading-relaxed
+                      placeholder:text-[var(--color-text-tertiary)] resize-none animate-fadeIn"
+                  />
+                )}
+              </>
+            )}
           </div>
         </ModuleLayout>
 
@@ -1045,7 +1242,8 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
   // ─── Render: Closing ──────────────────────────────────────────────────
 
   if (phase === 'closing') {
-    const closingLines = hasPart2 ? CLOSING_CONTENT.withPart2 : CLOSING_CONTENT.withoutPart2;
+    const modeClosing = selectedMode === 'couple' ? CLOSING_CONTENT.couple : CLOSING_CONTENT.solo;
+    const closingLines = hasPart2 ? modeClosing.withPart2 : modeClosing.withoutPart2;
 
     return (
       <>
@@ -1053,6 +1251,13 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
           <div className={`pt-6 transition-opacity duration-[400ms] ${
             isPhaseVisible ? 'opacity-100' : 'opacity-0'
           }`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-4 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {CLOSING_CONTENT.header}
+            </h2>
+
             <div className="flex justify-center mb-6">
               <AsciiDiamond />
             </div>

@@ -6,8 +6,8 @@
  * - Solo: journaling-first relationship pattern mapping
  * - Couple: facilitated conversation guide with discussion prompts and turn-taking
  *
- * Phase sequence (~24 phases):
- * framing → friction → your-move → your-underneath →
+ * Phase sequence (~26 phases):
+ * framing → bridge → friction → positions-intro → your-move → your-underneath →
  *   [couple: partner-turn → sharing]
  *   [solo: their-move → their-underneath] →
  * pre-reveal → reveal-anim → reveal-modal → sitting →
@@ -21,7 +21,7 @@
  * Reads Part 1 data from transitionCaptures.theDescent for personalization.
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
@@ -39,7 +39,9 @@ import {
   POSITIONS,
   CYCLE_ACCENT_TERMS,
   FRAMING_CONTENT,
+  BRIDGE_CONTENT,
   FRICTION_SCREEN,
+  POSITIONS_INTRO,
   YOUR_MOVE_SCREEN,
   YOUR_UNDERNEATH_SCREEN,
   PARTNER_TURN_SCREEN,
@@ -70,6 +72,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
+import LeafDraw from '../capabilities/animations/LeafDraw';
 import RevealOverlay from '../capabilities/animations/RevealOverlay';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
@@ -194,7 +197,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   // Part 1 data
   const descentCaptures = useSessionStore((s) => s.transitionCaptures?.theDescent);
   const hasDescentData = descentCaptures?.completedAt != null;
-  const mode = descentCaptures?.mode || 'solo';
+  const [mode, setMode] = useState(descentCaptures?.mode || 'solo');
 
   // ─── State ──────────────────────────────────────────────────────────────
 
@@ -213,6 +216,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   const [theirUnderneath, setTheirUnderneath] = useState('');
 
   // Couple: partner's actual info
+  const [partnerPosition, setPartnerPosition] = useState(null);
   const [partnerMoveId, setPartnerMoveId] = useState(null);
   const [partnerUnderneath, setPartnerUnderneath] = useState('');
   const [partnerStep, setPartnerStep] = useState(0);
@@ -225,6 +229,8 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   const [revealKey, setRevealKey] = useState(0);
   const [showCycleModal, setShowCycleModal] = useState(false);
   const [cycleModalClosing, setCycleModalClosing] = useState(false);
+  const revealTimerRef = useRef(null);
+  const cycleCloseTimerRef = useRef(null);
 
   // Meditation
   const [isMedLeaving, setIsMedLeaving] = useState(false);
@@ -282,15 +288,16 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
 
   const getNextPhase = useCallback((current) => {
     switch (current) {
-      case 'framing': return 'friction';
-      case 'friction': return 'your-move';
+      case 'framing': return 'bridge';
+      case 'bridge': return 'friction';
+      case 'friction': return 'positions-intro';
+      case 'positions-intro': return 'your-move';
       case 'your-move': return 'your-underneath';
       case 'your-underneath': return mode === 'couple' ? 'partner-turn' : 'their-move';
       case 'partner-turn': return 'sharing';
       case 'sharing': return 'pre-reveal';
       case 'their-move': return 'their-underneath';
       case 'their-underneath': return 'pre-reveal';
-      case 'pre-reveal': return 'reveal-anim';
       case 'reveal-modal': return 'sitting';
       case 'sitting': return 'med-intro';
       case 'capture': return 'checkin';
@@ -309,8 +316,10 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
 
   const getPrevPhase = useCallback((current) => {
     switch (current) {
-      case 'friction': return 'framing';
-      case 'your-move': return 'friction';
+      case 'bridge': return 'framing';
+      case 'friction': return 'bridge';
+      case 'positions-intro': return 'friction';
+      case 'your-move': return 'positions-intro';
       case 'your-underneath': return 'your-move';
       case 'partner-turn': return 'your-underneath';
       case 'sharing': return 'partner-turn';
@@ -389,10 +398,11 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   // ─── Diagram reveal sequence ──────────────────────────────────────────
 
   const handleDiagramReveal = useCallback(async () => {
+    // Match ValuesCompassModule pattern: hide modal, show overlay, generate behind overlay
+    setShowCycleModal(false);
+    if (revealTimerRef.current) clearTimeout(revealTimerRef.current);
     setRevealKey(k => k + 1);
     setShowRevealOverlay(true);
-
-    const startTime = Date.now();
 
     let blob;
     try {
@@ -401,6 +411,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
         partnerMoves: diagramPartnerMoves,
         cycleName,
         myPosition,
+        partnerPosition: mode === 'couple' ? partnerPosition : undefined,
       });
       setDiagramBlob(blob);
       const url = URL.createObjectURL(blob);
@@ -414,7 +425,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
 
     // Save diagram to journal
     try {
-      const partnerPos = getPartnerPosition(myPosition);
+      const partnerPos = mode === 'couple' ? partnerPosition : getPartnerPosition(myPosition);
       const myMoveLabel = myMoveId ? getMoveLabel(myPosition, myMoveId) : '';
       const partnerLabel = mode === 'couple'
         ? (partnerMoveId ? getMoveLabel(partnerPos, partnerMoveId) : '')
@@ -448,29 +459,39 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
       console.warn('Failed to save cycle diagram to journal:', err);
     }
 
-    const elapsed = Date.now() - startTime;
-    const delay = Math.max(0, 1800 - elapsed);
-
-    setTimeout(() => {
-      setPhase('reveal-modal');
-      setShowCycleModal(true);
-    }, delay);
-  }, [diagramMyMoves, diagramPartnerMoves, cycleName, myPosition, diagramUrl, mode, friction, myMoveId, yourUnderneath, theirMoveId, theirUnderneath, partnerMoveId, partnerUnderneath, addEntry, sessionId]);
+    // Show cycle modal behind overlay (overlay is still opaque ~900ms after fade-in starts)
+    revealTimerRef.current = setTimeout(() => setShowCycleModal(true), 900);
+  }, [diagramMyMoves, diagramPartnerMoves, cycleName, myPosition, partnerPosition, diagramUrl, mode, friction, myMoveId, yourUnderneath, theirMoveId, theirUnderneath, partnerMoveId, partnerUnderneath, addEntry, sessionId]);
 
   const handleRevealDone = useCallback(() => {
     setShowRevealOverlay(false);
+    setPhase('reveal-modal');
   }, []);
 
   // ─── Cycle modal controls ────────────────────────────────────────────
 
   const handleCloseCycleModal = useCallback(() => {
+    // Close from reveal-modal: fade modal out, then advance to sitting
+    setIsPhaseVisible(false);
     setCycleModalClosing(true);
-    setTimeout(() => {
+    if (cycleCloseTimerRef.current) clearTimeout(cycleCloseTimerRef.current);
+    cycleCloseTimerRef.current = setTimeout(() => {
       setShowCycleModal(false);
       setCycleModalClosing(false);
-      fadeToPhase('sitting');
+      setPhase('sitting');
+      setIsPhaseVisible(true);
     }, FADE_MS);
-  }, [fadeToPhase]);
+  }, []);
+
+  const handleCloseCycleView = useCallback(() => {
+    // Close from later phases (SlotButton view): just fade modal out
+    setCycleModalClosing(true);
+    if (cycleCloseTimerRef.current) clearTimeout(cycleCloseTimerRef.current);
+    cycleCloseTimerRef.current = setTimeout(() => {
+      setShowCycleModal(false);
+      setCycleModalClosing(false);
+    }, FADE_MS);
+  }, []);
 
   const handleViewCycle = useCallback(() => {
     if (diagramUrl) {
@@ -529,9 +550,8 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
       return;
     }
 
-    // Special: pre-reveal triggers diagram build + reveal
+    // Special: pre-reveal triggers overlay + diagram build (phase stays until handleRevealDone)
     if (phase === 'pre-reveal') {
-      setPhase('reveal-anim');
       handleDiagramReveal();
       return;
     }
@@ -576,6 +596,16 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
       return;
     }
 
+    // Special: back from sitting → reopen cycle modal
+    if (phase === 'sitting') {
+      setIsPhaseVisible(false);
+      setTimeout(() => {
+        setPhase('reveal-modal');
+        setShowCycleModal(true);
+      }, FADE_MS);
+      return;
+    }
+
     // Special: back to psychoed from reflect-1
     if (phase === 'reflect-1') {
       setIsPhaseVisible(false);
@@ -603,6 +633,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
     if (yourUnderneath.trim()) updateTheCycleCapture('yourUnderneath', yourUnderneath.trim());
     if (theirMoveId) updateTheCycleCapture('theirMoveId', theirMoveId);
     if (theirUnderneath.trim()) updateTheCycleCapture('theirUnderneath', theirUnderneath.trim());
+    if (partnerPosition) updateTheCycleCapture('partnerPosition', partnerPosition);
     if (partnerMoveId) updateTheCycleCapture('partnerMoveId', partnerMoveId);
     if (partnerUnderneath.trim()) updateTheCycleCapture('partnerUnderneath', partnerUnderneath.trim());
     updateTheCycleCapture('cycleName', cycleName);
@@ -699,10 +730,15 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   // RENDER
   // ═══════════════════════════════════════════════════════════════════════
 
+  const renderPhaseContent = () => {
+
   // ─── Framing (intro) ──────────────────────────────────────────────────
 
   if (phase === 'framing') {
-    const content = hasDescentData ? FRAMING_CONTENT.withPartData : FRAMING_CONTENT.withoutPartData;
+    const modeNote = mode === 'couple'
+      ? (hasDescentData ? FRAMING_CONTENT.modeNote.coupleWithPart1 : FRAMING_CONTENT.modeNote.coupleWithoutPart1)
+      : FRAMING_CONTENT.modeNote.solo;
+
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
@@ -710,7 +746,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
             className={`text-center transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`}
             style={{ marginTop: '-2rem' }}
           >
-            <div className="space-y-2 mb-6">
+            <div className="space-y-2">
               <h2 className="font-serif text-2xl text-[var(--color-text-primary)]" style={{ textTransform: 'none' }}>
                 {FRAMING_CONTENT.header}
               </h2>
@@ -719,29 +755,72 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
               </p>
             </div>
 
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center my-4">
+              <AsciiMoon />
+            </div>
+
+            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              {FRAMING_CONTENT.description}
+            </p>
+
+            <div className="flex justify-center my-4">
               <div className="circle-spacer" />
             </div>
 
-            <div className="text-left">
-              {renderContentLines(content.lines)}
-            </div>
+            <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed italic">
+              {modeNote}
+            </p>
 
-            {mode === 'couple' && (
-              <div className="text-left mt-4">
-                <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed italic">
-                  {FRAMING_CONTENT.coupleNote}
-                </p>
-              </div>
-            )}
+            <button
+              onClick={() => setMode(mode === 'couple' ? 'solo' : 'couple')}
+              className="mt-4 text-xs text-[var(--color-text-tertiary)] underline underline-offset-2 decoration-[var(--color-text-tertiary)]/40 hover:text-[var(--color-text-secondary)] transition-colors"
+            >
+              {mode === 'couple' ? 'Switch to solo' : 'Switch to couple'}
+            </button>
           </div>
         </ModuleLayout>
 
         <ModuleControlBar
           phase="idle"
-          primary={{ label: 'Begin', onClick: () => fadeToPhase('friction') }}
+          primary={{ label: 'Begin', onClick: handleContinue }}
           showSkip={true}
           onSkip={onSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Bridge (psychoed transition from Part 1) ───────────────────────
+
+  if (phase === 'bridge') {
+    const bridgeLines = hasDescentData ? BRIDGE_CONTENT.withPartData.lines : BRIDGE_CONTENT.withoutPartData.lines;
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {FRAMING_CONTENT.header}
+            </h2>
+
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
+
+            {renderContentLines(bridgeLines)}
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
           skipConfirmMessage="Skip this exercise?"
         />
       </>
@@ -763,6 +842,10 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
               {FRICTION_SCREEN.header}
             </h2>
 
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
+
             <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
               {mode === 'couple' ? modeContent.instruction : modeContent.prompt}
             </p>
@@ -777,6 +860,41 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
                 text-[var(--color-text-primary)] text-sm leading-relaxed
                 placeholder:text-[var(--color-text-tertiary)] resize-none"
             />
+          </div>
+        </ModuleLayout>
+
+        <ModuleControlBar
+          phase="active"
+          primary={{ label: 'Continue', onClick: handleContinue }}
+          showBack={true}
+          onBack={handleBack}
+          showSkip={true}
+          onSkip={handleModuleSkip}
+          skipConfirmMessage="Skip this exercise?"
+        />
+      </>
+    );
+  }
+
+  // ─── Positions Intro (psych-ed: move toward / move away) ────────────
+
+  if (phase === 'positions-intro') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
+          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {POSITIONS_INTRO.header}
+            </h2>
+
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
+
+            {renderContentLines(POSITIONS_INTRO.lines)}
           </div>
         </ModuleLayout>
 
@@ -911,22 +1029,43 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
 
   if (phase === 'your-underneath') {
     const modeContent = mode === 'couple' ? YOUR_UNDERNEATH_SCREEN.couple : YOUR_UNDERNEATH_SCREEN.solo;
-    const prompt = hasDescentData ? modeContent.prompt.withPart1 : modeContent.prompt.withoutPart1;
+    const part1Emotion = descentCaptures?.primaryEmotion;
+    const showQuote = hasDescentData && part1Emotion;
 
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
           <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '8rem' }}>
             <h2
-              className="text-xl font-light mb-4 text-center"
+              className="text-xl font-light mb-2 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
               {modeContent.header}
             </h2>
 
-            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
-              {prompt}
-            </p>
+            <div className="flex justify-center mb-4">
+              <LeafDraw />
+            </div>
+
+            {showQuote ? (
+              <>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-3">
+                  {modeContent.prompt.withPart1Quote}
+                </p>
+                <blockquote className="border-l-2 border-[var(--accent)] pl-4 mb-3">
+                  <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed italic">
+                    {part1Emotion}
+                  </p>
+                </blockquote>
+                <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                  {modeContent.prompt.withPart1After}
+                </p>
+              </>
+            ) : (
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
+                {hasDescentData ? modeContent.prompt.withPart1 : modeContent.prompt.withoutPart1}
+              </p>
+            )}
 
             {mode === 'couple' && (
               <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
@@ -963,13 +1102,12 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   // ─── Partner Turn (couple only — 2 sub-steps) ────────────────────────
 
   if (phase === 'partner-turn') {
-    const partnerPosition = getPartnerPosition(myPosition);
-    const partnerMovesOptions = getMovesForPosition(partnerPosition);
+    const partnerMovesOptions = partnerPosition ? getMovesForPosition(partnerPosition) : [];
 
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
-          <div className={`pt-6 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
+          <div className={`pt-2 transition-opacity duration-[${FADE_MS}ms] ${isPhaseVisible ? 'opacity-100' : 'opacity-0'}`} style={{ paddingBottom: '6rem' }}>
             <h2
               className="text-xl font-light mb-2 text-center"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
@@ -983,33 +1121,61 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
 
             {partnerStep === 0 && (
               <div className="animate-fadeIn">
-                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-2">
-                  {PARTNER_TURN_SCREEN.step1.subheader}
-                </p>
                 <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
                   {PARTNER_TURN_SCREEN.step1.prompt}
                 </p>
-                <p className="text-[var(--color-text-tertiary)] text-xs mb-3 italic">
-                  {PARTNER_TURN_SCREEN.step1.note}
+
+                {/* Position selector — matching Your Move pattern */}
+                <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+                  When things get hard, I tend to...
                 </p>
-                <div className="space-y-2">
-                  {partnerMovesOptions.map(move => (
+                <div className="space-y-2 mb-6">
+                  {Object.values(POSITIONS).map(pos => (
                     <button
-                      key={move.id}
-                      onClick={() => setPartnerMoveId(move.id)}
+                      key={pos.key}
+                      onClick={() => { setPartnerPosition(pos.key); setPartnerMoveId(null); }}
                       className={`w-full text-left px-4 py-3 border transition-colors ${
-                        partnerMoveId === move.id
+                        partnerPosition === pos.key
                           ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                           : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
                       }`}
                     >
-                      <p className="text-sm text-[var(--color-text-primary)]">{move.label}</p>
-                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
-                        {move.description}
+                      <p className="text-base text-[var(--color-text-primary)] font-['DM_Serif_Text']">
+                        {pos.label}
+                      </p>
+                      <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5 uppercase tracking-wider">
+                        {pos.description}
                       </p>
                     </button>
                   ))}
                 </div>
+
+                {/* Move selector — shown after position selected */}
+                {partnerPosition && (
+                  <div className="animate-fadeIn">
+                    <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+                      Select your primary move
+                    </p>
+                    <div className="space-y-2">
+                      {partnerMovesOptions.map(move => (
+                        <button
+                          key={move.id}
+                          onClick={() => setPartnerMoveId(move.id)}
+                          className={`w-full text-left px-4 py-3 border transition-colors ${
+                            partnerMoveId === move.id
+                              ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                              : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
+                          }`}
+                        >
+                          <p className="text-sm text-[var(--color-text-primary)]">{move.label}</p>
+                          <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5">
+                            {move.description}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1050,7 +1216,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
                 handleContinue();
               }
             },
-            disabled: partnerStep === 0 ? !partnerMoveId : false,
+            disabled: partnerStep === 0 ? !partnerPosition || !partnerMoveId : false,
           }}
           showBack={true}
           onBack={handleBack}
@@ -1233,6 +1399,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
               partnerMoves={diagramPartnerMoves}
               cycleName={cycleName}
               myPosition={myPosition}
+              partnerPosition={mode === 'couple' ? partnerPosition : undefined}
               animate={true}
             />
           </div>
@@ -1255,70 +1422,10 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
     );
   }
 
-  // ─── Reveal Animation ─────────────────────────────────────────────────
-
-  if (phase === 'reveal-anim') {
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider animate-pulse">
-              Revealing...
-            </p>
-          </div>
-        </ModuleLayout>
-
-        <ModuleControlBar phase="active" primary={{ label: 'Continue', disabled: true }} />
-
-        <RevealOverlay
-          key={revealKey}
-          isActive={showRevealOverlay}
-          onDone={handleRevealDone}
-        />
-      </>
-    );
-  }
-
-  // ─── Reveal Modal ─────────────────────────────────────────────────────
+  // ─── Reveal Modal (empty — CycleModal fills the screen) ─────────────
 
   if (phase === 'reveal-modal') {
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center">
-            <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider">
-              Your cycle diagram has been saved to your journal.
-            </p>
-          </div>
-        </ModuleLayout>
-
-        <ModuleControlBar
-          phase="active"
-          primary={{
-            label: 'Continue',
-            onClick: () => {
-              if (showCycleModal) {
-                handleCloseCycleModal();
-              } else {
-                fadeToPhase('sitting');
-              }
-            },
-          }}
-          rightSlot={cycleSlot}
-          showSkip={true}
-          onSkip={handleModuleSkip}
-          skipConfirmMessage="Skip this exercise?"
-        />
-
-        <CycleModal
-          isOpen={showCycleModal}
-          closing={cycleModalClosing}
-          onClose={handleCloseCycleModal}
-          imageUrl={diagramUrl}
-          imageBlob={diagramBlob}
-        />
-      </>
-    );
+    return null;
   }
 
   // ─── Sitting (post-reveal reflection) ─────────────────────────────────
@@ -2038,4 +2145,25 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   }
 
   return null;
+  }; // end renderPhaseContent
+
+  return (
+    <>
+      {renderPhaseContent()}
+
+      <CycleModal
+        isOpen={showCycleModal}
+        closing={cycleModalClosing}
+        onClose={phase === 'reveal-modal' ? handleCloseCycleModal : handleCloseCycleView}
+        imageUrl={diagramUrl}
+        imageBlob={diagramBlob}
+      />
+
+      <RevealOverlay
+        key={revealKey}
+        isActive={showRevealOverlay}
+        onDone={handleRevealDone}
+      />
+    </>
+  );
 }

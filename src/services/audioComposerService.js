@@ -15,15 +15,17 @@
  * concatenation produces valid audio without decoding or re-encoding.
  */
 
+import { audioPath } from '../utils/audioPath';
+
 // All TTS clips and silence blocks are CBR 128kbps (16,000 bytes per second)
 export const CBR_BYTES_PER_SECOND = 16000;
 
 // Available silence block durations (descending order for greedy decomposition)
 const SILENCE_BLOCKS = [60, 30, 10, 5, 1, 0.5];
-const SILENCE_BASE_PATH = '/audio/silence/silence-';
+const SILENCE_BASE_PATH = audioPath('/audio/silence/silence-');
 const SILENCE_FORMAT = 'mp3';
 
-const GONG_SOFT_SRC = '/audio/meditation-bell-soft.mp3';
+const GONG_SOFT_SRC = audioPath('/audio/meditation-bell-soft.mp3');
 
 /**
  * Detect and return the size of an ID3v2 tag at the start of an ArrayBuffer.

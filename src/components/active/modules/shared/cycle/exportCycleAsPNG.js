@@ -7,7 +7,7 @@
 
 import { getMoveLabel } from '../../../../../content/modules/theCycleContent';
 
-export async function exportCycleAsPNG({ myMoves, partnerMoves, cycleName, myPosition }) {
+export async function exportCycleAsPNG({ myMoves, partnerMoves, cycleName, myPosition, partnerPosition: partnerPositionProp }) {
   const scale = 4;
   const W = 1200;
   const H = 1000;
@@ -45,14 +45,14 @@ export async function exportCycleAsPNG({ myMoves, partnerMoves, cycleName, myPos
   ctx.textBaseline = 'middle';
   ctx.fillText('THE CYCLE', CX, 50);
 
-  // Determine layout
-  const isPursuerTop = myPosition === 'pursuer';
-  const topMoves = isPursuerTop ? myMoves : partnerMoves;
-  const botMoves = isPursuerTop ? partnerMoves : myMoves;
-  const topPosition = isPursuerTop ? 'pursuer' : 'withdrawer';
-  const botPosition = isPursuerTop ? 'withdrawer' : 'pursuer';
-  const topLabel = isPursuerTop ? 'I MOVE TOWARD' : 'THEY MOVE TOWARD';
-  const botLabel = isPursuerTop ? 'THEY MOVE AWAY' : 'I MOVE AWAY';
+  // Determine layout — my moves on top, partner moves on bottom
+  const resolvedPartnerPosition = partnerPositionProp || (myPosition === 'pursuer' ? 'withdrawer' : 'pursuer');
+  const topMoves = myMoves;
+  const botMoves = partnerMoves;
+  const topPosition = myPosition;
+  const botPosition = resolvedPartnerPosition;
+  const topLabel = myPosition === 'pursuer' ? 'I MOVE TOWARD' : 'I MOVE AWAY';
+  const botLabel = resolvedPartnerPosition === 'pursuer' ? 'THEY MOVE TOWARD' : 'THEY MOVE AWAY';
 
   // Draw ellipses
   ctx.strokeStyle = accent;
