@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en" style="background: #0a0a0c">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      if (localStorage.getItem("m-session-theme") === "light") {
+        document.documentElement.style.background = "#f2f0eb";
+        document.documentElement.classList.add("light");
+      }
+    </script>
+    <title>Contribute — m-session</title>
+    <meta
+      name="description"
+      content="Help m-session grow. Contribute code, test the app, share feedback, fund development, or spread the word about this open-source session companion."
+    />
+    <link rel="canonical" href="https://m-session.com/contribute" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://m-session.com/contribute" />
+    <meta property="og:title" content="Contribute — m-session" />
+    <meta
+      property="og:description"
+      content="Help m-session grow. Code, test, fund, share feedback, or spread the word."
+    />
+    <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Contribute — m-session" />
+    <meta
+      name="twitter:description"
+      content="Help m-session grow. Multiple ways to contribute to this open-source project."
+    />
+    <meta name="twitter:image" content="https://m-session.com/og-image.png" />
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-light-32x32.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-light-16x16.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-dark-32x32.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-dark-16x16.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="/shared.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="stylesheet" href="/pages.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+      /* Globe hero */
+      .globe-hero {
+        position: relative;
+        height: 75vh;
+        min-height: 500px;
+        max-height: 900px;
+        overflow: hidden;
+        background: #0a0a0c;
+      }
+      .globe-hero .canvas-stack {
+        position: absolute;
+        inset: 0;
+      }
+      .globe-hero canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+      #globe-trail {
+        z-index: 0;
+        opacity: 0.65;
+        pointer-events: none;
+      }
+      #globe-bloom-wide {
+        z-index: 1;
+        filter: blur(40px);
+        opacity: 0.85;
+        pointer-events: none;
+      }
+      #globe-bloom-tight {
+        z-index: 2;
+        filter: blur(12px);
+        opacity: 0.7;
+        pointer-events: none;
+      }
+      #globe-canvas {
+        z-index: 3;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Match hero bg to site theme */
+      html.light .globe-hero {
+        background: #f2f0eb;
+      }
+
+      /* Pull hero text up to overlap globe bottom */
+      .globe-hero + .page-hero {
+        position: relative;
+        z-index: 4;
+        margin-top: -120px;
+        padding-top: 40px;
+        background: transparent;
+        border-bottom: none;
+      }
+
+      @media (max-width: 900px) {
+        .globe-hero {
+          height: 65vh;
+          min-height: 400px;
+        }
+        .globe-hero + .page-hero {
+          margin-top: -120px;
+        }
+      }
+      @media (max-width: 480px) {
+        .globe-hero {
+          height: 55vh;
+          min-height: 350px;
+        }
+        .globe-hero + .page-hero {
+          margin-top: -100px;
+          padding-top: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a href="/" class="logo" id="logo">
+          <span class="logo-m">M</span
+          ><span class="logo-collapse" id="logo-dma">DMA</span
+          ><span class="logo-hyphen" id="logo-hyphen">-</span
+          ><span class="logo-session">SESSION</span>
+        </a>
+        <div class="header-nav">
+          <a href="/app" class="btn btn-primary" style="padding: 8px 22px"
+            >Launch App &rarr;</a
+          >
+          <div
+            class="theme-toggle"
+            id="theme-toggle"
+            role="button"
+            aria-label="Toggle light and dark mode"
+            tabindex="0"
+          >
+            <div class="theme-toggle-thumb"></div>
+          </div>
+          <button
+            class="menu-toggle"
+            id="menu-toggle"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+          >
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="menu-overlay" id="menu-overlay" aria-hidden="true">
+      <div class="menu-overlay-backdrop"></div>
+      <div class="menu-overlay-panel">
+        <div class="menu-overlay-content">
+          <a href="/" class="menu-link" data-page="home">Home</a>
+          <a href="/about" class="menu-link" data-page="about">About</a>
+          <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
+          <a href="/contribute" class="menu-link" data-page="contribute"
+            >Contribute</a
+          >
+          <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
+        </div>
+        <div class="menu-overlay-footer">
+          <a href="/app" class="btn btn-primary" style="padding: 12px 28px"
+            >Launch App &rarr;</a
+          >
+        </div>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <!-- Globe Hero -->
+      <section class="globe-hero" id="globe-hero">
+        <div class="canvas-stack">
+          <canvas id="globe-trail"></canvas>
+          <canvas id="globe-bloom-wide"></canvas>
+          <canvas id="globe-bloom-tight"></canvas>
+          <canvas id="globe-canvas"></canvas>
+        </div>
+      </section>
+
+      <!-- Hero Text -->
+      <section class="page-hero">
+        <div class="container">
+          <div class="section-label rv visible">Contribute</div>
+          <h1 class="section-title rv visible rv-d1">
+            Healing the world, one person at a time.
+          </h1>
+          <p class="section-body rv visible rv-d2">
+            M-session is a community project &mdash; free, open source, and
+            built to help one person have a better, safer experience. Code,
+            test, give feedback, or spread the word. Every contribution extends
+            that reach to someone, somewhere, who needs it.
+          </p>
+        </div>
+      </section>
+
+      <!-- Code -->
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
+        <div class="container">
+          <div class="prose rv">
+            <h2>Contribute code</h2>
+            <p>
+              m-session is open source under <strong>AGPL-3.0</strong>. The
+              entire codebase is on
+              <a href="https://github.com/" target="_blank" rel="noopener"
+                >GitHub</a
+              >.
+            </p>
+            <h3>Tech stack</h3>
+            <ul>
+              <li>React 19 + Vite 7</li>
+              <li>Zustand for state management</li>
+              <li>Tailwind CSS 4</li>
+              <li>Vanilla JS for landing pages</li>
+              <li>ElevenLabs TTS for meditation audio</li>
+            </ul>
+            <h3>Getting started</h3>
+            <ol>
+              <li>Clone the repository from GitHub</li>
+              <li>Run <code>nvm use</code> (Node.js 22 LTS required)</li>
+              <li>Run <code>npm install</code></li>
+              <li>Run <code>npm run dev</code> to start the dev server</li>
+            </ol>
+            <p>
+              The architecture is documented in the README. Look for issues
+              labeled <strong>&ldquo;good first issue&rdquo;</strong> for a
+              starting point, or open an issue to discuss a feature idea before
+              building.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Test -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Help test</h2>
+            <p>
+              Testing a session companion app requires real-world use. Even
+              quick checks are valuable. Here&rsquo;s how you can help:
+            </p>
+            <ul>
+              <li>
+                Use the app and report bugs via
+                <a href="https://github.com/" target="_blank" rel="noopener"
+                  >GitHub Issues</a
+                >
+              </li>
+              <li>
+                Test on different devices and browsers (especially iOS Safari)
+              </li>
+              <li>Report audio playback issues &mdash; timing, volume, gaps</li>
+              <li>Test PWA installation and offline functionality</li>
+              <li>
+                Check accessibility &mdash; screen readers, keyboard navigation,
+                color contrast
+              </li>
+              <li>Test the full session flow from intake through follow-up</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feedback -->
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
+        <div class="container">
+          <div class="prose rv">
+            <h2>Share feedback</h2>
+            <p>
+              Your experience using m-session is the most valuable input. If
+              you&rsquo;ve used the app, your perspective matters &mdash;
+              whether positive, critical, or somewhere in between.
+            </p>
+            <ul>
+              <li>What worked well? What felt supportive?</li>
+              <li>What felt off, confusing, or missing?</li>
+              <li>Which modules resonated, and which didn&rsquo;t?</li>
+              <li>Did the pacing feel right for your experience?</li>
+              <li>Was the design easy to use in an altered state?</li>
+            </ul>
+            <p>
+              Use the <strong>Give Feedback</strong> button in the app&rsquo;s
+              menu, or fill out our
+              <a href="https://tally.so/r/BzG9qN" target="_blank" rel="noopener"
+                >feedback form</a
+              >
+              directly. You can also open a
+              <a href="https://github.com/" target="_blank" rel="noopener"
+                >GitHub Issue</a
+              >
+              for bug reports or feature requests.
+            </p>
+            <div style="margin-top: 24px">
+              <a
+                href="https://tally.so/r/BzG9qN"
+                target="_blank"
+                rel="noopener"
+                class="btn btn-outline"
+                >Give Feedback &rarr;</a
+              >
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Fund -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Support the project</h2>
+            <p>
+              m-session is free and will always be free. But development,
+              hosting, and audio production have real costs. Financial
+              contributions directly support:
+            </p>
+            <ul>
+              <li>
+                Audio recording and production (TTS generation for guided
+                meditations)
+              </li>
+              <li>Hosting and domain costs</li>
+              <li>Development time and tooling</li>
+              <li>Research and content development</li>
+            </ul>
+            <div class="callout">
+              <p>
+                Financial support options are coming soon. In the meantime, the
+                most valuable contribution is your time &mdash; through code,
+                testing, or feedback.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Spread the Word -->
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
+        <div class="container">
+          <div class="prose rv">
+            <h2>Tell someone</h2>
+            <p>
+              The most impactful contribution doesn&rsquo;t require any
+              technical skill. If m-session helped you, tell someone who might
+              benefit.
+            </p>
+            <p>
+              Word of mouth is how tools like this reach the people who need
+              them. Share with someone who&rsquo;s exploring intentional use,
+              someone in harm reduction communities, or someone who might
+              appreciate having structure for their experience.
+            </p>
+            <p>
+              No social media pressure. Just genuine sharing with people who
+              might benefit.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <div class="page-cta rv">
+        <div class="container">
+          <div class="section-label">Get started</div>
+          <h2 class="section-title">Every contribution matters</h2>
+          <p class="section-body">
+            Whether it&rsquo;s a bug report, a code review, or telling a friend
+            &mdash; it all helps.
+          </p>
+          <div class="page-cta-actions">
+            <a href="/app" class="btn btn-primary">Launch App &rarr;</a>
+            <a
+              href="https://github.com/"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-outline"
+              >View on GitHub</a
+            >
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-links">
+          <a href="/about">About</a>
+          <a href="/faq">FAQ &amp; Safety</a>
+          <a href="/contribute">Contribute</a>
+          <a href="/privacy">Privacy</a>
+          <a href="https://github.com/" target="_blank" rel="noopener"
+            >GitHub</a
+          >
+          <a href="/app">Launch App</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script src="/globe.js"></script>
+  </body>
+</html>

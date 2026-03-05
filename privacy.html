@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#0a0a0c">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>if(localStorage.getItem('m-session-theme')==='light'){document.documentElement.style.background='#f2f0eb';document.documentElement.classList.add('light')}</script>
+    <title>Privacy Policy — m-session</title>
+    <meta name="description" content="m-session privacy policy. Zero data collection, no analytics, no accounts, no cookies. Everything stays on your device. Open source and auditable." />
+    <link rel="canonical" href="https://m-session.com/privacy" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://m-session.com/privacy" />
+    <meta property="og:title" content="Privacy Policy — m-session" />
+    <meta property="og:description" content="Zero data collection. No analytics, no accounts, no cookies. Everything stays on your device." />
+    <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Privacy Policy — m-session" />
+    <meta name="twitter:description" content="Zero data collection. Everything stays on your device. Open source and auditable." />
+    <meta name="twitter:image" content="https://m-session.com/og-image.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="/shared.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="stylesheet" href="/pages.css" />
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a href="/" class="logo" id="logo">
+          <span class="logo-m">M</span><span class="logo-collapse" id="logo-dma">DMA</span><span class="logo-hyphen" id="logo-hyphen">-</span><span class="logo-session">SESSION</span>
+        </a>
+        <div class="header-nav">
+          <a href="/app" class="btn btn-primary" style="padding: 8px 22px">Launch App &rarr;</a>
+          <div class="theme-toggle" id="theme-toggle" role="button" aria-label="Toggle light and dark mode" tabindex="0">
+            <div class="theme-toggle-thumb"></div>
+          </div>
+          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="menu-overlay" id="menu-overlay" aria-hidden="true">
+      <div class="menu-overlay-backdrop"></div>
+      <div class="menu-overlay-panel">
+        <div class="menu-overlay-content">
+          <a href="/" class="menu-link" data-page="home">Home</a>
+          <a href="/about" class="menu-link" data-page="about">About</a>
+          <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
+          <a href="/contribute" class="menu-link" data-page="contribute">Contribute</a>
+          <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
+        </div>
+        <div class="menu-overlay-footer">
+          <a href="/app" class="btn btn-primary" style="padding: 12px 28px">Launch App &rarr;</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="container">
+          <div class="section-label rv visible">Privacy</div>
+          <h1 class="section-title rv visible rv-d1">Privacy policy</h1>
+          <p class="section-body rv visible rv-d2">
+            Effective March 2025. Last updated March 2025.
+          </p>
+        </div>
+      </section>
+
+      <!-- The short version -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <div class="callout">
+              <p>
+                <strong>The short version:</strong> m-session collects no data. We do not know who you are, what you do in the app, or that you visited this website. There are no accounts, no analytics, no cookies, no telemetry. Everything you create in the app stays on your device and is never transmitted anywhere.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- What is stored -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>What is stored, and where</h2>
+            <p>
+              m-session stores your session data, journal entries, and app preferences using your browser&rsquo;s built-in storage mechanisms:
+            </p>
+            <ul>
+              <li><strong>localStorage</strong> &mdash; Session state, preferences, and settings. Stored as key-value pairs in your browser.</li>
+              <li><strong>IndexedDB</strong> &mdash; Journal images and larger data. Stored in your browser&rsquo;s local database.</li>
+            </ul>
+            <p>
+              This data never leaves your device. There is no server-side storage, no cloud sync, no backup service. If you clear your browser data or uninstall the app, this data is permanently deleted.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- What we do NOT collect -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>What we do not collect</h2>
+            <ul>
+              <li>No personally identifiable information (name, email, phone, location)</li>
+              <li>No analytics or usage tracking</li>
+              <li>No telemetry or error reporting</li>
+              <li>No cookies</li>
+              <li>No IP address logging</li>
+              <li>No browser fingerprinting</li>
+              <li>No advertising identifiers</li>
+              <li>No third-party tracking scripts</li>
+              <li>No social media integrations that report back</li>
+            </ul>
+            <p>
+              This is not a simplified summary. This is the complete list. There is no data collection of any kind built into m-session.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Third-party services -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>Third-party services</h2>
+            <p>
+              m-session uses a minimal number of third-party services:
+            </p>
+            <ul>
+              <li>
+                <strong>Vercel</strong> &mdash; Hosts the website and app. Vercel may log standard web server information (IP addresses, request timestamps) as part of their infrastructure. m-session does not access or use these logs. See <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel&rsquo;s privacy policy</a>.
+              </li>
+              <li>
+                <strong>Google Fonts</strong> &mdash; Provides the Azeret Mono and DM Serif Text typefaces. Loading fonts from Google&rsquo;s CDN means your browser makes requests to Google&rsquo;s servers. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google&rsquo;s privacy policy</a>.
+              </li>
+              <li>
+                <strong>Tally</strong> &mdash; Powers our optional feedback form. Tally is a privacy-focused form builder &mdash; no tracking cookies, no advertising, GDPR-compliant. If you choose to submit feedback, your responses are stored on Tally&rsquo;s servers. This is entirely optional and external to the app. See <a href="https://tally.so/help/privacy-policy" target="_blank" rel="noopener">Tally&rsquo;s privacy policy</a>.
+              </li>
+            </ul>
+            <p>
+              No other third-party services, APIs, or SDKs are used. There are no embedded widgets, no social sharing scripts, no chat services.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Audio content -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Audio content</h2>
+            <p>
+              Guided meditation audio is generated using ElevenLabs text-to-speech during development. The resulting audio files are pre-built and shipped with the app as static assets. There are no runtime API calls to ElevenLabs or any other service &mdash; all audio plays from files cached on your device.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Auditability -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>Auditability</h2>
+            <p>
+              m-session is open source under the <strong>AGPL-3.0 license</strong>. The complete source code is available on <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>. You do not have to take our word for any privacy claim &mdash; you can read the code and verify it yourself.
+            </p>
+            <p>
+              You can also use your browser&rsquo;s developer tools (Network tab) to confirm that no data is transmitted while using the app. There are zero outbound network requests during a session.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Children -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Children</h2>
+            <p>
+              m-session is not intended for use by anyone under the age of 18. We do not knowingly collect any information from minors, because we do not collect information from anyone.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Changes -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>Changes to this policy</h2>
+            <p>
+              If this privacy policy is ever updated, the changes will be reflected on this page with an updated effective date. Given m-session&rsquo;s zero-collection architecture, significant changes are unlikely. The project&rsquo;s commitment to privacy is foundational, not incidental.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Contact</h2>
+            <p>
+              If you have questions about this privacy policy, you can open an issue on the <a href="https://github.com/" target="_blank" rel="noopener">GitHub repository</a>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <div class="page-cta rv">
+        <div class="container">
+          <div class="section-label">Explore</div>
+          <h2 class="section-title">Ready to begin?</h2>
+          <p class="section-body">
+            Your session, your device, your data. Nothing leaves your browser.
+          </p>
+          <div class="page-cta-actions">
+            <a href="/app" class="btn btn-primary">Launch App &rarr;</a>
+            <a href="/faq" class="btn btn-outline">FAQ &amp; Safety</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-links">
+          <a href="/about">About</a>
+          <a href="/faq">FAQ &amp; Safety</a>
+          <a href="/contribute">Contribute</a>
+          <a href="/privacy">Privacy</a>
+          <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+          <a href="/app">Launch App</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+  </body>
+</html>

@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#0a0a0c">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>if(localStorage.getItem('m-session-theme')==='light'){document.documentElement.style.background='#f2f0eb';document.documentElement.classList.add('light')}</script>
+    <title>FAQ &amp; Safety — m-session</title>
+    <meta name="description" content="Frequently asked questions about m-session. Harm reduction information, safety guidance, data privacy, compatibility, and disclaimers." />
+    <link rel="canonical" href="https://m-session.com/faq" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://m-session.com/faq" />
+    <meta property="og:title" content="FAQ & Safety — m-session" />
+    <meta property="og:description" content="Harm reduction, safety guidance, privacy, compatibility, and disclaimers." />
+    <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="FAQ & Safety — m-session" />
+    <meta name="twitter:description" content="Harm reduction, safety, privacy, and compatibility info for m-session." />
+    <meta name="twitter:image" content="https://m-session.com/og-image.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="/shared.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="stylesheet" href="/pages.css" />
+
+    <!-- FAQ structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What does MDMA actually do?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "MDMA softens your mind's automatic negative evaluation filter. The content is still there — the harshness is reduced. You can examine parts of yourself that would usually feel threatening, not with detached curiosity, but with something closer to acceptance, even compassion."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is MDMA safe?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No drug use is without risk. MDMA, used occasionally at reasonable doses in a safe setting by healthy people, has a relatively favorable safety profile — but 'relatively favorable' is not 'risk-free.' The main risks include overheating, cardiovascular strain, neurotoxicity from heavy or frequent use, and dangerous interactions with certain medications. Testing your substance, using reasonable doses, and waiting adequate time between sessions significantly reduces risk."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How often can I use MDMA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most harm reduction guidance suggests waiting at least 6-12 weeks between sessions, with some recommending every 3-4 months. MDMA depletes serotonin and your brain needs time to recover. Frequent use is associated with reduced effects, worse comedowns, and potential long-term changes to serotonin systems."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What medications interact with MDMA?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "SSRIs (Prozac, Zoloft, Lexapro) block MDMA's effects and may increase risk of serotonin syndrome. MAOIs are a dangerous combination with risk of serotonin syndrome and hypertensive crisis. Lithium has reports of seizures and other serious reactions. Tramadol increases seizure risk. Research interactions carefully before proceeding."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is my data private in m-session?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. Everything is stored locally on your device using your browser's local storage. There are no servers, accounts, or any way to see your data. Your intake responses, journal entries, and session history never leave your device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need internet during my session?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. m-session is a Progressive Web App (PWA) that works fully offline once loaded. Complete the intake questionnaire and review your session timeline while you have an internet connection. Once your timeline is set, all audio for your scheduled modules is cached to your device."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What's integration and why does it matter?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Integration is the process of making sense of your experience and translating insights into lasting change. Without integration, even profound experiences can fade without impact. With it, even subtle sessions can catalyze meaningful shifts. Journaling, talking to trusted people, and revisiting session notes are all helpful."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much water should I drink during an MDMA session?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Less than you probably think. Overhydration is actually a more realistic risk than dehydration in a calm home setting. MDMA causes your body to release antidiuretic hormone, making kidneys retain water. About 250ml (one cup) per hour is reasonable if resting at home. Electrolyte drinks can help maintain sodium balance."
+          }
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a href="/" class="logo" id="logo">
+          <span class="logo-m">M</span><span class="logo-collapse" id="logo-dma">DMA</span><span class="logo-hyphen" id="logo-hyphen">-</span><span class="logo-session">SESSION</span>
+        </a>
+        <div class="header-nav">
+          <a href="/app" class="btn btn-primary" style="padding: 8px 22px">Launch App &rarr;</a>
+          <div class="theme-toggle" id="theme-toggle" role="button" aria-label="Toggle light and dark mode" tabindex="0">
+            <div class="theme-toggle-thumb"></div>
+          </div>
+          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="menu-overlay" id="menu-overlay" aria-hidden="true">
+      <div class="menu-overlay-backdrop"></div>
+      <div class="menu-overlay-panel">
+        <div class="menu-overlay-content">
+          <a href="/" class="menu-link" data-page="home">Home</a>
+          <a href="/about" class="menu-link" data-page="about">About</a>
+          <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
+          <a href="/contribute" class="menu-link" data-page="contribute">Contribute</a>
+          <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
+        </div>
+        <div class="menu-overlay-footer">
+          <a href="/app" class="btn btn-primary" style="padding: 12px 28px">Launch App &rarr;</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <!-- Hero -->
+      <section class="page-hero">
+        <div class="container">
+          <div class="section-label rv visible">FAQ &amp; Safety</div>
+          <h1 class="section-title rv visible rv-d1">Questions, safety, and what to know</h1>
+          <p class="section-body rv visible rv-d2">
+            Honest answers, harm reduction essentials, and important disclaimers.
+          </p>
+        </div>
+      </section>
+
+      <!-- Safety Callout -->
+      <section>
+        <div class="container">
+          <div class="prose rv">
+            <h2>Safety first</h2>
+            <div class="callout callout-warn">
+              <p>
+                <strong>m-session does not provide medical advice.</strong> MDMA carries real physiological and psychological risks. If you choose to use it, you owe it to yourself to be informed.
+              </p>
+              <ul>
+                <li><strong>Test your substance.</strong> Reagent testing kits are inexpensive and can identify dangerous adulterants. Fentanyl test strips save lives.</li>
+                <li><strong>Dosage matters.</strong> More is not better. Typical therapeutic doses range from 80&ndash;125mg. Redosing, if at all, should be half the initial dose and only once.</li>
+                <li><strong>Set and setting.</strong> Your mindset and environment significantly impact the experience. A safe, comfortable, private space with trusted people makes a real difference.</li>
+                <li><strong>Medication interactions.</strong> MDMA has dangerous interactions with SSRIs, MAOIs, lithium, and other medications. Research your specific medications before considering use.</li>
+                <li><strong>Medical contraindications.</strong> Heart conditions, liver problems, high blood pressure, seizure disorders, and pregnancy are all serious risk factors.</li>
+                <li><strong>Stay hydrated, but don&rsquo;t overhydrate.</strong> Sip water regularly. Avoid alcohol. Have electrolytes available.</li>
+                <li><strong>Temperature regulation.</strong> MDMA impairs your body&rsquo;s ability to regulate temperature. Stay in a cool environment. Have blankets available if you feel cold.</li>
+                <li><strong>Have a plan for difficult moments.</strong> Know your emergency contacts. If someone is in medical distress, call emergency services immediately.</li>
+              </ul>
+              <p>
+                Harm reduction resources:
+                <a href="https://dancesafe.org" target="_blank" rel="noopener">DanceSafe</a> &middot;
+                <a href="https://erowid.org/chemicals/mdma/" target="_blank" rel="noopener">Erowid</a> &middot;
+                <a href="https://psychonautwiki.org/wiki/MDMA" target="_blank" rel="noopener">PsychonautWiki</a> &middot;
+                <a href="https://tripsit.me" target="_blank" rel="noopener">TripSit</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ Accordion -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="section-label rv">Questions</div>
+          <h2 class="section-title rv rv-d1">Frequently asked</h2>
+
+          <div class="faq-list rv rv-d2">
+
+            <!-- Understanding the Experience -->
+            <div class="faq-section-label">Understanding the Experience</div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What does MDMA actually do?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Your mind has a filter that runs constantly beneath your awareness. It evaluates every thought, memory, and feeling&mdash;labeling them as threatening or safe, acceptable or shameful. This is why honest self-reflection is hard: challenging thoughts get intercepted before you can really look at them.</p>
+                <p>MDMA softens this filter. The automatic negative evaluation quiets down, often replaced by something warmer. You can examine parts of yourself that would usually feel threatening&mdash;not with detached curiosity, but with something closer to acceptance, even compassion.</p>
+                <p>The content is still there. The harshness is reduced.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How is this different from recreational use?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>The substance is the same. The intention and setting are different.</p>
+                <p>Recreational use typically emphasizes the pleasurable effects&mdash;connection, euphoria, sensory enhancement&mdash;often in social settings with music and activity.</p>
+                <p>Therapeutic use treats the openness as a window for self-work. You&rsquo;re not chasing the feeling; you&rsquo;re using it to look honestly at yourself, your patterns, your relationships. The setting is calm and private. The goal is insight, not escape.</p>
+                <p>MDMA can feel very good. That&rsquo;s not the point here.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How long does it last?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>A typical timeline:</p>
+                <p><strong>Come-up:</strong> 30&ndash;60 minutes. Effects build gradually, sometimes with brief anxiety or nausea.</p>
+                <p><strong>Peak:</strong> 2&ndash;3 hours. Full effects, greatest openness.</p>
+                <p><strong>Gentle decline:</strong> 1&ndash;2 hours. Effects soften but you&rsquo;re still in an open state.</p>
+                <p><strong>Landing:</strong> Effects mostly resolved by 4&ndash;6 hours. Some residual warmth may linger.</p>
+                <p>A booster dose extends this by 1&ndash;2 hours but doesn&rsquo;t intensify the peak.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What should I expect during the comedown?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>As effects fade, you&rsquo;ll gradually return to your normal state of mind. Most people feel tired but peaceful&mdash;a kind of gentle landing rather than a crash.</p>
+                <p>The next day or two, some people experience low mood, fatigue, or emotional sensitivity. This is normal. It&rsquo;s related to temporary changes in brain chemistry and typically resolves within a few days. Rest, light exercise, good food, and avoiding other substances helps.</p>
+                <p>Many people actually feel better than usual in the days following&mdash;more open, more connected. Both responses are normal.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What if nothing comes up?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Sometimes sessions are quieter than expected. This doesn&rsquo;t mean it&rsquo;s not working. Not every session produces dramatic insights or emotional breakthroughs.</p>
+                <p>What often happens is subtler: a felt sense of okayness, a softening toward yourself, a shift in perspective that only becomes clear later. Trust that if you create the conditions and set a genuine intention, what needs to happen is happening&mdash;even if it doesn&rsquo;t look the way you expected.</p>
+                <p>The work often continues in integration, not just during the session itself.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What if I feel too much?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>If things get intense, remember: you took a substance, it will wear off, and you are safe. This experience is temporary.</p>
+                <p>Try changing something in your environment&mdash;your position, the lighting, the music. Sometimes what feels overwhelming is actually just unfamiliar.</p>
+                <p>The &ldquo;I need help&rdquo; tool in the app offers quick reassurance and reminds you that you&rsquo;re safe. Breathing slowly, orienting to your surroundings, and focusing on simple physical sensations (the weight of your body, the texture of a blanket) can help you feel more settled.</p>
+                <p>Intensity usually comes in waves. If you can ride it without fighting, it often passes more quickly.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Is it normal to feel [physical sensation]?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Common physical effects include:</p>
+                <p><strong>Jaw tension or teeth grinding</strong> &mdash; Very common. Magnesium supplements beforehand may help. Chewing gum can too, though some find it distracting.</p>
+                <p><strong>Feeling cold or hot</strong> &mdash; Temperature regulation is affected. Have blankets available, and dress in layers you can adjust.</p>
+                <p><strong>Nausea during come-up</strong> &mdash; Usually passes within 30 minutes. Ginger tea or candied ginger can help. Lying down and breathing slowly often settles it.</p>
+                <p><strong>Rapid heartbeat</strong> &mdash; Some increase is normal. If it concerns you, try slow breathing. If it&rsquo;s severe or accompanied by chest pain, seek medical attention.</p>
+                <p><strong>Difficulty urinating</strong> &mdash; Common and temporary. Don&rsquo;t force it; it will resolve.</p>
+              </div>
+            </div>
+
+            <!-- Safety & Practical -->
+            <div class="faq-section-label">Safety &amp; Practical</div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Is this safe?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>No drug use is without risk. MDMA, used occasionally at reasonable doses in a safe setting by healthy people, has a relatively favorable safety profile compared to many substances&mdash;but &ldquo;relatively favorable&rdquo; is not &ldquo;risk-free.&rdquo;</p>
+                <p>The main risks include: overheating (rare in calm home settings), cardiovascular strain (relevant if you have heart conditions), neurotoxicity from heavy or frequent use, and dangerous interactions with certain medications.</p>
+                <p>Testing your substance, staying moderately hydrated, using reasonable doses, waiting adequate time between sessions, and avoiding contraindicated medications significantly reduces risk.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How often can I do this?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Most harm reduction guidance suggests waiting at least 6&ndash;12 weeks between sessions. Some recommend longer&mdash;every 3&ndash;4 months.</p>
+                <p>This isn&rsquo;t arbitrary. MDMA depletes serotonin and your brain needs time to recover. Frequent use is associated with reduced effects (&ldquo;losing the magic&rdquo;), worse comedowns, and potential long-term changes to serotonin systems.</p>
+                <p>There&rsquo;s also a psychological case for spacing: integration takes time. Insights from one session benefit from weeks of processing before adding more material.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What about supplements?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Some commonly discussed supplements in harm reduction communities:</p>
+                <p><strong>Magnesium glycinate</strong> &mdash; Taken before or during. May reduce jaw clenching and muscle tension. One of the better-supported recommendations.</p>
+                <p><strong>Vitamin C / Alpha-lipoic acid</strong> &mdash; Antioxidants sometimes taken before and during. Theoretical benefit for reducing oxidative stress, though evidence in humans is limited.</p>
+                <p><strong>5-HTP</strong> &mdash; A serotonin precursor sometimes taken in the days after a session to support recovery. <strong>Do not take 5-HTP within 24 hours of MDMA</strong>&mdash;combining them risks serotonin syndrome. Wait at least a day, ideally longer.</p>
+                <p>None of these are required, and evidence for most is anecdotal or based on animal studies. If you do supplement, research dosages carefully and be aware of interactions with any medications you take.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What about medications?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Some medications have dangerous interactions with MDMA:</p>
+                <p><strong>SSRIs</strong> (Prozac, Zoloft, Lexapro, etc.) &mdash; Block MDMA&rsquo;s effects and may increase risk of serotonin syndrome. Most people taper off SSRIs before MDMA sessions, but this should only be done under medical supervision.</p>
+                <p><strong>MAOIs</strong> &mdash; Dangerous combination. Risk of serotonin syndrome and hypertensive crisis.</p>
+                <p><strong>Lithium</strong> &mdash; Reports of seizures and other serious reactions. Do not combine.</p>
+                <p><strong>Tramadol</strong> &mdash; Increased seizure risk.</p>
+                <p>If you take any psychiatric medications, research interactions carefully or consult a knowledgeable healthcare provider before proceeding.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What if something goes wrong?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Most difficult experiences during MDMA sessions are psychological, not medical&mdash;anxiety, difficult emotions, or challenging thoughts. These are usually workable with grounding techniques, reassurance, and time.</p>
+                <p><strong>Medical emergencies</strong> requiring immediate help include: loss of consciousness, seizures, extremely high body temperature, severe chest pain, or inability to communicate. Call emergency services.</p>
+                <p><strong>Psychological distress</strong> that feels unmanageable: tap &ldquo;I need help&rdquo; for quick reassurance, check the Resources section for support lines like <a href="https://www.fireside-project.org" target="_blank" rel="noopener">Fireside Project</a> (62-FIRESIDE) or <a href="https://tripsit.me" target="_blank" rel="noopener">TripSit</a> chat. You can also contact a trusted friend.</p>
+                <p>Having a plan before you begin helps you act clearly if you need to.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Should I have a sitter?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>A trusted sitter adds a layer of safety, especially for first-time experiences or higher doses. They can help with practical needs, provide reassurance, and respond if something goes wrong.</p>
+                <p>That said, many people do solo sessions successfully. It&rsquo;s a personal choice based on your experience level, the dose, your setting, and your comfort with being alone in altered states.</p>
+                <p>If you&rsquo;re solo, let someone know you&rsquo;re having a session (even if you don&rsquo;t share details), keep your phone accessible, and know who you&rsquo;d call if you needed support.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How much water should I drink?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Less than you probably think. One of the most common pieces of advice around MDMA is &ldquo;drink lots of water&rdquo;&mdash;but overhydration is actually a more realistic risk than dehydration, especially in a calm home setting.</p>
+                <p>MDMA causes your body to release antidiuretic hormone, which makes your kidneys retain water. If you drink large amounts on top of this, your blood sodium can drop to dangerous levels&mdash;a condition called <strong>hyponatremia</strong>. Symptoms include headache, nausea, confusion, and in severe cases, seizures.</p>
+                <p><strong>A good rule:</strong> Sip small amounts regularly rather than gulping large quantities. About 250ml (one cup) per hour is reasonable if you&rsquo;re resting at home. If you&rsquo;re more active&mdash;dancing, moving around&mdash;you may need slightly more, but still moderate.</p>
+                <p>Electrolyte drinks or coconut water can help maintain sodium balance. Avoid forcing yourself to drink if you&rsquo;re not thirsty.</p>
+              </div>
+            </div>
+
+            <!-- Therapy & Growth -->
+            <div class="faq-section-label">Therapy &amp; Growth</div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Do I need to have trauma to benefit from this?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>No. While MDMA has shown remarkable results for people processing trauma, that&rsquo;s not the only use case.</p>
+                <p>MDMA can help anyone who wants to understand themselves more deeply, improve their relationships, work through stuck patterns, or reconnect with parts of themselves they&rsquo;ve lost touch with. You don&rsquo;t need to be broken to benefit from honest self-reflection.</p>
+                <p>Sometimes the healthiest people are the ones most committed to continuing to grow.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How is this different from clinical MDMA therapy?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Clinical MDMA therapy (like the MAPS protocol) involves trained therapists, multiple preparatory sessions, structured therapeutic frameworks, and extensive integration support. It&rsquo;s designed for treating specific conditions like PTSD.</p>
+                <p>This app is designed for personal growth and self-exploration&mdash;not clinical treatment. We don&rsquo;t diagnose, prescribe, or provide therapy. We offer structure and support for your own self-directed journey.</p>
+                <p>If you&rsquo;re dealing with serious trauma, PTSD, or significant mental health challenges, working with a qualified professional is likely to be more appropriate than a self-guided approach.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What&rsquo;s integration and why does it matter?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Integration is the process of making sense of your experience and translating insights into lasting change. It&rsquo;s what happens in the days, weeks, and months after a session.</p>
+                <p>An insight during a session is just the beginning. Real change comes from reflecting on what you learned, having conversations, adjusting how you live, and returning to the material over time.</p>
+                <p>Without integration, even profound experiences can fade without impact. With it, even subtle sessions can catalyze meaningful shifts.</p>
+                <p>We recommend journaling, talking to trusted people, and revisiting your session notes in the days that follow. Some people also work with integration coaches or therapists.</p>
+              </div>
+            </div>
+
+            <!-- Using the App -->
+            <div class="faq-section-label">Using the App</div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How are the session phases structured?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Your session is organized into three phases that mirror the natural arc of an MDMA experience:</p>
+                <p><strong>Come-up</strong> &mdash; The first 30&ndash;60 minutes as effects build. Modules here focus on grounding, breathing, and settling into the experience. The app checks in with you during this time to see how you&rsquo;re feeling.</p>
+                <p><strong>Peak</strong> &mdash; The heart of the experience, typically 2&ndash;3 hours. This is when you&rsquo;re most open. Modules here support deeper exploration: meditation, journaling, music, or simply being present.</p>
+                <p><strong>Integration</strong> &mdash; As effects soften, the focus shifts to reflection and gentle closure. Modules here help you begin processing what arose and prepare for returning to ordinary consciousness.</p>
+                <p>This structure provides a container, not a cage. You control when you transition between phases, and you can add, remove, or skip modules at any point.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How do I customize my session?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>After completing the intake questionnaire, you&rsquo;ll see a timeline of suggested modules based on your responses. This is a starting point, not a prescription.</p>
+                <p>You can click the edit button to change the ordering of modules within each phase, as well as remove them. Use the + button in each phase to add modules from the library.</p>
+                <p>During the session, you can skip any module, extend time on something that&rsquo;s working, or add new modules as needed. The structure serves you, not the other way around.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How can I try out the activities beforehand?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>After completing the intake form, you&rsquo;ll see your session timeline with modules assigned to each phase. You can also add modules to a &ldquo;pre-session&rdquo; section at the top of the timeline&mdash;these run before you take the substance, giving you a chance to experience any activity in advance.</p>
+                <p>This is helpful for getting comfortable with guided meditations, breathing exercises, or journaling prompts before you&rsquo;re in an altered state. Anything you write during pre-session activities is saved to your journal under its own section, separate from your in-session entries.</p>
+                <p>Think of it as a dress rehearsal&mdash;familiarizing yourself with the tools so you can use them more naturally when it matters.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                What if I want to skip something or change the plan?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Most modules can be skipped with a skip button. A few pre-session steps (like the substance testing checklist) require completion for safety reasons.</p>
+                <p>You might find that what you planned doesn&rsquo;t match what you actually need in the moment. Maybe you wanted to journal but your body wants to move. Maybe you planned deep introspection but you just need to rest. That&rsquo;s fine&mdash;that&rsquo;s the process working.</p>
+                <p>Follow what actually arises, even if it surprises you.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Can I use this with a sitter?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Yes. A sitter can help guide you through the experience, facilitating the app&rsquo;s modules while adding their own intuition and presence. They can read prompts aloud, help you navigate between activities, and provide grounding support when needed.</p>
+                <p>The app provides structure; the sitter provides human connection. Both can complement each other well.</p>
+              </div>
+            </div>
+
+            <!-- Privacy & Technical -->
+            <div class="faq-section-label">Privacy &amp; Technical</div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Is my data private?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Yes. Everything is stored locally on your device using your browser&rsquo;s local storage. We don&rsquo;t have servers, accounts, or any way to see your data. Your intake responses, journal entries, and session history never leave your device.</p>
+                <p>After completing a session, you can download all your session data as a file&mdash;useful for keeping a personal record or sharing with a therapist or integration coach.</p>
+                <p>This is by design. What you explore in a session is yours alone.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Do I need internet during my session?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>No. This is a Progressive Web App (PWA), which means it can work fully offline once loaded. The app itself downloads on your first visit, and guided meditation audio is downloaded automatically when you finalize your session timeline after completing the intake form.</p>
+                <p><strong>When to go offline:</strong> Complete the intake questionnaire and review your session timeline while you have an internet connection. Once your timeline is set, all audio for your scheduled modules is cached to your device. You can then safely go into airplane mode or disconnect for the duration of your session.</p>
+                <p>If you add a meditation module to your timeline later (via the timeline editor), its audio will download at that point&mdash;so make any changes while you still have a connection.</p>
+                <p><strong>For the best experience on iPhone:</strong> Open the app in Safari, tap the Share button, then select &ldquo;Add to Home Screen.&rdquo; This creates an app icon that launches the full experience without browser UI&mdash;and ensures it works offline.</p>
+                <p><strong>On Android:</strong> Chrome will typically prompt you to install the app automatically. You can also use the menu and select &ldquo;Install app&rdquo; or &ldquo;Add to Home screen.&rdquo;</p>
+                <p>We recommend setting this up before your session so you&rsquo;re not dependent on internet connectivity during the experience.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                Can I access my past sessions?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>Yes. Tap the menu icon in the top corner and select &ldquo;Past Sessions&rdquo; to browse your archived sessions. Each entry shows the date, status, and duration. Expand any session to see details like your intention, dose, and which activities you completed&mdash;then load it back to review your journal entries and reflections.</p>
+                <p>When you start a new session, the current one is automatically saved and can be returned to at any time.</p>
+                <p>We encourage returning to your notes during integration&mdash;often you&rsquo;ll notice things you missed or find new meaning in what you wrote.</p>
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <div class="faq-question">
+                How does the AI assistant work?
+                <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
+              </div>
+              <div class="faq-answer">
+                <p>The AI assistant is an entirely optional feature&mdash;the app works fully without it. If you&rsquo;d like conversational support during your session, you can enable it by entering your own API key from Anthropic, OpenAI, or OpenRouter.</p>
+                <p><strong>Privacy controls:</strong> In the AI settings panel, you can choose exactly what session information the AI can see. Toggle on or off: session status, time since ingestion, dosage, current activity, progress, journal entries, and your intention. Disable anything you&rsquo;d prefer to keep private.</p>
+                <p><strong>How it works:</strong> Your API key is encrypted and stored locally on your device. You can set it to auto-expire after a period of your choosing. Conversations happen directly between your device and the AI provider&mdash;we never see them.</p>
+                <p><strong>Cost:</strong> You pay the AI provider directly based on usage. We recommend setting a spending limit on your API key through your provider&rsquo;s dashboard.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <div class="page-cta rv">
+        <div class="container">
+          <div class="section-label">Learn more</div>
+          <h2 class="section-title">Still have questions?</h2>
+          <p class="section-body">
+            Read about the project&rsquo;s story and foundations, or review the full privacy policy.
+          </p>
+          <div class="page-cta-actions">
+            <a href="/app" class="btn btn-primary">Launch App &rarr;</a>
+            <a href="/about" class="btn btn-outline">About m-session</a>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-links">
+          <a href="/about">About</a>
+          <a href="/faq">FAQ &amp; Safety</a>
+          <a href="/contribute">Contribute</a>
+          <a href="/privacy">Privacy</a>
+          <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+          <a href="/app">Launch App</a>
+        </div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+  </body>
+</html>
