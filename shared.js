@@ -9,8 +9,8 @@ var __ms = {};
 // Theme persistence — apply before render to prevent flash
 (function () {
   var html = document.documentElement;
-  if (localStorage.getItem('m-session-theme') === 'light') {
-    html.classList.add('light');
+  if (localStorage.getItem('m-session-theme') === 'dark') {
+    html.classList.remove('light');
   }
 })();
 

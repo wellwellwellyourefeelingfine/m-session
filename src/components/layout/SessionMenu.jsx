@@ -248,6 +248,18 @@ export default function SessionMenu() {
           >
             Give Feedback
           </button>
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={() => {
+              window.open('/', '_blank', 'noopener,noreferrer');
+              closeMenu();
+            }}
+            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            Landing Page
+          </button>
           </div>
         </div>
       )}
