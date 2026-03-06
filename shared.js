@@ -208,6 +208,7 @@ var __ms = {};
 
   var isNavigating = false;
   var pageScripts = [];
+  var pageStyles = [];
 
   function normalizePath(p) {
     return p.replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';
@@ -248,11 +249,15 @@ var __ms = {};
           return;
         }
 
-        // Remove previously injected page scripts
+        // Remove previously injected page scripts and styles
         pageScripts.forEach(function (s) {
           if (s.parentNode) s.parentNode.removeChild(s);
         });
         pageScripts = [];
+        pageStyles.forEach(function (s) {
+          if (s.parentNode) s.parentNode.removeChild(s);
+        });
+        pageStyles = [];
 
         // Swap main content
         main.innerHTML = newMain.innerHTML;
@@ -270,6 +275,18 @@ var __ms = {};
         var desc = document.querySelector('meta[name="description"]');
         var newDesc = doc.querySelector('meta[name="description"]');
         if (desc && newDesc) desc.setAttribute('content', newDesc.getAttribute('content'));
+
+        // Inject page-specific head styles from new page
+        var newHead = doc.querySelector('head');
+        if (newHead) {
+          newHead.querySelectorAll('style').forEach(function (s) {
+            var ns = document.createElement('style');
+            ns.textContent = s.textContent;
+            ns.setAttribute('data-pjax', 'true');
+            document.head.appendChild(ns);
+            pageStyles.push(ns);
+          });
+        }
 
         // Update URL (skip for back/forward)
         if (!isPop) history.pushState(null, '', href);

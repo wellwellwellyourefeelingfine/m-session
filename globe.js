@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  if (!window.THREE) return;
+  function init() {
   var heroContainer = document.getElementById("globe-hero");
   if (!heroContainer) return;
 
@@ -205,7 +205,7 @@
   scene.add(globeGroup);
 
   // ── Build globe ──
-  var points = null, globe = null;
+  var points = null, globe = null, displaceDummy = new THREE.Object3D();
 
   function buildGlobe(atlasTex) {
     points = generatePoints();
@@ -360,9 +360,10 @@
 
     // ── Per-point update ──
     var aArr = globe.atlasArr, tArr = globe.tintArr;
-    var dirty = false;
+    var dirty = false, matDirty = false;
     var N = points.length;
     seedCount = seeds.length;
+    var SURF_AMP = 0.045;
 
     for (var i = 0; i < N; i++) {
       var p = points[i];
@@ -411,11 +412,37 @@
         }
         dirty = true;
       }
+
+      // Surface displacement — slide MDMA chars along sphere surface
+      if (nz === "mdma") {
+        var n1 = noise3D(p.ux + t * 0.25, p.uy, p.uz + t * 0.15, 3.0);
+        var n2 = noise3D(p.ux, p.uy + t * 0.2, p.uz + t * 0.3, 3.0);
+        var phi = Math.acos(Math.max(-1, Math.min(1, p.uy))) + n1 * SURF_AMP;
+        var theta = Math.atan2(p.uz, p.ux) + n2 * SURF_AMP;
+        var sinP = Math.sin(phi);
+        var nx = sinP * Math.cos(theta), ny = Math.cos(phi), nz2 = sinP * Math.sin(theta);
+        displaceDummy.position.set(nx * SPHERE_RADIUS, ny * SPHERE_RADIUS, nz2 * SPHERE_RADIUS);
+        displaceDummy.lookAt(nx * SPHERE_RADIUS * 2, ny * SPHERE_RADIUS * 2, nz2 * SPHERE_RADIUS * 2);
+        displaceDummy.updateMatrix();
+        globe.mesh.setMatrixAt(i, displaceDummy.matrix);
+        p.displaced = true;
+        matDirty = true;
+      } else if (p.displaced) {
+        displaceDummy.position.set(p.ux * SPHERE_RADIUS, p.uy * SPHERE_RADIUS, p.uz * SPHERE_RADIUS);
+        displaceDummy.lookAt(p.ux * SPHERE_RADIUS * 2, p.uy * SPHERE_RADIUS * 2, p.uz * SPHERE_RADIUS * 2);
+        displaceDummy.updateMatrix();
+        globe.mesh.setMatrixAt(i, displaceDummy.matrix);
+        p.displaced = false;
+        matDirty = true;
+      }
     }
 
     if (dirty) {
       globe.atlasAttr.needsUpdate = true;
       globe.tintAttr.needsUpdate = true;
+    }
+    if (matDirty) {
+      globe.mesh.instanceMatrix.needsUpdate = true;
     }
 
     // Render + post-fx
@@ -471,4 +498,15 @@
       requestAnimationFrame(animate);
     });
   });
+  } // end init
+
+  // Load Three.js dynamically if needed, then initialize
+  if (window.THREE) {
+    init();
+  } else {
+    var s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js";
+    s.onload = init;
+    document.head.appendChild(s);
+  }
 })();

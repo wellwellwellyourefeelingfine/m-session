@@ -14,6 +14,9 @@
     <meta property="og:image" content="https://m-session.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="m-session" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="robots" content="index, follow" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="About — m-session" />
     <meta name="twitter:description" content="The story, philosophy, and therapeutic foundations behind m-session." />
@@ -32,6 +35,33 @@
     <link rel="stylesheet" href="/shared.css" />
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "AboutPage",
+      "name": "About m-session",
+      "url": "https://m-session.com/about",
+      "description": "The story, philosophy, and therapeutic foundations behind m-session. A free, open-source guided companion for MDMA sessions.",
+      "mainEntity": {
+        "@type": "WebApplication",
+        "name": "m-session",
+        "url": "https://m-session.com",
+        "applicationCategory": "HealthApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "author": {
+          "@type": "Person",
+          "name": "dasloops"
+        }
+      }
+    }
+    </script>
   </head>
   <body>
     <header>
@@ -75,32 +105,49 @@
         <div class="container">
           <div class="section-label rv visible">About</div>
           <h1 class="section-title rv visible rv-d1">The story behind m-session</h1>
-          <p class="section-body rv visible rv-d2">
-            A companion for people who have decided to explore, and want to do it with more intention, structure, and care.
-          </p>
+          <div class="prose rv visible rv-d2" style="margin-top: 16px">
+            <p>
+              MDMA has a way of getting people unstuck. Not permanently, not magically, but enough to see clearly for a while, and sometimes that&rsquo;s all it takes.
+            </p>
+            <p>
+              Most people go into a session alone, with no structure, and come out the other side unsure what to do with what they found. m-session exists to help with that. It&rsquo;s not a replacement for an in-person therapist or guide, and it works just as well alongside one. But for people who want to navigate this process entirely on their own terms, there hasn&rsquo;t been much built for them. This is an attempt to change that.
+            </p>
+            <p>
+              The app is built around the full arc of a session, including the days that follow, when insights are still fresh and the work of integration can actually begin. The modules draw on real therapeutic frameworks, and the approach throughout is non-directive: the app tries to support your process rather than steer it.
+            </p>
+            <p>
+              Everything runs locally on your device. No accounts, no data collection. The module library is still growing, informed by community feedback and the input of practicing MDMA therapists and guides.
+            </p>
+          </div>
         </div>
       </section>
 
-      <!-- Why this exists -->
-      <section>
+      <!-- Who Built This -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
         <div class="container">
           <div class="prose rv">
-            <h2>Why this exists</h2>
+            <h2>Who built this</h2>
             <p>
-              People are already exploring MDMA for personal growth, self-understanding, and emotional processing. That&rsquo;s not going to change. What can change is how much structure, safety information, and intentional guidance they have access to.
+              I built m-session because I believe people have the power to change themselves, and that psychedelics are one of the most powerful tools available to help with that. MDMA in particular has a way of cutting through the noise and helping people feel connected again, sometimes for the first time in years.
             </p>
             <p>
-              Most people doing this work outside of clinical settings are doing it with no framework at all &mdash; no preparation, no integration, no grounding when things get intense. m-session exists to fill that gap. Not as therapy, not as treatment, but as a companion that brings evidence-informed structure to an experience that too often has none.
+              After taking stock of my own background and experience, I felt this was something I could actually build well. My hope is that m-session grows into a true community project, with many active contributors, and that this tool becomes genuinely useful for anyone on their MDMA healing journey.
             </p>
             <p>
-              The app doesn&rsquo;t tell you what to feel or where to go. It provides a flexible structure that you can follow at your own pace &mdash; solo, with a partner, or with a trusted sitter. Research-grounded modules adapted for self-guided use. If a section doesn&rsquo;t feel right, skip it. If you need more time, take it. The app follows you, not the other way around.
+              If you&rsquo;re reading this and feel like you can help in any way, please do. You can <a href="/contribute">test the app and send feedback</a>, contribute code, or support us financially. Since the project is still early, probably the most useful thing you can do is just spread the word.
+            </p>
+            <p>
+              I love you. Good luck.
+            </p>
+            <p>
+              &mdash; dasloops
             </p>
           </div>
         </div>
       </section>
 
       <!-- Design Philosophy -->
-      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+      <section>
         <div class="container">
           <div class="section-label rv">Philosophy</div>
           <h2 class="section-title rv rv-d1">Design principles</h2>
@@ -153,7 +200,7 @@
       </section>
 
       <!-- Therapeutic Foundations -->
-      <section>
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
         <div class="container">
           <div class="section-label rv">Foundations</div>
           <h2 class="section-title rv rv-d1">Therapeutic frameworks</h2>
@@ -222,24 +269,6 @@
         </div>
       </section>
 
-      <!-- Who Built This -->
-      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
-        <div class="container">
-          <div class="prose rv">
-            <h2>Who built this</h2>
-            <p>
-              m-session was built by <strong>dasloops</strong> &mdash; not a clinical team, not a corporation, but someone who cares deeply about this space and wanted to build the tool they wished existed.
-            </p>
-            <p>
-              The project is driven by a belief that people exploring their inner landscape deserve better than nothing. Better than guesswork. Better than an unstructured experience with no support, no safety information, and no integration pathway.
-            </p>
-            <p>
-              Every module, every prompt, every design decision was made with care for the person on the other end of the screen &mdash; someone in a vulnerable, open state, trusting the app to meet them where they are.
-            </p>
-          </div>
-        </div>
-      </section>
-
       <!-- Open Source -->
       <section>
         <div class="container">
@@ -253,6 +282,18 @@
             </p>
             <p>
               Open source also means the community can contribute. If you see something that could be better &mdash; a module that needs refining, an accessibility improvement, a new therapeutic exercise &mdash; you can help make it happen.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Contact -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>Contact</h2>
+            <p>
+              If you have questions, feedback, or want to get involved, you can open an issue on the <a href="https://github.com/" target="_blank" rel="noopener">GitHub repository</a>, submit feedback through our <a href="https://tally.so/r/BzG9qN" target="_blank" rel="noopener">feedback form</a>, or reach out directly at dasloops@protonmail.com.
             </p>
           </div>
         </div>
@@ -276,7 +317,7 @@
 
     <footer>
       <div class="container">
-        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
         <div class="footer-links">
           <a href="/about">About</a>
           <a href="/faq">FAQ &amp; Safety</a>

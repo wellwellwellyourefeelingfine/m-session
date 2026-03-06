@@ -25,6 +25,9 @@
     <meta property="og:image" content="https://m-session.com/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="m-session" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="robots" content="index, follow" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Contribute — m-session" />
     <meta
@@ -74,6 +77,21 @@
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
 
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": "Contribute to m-session",
+      "url": "https://m-session.com/contribute",
+      "description": "Help m-session grow. Contribute code, test the app, share feedback, fund development, or spread the word about this open-source session companion.",
+      "isPartOf": {
+        "@type": "WebSite",
+        "name": "m-session",
+        "url": "https://m-session.com"
+      }
+    }
+    </script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
@@ -118,6 +136,135 @@
         z-index: 3;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+      }
+
+      /* Hero subtext — all-caps mono */
+      .hero-sub {
+        font-family: var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 11px;
+        line-height: 2;
+        color: var(--text-primary);
+        opacity: 0.55;
+      }
+      html.light .hero-sub {
+        opacity: 0.6;
+      }
+
+      /* Oversized accent brackets */
+      .hero-brackets {
+        position: relative;
+        display: inline-block;
+        max-width: 620px;
+        padding: 0 40px;
+      }
+      .hero-brackets::before,
+      .hero-brackets::after {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-56%);
+        font-family: var(--serif);
+        font-size: 120px;
+        font-weight: 400;
+        line-height: 1;
+        color: var(--accent);
+        opacity: 0.8;
+      }
+      .hero-brackets::before {
+        content: "[";
+        left: -8px;
+      }
+      .hero-brackets::after {
+        content: "]";
+        right: -8px;
+      }
+      @media (max-width: 480px) {
+        .hero-brackets {
+          padding: 6px 20px;
+        }
+        .hero-brackets::before,
+        .hero-brackets::after {
+          content: "";
+          top: 0;
+          bottom: 0;
+          width: 12px;
+          font-size: 0;
+          transform: none;
+          border-top: 3px solid var(--accent);
+          border-bottom: 3px solid var(--accent);
+        }
+        .hero-brackets::before {
+          left: 0;
+          border-left: 3px solid var(--accent);
+        }
+        .hero-brackets::after {
+          right: 0;
+          border-right: 3px solid var(--accent);
+        }
+      }
+
+      /* Fund cards */
+      .fund-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-top: 16px;
+        overflow: hidden;
+      }
+      .fund-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        font-size: 13px;
+      }
+      .fund-card-tag {
+        font-family: var(--mono);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-dim);
+        padding: 3px 8px;
+        border-radius: 4px;
+      }
+      .fund-card-body {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+      }
+      .fund-card-address {
+        flex: 1;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.01em;
+        word-break: break-all;
+        color: var(--text-secondary);
+        background: none;
+        padding: 0;
+      }
+      .fund-card-copy {
+        flex-shrink: 0;
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-dim);
+        border: 1px solid var(--border-accent);
+        border-radius: 4px;
+        padding: 6px 14px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+      .fund-card-copy:hover {
+        background: var(--accent-glow);
+      }
+      .fund-card-muted {
+        opacity: 0.5;
       }
 
       /* Match hero bg to site theme */
@@ -230,12 +377,14 @@
           <h1 class="section-title rv visible rv-d1">
             Healing the world, one person at a time.
           </h1>
-          <p class="section-body rv visible rv-d2">
-            M-session is a community project &mdash; free, open source, and
-            built to help one person have a better, safer experience. Code,
-            test, give feedback, or spread the word. Every contribution extends
-            that reach to someone, somewhere, who needs it.
-          </p>
+          <div class="hero-brackets rv visible rv-d2">
+            <p class="section-body hero-sub">
+              M-session is a community project: free, open source, and built to
+              help one person have a better, safer experience. You can help!
+              Code, test, give feedback, or spread the word. Every contribution
+              helps this tool become the thing that changes someone's life.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -282,52 +431,17 @@
         </div>
       </section>
 
-      <!-- Test -->
-      <section>
-        <div class="container">
-          <div class="prose rv">
-            <h2>Help test</h2>
-            <p>
-              Testing a session companion app requires real-world use. Even
-              quick checks are valuable. Here&rsquo;s how you can help:
-            </p>
-            <ul>
-              <li>
-                Use the app and report bugs via
-                <a href="https://github.com/" target="_blank" rel="noopener"
-                  >GitHub Issues</a
-                >
-              </li>
-              <li>
-                Test on different devices and browsers (especially iOS Safari)
-              </li>
-              <li>Report audio playback issues &mdash; timing, volume, gaps</li>
-              <li>Test PWA installation and offline functionality</li>
-              <li>
-                Check accessibility &mdash; screen readers, keyboard navigation,
-                color contrast
-              </li>
-              <li>Test the full session flow from intake through follow-up</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
       <!-- Feedback -->
-      <section
-        style="
-          background: var(--bg-elevated);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
-        "
-      >
+      <section>
         <div class="container">
           <div class="prose rv">
             <h2>Share feedback</h2>
             <p>
               Your experience using m-session is the most valuable input. If
               you&rsquo;ve used the app, your perspective matters &mdash;
-              whether positive, critical, or somewhere in between.
+              whether positive, critical, or somewhere in between. We especially
+              value testing across different devices and browsers, the full
+              session flow, and audio playback.
             </p>
             <ul>
               <li>What worked well? What felt supportive?</li>
@@ -337,18 +451,21 @@
               <li>Was the design easy to use in an altered state?</li>
             </ul>
             <p>
-              Use the <strong>Give Feedback</strong> button in the app&rsquo;s
-              menu, or fill out our
-              <a href="https://tally.so/r/BzG9qN" target="_blank" rel="noopener"
-                >feedback form</a
-              >
-              directly. You can also open a
+              There are two ways to share feedback. For bug reports and
+              technical issues, open a
               <a href="https://github.com/" target="_blank" rel="noopener"
                 >GitHub Issue</a
-              >
-              for bug reports or feature requests.
+              >. For general feedback about your experience, use our submission
+              form.
             </p>
-            <div style="margin-top: 24px">
+            <div
+              style="
+                margin-top: 24px;
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+              "
+            >
               <a
                 href="https://tally.so/r/BzG9qN"
                 target="_blank"
@@ -356,13 +473,26 @@
                 class="btn btn-outline"
                 >Give Feedback &rarr;</a
               >
+              <a
+                href="https://github.com/"
+                target="_blank"
+                rel="noopener"
+                class="btn btn-outline"
+                >Report a Bug &rarr;</a
+              >
             </div>
           </div>
         </div>
       </section>
 
       <!-- Fund -->
-      <section>
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
           <div class="prose rv">
             <h2>Support the project</h2>
@@ -380,25 +510,48 @@
               <li>Development time and tooling</li>
               <li>Research and content development</li>
             </ul>
-            <div class="callout">
-              <p>
-                Financial support options are coming soon. In the meantime, the
-                most valuable contribution is your time &mdash; through code,
-                testing, or feedback.
-              </p>
+            <p>
+              If you&rsquo;d like to contribute financially, the following
+              options are available.
+            </p>
+
+            <!-- Ethereum card -->
+            <div class="fund-card">
+              <div class="fund-card-header">
+                <strong>Ethereum</strong>
+                <span class="fund-card-tag">ETH &amp; ERC-20 tokens</span>
+              </div>
+              <div class="fund-card-body">
+                <code class="fund-card-address" id="eth-address"
+                  >0x112494ef00fFAcAcC33BC7774C3d73BAA7733c51</code
+                >
+                <button
+                  class="fund-card-copy"
+                  id="copy-eth"
+                  aria-label="Copy Ethereum address"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- Coming soon card -->
+            <div class="fund-card fund-card-muted">
+              <div class="fund-card-header">
+                <strong>More options</strong>
+              </div>
+              <div class="fund-card-body">
+                <span style="color: var(--text-tertiary)"
+                  >Additional payment methods coming soon.</span
+                >
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- Spread the Word -->
-      <section
-        style="
-          background: var(--bg-elevated);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
-        "
-      >
+      <section>
         <div class="container">
           <div class="prose rv">
             <h2>Tell someone</h2>
@@ -446,7 +599,7 @@
 
     <footer>
       <div class="container">
-        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2025</div>
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
         <div class="footer-links">
           <a href="/about">About</a>
           <a href="/faq">FAQ &amp; Safety</a>
@@ -462,5 +615,22 @@
 
     <script src="/shared.js"></script>
     <script src="/globe.js"></script>
+    <script>
+      (function () {
+        var btn = document.getElementById("copy-eth");
+        var addr = document.getElementById("eth-address");
+        if (!btn || !addr) return;
+        btn.addEventListener("click", function () {
+          navigator.clipboard
+            .writeText(addr.textContent.trim())
+            .then(function () {
+              btn.textContent = "Copied";
+              setTimeout(function () {
+                btn.textContent = "Copy";
+              }, 2000);
+            });
+        });
+      })();
+    </script>
   </body>
 </html>
