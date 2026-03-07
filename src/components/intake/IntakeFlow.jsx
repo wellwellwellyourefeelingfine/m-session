@@ -4,7 +4,7 @@
  * Shows one question at a time with fade animations
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import SafetyWarning from './SafetyWarning';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
@@ -57,6 +57,11 @@ const HEALTH_WARNINGS = {
     message: 'Using MDMA less than a month after your last use significantly increases health risks and greatly reduces the therapeutic benefit. Serotonin levels need time to replenish. We strongly recommend waiting at least 3 months between uses.',
     continueLabel: 'I understand the risks',
   },
+  noEmergencyContact: {
+    title: 'We Strongly Recommend Telling Someone',
+    message: 'A trusted sitter adds a layer of safety, especially for first-time experiences or higher doses. If that isn\u2019t possible, let someone know you\u2019re having a session \u2014 even without sharing details. Keep your phone accessible and know who you\u2019d call if you needed support.',
+    continueLabel: 'I understand',
+  },
 };
 
 export default function IntakeFlow({ onComplete }) {
@@ -70,6 +75,13 @@ export default function IntakeFlow({ onComplete }) {
   const currentQuestionIndex = intake.currentQuestionIndex || 0;
   const [isVisible, setIsVisible] = useState(true);
   const [showPrivacyScreen, setShowPrivacyScreen] = useState(false);
+
+  // Fade in entire component on initial mount
+  const [mountedVisible, setMountedVisible] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setMountedVisible(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
   const [showCompletionScreen, setShowCompletionScreen] = useState(
     currentQuestionIndex >= allQuestions.length
   );
@@ -115,6 +127,10 @@ export default function IntakeFlow({ onComplete }) {
     }
     if (currentQuestion.field === 'lastMDMAUse' && value === 'less-than-1-month') {
       setActiveWarning('lastMDMAUseVeryRecent');
+      return;
+    }
+    if (currentQuestion.field === 'emergencyContact' && value === 'no-fine') {
+      setActiveWarning('noEmergencyContact');
       return;
     }
 
@@ -389,7 +405,7 @@ export default function IntakeFlow({ onComplete }) {
   const progress = ((currentQuestionIndex + 1) / displayTotal) * 100;
 
   return (
-    <>
+    <div className="transition-opacity duration-700 ease-out" style={{ opacity: mountedVisible ? 1 : 0 }}>
       {/* Progress bar at top - lines up with header */}
       <ModuleProgressBar
         progress={progress}
@@ -503,6 +519,6 @@ export default function IntakeFlow({ onComplete }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

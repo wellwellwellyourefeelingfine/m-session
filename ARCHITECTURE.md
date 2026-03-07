@@ -92,7 +92,9 @@ src/
 │   │   ├── musicRecommendations.js
 │   │   └── danceRecommendations.js
 │   ├── meditations/               # Meditation content + audio mappings (14 content files)
-│   └── intake/                    # 4-section questionnaire
+│   ├── intake/                    # 4-section questionnaire
+│   └── timeline/
+│       └── configurations.js      # 11 timeline configs (5 focuses × 2 guidance + minimal)
 ├── utils/
 │   ├── buildSystemPrompt.js       # AI context builder
 │   ├── downloadSessionData.js     # Session data export (text + images)
@@ -410,6 +412,55 @@ export const CUSTOM_MODULES = { ...existing, 'my-meditation': MyMeditationModule
 **Step 6: Generate audio** — create `scripts/generate-my-meditation-audio.mjs` following the pattern of existing scripts. Use `--dry-run` first, then generate with `ELEVENLABS_API_KEY`.
 
 **Step 7: Build and test** — `npm run build`, then verify the full flow: idle screen → begin → prompts with audio → pause/resume → mute toggle → completion.
+
+---
+
+## Timeline Generation
+
+The intake questionnaire captures a **primary focus** and **guidance level**, which together determine the activity timeline generated for the session. This produces 11 distinct configurations.
+
+### Focus Areas
+
+| Focus | Theme | Unique Modules |
+|-------|-------|----------------|
+| Self-Understanding | Values, patterns, inner parts | Values Compass, Open Awareness |
+| Emotional Healing | Self-compassion, processing, release | Protector Dialogue (linked pair), Stay With It |
+| Relationship | Attachment, EFT exploration | The Descent + The Cycle (linked pair), Let's Dance |
+| Creativity & Insight | Open flow, embodiment, play | Let's Dance, Open Awareness, Felt Sense |
+| Open Exploration | Balanced mix (default) | Broad sampling across all module types |
+
+### Guidance Levels
+
+| Level | Description |
+|-------|-------------|
+| Full | Pre-session activities (intention setting, life graph) + fuller module set per phase |
+| Moderate | Fewer pre-session activities + lighter module set (removes ~2-3 modules vs full) |
+| Minimal | No pre-session activities, lightweight structure across all phases |
+
+### Configuration Structure
+
+Defined in `src/content/timeline/configurations.js`:
+
+```javascript
+TIMELINE_CONFIGS[focus][guidanceLevel] = {
+  preSession: [{ libraryId, duration }],  // optional
+  comeUp:     [{ libraryId, duration }],
+  peak:       [{ libraryId, duration }],
+  integration:[{ libraryId, duration }],
+}
+// Linked modules add: { linkedGroup, linkedRole }
+// Minimal is a flat object (no guidance sub-keys)
+```
+
+### Generation Flow
+
+`generateTimelineFromIntake()` in `useSessionStore.js`:
+1. Reads `responses.primaryFocus` (fallback: `'open'`) and `responses.guidanceLevel` (fallback: `'full'`)
+2. Looks up the matching configuration from `TIMELINE_CONFIGS`
+3. Builds module instances from the config (assigns `instanceId`, `order`, `phase`, library content)
+4. Resolves linked module groups (e.g., `'protector'` → shared `linkedGroupId`)
+5. Inserts booster check-in as post-processing (after first peak module, if applicable)
+6. Calculates phase durations and precaches audio
 
 ---
 
@@ -810,6 +861,7 @@ A reusable transition screen for smooth flow between sections:
 | Session state | `src/stores/useSessionStore.js` |
 | Module routing | `src/components/active/moduleRegistry.js` |
 | Module definitions | `src/content/modules/library.js` |
+| Timeline configurations | `src/content/timeline/configurations.js` |
 | Breath engine | `src/components/active/hooks/useBreathController.js` |
 | Orb animation | `src/components/active/capabilities/animations/BreathOrb.jsx` |
 | ASCII moon | `src/components/active/capabilities/animations/AsciiMoon.jsx` |

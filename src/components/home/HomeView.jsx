@@ -11,7 +11,8 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
-import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import LeafDraw from '../active/capabilities/animations/LeafDraw';
+import LeafDrawBig from '../active/capabilities/animations/LeafDrawBig';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 
 /**
@@ -52,6 +53,30 @@ export default function HomeView() {
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
   const completeIntake = useSessionStore((state) => state.completeIntake);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
+
+  // Welcome → Intake fade transition
+  const [welcomeFadingOut, setWelcomeFadingOut] = useState(false);
+  const welcomeTimerRef = useRef(null);
+
+  const handleBeginIntake = () => {
+    setWelcomeFadingOut(true);
+    welcomeTimerRef.current = setTimeout(() => {
+      startIntake();
+    }, 800);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (welcomeTimerRef.current) clearTimeout(welcomeTimerRef.current);
+    };
+  }, []);
+
+  // Reset fade state when returning to welcome screen (e.g. after session reset)
+  useEffect(() => {
+    if (sessionPhase === 'not-started') {
+      setWelcomeFadingOut(false);
+    }
+  }, [sessionPhase]);
 
   // Handle Begin Session - moon transition then navigate to substance checklist
   const handleBeginSession = () => {
@@ -108,39 +133,34 @@ export default function HomeView() {
     switch (sessionPhase) {
       case 'not-started':
         return (
-          <div className="max-w-md mx-auto px-6 py-8 text-center">
-            <h2 className="mb-6 font-serif text-2xl" style={{ textTransform: 'none', color: 'var(--accent)' }}>Welcome</h2>
-            <div className="flex justify-center mb-8">
-              <AsciiDiamond />
+          <div className={`max-w-md mx-auto px-6 flex flex-col items-center pt-4 transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
+            <div className="text-center mt-4">
+              <h2
+                className="text-3xl mb-4"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', color: 'var(--color-text-primary)' }}
+              >
+                Welcome
+              </h2>
+              <div className="flex justify-center mb-4">
+                <LeafDrawBig />
+              </div>
+              <div className="px-5 py-4 mb-4 text-left">
+                <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-2">
+                  Intake
+                </p>
+                <p className="text-xs leading-relaxed text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  A brief questionnaire to understand your intentions and preferences, best completed a few days before your session.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleBeginIntake}
+                disabled={welcomeFadingOut}
+                className="px-10 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+              >
+                Begin Intake
+              </button>
             </div>
-            <p className="mb-4 leading-relaxed">
-              This is an app to guide you through an MDMA session focused on personal growth.
-            </p>
-            <div className="flex justify-center mb-4">
-              <div className="circle-spacer" />
-            </div>
-            <p className="mb-4 text-[var(--color-text-tertiary)]">
-              Read more about our philosophy in the active tab or the toolbar.
-            </p>
-            <div className="flex justify-center mb-4">
-              <div className="circle-spacer" />
-            </div>
-            <p className="mb-4 leading-relaxed">
-              We'll start with a brief questionnaire to understand your intentions and preferences.
-            </p>
-            <div className="flex justify-center mb-4">
-              <div className="circle-spacer" />
-            </div>
-            <p className="mb-8 text-[var(--color-text-tertiary)]">
-              We recommend completing this intake section at least a few days before your planned session.
-            </p>
-            <button
-              type="button"
-              onClick={startIntake}
-              className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
-            >
-              Begin Intake
-            </button>
           </div>
         );
 

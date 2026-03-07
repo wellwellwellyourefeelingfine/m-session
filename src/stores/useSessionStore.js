@@ -7,6 +7,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { getModuleById } from '../content/modules';
+import { TIMELINE_CONFIGS } from '../content/timeline/configurations';
 import { useAppStore } from './useAppStore';
 import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
@@ -487,7 +488,7 @@ export const useSessionStore = create(
         // Check for safety warnings
         const showSafetyWarnings =
           responses.safeSpace === 'no' ||
-          responses.emergencyContact === 'no-concerned' ||
+          responses.emergencyContact === 'no-fine' ||
           responses.heartConditions === 'yes' ||
           responses.psychiatricHistory === 'yes';
 
@@ -533,119 +534,64 @@ export const useSessionStore = create(
         const state = get();
         const responses = state.intake.responses;
 
-        // Calculate phase durations
-        const comeUpDuration = 45; // Max allocated
-        const peakDuration = 90;
+        // Look up timeline configuration based on intake responses
+        const focus = responses.primaryFocus || 'open';
+        const guidance = responses.guidanceLevel || 'full';
+        const config = guidance === 'minimal'
+          ? TIMELINE_CONFIGS.minimal
+          : TIMELINE_CONFIGS[focus]?.[guidance] || TIMELINE_CONFIGS.open.full;
 
-        // Fixed default timeline — same for all intake responses.
-        // Intake preferences are collected for future use when more modules are available.
-        let defaultModules = [];
+        // Build module instances from configuration
+        const linkedGroupIds = {};
+        let modules = [];
+        const phaseMap = [
+          { key: 'preSession', phase: 'pre-session' },
+          { key: 'comeUp', phase: 'come-up' },
+          { key: 'peak', phase: 'peak' },
+          { key: 'integration', phase: 'integration' },
+        ];
 
-        // === COME-UP MODULES ===
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'simple-grounding',
-          phase: 'come-up',
-          title: 'Simple Grounding',
-          duration: 5,
-          status: 'upcoming',
-          order: 0,
-          content: getModuleById('simple-grounding')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
+        for (const { key, phase } of phaseMap) {
+          const specs = config[key] || [];
+          specs.forEach((spec, index) => {
+            const lib = getModuleById(spec.libraryId);
+            const instance = {
+              instanceId: generateId(),
+              libraryId: spec.libraryId,
+              phase,
+              title: lib?.title || spec.libraryId,
+              duration: spec.duration,
+              status: 'upcoming',
+              order: index,
+              content: lib?.content || {},
+              startedAt: null,
+              completedAt: null,
+            };
 
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'music-listening',
-          phase: 'come-up',
-          title: 'Music Immersion',
-          duration: 20,
-          status: 'upcoming',
-          order: 1,
-          content: getModuleById('music-listening')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
+            // Linked modules (e.g., The Descent P1 / The Cycle P2)
+            if (spec.linkedGroup) {
+              if (!linkedGroupIds[spec.linkedGroup]) {
+                linkedGroupIds[spec.linkedGroup] = generateId();
+              }
+              instance.linkedGroupId = linkedGroupIds[spec.linkedGroup];
+              instance.linkedRole = spec.linkedRole;
+            }
 
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'open-space',
-          phase: 'come-up',
-          title: 'Open Space',
-          duration: 20,
-          status: 'upcoming',
-          order: 2,
-          content: getModuleById('open-space')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
+            modules.push(instance);
+          });
+        }
 
-        // === PEAK MODULES ===
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'body-scan',
-          phase: 'peak',
-          title: 'Body Scan',
-          duration: 10,
-          status: 'upcoming',
-          order: 0,
-          content: getModuleById('body-scan')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'self-compassion',
-          phase: 'peak',
-          title: 'Self-Compassion',
-          duration: 11,
-          status: 'upcoming',
-          order: 1,
-          content: getModuleById('self-compassion')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'letter-writing',
-          phase: 'peak',
-          title: 'Letter Writing',
-          duration: 25,
-          status: 'upcoming',
-          order: 2,
-          content: getModuleById('letter-writing')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'music-listening',
-          phase: 'peak',
-          title: 'Music Immersion',
-          duration: 20,
-          status: 'upcoming',
-          order: 3,
-          content: getModuleById('music-listening')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        // Booster check-in — independent of other preferences
+        // Booster check-in — insert after first peak module if applicable
         const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
         if (considerBooster) {
-          // Re-order peak modules to insert booster after the first module
-          defaultModules = defaultModules.map(m => {
+          modules = modules.map(m => {
             if (m.phase === 'peak' && m.order >= 1) {
               return { ...m, order: m.order + 1 };
             }
             return m;
           });
 
-          defaultModules.push({
+          modules.push({
             instanceId: generateId(),
             libraryId: 'booster-consideration',
             phase: 'peak',
@@ -660,69 +606,28 @@ export const useSessionStore = create(
           });
         }
 
-        // === INTEGRATION MODULES ===
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'open-awareness',
-          phase: 'integration',
-          title: 'Open Awareness',
-          duration: 15,
-          status: 'upcoming',
-          order: 0,
-          content: getModuleById('open-awareness')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'parts-work',
-          phase: 'integration',
-          title: 'Parts Work',
-          duration: 30,
-          status: 'upcoming',
-          order: 1,
-          content: getModuleById('parts-work')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        defaultModules.push({
-          instanceId: generateId(),
-          libraryId: 'music-listening',
-          phase: 'integration',
-          title: 'Music Immersion',
-          duration: 20,
-          status: 'upcoming',
-          order: 2,
-          content: getModuleById('music-listening')?.content || {},
-          startedAt: null,
-          completedAt: null,
-        });
-
-        // NOTE: Closing ritual is now handled as a transition flow (ClosingCheckIn + ClosingRitual)
-        // triggered automatically when all integration modules complete
-
-        const adjustedPeakDuration = peakDuration;
-        const adjustedIntegrationDuration = state.timeline.targetDuration - comeUpDuration - adjustedPeakDuration;
+        // Phase durations
+        const comeUpDuration = 45;
+        const peakDuration = 90;
+        const adjustedIntegrationDuration = state.timeline.targetDuration - comeUpDuration - peakDuration;
 
         set({
           modules: {
             ...state.modules,
-            items: defaultModules,
+            items: modules,
           },
           timeline: {
             ...state.timeline,
             phases: {
               comeUp: { ...state.timeline.phases.comeUp, allocatedDuration: comeUpDuration },
-              peak: { ...state.timeline.phases.peak, allocatedDuration: adjustedPeakDuration },
+              peak: { ...state.timeline.phases.peak, allocatedDuration: peakDuration },
               integration: { ...state.timeline.phases.integration, allocatedDuration: adjustedIntegrationDuration },
             },
           },
         });
 
         // Precache audio for all modules in the generated timeline (non-blocking)
-        precacheAudioForTimeline(defaultModules);
+        precacheAudioForTimeline(modules);
         precacheComposerAssets();
       },
 

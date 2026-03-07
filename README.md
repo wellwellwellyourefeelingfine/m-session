@@ -20,7 +20,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 ## Features
 
 **Guided Session Flow**
-- 4-section intake questionnaire that generates a personalized activity timeline
+- 4-section intake questionnaire that generates a focus-aware activity timeline (11 configurations across 5 focus areas + 3 guidance levels)
 - Customizable timeline editor — reorder, add, remove, and adjust durations
 - Substance checklist with dosage safety gates and testing reminders
 - Pre-session ritual with intention-setting and centering breath
@@ -60,7 +60,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 
 ```
 1. INTAKE (4 sections: Experience, Intention, Preferences, Safety)
-   └── Generates personalized module timeline based on responses
+   └── Generates focus-aware module timeline based on primary focus + guidance level
 
 2. PRE-SESSION (Timeline Editor)
    └── User customizes module order, durations, adds/removes activities

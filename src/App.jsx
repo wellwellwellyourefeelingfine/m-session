@@ -32,7 +32,7 @@ function App() {
   const currentTab = useAppStore((state) => state.currentTab);
 
   // Track which tabs have been visited so we keep them mounted after first load
-  const [mountedTabs, setMountedTabs] = useState({ home: true });
+  const [mountedTabs, setMountedTabs] = useState({ home: true, active: true });
 
   useEffect(() => {
     if (!mountedTabs[currentTab]) {

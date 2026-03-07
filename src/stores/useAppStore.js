@@ -10,7 +10,7 @@ export const useAppStore = create(
   persist(
     (set) => ({
       // Current active tab
-      currentTab: 'home', // 'home' | 'active' | 'journal' | 'tools'
+      currentTab: 'active', // 'home' | 'active' | 'journal' | 'tools'
       setCurrentTab: (tab) => set({ currentTab: tab }),
 
       // Dark mode

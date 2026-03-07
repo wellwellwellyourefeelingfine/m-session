@@ -93,7 +93,7 @@ export const sectionDQuestions = [
     options: [
       { value: 'yes', label: 'Yes' },
       { value: 'no-okay', label: 'No, but I am comfortable' },
-      { value: 'no-concerned', label: 'No, and I am concerned' },
+      { value: 'no-fine', label: 'No, I\u2019ll be fine' },
     ],
   },
   {
