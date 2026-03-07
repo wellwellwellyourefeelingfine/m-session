@@ -6,7 +6,7 @@
 
 export default function Timer({
   seconds,
-  mode = 'countdown', // 'countdown' or 'elapsed'
+  _mode = 'countdown', // 'countdown' or 'elapsed'
   className = '',
 }) {
   const formatTime = (totalSeconds) => {

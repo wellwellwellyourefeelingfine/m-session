@@ -43,7 +43,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
  * @param {function} props.onSeekForward - Skip forward handler (e.g., +10s)
  */
 export default function ModuleControlBar({
-  phase = 'idle',
+  _phase = 'idle',
   primary = {},
   showBack = false,
   showSkip = true,

@@ -2,7 +2,7 @@
  * Smoke tests for audioPath utility
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { audioPath } from '../audioPath'
 
 describe('audioPath', () => {

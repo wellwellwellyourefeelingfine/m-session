@@ -77,10 +77,9 @@ function RatingDots({ value, onChange }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function LifeGraphActivity({ module, onComplete, onSkip }) {
+export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
   // ── Stores ──
   const milestones = useSessionStore((s) => s.lifeGraph.milestones);
-  const graphGenerated = useSessionStore((s) => s.lifeGraph.graphGenerated);
   const addLifeGraphMilestone = useSessionStore((s) => s.addLifeGraphMilestone);
   const updateLifeGraphMilestone = useSessionStore((s) => s.updateLifeGraphMilestone);
   const removeLifeGraphMilestone = useSessionStore((s) => s.removeLifeGraphMilestone);

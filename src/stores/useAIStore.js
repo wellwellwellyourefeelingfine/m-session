@@ -272,11 +272,10 @@ export const useAIStore = create(
        * Add a message to the active conversation
        */
       addMessage: (role, content) => {
-        const { activeConversationId, conversations } = get();
+        const { activeConversationId } = get();
 
         if (!activeConversationId) {
-          // Create a new conversation if none exists
-          const newId = get().createConversation();
+          get().createConversation();
           // Recursively add the message to the new conversation
           get().addMessage(role, content);
           return;

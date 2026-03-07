@@ -236,7 +236,7 @@ export function generateTimedPrompts(durationMinutes = 10) {
 
   const segments = guidedBreathOrbMeditation.segments;
 
-  sequences.forEach((sequence, index) => {
+  sequences.forEach((sequence, _index) => {
     const segment = segments.find(s => s.id === sequence.segmentId);
     if (!segment) return;
 

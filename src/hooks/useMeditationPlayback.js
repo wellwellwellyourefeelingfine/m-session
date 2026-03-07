@@ -155,7 +155,7 @@ export function useMeditationPlayback({
         // Some browsers don't support removing handlers
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [hasStarted, meditation, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
 
   // Update lock-screen position state so iOS displays duration and progress.
@@ -247,9 +247,6 @@ export function useMeditationPlayback({
     const displayTotal = composedDurationRef.current || totalDuration;
     const userElapsed = Math.min(elapsedTime, displayTotal);
     const progress = displayTotal > 0 ? Math.min((userElapsed / displayTotal) * 100, 100) : 0;
-    const composedTotal = composedDurationRef.current;
-    const isComplete = elapsedTime >= composedTotal && composedTotal > 0 && hasStarted;
-
     onTimerUpdateRef.current({
       progress,
       elapsed: userElapsed,
@@ -279,7 +276,7 @@ export function useMeditationPlayback({
 
     try {
       // Compose the meditation into a single continuous MP3 blob
-      const { blobUrl, composedBytes, promptTimeMap, totalDuration: composedTotal } = await composeMeditationAudio(
+      const { blobUrl, composedBytes, promptTimeMap } = await composeMeditationAudio(
         timedSequence,
         { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
       );

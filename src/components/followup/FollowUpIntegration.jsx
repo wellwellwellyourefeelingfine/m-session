@@ -34,7 +34,7 @@ const MOON_STEPS = new Set(['intro', 'closing', 'complete']);
 export default function FollowUpIntegration() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // Local state for captures
   const [emerged, setEmerged] = useState('');

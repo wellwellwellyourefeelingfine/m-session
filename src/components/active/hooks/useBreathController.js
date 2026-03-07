@@ -131,24 +131,6 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
   const isIdleSegment = currentSequence?.type === 'idle';
   const currentPattern = currentSequence?.pattern || { inhale: 4, hold: 0, exhale: 4, holdAfterExhale: 0 };
 
-  // Calculate if current sequence should end (for duration-based or idle)
-  const shouldSequenceEnd = useCallback(() => {
-    if (!currentSequence) return true;
-
-    if (currentSequence.type === 'cycles') {
-      return currentCycle >= currentSequence.count;
-    }
-
-    if (currentSequence.type === 'duration' || currentSequence.type === 'idle') {
-      const targetDuration = currentSequence.type === 'idle'
-        ? currentSequence.duration
-        : currentSequence.seconds;
-      return sequenceElapsedTime >= targetDuration;
-    }
-
-    return false;
-  }, [currentSequence, currentCycle, sequenceElapsedTime]);
-
   // Calculate total cycles in current sequence (null for duration-based)
   const totalCyclesInSequence = currentSequence?.type === 'cycles'
     ? currentSequence.count

@@ -120,7 +120,6 @@ export default function ComeUpCheckIn() {
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
   const beginPeakTransition = useSessionStore((state) => state.beginPeakTransition);
   const dismissEndOfPhaseChoice = useSessionStore((state) => state.dismissEndOfPhaseChoice);
-  const modules = useSessionStore((state) => state.modules);
 
   const minutesSinceIngestion = getElapsedMinutes();
   const isMinimized = comeUpCheckIn.isMinimized;

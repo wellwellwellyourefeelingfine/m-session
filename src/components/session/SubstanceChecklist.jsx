@@ -483,7 +483,6 @@ export default function SubstanceChecklist() {
     }
 
     const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
-    const isLastStep = step === totalSteps - 1;
     const dose = parseInt(substanceChecklist.plannedDosageMg, 10);
     const isDangerousDose = dose >= DOSAGE_THRESHOLDS.DANGEROUS;
 

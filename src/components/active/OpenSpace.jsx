@@ -12,7 +12,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
-import { getModuleById, moduleLibrary, canAddModuleToPhase } from '../../content/modules';
+import { moduleLibrary, canAddModuleToPhase } from '../../content/modules';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 
 const PHASE_MESSAGES = {
@@ -85,7 +85,7 @@ export default function OpenSpace({ phase }) {
   };
 
   // Handle module selection from library
-  const handleModuleSelect = (libraryId, warning) => {
+  const handleModuleSelect = (libraryId, _warning) => {
     // Add the module to the current phase
     const result = addModule(libraryId, phase);
     if (result.success) {
@@ -93,14 +93,6 @@ export default function OpenSpace({ phase }) {
       // The module is now added - nextModule will update automatically
       // and the button will change to "Continue to Activity"
     }
-  };
-
-  // Get modules that can be added to this phase (for library)
-  const getAvailableModules = () => {
-    return moduleLibrary.filter((module) => {
-      const check = canAddModuleToPhase(module.id, phase);
-      return check.allowed || check.warning;
-    });
   };
 
   return (

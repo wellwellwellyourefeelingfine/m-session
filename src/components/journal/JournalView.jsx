@@ -36,9 +36,6 @@ export default function JournalView() {
 
   const getEntryById = useJournalStore((state) => state.getEntryById);
 
-  // Get current entry data
-  const activeEntry = activeEntryId ? getEntryById(activeEntryId) : null;
-
   // Navigate to list view (back button in editor)
   const navigateToList = useCallback(() => {
     setIsAnimating(true);

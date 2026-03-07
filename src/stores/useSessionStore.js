@@ -782,7 +782,6 @@ export const useSessionStore = create(
             });
           } else {
             // Different phases: Part 2 goes at start of integration
-            const part2PhaseModules = updatedItems.filter(m => m.phase === part2Phase);
             part2Order = 0;
             updatedItems = updatedItems.map(m => {
               if (m.phase === part2Phase && m.order >= part2Order) {
@@ -1221,7 +1220,7 @@ export const useSessionStore = create(
               tag: 'booster-check-in',
               renotify: true,
             });
-          } catch (e) {
+          } catch (_e) {
             // Notification may fail in some contexts; non-critical
           }
         }
@@ -2823,7 +2822,7 @@ export const useSessionStore = create(
       version: SESSION_STORE_VERSION,
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
-        const { meditationPlayback, activeFollowUpModule, activePreSessionModule, ...rest } = state;
+        const { meditationPlayback: _meditationPlayback, activeFollowUpModule: _activeFollowUpModule, activePreSessionModule: _activePreSessionModule, ...rest } = state;
         return {
           ...rest,
           // Reset transient flags within nested objects

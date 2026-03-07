@@ -1,3 +1,4 @@
+/* global THREE */
 // ═══════════════════════════════════════
 // ASCII GLOBE — m-session contribute page
 // Adapted from ascii-globe.html prototype

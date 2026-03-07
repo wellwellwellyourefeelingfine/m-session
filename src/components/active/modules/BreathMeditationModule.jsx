@@ -191,7 +191,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
     onComplete: () => {
       // Breath sequences completed
     },
-    onSequenceChange: (index) => {
+    onSequenceChange: (_index) => {
       // Could add visual feedback for sequence transitions here
     },
   });

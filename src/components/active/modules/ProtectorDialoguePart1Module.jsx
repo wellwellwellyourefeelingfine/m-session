@@ -59,7 +59,7 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // ── Protector captures ──
   const [protectorName, setProtectorName] = useState('');

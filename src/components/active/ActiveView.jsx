@@ -58,7 +58,7 @@ export default function ActiveView() {
   const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
   const expireBooster = useSessionStore((state) => state.expireBooster);
   // Subscribe to modules state to trigger re-renders when modules are added/changed
-  // eslint-disable-next-line no-unused-vars
+   
   const _modules = useSessionStore((state) => state.modules);
   const inOpenSpace = _modules.inOpenSpace;
   const currentModule = getCurrentModule();

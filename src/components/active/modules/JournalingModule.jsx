@@ -18,7 +18,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import ModuleLayout, { ModuleHeader } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 
-export default function JournalingModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function JournalingModule({ module, onComplete, onSkip, _onTimerUpdate }) {
   const [hasStarted, setHasStarted] = useState(false);
   const [content, setContent] = useState('');
   const [recipient, setRecipient] = useState('');

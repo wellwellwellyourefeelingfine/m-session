@@ -10,7 +10,7 @@
  * This hook coordinates between the timer, prompts, and other capabilities.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 
 /**
  * @param {object} config

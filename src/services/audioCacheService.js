@@ -31,7 +31,6 @@ export async function precacheComposerAssets() {
     if (!('caches' in window)) return;
 
     const cache = await caches.open(CACHE_NAME);
-    let cached = 0;
 
     await Promise.all(
       COMPOSER_ASSETS.map(async (url) => {
@@ -41,7 +40,6 @@ export async function precacheComposerAssets() {
           const response = await fetch(url);
           if (response.ok) {
             await cache.put(url, response);
-            cached++;
           }
         } catch {
           // Non-critical — silence blocks will be fetched on demand
@@ -98,7 +96,7 @@ export async function precacheAudioForModule(libraryId) {
 
     const cache = await caches.open(CACHE_NAME);
 
-    const results = await Promise.all(
+    await Promise.all(
       urls.map(async (url) => {
         try {
           const existing = await cache.match(url);
@@ -115,10 +113,6 @@ export async function precacheAudioForModule(libraryId) {
         }
       })
     );
-
-    const cached = results.filter((r) => r === 'cached').length;
-    const skipped = results.filter((r) => r === 'skipped').length;
-    const failed = results.filter((r) => r === 'failed').length;
 
   } catch (err) {
     console.warn('[AudioCache] precacheAudioForModule error:', err);

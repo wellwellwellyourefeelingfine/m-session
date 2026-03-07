@@ -39,7 +39,7 @@ import TranscriptModal, { TranscriptIcon, FADE_MS } from '../../active/capabilit
 // Moon transition step index
 const MOON_STEP = 8;
 
-export default function IntentionSettingActivity({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function IntentionSettingActivity({ module, onComplete, onSkip, _onTimerUpdate }) {
   // ── Stores ──
   const intake = useSessionStore((s) => s.intake);
   const updateIntakeResponse = useSessionStore((s) => s.updateIntakeResponse);
@@ -54,7 +54,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // ── Meditation sub-flow (Page 3) ──
   const [inMeditation, setInMeditation] = useState(false);

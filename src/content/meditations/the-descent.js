@@ -364,25 +364,6 @@ function calculatePromptSpeakingDuration(prompt) {
   return (wordCount / SPEAKING_RATE) * 60;
 }
 
-/**
- * Calculate the total raw duration for a mode (before rounding)
- */
-function calculateRawDuration(mode) {
-  const prompts = assembleVariation(mode);
-  return prompts.reduce((sum, prompt) => {
-    return sum + calculatePromptSpeakingDuration(prompt) + prompt.baseSilenceAfter;
-  }, 0);
-}
-
-/**
- * Calculate the rounded duration for a mode (nearest whole minute, rounded up)
- */
-function calculateVariationDuration(mode) {
-  const rawSeconds = calculateRawDuration(mode);
-  const minutes = Math.ceil(rawSeconds / 60);
-  return minutes * 60;
-}
-
 
 // ============================================
 // EXPORTED MEDITATION OBJECT

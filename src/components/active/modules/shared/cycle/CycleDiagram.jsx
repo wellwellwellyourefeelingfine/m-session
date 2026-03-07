@@ -72,8 +72,6 @@ export default function CycleDiagram({
   const topLabelPositions = distributeLabels(topMoves.length, CX, TOP_CY, LABEL_RX, LABEL_RY, -Math.PI);
   const botLabelPositions = distributeLabels(botMoves.length, CX, BOT_CY, LABEL_RX, LABEL_RY, 0);
 
-  const animClass = animate ? 'cycle-diagram-animate' : '';
-
   return (
     <div className={`relative ${className}`}>
       <svg

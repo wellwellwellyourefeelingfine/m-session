@@ -26,7 +26,7 @@ export default function AudioCapability({
   isActive = false,
 }) {
   const [isMuted, setIsMuted] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [_isLoaded, _setIsLoaded] = useState(false);
 
   // Placeholder for future audio implementation
   // Will use Web Audio API or a library like Howler.js

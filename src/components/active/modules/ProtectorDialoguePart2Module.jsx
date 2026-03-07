@@ -27,7 +27,7 @@ import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 
-export default function ProtectorDialoguePart2Module({ module, onComplete, onSkip }) {
+export default function ProtectorDialoguePart2Module({ _module, onComplete, onSkip }) {
   // ── Stores ──
   const protectorData = useSessionStore((s) => s.transitionCaptures?.protectorDialogue);
   const updateProtectorCapture = useSessionStore((s) => s.updateProtectorCapture);
@@ -63,7 +63,7 @@ export default function ProtectorDialoguePart2Module({ module, onComplete, onSki
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // ── Journaling captures ──
   const [protectorAge, setProtectorAge] = useState('');

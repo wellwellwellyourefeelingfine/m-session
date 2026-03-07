@@ -50,7 +50,7 @@ export default function PeakTransition() {
   const [showPostBuffer, setShowPostBuffer] = useState(false);
 
   // Navigation history for back button
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // Local state for captures (synced to store on completion)
   const [bodySensations, setBodySensations] = useState([]);

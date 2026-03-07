@@ -50,7 +50,7 @@ export default function ClosingRitual() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
 
   // Navigation history for back button
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // Local state for captures
   const [selfGratitude, setSelfGratitude] = useState('');

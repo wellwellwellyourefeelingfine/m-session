@@ -30,7 +30,7 @@ export default function SessionMenu() {
   const darkMode = useAppStore((s) => s.darkMode);
   const toggleDarkMode = useAppStore((s) => s.toggleDarkMode);
   const setShowInstallPrompt = useAppStore((s) => s.setShowInstallPrompt);
-  const { canPromptNatively, promptNativeInstall, isIOS, isAndroid, isStandalone } = useInstallPrompt();
+  const { canPromptNatively, promptNativeInstall, isStandalone } = useInstallPrompt();
   const showInstallButton = !isStandalone;
 
   const hasData = sessionPhase !== 'not-started' || journalEntries.length > 0;

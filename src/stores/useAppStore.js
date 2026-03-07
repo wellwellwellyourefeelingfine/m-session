@@ -44,7 +44,7 @@ export const useAppStore = create(
     {
       name: 'mdma-guide-app-state',
       partialize: (state) => {
-        const { showInstallPrompt, ...rest } = state;
+        const { showInstallPrompt: _showInstallPrompt, ...rest } = state;
         return rest;
       },
     }

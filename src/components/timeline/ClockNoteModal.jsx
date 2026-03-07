@@ -120,7 +120,7 @@ async function exportClockNoteAsPNG(frozenTime, noteText) {
   });
 }
 
-export default function ClockNoteModal({ isOpen, onClose, frozenTime }) {
+export default function ClockNoteModal({ _isOpen, onClose, frozenTime }) {
   const [noteText, setNoteText] = useState('');
   const [entered, setEntered] = useState(false);
   const [closing, setClosing] = useState(false);

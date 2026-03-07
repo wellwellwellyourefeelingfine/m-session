@@ -14,7 +14,7 @@
  * 9. Closing — CompassAnimation, complete
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 
@@ -58,7 +58,7 @@ export default function FollowUpValuesCompass() {
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [stepHistory, setStepHistory] = useState([0]);
+  const [_stepHistory, setStepHistory] = useState([0]);
 
   // Local state for captures
   const [matrixRevisit, setMatrixRevisit] = useState('');

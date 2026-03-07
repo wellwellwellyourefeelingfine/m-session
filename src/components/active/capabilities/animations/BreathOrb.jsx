@@ -36,7 +36,7 @@ import { memo, useMemo } from 'react';
 export default memo(function BreathOrb({
   phase = 'inhale',
   phaseProgress = 0,
-  phaseDuration = 4,
+  _phaseDuration = 4,
   phaseSecondsRemaining = 4,
   moonAngle = 180,
   isActive = false,
@@ -95,19 +95,21 @@ export default memo(function BreathOrb({
     }
 
     switch (phase) {
-      case 'inhale':
+      case 'inhale': {
         // Expand from base to full
         const inhaleScale = sizeConfig.orbBaseSize / sizeConfig.orbExpandedSize;
         return inhaleScale + (1 - inhaleScale) * phaseProgress;
+      }
 
       case 'hold':
         // Stay expanded
         return 1;
 
-      case 'exhale':
+      case 'exhale': {
         // Contract from full to base
         const exhaleScale = sizeConfig.orbBaseSize / sizeConfig.orbExpandedSize;
         return 1 - (1 - exhaleScale) * phaseProgress;
+      }
 
       case 'holdAfterExhale':
         // Stay contracted

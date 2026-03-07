@@ -136,7 +136,7 @@ export function useSilenceTimer({
         // Some browsers don't support removing handlers
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [hasStarted, title, audio, pauseMeditationPlayback, resumeMeditationPlayback]);
 
   // Update lock-screen position state so iOS displays duration and progress.
