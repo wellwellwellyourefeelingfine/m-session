@@ -1,6 +1,6 @@
 # MDMA Session Guide
 
-A React-based progressive web app that guides users through therapeutic MDMA sessions with structured meditation modules, breathing exercises, journaling, and phase-based session management.
+A React-based progressive web app that guides users through therapeutic MDMA sessions with structured meditation modules, breathing exercises, journaling, and phase-based session management. Live on https://m-session.com
 
 ## Quick Start
 
