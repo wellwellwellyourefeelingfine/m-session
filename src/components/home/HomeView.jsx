@@ -136,16 +136,16 @@ export default function HomeView() {
           <div className={`max-w-md mx-auto px-6 flex flex-col items-center pt-4 transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
             <div className="text-center mt-4">
               <h2
-                className="text-3xl mb-4"
+                className="text-3xl mb-2"
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', color: 'var(--color-text-primary)' }}
               >
                 Welcome
               </h2>
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-1">
                 <LeafDrawBig />
               </div>
-              <div className="px-5 py-4 mb-4 text-left">
-                <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-2">
+              <div className="px-5 py-2 mb-1 text-left">
+                <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-1">
                   Intake
                 </p>
                 <p className="text-xs leading-relaxed text-[var(--color-text-secondary)] uppercase tracking-wider">

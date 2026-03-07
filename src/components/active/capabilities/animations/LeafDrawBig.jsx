@@ -9,34 +9,34 @@ const PATH_DATA = [
   { d: "M120,30 C136,38 153,51 161,69 C169,89 173,113 171,130 C169,147 162,165 153,180 C144,195 130,207 120,210" },
   // Center vein
   { d: "M120,210 C121,198 118,186 120.5,174 C123,162 117,150 120.5,138 C123,126 117,114 120.5,102 C123,90 118,78 120,66 C121,54 119,42 120,30" },
-  // Vein 1: bottom-left
-  { d: "M120,185 C114,183 106,179 99,176 C93,174 88,172 84,171", veinOrder: 1 },
-  // Vein 2: bottom-right
-  { d: "M120,184 C126,182 134,178 141,175 C147,173 152,171 156,170", veinOrder: 2 },
-  // Vein 3: second-left
-  { d: "M120,162 C114,160 106,157 99,154 C93,151 86,149 78,147", veinOrder: 3 },
-  // Vein 4: second-right
-  { d: "M120,161 C127,158 135,155 143,152 C150,149 157,147 165,145", veinOrder: 4 },
-  // Vein 5: third-left
-  { d: "M120,140 C113,137 103,133 94,130 C86,127 78,125 70,124", veinOrder: 5 },
-  // Vein 6: third-right
-  { d: "M120,139 C127,136 137,132 146,129 C154,126 163,124 171,123", veinOrder: 6 },
-  // Vein 7: fourth-left
-  { d: "M120,118 C113,115 104,112 96,109 C89,106 80,104 72,102", veinOrder: 7 },
-  // Vein 8: fourth-right
-  { d: "M120,117 C127,114 135,111 143,108 C150,106 158,104 166,102", veinOrder: 8 },
-  // Vein 9: fifth-left
-  { d: "M120,96 C114,94 107,91 100,88 C94,86 85,84 77,82", veinOrder: 9 },
-  // Vein 10: fifth-right
-  { d: "M120,95 C126,93 132,90 138,87 C144,85 153,83 161,81", veinOrder: 10 },
-  // Vein 11: sixth-left
-  { d: "M120,74 C116,72 110,69 105,67 C100,65 92,63 85,62", veinOrder: 11 },
-  // Vein 12: sixth-right
-  { d: "M120,73 C124,71 130,68 135,66 C140,64 148,62 154,61", veinOrder: 12 },
-  // Vein 13: top-left (tiny, steep angle)
-  { d: "M120,55 C118,53.5 114,52 111,50.5 C108,49 105,48 102,47", veinOrder: 13 },
-  // Vein 14: top-right (tiny, steep angle)
-  { d: "M120,54 C122,52.5 126,51 129,49.5 C132,48 135,47 138,46", veinOrder: 14 },
+  // Vein 1: bottom-right (shifted down 5, right +4) — draws first (lowest)
+  { d: "M124,189 C130,187 138,183 145,180 C149,178 152,176 154,175", veinOrder: 1 },
+  // Vein 2: bottom-left (shifted up 5, extended)
+  { d: "M120,180 C114,178 106,174 99,171 C93,169 86,166 82,165", veinOrder: 2 },
+  // Vein 3: second-right (shifted down 5, right +4)
+  { d: "M124,166 C131,163 139,160 147,157 C154,154 159,152 166,150", veinOrder: 3 },
+  // Vein 4: second-left (shifted up 5, extended)
+  { d: "M120,157 C114,155 106,152 99,149 C93,146 84,143 76,141", veinOrder: 4 },
+  // Vein 5: third-right (shifted down 5, right +4)
+  { d: "M124,144 C131,141 141,137 148,134 C155,131 162,129 168,128", veinOrder: 5 },
+  // Vein 6: third-left (shifted up 5)
+  { d: "M120,135 C113,132 103,128 94,125 C86,122 78,120 70,119", veinOrder: 6 },
+  // Vein 7: fourth-right (shifted down 5, right +4)
+  { d: "M124,122 C131,119 139,116 147,113 C154,111 162,109 170,107", veinOrder: 7 },
+  // Vein 8: fourth-left (shifted up 5)
+  { d: "M120,113 C113,110 104,107 96,104 C89,101 80,99 72,97", veinOrder: 8 },
+  // Vein 9: fifth-right (shifted down 5, right +4)
+  { d: "M124,100 C130,98 136,95 142,92 C148,90 154,88 160,86", veinOrder: 9 },
+  // Vein 10: fifth-left (shifted up 5)
+  { d: "M120,91 C114,89 107,86 100,83 C94,81 85,79 77,77", veinOrder: 10 },
+  // Vein 11: sixth-right (shifted down 5, right +4)
+  { d: "M124,78 C128,76 134,73 139,71 C144,69 153,67 160,65", veinOrder: 11 },
+  // Vein 12: sixth-left (shifted up 5, shortened)
+  { d: "M120,69 C116,67 110,64 105,62 C100,60 93,59 87,58", veinOrder: 12 },
+  // Vein 13: top-right (shifted down 5, right +4)
+  { d: "M124,59 C126,57.5 130,56 133,54.5 C136,53 140,52 144,51", veinOrder: 13 },
+  // Vein 14: top-left (shifted up 5, shortened)
+  { d: "M120,50 C118,48.5 114,47 111,45.5 C108,44 106,43.5 104,43", veinOrder: 14 },
   // Small circle above leaf tip (same size as LeafDraw, raised higher)
   { d: "M120,6.5 A3.5,3.5 0 1,1 120,13.5 A3.5,3.5 0 1,1 120,6.5", veinOrder: 15 },
 ];
@@ -113,10 +113,13 @@ export default memo(function LeafDrawBigAnimation() {
     }
 
     // Veins: staggered — each starts when previous is 50% drawn
-    // First 3 pairs draw progressively faster, remainder at full speed
+    // Slow at bottom, fastest in middle, slow again at top (bell curve)
+    const totalPairs = Math.ceil(veinPaths.length / 2);
+    const center = (totalPairs - 1) / 2;
     for (const v of veinPaths) {
-      const pairIndex = Math.floor((v.order - 1) / 2); // 0,0,1,1,2,2,3,3...
-      const speedMult = pairIndex === 0 ? 2 : pairIndex === 1 ? 1.6 : 1.3;
+      const pairIndex = Math.floor((v.order - 1) / 2);
+      const dist = Math.abs(pairIndex - center);
+      const speedMult = dist >= 3 ? 2 : dist >= 2 ? 1.6 : 1.3;
       const span = v.len * speedMult;
       rawRanges[v.idx] = { start: cursor, end: cursor + span, len: v.len };
       cursor += span * 0.5;
