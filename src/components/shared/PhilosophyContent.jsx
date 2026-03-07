@@ -75,16 +75,18 @@ export default function PhilosophyContent() {
           experience. This app handles them for you.
         </p>
         <p className="mb-4">
-          It gives you guided meditations designed for expanded states — slower,
-          softer, with long silences that let the experience breathe. Breathing
-          exercises to settle your nervous system. Journaling prompts that meet
-          you where you are. Body scans. Self-compassion practices. Music timers.
-          Open space when you just need to be.
+          It gives you audio-guided meditations designed for expanded states —
+          slower, softer, with long silences that let the experience breathe.
+          Breathwork to settle your nervous system. Body scans. Self-compassion
+          practices. Values mapping. Parts work. Journaling prompts that meet
+          you where you are. Open space when you just need to be.
         </p>
         <p>
           All of it organized into a session flow that mirrors the natural arc of
           the experience: gentle grounding as things come on, deeper exploration
-          at the peak, reflection as things soften. You decide what you use and
+          at the peak, reflection as things soften, and time-locked integration
+          modules that unlock in the days that follow — when insights are still
+          fresh and the real work of change can begin. You decide what you use and
           what you skip. The structure serves you, not the other way around.
         </p>
       </section>

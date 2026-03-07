@@ -12,6 +12,7 @@
     <meta property="og:title" content="About — m-session" />
     <meta property="og:description" content="The story, philosophy, and therapeutic foundations behind m-session. Free, open-source, completely private." />
     <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="m-session" />
@@ -60,6 +61,16 @@
           "name": "dasloops"
         }
       }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://m-session.com/" },
+        { "@type": "ListItem", "position": 2, "name": "About" }
+      ]
     }
     </script>
   </head>
@@ -137,7 +148,7 @@
               If you&rsquo;re reading this and feel like you can help in any way, please do. You can <a href="/contribute">test the app and send feedback</a>, contribute code, or support us financially. Since the project is still early, probably the most useful thing you can do is just spread the word.
             </p>
             <p>
-              I love you. Good luck.
+              Good luck, I love you.
             </p>
             <p>
               &mdash; dasloops
@@ -318,14 +329,14 @@
     <footer>
       <div class="container">
         <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
-        <div class="footer-links">
+        <nav class="footer-links" aria-label="Footer">
           <a href="/about">About</a>
           <a href="/faq">FAQ &amp; Safety</a>
           <a href="/contribute">Contribute</a>
           <a href="/privacy">Privacy</a>
           <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub</a>
           <a href="/app" target="_blank" rel="noopener">Launch App</a>
-        </div>
+        </nav>
       </div>
     </footer>
 

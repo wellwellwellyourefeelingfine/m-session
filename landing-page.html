@@ -21,6 +21,7 @@
       content="Structure and support for MDMA sessions focused on personal growth. Meditation, breathwork, IFS, ACT, journaling, and integration tools. Free, open-source, completely private."
     />
     <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="m-session" />
@@ -90,6 +91,19 @@
           "@type": "Person",
           "name": "dasloops"
         }
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "m-session",
+        "url": "https://m-session.com",
+        "logo": "https://m-session.com/m-session-logo-light.png",
+        "sameAs": [
+          "https://github.com/wellwellwellyourefeelingfine/m-session"
+        ],
+        "description": "Open-source guided companion for intentional MDMA experiences. Privacy-first, community-driven."
       }
     </script>
 
@@ -589,7 +603,7 @@
     <footer>
       <div class="container">
         <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
-        <div class="footer-links">
+        <nav class="footer-links" aria-label="Footer">
           <a href="/about">About</a>
           <a href="/faq">FAQ &amp; Safety</a>
           <a href="/contribute">Contribute</a>
@@ -598,7 +612,7 @@
             >GitHub</a
           >
           <a href="/app" target="_blank" rel="noopener">Launch App</a>
-        </div>
+        </nav>
       </div>
     </footer>
 
