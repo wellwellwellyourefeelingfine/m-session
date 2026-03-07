@@ -3,6 +3,28 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "Privacy-first PWA companion for intentional MDMA experiences — guided meditations, journaling, phase-based session management, and post-session integration",
+  "keywords": [
+    "mdma",
+    "therapy",
+    "pwa",
+    "meditation",
+    "harm-reduction",
+    "psychedelic",
+    "session-guide",
+    "journaling",
+    "mindfulness",
+    "mental-health"
+  ],
+  "homepage": "https://m-session.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wellwellwellyourefeelingfine/m-session"
+  },
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/wellwellwellyourefeelingfine/m-session/issues"
+  },
   "engines": {
     "node": ">=20.0.0 <25.0.0"
   },
@@ -33,6 +55,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "postcss": "^8.5.6",
+    "puppeteer": "^24.38.0",
     "tailwindcss": "^4.1.18",
     "vite": "^7.2.4",
     "vite-plugin-pwa": "^1.2.0"

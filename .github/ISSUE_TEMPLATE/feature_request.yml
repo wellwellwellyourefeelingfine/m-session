@@ -1,0 +1,62 @@
+name: Feature Request
+description: Suggest a new feature or improvement for m-session
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe what you'd like to see and why it would be helpful.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem or limitation you're experiencing.
+      placeholder: "I'm frustrated when... / It would be helpful if... / During a session, I noticed..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+      placeholder: Describe your ideal solution...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area of the app?
+      description: Select the part of the app this relates to.
+      options:
+        - Intake / Setup
+        - Active session (modules, meditations)
+        - Journaling
+        - Transitions (peak, integration, closing)
+        - Follow-up modules
+        - AI Assistant
+        - Timeline editor
+        - Settings / Tools
+        - PWA / Installation
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered other approaches or workarounds?
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other details, screenshots, or references that might help.
+    validations:
+      required: false
