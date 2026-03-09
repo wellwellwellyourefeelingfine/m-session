@@ -4,11 +4,17 @@
  * Filters modules based on the target phase
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES } from '../../content/modules';
 
-export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterEditMode, isCompletedSession = false }) {
+export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false }) {
   const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | phase filter
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = useCallback(() => {
+    setClosing(true);
+    setTimeout(onClose, 300);
+  }, [onClose]);
 
   // Get modules that can be added to this phase
   const availableModules = moduleLibrary.filter((module) => {
@@ -52,82 +58,24 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
     return `${minutes} min`;
   };
 
-  // Convert intensity to dot count (1-3 dots)
-  const getIntensityDots = (intensity) => {
-    switch (intensity) {
-      case 'gentle':
-        return 1;
-      case 'moderate':
-        return 2;
-      case 'deep':
-        return 3;
-      default:
-        return 1;
-    }
-  };
-
-  // Render intensity dots
-  const renderIntensityDots = (intensity) => {
-    const dotCount = getIntensityDots(intensity);
-    return (
-      <span className="flex items-center space-x-1">
-        {[1, 2, 3].map((i) => (
-          <span
-            key={i}
-            className={`w-1.5 h-1.5 rounded-full ${
-              i <= dotCount ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
-            }`}
-          />
-        ))}
-      </span>
-    );
-  };
-
-  const getPhaseName = (p) => {
-    switch (p) {
-      case 'come-up':
-        return 'Come-Up';
-      case 'peak':
-        return 'Peak';
-      case 'integration':
-        return 'Integration';
-      case 'follow-up':
-        return 'Follow-Up';
-      case 'pre-session':
-        return 'Pre-Session';
-      default:
-        return p;
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
+        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${closing ? 'opacity-0' : 'opacity-100'}`}
+        onClick={handleClose}
       />
 
       {/* Drawer */}
-      <div className="absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl max-h-[80vh] flex flex-col animate-slideUp shadow-lg">
+      <div className={`absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl h-[80vh] flex flex-col shadow-lg ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`}>
         {/* Close button - positioned in top-right corner of drawer */}
         <button
-          onClick={onClose}
-          className="absolute top-3 right-4 w-8 h-8 flex items-center justify-center text-xl text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors z-10"
+          onClick={handleClose}
+          className="absolute top-3 right-4 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] text-sm leading-none transition-colors z-10"
           aria-label="Close"
         >
           ×
         </button>
-
-        {/* Edit Timeline button - below close button (only for non-completed sessions and non-follow-up phases) */}
-        {onEnterEditMode && !isCompletedSession && phase !== 'follow-up' && phase !== 'pre-session' && (
-          <button
-            onClick={onEnterEditMode}
-            className="absolute top-12 right-4 px-3 py-1.5 text-[10px] uppercase tracking-wider border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-secondary)] transition-colors z-10"
-          >
-            Edit
-          </button>
-        )}
 
         {/* Handle */}
         <div className="flex justify-center py-3">
@@ -135,16 +83,13 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
         </div>
 
         {/* Header */}
-        <div className="px-6 pb-4 border-b border-[var(--color-border)]">
-          <div className="mb-4 pr-24">
-            <h3>Add Activity</h3>
-            <p className="text-[var(--color-text-tertiary)] text-sm">
-              Adding to {getPhaseName(phase)} phase
-            </p>
+        <div className="pb-4 border-b border-[var(--color-border)]">
+          <div className="mb-4 pr-24 px-6">
+            <h3 className="text-3xl" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Activity Library</h3>
           </div>
 
-          {/* Filter buttons */}
-          <div className="flex space-x-2 overflow-x-auto pb-1">
+          {/* Filter buttons — scrolls edge-to-edge, inner padding for inset */}
+          <div className="flex space-x-2 overflow-x-auto pb-1 pl-6" style={{ scrollPaddingInline: '1.5rem' }}>
             <FilterButton
               active={filter === 'all'}
               onClick={() => setFilter('all')}
@@ -187,6 +132,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
             >
               Post-Session
             </FilterButton>
+            <div className="flex-shrink-0 w-4" aria-hidden="true" />
           </div>
         </div>
 
@@ -205,52 +151,39 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, onEnterE
                 <div className="space-y-2">
                   {modules.map((module) => {
                     const check = canAddModuleToPhase(module.id, phase);
-                    const hasWarning = check.warning;
+                    const hasWarning = !hideWarnings && check.warning;
 
                     return (
                       <button
                         key={module.id}
                         onClick={() => handleSelect(module)}
-                        className="w-full text-left p-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                        className="w-full text-left px-4 pt-3 pb-1.5 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors"
                       >
                         <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0 pr-3">
-                            <div className="flex items-center space-x-2">
-                              <p className="text-[var(--color-text-primary)] font-medium">
-                                {module.title}
-                              </p>
-                              {hasWarning && (
-                                <svg
-                                  width="16"
-                                  height="16"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  className="flex-shrink-0 -mt-0.5"
-                                >
-                                  <path
-                                    d="M12 2L1 21h22L12 2z"
-                                    stroke="var(--accent)"
-                                    strokeWidth="2"
-                                    strokeLinejoin="round"
-                                    fill="none"
-                                  />
-                                  <line x1="12" y1="10" x2="12" y2="15" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
-                                  <circle cx="12" cy="18" r="1" fill="var(--accent)" />
-                                </svg>
-                              )}
-                            </div>
-                            <p className="text-[var(--color-text-secondary)] text-sm mt-1">
-                              {module.description}
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <p className="text-[var(--color-text-primary)] text-lg leading-none" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                              {module.title}
                             </p>
-                            <div className="flex items-center space-x-3 mt-2">
-                              {renderIntensityDots(module.intensity)}
-                              <span className="text-[var(--color-text-tertiary)] text-xs">
-                                {formatDuration(module.defaultDuration)}
-                              </span>
-                            </div>
+                            {hasWarning && (
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                className="flex-shrink-0 -mt-4"
+                              >
+                                <circle cx="12" cy="12" r="10" stroke="var(--accent)" strokeWidth="2" fill="none" />
+                                <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
+                              </svg>
+                            )}
                           </div>
-                          <span className="text-[var(--color-text-tertiary)]">+</span>
+                          <span className="text-[var(--color-text-tertiary)] text-xs flex-shrink-0 ml-3">
+                            {formatDuration(module.defaultDuration)}
+                          </span>
                         </div>
+                        <p className="text-[var(--color-text-secondary)] text-sm -mt-px">
+                          {module.description}
+                        </p>
                       </button>
                     );
                   })}
@@ -271,7 +204,7 @@ function FilterButton({ children, active, onClick }) {
       className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition-colors ${
         active
           ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)]'
-          : 'bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+          : 'border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)]'
       }`}
     >
       {children}

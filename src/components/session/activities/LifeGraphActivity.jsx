@@ -26,7 +26,7 @@ import ModuleLayout from '../../active/capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../../active/capabilities/ModuleControlBar';
 import ModuleProgressBar from '../../active/capabilities/ModuleProgressBar';
 import RevealOverlay from '../../active/capabilities/animations/RevealOverlay';
-import LeafDraw from '../../active/capabilities/animations/LeafDraw';
+import LeafDrawV2 from '../../active/capabilities/animations/LeafDrawV2';
 import LifeGraphModal from './LifeGraphModal';
 
 const FADE_MS = 400;
@@ -372,7 +372,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -396,7 +396,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -653,7 +653,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -679,7 +679,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}

@@ -33,7 +33,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../../active/capabil
 import ModuleProgressBar from '../../active/capabilities/ModuleProgressBar';
 import AsciiMoon from '../../active/capabilities/animations/AsciiMoon';
 import MorphingShapes from '../../active/capabilities/animations/MorphingShapes';
-import LeafDraw from '../../active/capabilities/animations/LeafDraw';
+import LeafDrawV2 from '../../active/capabilities/animations/LeafDrawV2';
 import TranscriptModal, { TranscriptIcon, FADE_MS } from '../../active/capabilities/TranscriptModal';
 
 // Moon transition step index
@@ -346,7 +346,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -370,7 +370,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
         )}
         {showLeaf && (
           <div className="flex justify-center">
-            <LeafDraw />
+            <LeafDrawV2 />
           </div>
         )}
         {content.body && (
@@ -592,7 +592,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -710,7 +710,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}
@@ -780,7 +780,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
           {content.title}
         </h2>
         <div className="flex justify-center">
-          <LeafDraw />
+          <LeafDrawV2 />
         </div>
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.body}

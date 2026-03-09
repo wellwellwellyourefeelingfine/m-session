@@ -219,7 +219,7 @@ export default function ControlsCapability({
 function SkipConfirmModal({ onConfirm, onCancel, message }) {
   return (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6"
+      className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6"
       onClick={onCancel}
     >
       <div

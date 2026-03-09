@@ -12,37 +12,37 @@ const PATH_DATA = [
   // Vein 1: bottom-right (shifted down 5, right +4) — draws first (lowest)
   { d: "M124,189 C130,187 138,183 145,180 C149,178 152,176 154,175", veinOrder: 1 },
   // Vein 2: bottom-left (shifted up 5, extended)
-  { d: "M120,180 C114,178 106,174 99,171 C93,169 86,166 82,165", veinOrder: 2 },
+  { d: "M120,182 C114,180 106,176 99,173 C93,171 86,168 82,167", veinOrder: 2 },
   // Vein 3: second-right (shifted down 5, right +4)
   { d: "M124,166 C131,163 139,160 147,157 C154,154 159,152 166,150", veinOrder: 3 },
   // Vein 4: second-left (shifted up 5, extended)
-  { d: "M120,157 C114,155 106,152 99,149 C93,146 84,143 76,141", veinOrder: 4 },
+  { d: "M120,159 C114,157 106,154 99,151 C93,148 84,145 76,143", veinOrder: 4 },
   // Vein 5: third-right (shifted down 5, right +4)
   { d: "M124,144 C131,141 141,137 148,134 C155,131 162,129 168,128", veinOrder: 5 },
   // Vein 6: third-left (shifted up 5)
-  { d: "M120,135 C113,132 103,128 94,125 C86,122 78,120 70,119", veinOrder: 6 },
+  { d: "M120,137 C113,134 103,130 94,127 C86,124 78,122 70,121", veinOrder: 6 },
   // Vein 7: fourth-right (shifted down 5, right +4)
   { d: "M124,122 C131,119 139,116 147,113 C154,111 162,109 170,107", veinOrder: 7 },
   // Vein 8: fourth-left (shifted up 5)
-  { d: "M120,113 C113,110 104,107 96,104 C89,101 80,99 72,97", veinOrder: 8 },
+  { d: "M120,115 C113,112 104,109 96,106 C89,103 80,101 72,99", veinOrder: 8 },
   // Vein 9: fifth-right (shifted down 5, right +4)
   { d: "M124,100 C130,98 136,95 142,92 C148,90 154,88 160,86", veinOrder: 9 },
   // Vein 10: fifth-left (shifted up 5)
-  { d: "M120,91 C114,89 107,86 100,83 C94,81 85,79 77,77", veinOrder: 10 },
+  { d: "M120,93 C114,91 107,88 100,85 C94,83 85,81 77,79", veinOrder: 10 },
   // Vein 11: sixth-right (shifted down 5, right +4)
   { d: "M124,78 C128,76 134,73 139,71 C144,69 153,67 160,65", veinOrder: 11 },
   // Vein 12: sixth-left (shifted up 5, shortened)
-  { d: "M120,69 C116,67 110,64 105,62 C100,60 93,59 87,58", veinOrder: 12 },
+  { d: "M120,71 C116,69 110,66 105,64 C100,62 93,61 87,60", veinOrder: 12 },
   // Vein 13: top-right (shifted down 5, right +4)
   { d: "M124,59 C126,57.5 130,56 133,54.5 C136,53 140,52 144,51", veinOrder: 13 },
   // Vein 14: top-left (shifted up 5, shortened)
-  { d: "M120,50 C118,48.5 114,47 111,45.5 C108,44 106,43.5 104,43", veinOrder: 14 },
-  // Small circle above leaf tip (same size as LeafDraw, raised higher)
-  { d: "M120,6.5 A3.5,3.5 0 1,1 120,13.5 A3.5,3.5 0 1,1 120,6.5", veinOrder: 15 },
+  { d: "M120,52 C118,50.5 114,49 111,47.5 C108,46 106,45.5 104,45", veinOrder: 14 },
+  // Small circle above leaf tip
+  { d: "M120,1 A3,3 0 1,1 120,7 A3,3 0 1,1 120,1", veinOrder: 15 },
 ];
 
 const CIRCLE_INDEX = PATH_DATA.length - 1;
-const LEAF_STROKE = 9;
+const LEAF_STROKE = 11;
 
 const SEED_HOLD   = 700;
 const DRAW_DUR    = 12000;
@@ -57,8 +57,8 @@ const DRAW_END      = SEED_HOLD_END + DRAW_DUR;
 const HOLD_END      = DRAW_END + HOLD_DUR;
 const LEAF_FADE_END = HOLD_END + LEAF_FADE;
 
-// Circle center y=10, stem start y=240 → 230 units of travel
-const DESCEND_DISTANCE = 230;
+// Circle center y=4, stem start y=240 → 236 units of travel
+const DESCEND_DISTANCE = 236;
 // Subtle horizontal sway during descent (spore-like drift)
 const SWAY_AMPLITUDE = 10;
 const SWAY_CYCLES = 1.5;
@@ -67,7 +67,7 @@ function smoothstep(t) {
   return t * t * (3 - 2 * t);
 }
 
-export default memo(function LeafDrawBigAnimation() {
+export default memo(function LeafDrawV2Animation() {
   const leafGroupRef = useRef(null);
   const circleGroupRef = useRef(null);
   const seedRef = useRef(null);
@@ -258,8 +258,8 @@ export default memo(function LeafDrawBigAnimation() {
   return (
     <svg
       viewBox="55 2 130 248"
-      width="150"
-      height="285"
+      width="79"
+      height="150"
       style={{ overflow: 'visible', color: 'var(--accent)', opacity: 0.7 }}
     >
       {/* Seed circle at stem base — matches circle path styling for seamless swap */}
@@ -267,10 +267,10 @@ export default memo(function LeafDrawBigAnimation() {
         ref={seedRef}
         cx="120"
         cy="240"
-        r="3.5"
+        r="3"
         fill="none"
         stroke="currentColor"
-        strokeWidth={5.5}
+        strokeWidth={LEAF_STROKE}
         opacity={0}
       />
 
@@ -290,14 +290,14 @@ export default memo(function LeafDrawBigAnimation() {
         ))}
       </g>
 
-      {/* Circle group: same size as LeafDraw, independent opacity + translateY */}
+      {/* Circle group: independent opacity + translateY */}
       <g ref={circleGroupRef} opacity={0}>
         <path
           ref={el => { pathRefs.current[CIRCLE_INDEX] = el; }}
           d={PATH_DATA[CIRCLE_INDEX].d}
           fill="none"
           stroke="currentColor"
-          strokeWidth={5.5}
+          strokeWidth={LEAF_STROKE}
           strokeLinecap="round"
           strokeLinejoin="round"
         />

@@ -128,7 +128,7 @@ export default function ModuleDetailModal({
   // Use portal to render modal at document body level for proper z-index stacking
   return createPortal(
     <div
-      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleClose}
     >
       <div

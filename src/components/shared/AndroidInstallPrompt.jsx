@@ -15,6 +15,14 @@ function isAndroid() {
   return /Android/.test(navigator.userAgent);
 }
 
+function isIOSSafari() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(ua);
+  return isIOS && isSafari;
+}
+
 function isStandalone() {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(display-mode: standalone)').matches;
@@ -28,7 +36,7 @@ export default function AndroidInstallPrompt() {
   const [show, setShow] = useState(false);
   const [hiding, setHiding] = useState(false);
 
-  const forceShow = showInstallPrompt && isAndroid() && !isStandalone();
+  const forceShow = showInstallPrompt && !isIOSSafari() && !isStandalone();
 
   useEffect(() => {
     // Only show on Android when not already installed as PWA
@@ -56,7 +64,7 @@ export default function AndroidInstallPrompt() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/40 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/30 transition-opacity duration-300 ${
         hiding ? 'opacity-0' : 'opacity-100 animate-fadeIn'
       }`}
       onClick={handleDismiss}

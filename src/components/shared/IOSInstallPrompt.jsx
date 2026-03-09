@@ -63,7 +63,7 @@ export default function IOSInstallPrompt() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/40 transition-opacity duration-300 ${
+      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/30 transition-opacity duration-300 ${
         hiding ? 'opacity-0' : 'opacity-100 animate-fadeIn'
       }`}
       onClick={handleDismiss}

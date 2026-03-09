@@ -199,6 +199,7 @@ export default function AISettingsTool() {
               <div className="flex gap-2">
                 <input
                   type="password"
+                  autoComplete="off"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder={getProviderInfo(selectedProvider).keyPlaceholder}

@@ -6,6 +6,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
@@ -96,10 +97,14 @@ export default function SessionMenu() {
   const handleInstall = async () => {
     closeMenu();
     if (canPromptNatively) {
-      await promptNativeInstall();
-    } else {
-      setShowInstallPrompt(true);
+      try {
+        const result = await promptNativeInstall();
+        if (result?.outcome === 'accepted') return;
+      } catch {
+        // Native prompt failed — fall through to manual instructions
+      }
     }
+    setShowInstallPrompt(true);
   };
 
   // Warning message based on session phase
@@ -264,9 +269,9 @@ export default function SessionMenu() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {showConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
+      {/* Modals portaled to body to escape header's backdrop-filter stacking context */}
+      {showConfirm && createPortal(
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4 text-[var(--color-text-primary)]">Start New Session?</h3>
             <p className="text-[var(--color-text-secondary)] text-sm mb-4">
@@ -294,17 +299,18 @@ export default function SessionMenu() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Session History Modal */}
-      {showHistory && (
-        <SessionHistoryModal onClose={() => setShowHistory(false)} />
+      {showHistory && createPortal(
+        <SessionHistoryModal onClose={() => setShowHistory(false)} />,
+        document.body
       )}
 
-      {/* Data Download Modal */}
-      {showDownload && (
-        <DataDownloadModal onClose={() => setShowDownload(false)} />
+      {showDownload && createPortal(
+        <DataDownloadModal onClose={() => setShowDownload(false)} />,
+        document.body
       )}
 
       {/* Menu animation keyframes (injected once) */}

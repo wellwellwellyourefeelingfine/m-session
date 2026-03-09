@@ -9,6 +9,7 @@ import { useSessionStore, shouldShowBooster } from '../../stores/useSessionStore
 import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar, { formatTime } from './ModuleStatusBar';
+import ModuleProgressBar from './capabilities/ModuleProgressBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
 import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
@@ -199,19 +200,10 @@ export default function ActiveView() {
       if (preSessionModule) {
         return (
           <div className="relative">
+            {/* Shared progress bar - overlaps header border */}
+            <ModuleProgressBar progress={moduleTimerState.progress} isPaused={moduleTimerState.isPaused} />
             {/* Pre-Session indicator bar with optional timer */}
             <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
-              {/* Progress bar */}
-              <div className="h-0.5 bg-[var(--color-border)]">
-                <div
-                  className={`h-full transition-all duration-200 ease-linear
-                    ${moduleTimerState.isPaused ? 'opacity-50' : 'opacity-100'}`}
-                  style={{
-                    width: `${Math.min(moduleTimerState.progress, 100)}%`,
-                    backgroundColor: 'var(--text-primary)',
-                  }}
-                />
-              </div>
               <div className="flex items-center px-4 py-2 gap-3">
                 <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] flex-shrink-0">
                   Pre-Session
@@ -226,7 +218,20 @@ export default function ActiveView() {
                   )}
                 </div>
                 <button
-                  onClick={exitPreSessionModule}
+                  onClick={() => {
+                    if (sessionPhase === 'not-started') {
+                      const { setPreviewOverlay } = useAppStore.getState();
+                      setPreviewOverlay('enter');
+                      setTimeout(() => setPreviewOverlay('visible'), 20);
+                      setTimeout(() => {
+                        exitPreSessionModule();
+                        setTimeout(() => setPreviewOverlay('exit'), 100);
+                        setTimeout(() => setPreviewOverlay(null), 500);
+                      }, 420);
+                    } else {
+                      exitPreSessionModule();
+                    }
+                  }}
                   className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
                 >
                   Exit
@@ -237,8 +242,36 @@ export default function ActiveView() {
               <ModuleRenderer
                 module={preSessionModule}
                 onTimerUpdate={handleModuleTimerUpdate}
-                onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
-                onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
+                onComplete={() => {
+                  if (sessionPhase === 'not-started') {
+                    const { setPreviewOverlay, setCurrentTab } = useAppStore.getState();
+                    setPreviewOverlay('enter');
+                    setTimeout(() => setPreviewOverlay('visible'), 20);
+                    setTimeout(() => {
+                      completePreSessionModule(preSessionModule.instanceId);
+                      setCurrentTab('home');
+                      setTimeout(() => setPreviewOverlay('exit'), 100);
+                      setTimeout(() => setPreviewOverlay(null), 500);
+                    }, 420);
+                  } else {
+                    completePreSessionModule(preSessionModule.instanceId);
+                  }
+                }}
+                onSkip={() => {
+                  if (sessionPhase === 'not-started') {
+                    const { setPreviewOverlay, setCurrentTab } = useAppStore.getState();
+                    setPreviewOverlay('enter');
+                    setTimeout(() => setPreviewOverlay('visible'), 20);
+                    setTimeout(() => {
+                      skipPreSessionModule(preSessionModule.instanceId);
+                      setCurrentTab('home');
+                      setTimeout(() => setPreviewOverlay('exit'), 100);
+                      setTimeout(() => setPreviewOverlay(null), 500);
+                    }, 420);
+                  } else {
+                    skipPreSessionModule(preSessionModule.instanceId);
+                  }
+                }}
               />
             </div>
           </div>

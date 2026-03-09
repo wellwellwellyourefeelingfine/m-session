@@ -97,7 +97,7 @@ function ComeUpTest() {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Come-Up Test</p>
             <p style={{ color: 'var(--text-primary)' }}>
@@ -294,7 +294,7 @@ function FollowUpTest() {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Follow-Up Test</p>
             <p style={{ color: 'var(--text-primary)' }}>
@@ -487,7 +487,7 @@ function BoosterPeakTest() {
       </div>
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Booster Peak Test</p>
             <p style={{ color: 'var(--text-primary)' }}>

@@ -27,7 +27,7 @@ import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
-import LeafDraw from '../capabilities/animations/LeafDraw';
+import LeafDrawV2 from '../capabilities/animations/LeafDrawV2';
 import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
@@ -516,7 +516,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
               </h2>
 
               <div className="flex justify-center mb-6">
-                <LeafDraw />
+                <LeafDrawV2 />
               </div>
             </div>
 

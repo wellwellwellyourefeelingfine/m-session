@@ -12,6 +12,7 @@ import SessionMenu from './SessionMenu';
 
 export default function Header() {
   const darkMode = useAppStore((state) => state.darkMode);
+  const glassEffect = useAppStore((state) => state.preferences?.glassEffect ?? true);
   const isKeyValid = useAIStore((state) => state.isKeyValid);
   const isModalOpen = useAIStore((state) => state.isModalOpen);
   const openModal = useAIStore((state) => state.openModal);
@@ -39,7 +40,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 border-b border-app-gray-200 dark:border-app-gray-800 z-40" style={{ backgroundColor: 'var(--bg-primary)', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
+      <header className="fixed top-0 left-0 right-0 z-40" style={{ borderBottom: '1px solid var(--color-border)', background: glassEffect ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)' : 'var(--bg-primary)', backdropFilter: glassEffect ? 'blur(24px)' : 'none', WebkitBackdropFilter: glassEffect ? 'blur(24px)' : 'none', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
         <div className="h-full flex items-end pl-0 pr-0">
           {/* App Logo + "SESSION" text */}
           <div className="h-full flex items-end gap-1" style={{ padding: '0' }}>

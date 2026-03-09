@@ -200,7 +200,7 @@ export default function ComeUpCheckIn() {
   // Confirmation dialog for early "fully arrived"
   if (showConfirmation) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn">
+      <div className="fixed inset-0 bg-black/30 flex items-end justify-center z-50 animate-fadeIn">
         <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
           <h3 className="mb-4">Are you sure?</h3>
           <p className="text-[var(--color-text-secondary)] mb-6">
@@ -243,7 +243,7 @@ export default function ComeUpCheckIn() {
 
     return (
       <div
-        className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn"
+        className="fixed inset-0 bg-black/30 flex items-end justify-center z-50 animate-fadeIn"
         onClick={handleDismissReassurance}
       >
         <div
@@ -273,7 +273,7 @@ export default function ComeUpCheckIn() {
   if (comeUpCheckIn.showEndOfPhaseChoice) {
     return (
       <div
-        className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn"
+        className="fixed inset-0 bg-black/30 flex items-end justify-center z-50 animate-fadeIn"
         onClick={() => dismissEndOfPhaseChoice()}
       >
         <div
@@ -338,7 +338,7 @@ export default function ComeUpCheckIn() {
 
   // Full modal state
   return (
-    <div className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+    <div className={`fixed inset-0 bg-black/30 flex items-end justify-center z-50 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
       <div className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}>
         <div className="flex justify-between items-start mb-6">
           <div>

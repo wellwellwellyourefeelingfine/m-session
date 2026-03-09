@@ -963,7 +963,7 @@ export default function BoosterConsiderationModal() {
 
   return (
     <div
-      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      className={`fixed inset-0 bg-black/30 flex items-end justify-center z-50 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleMinimizeOrSnooze}
     >
       <div

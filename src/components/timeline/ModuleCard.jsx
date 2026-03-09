@@ -282,7 +282,7 @@ export default function ModuleCard({
       {/* Booster Info Modal */}
       {showBoosterInfo && createPortal(
         <div
-          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 ${isBoosterInfoClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 ${isBoosterInfoClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
           onClick={handleCloseBoosterInfo}
         >
           <div

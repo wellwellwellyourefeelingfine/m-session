@@ -101,7 +101,7 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 animate-fadeIn"
+      className="fixed inset-0 bg-black/30 flex items-end justify-center z-50 animate-fadeIn"
       onClick={onClose}
     >
       <div

@@ -247,16 +247,21 @@ export default function IntakeFlow({ onComplete }) {
     }
   };
 
+  // Progress bar: single calculation used by all return paths for consistent reconciliation
+  const displayTotal = totalQuestions + 1; // +1 for privacy & best use page
+  const progress = showCompletionScreen
+    ? 100
+    : showPrivacyScreen
+      ? 100
+      : ((currentQuestionIndex + 1) / displayTotal) * 100;
+
   // Show privacy & install info screen (as final numbered step)
   if (showPrivacyScreen && !showCompletionScreen) {
-    const privacyProgress = ((totalQuestions + 1) / (totalQuestions + 1)) * 100;
-
     return (
       <>
         <ModuleProgressBar
-          progress={privacyProgress}
-          visible={isVisible}
-          showTime={false}
+          progress={progress}
+          visible={true}
         />
 
         <div className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
@@ -344,10 +349,12 @@ export default function IntakeFlow({ onComplete }) {
   // Show completion screen
   if (showCompletionScreen) {
     return (
-      <div
-        className="max-w-md mx-auto px-6 py-8 transition-opacity duration-300"
-        style={{ opacity: isVisible ? 1 : 0 }}
-      >
+      <>
+        <ModuleProgressBar progress={progress} visible={false} />
+        <div
+          className="max-w-md mx-auto px-6 py-8 transition-opacity duration-300"
+          style={{ opacity: isVisible ? 1 : 0 }}
+        >
         <h2 className="font-serif text-lg text-center mb-8" style={{ color: 'var(--text-primary)' }}>Ready to Begin</h2>
 
         {(intake.showSafetyWarnings || intake.showMedicationWarning) && (
@@ -398,23 +405,17 @@ export default function IntakeFlow({ onComplete }) {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
-  const displayTotal = totalQuestions + 1; // +1 for privacy & best use page
-  const progress = ((currentQuestionIndex + 1) / displayTotal) * 100;
-
   return (
-    <div className="transition-opacity duration-700 ease-out" style={{ opacity: mountedVisible ? 1 : 0 }}>
-      {/* Progress bar at top - lines up with header */}
-      <ModuleProgressBar
-        progress={progress}
-        visible={true}
-        showTime={false}
-      />
+    <>
+      <ModuleProgressBar progress={progress} visible={true} />
 
-      {/* Main content container - positioned below progress bar */}
-      <div className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
+      <div className="transition-opacity duration-700 ease-out" style={{ opacity: mountedVisible ? 1 : 0 }}>
+        {/* Main content container - positioned below progress bar */}
+        <div className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
         <div className="max-w-md mx-auto px-6 py-6">
           {/* Header - below progress bar */}
           <div className="flex justify-between items-center mb-8">
@@ -488,7 +489,7 @@ export default function IntakeFlow({ onComplete }) {
 
       {/* Health Warning Modal */}
       {activeWarning && HEALTH_WARNINGS[activeWarning] && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6">
             <h3 className="text-[var(--color-text-primary)] mb-4">
               {HEALTH_WARNINGS[activeWarning].title}
@@ -519,6 +520,7 @@ export default function IntakeFlow({ onComplete }) {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

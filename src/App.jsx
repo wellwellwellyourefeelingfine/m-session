@@ -30,6 +30,7 @@ const LazyFallback = (
 
 function App() {
   const currentTab = useAppStore((state) => state.currentTab);
+  const previewOverlay = useAppStore((state) => state.previewOverlay);
 
   // Track which tabs have been visited so we keep them mounted after first load
   const [mountedTabs, setMountedTabs] = useState({ home: true, active: true });
@@ -99,6 +100,23 @@ function App() {
           </Suspense>
         </ErrorBoundary>
       )}
+      {/* Preview activity transition overlay (content area only, 1px above
+          header bottom to cover the module progress bar) */}
+      {previewOverlay != null && (
+        <div style={{
+          position: 'fixed',
+          top: 'calc(var(--header-height) - 1px)',
+          left: 0,
+          right: 0,
+          bottom: 'var(--tabbar-height)',
+          backgroundColor: 'var(--color-bg)',
+          zIndex: 42,
+          opacity: previewOverlay === 'visible' ? 1 : 0,
+          transition: 'opacity 400ms ease',
+          pointerEvents: 'none',
+        }} />
+      )}
+
       {/* Global banners */}
       <PrivacyNotice />
       <IOSInstallPrompt />

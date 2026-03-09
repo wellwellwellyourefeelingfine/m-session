@@ -165,6 +165,18 @@ export default function SettingsTool() {
           </button>
         </div>
 
+        {/* Glass Effect */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Glass Effect</span>
+          <button
+            onClick={() => setPreference('glassEffect', !preferences.glassEffect)}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            {preferences.glassEffect ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
         {/* Auto-Advance Modules */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Auto-Advance</span>
@@ -339,6 +351,7 @@ export default function SettingsTool() {
                 <div className="flex gap-2">
                   <input
                     type="password"
+                    autoComplete="off"
                     value={apiKeyInput}
                     onChange={(e) => setApiKeyInput(e.target.value)}
                     placeholder={getProviderInfo(selectedProvider).keyPlaceholder}
@@ -546,7 +559,7 @@ export default function SettingsTool() {
 
       {/* Reset Confirmation Modal */}
       {showResetConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Reset Current Session</p>
             <p style={{ color: 'var(--text-primary)' }}>
@@ -577,7 +590,7 @@ export default function SettingsTool() {
 
       {/* Wipe All Data Confirmation Modal */}
       {showWipeConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Wipe All Data</p>
             <p style={{ color: 'var(--text-primary)' }}>
@@ -608,7 +621,7 @@ export default function SettingsTool() {
 
       {/* Download Confirmation Modal */}
       {showDownloadConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">
               {showDownloadConfirm === 'images' ? 'Download Images' : 'Download Session Data'}
@@ -654,7 +667,7 @@ export default function SettingsTool() {
 
       {/* Feedback Modal */}
       {showBugReportConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
           <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
             <p className="text-[12px] uppercase tracking-wider font-bold">Provide Feedback</p>
             <p style={{ color: 'var(--text-primary)' }}>

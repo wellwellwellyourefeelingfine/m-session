@@ -14,7 +14,7 @@ export default function ConfirmModal({
   _isDestructive = false,
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fadeIn px-6">
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 animate-fadeIn px-6">
       <div className="bg-[var(--color-bg)] w-full max-w-sm rounded-lg p-6 animate-fadeIn">
         {/* Title */}
         <h3 className="mb-3">

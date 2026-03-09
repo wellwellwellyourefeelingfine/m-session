@@ -11,8 +11,9 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
-import LeafDraw from '../active/capabilities/animations/LeafDraw';
-import LeafDrawBig from '../active/capabilities/animations/LeafDrawBig';
+import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
+import { getModuleById } from '../../content/modules/library';
+import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 
 /**
@@ -52,7 +53,13 @@ export default function HomeView() {
   const startIntake = useSessionStore((state) => state.startIntake);
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
   const completeIntake = useSessionStore((state) => state.completeIntake);
+  const addModule = useSessionStore((state) => state.addModule);
+  const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
+
+  // Preview Activity state
+  const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
+  const [previewModule, setPreviewModule] = useState(null);
 
   // Welcome → Intake fade transition
   const [welcomeFadingOut, setWelcomeFadingOut] = useState(false);
@@ -63,6 +70,34 @@ export default function HomeView() {
     welcomeTimerRef.current = setTimeout(() => {
       startIntake();
     }, 800);
+  };
+
+  const handlePreviewSelect = (libraryId) => {
+    const moduleDef = getModuleById(libraryId);
+    if (moduleDef) {
+      setPreviewModule(moduleDef);
+    }
+    setPreviewDrawerOpen(false);
+  };
+
+  const handleBeginPreview = () => {
+    if (!previewModule) return;
+    const setPreviewOverlay = useAppStore.getState().setPreviewOverlay;
+    setPreviewOverlay('enter');
+    setTimeout(() => setPreviewOverlay('visible'), 20);
+    setTimeout(() => {
+      const result = addModule(previewModule.id, 'pre-session');
+      if (result?.success) {
+        setPreviewModule(null);
+        startPreSessionModule(result.module.instanceId);
+      }
+      setTimeout(() => setPreviewOverlay('exit'), 100);
+      setTimeout(() => setPreviewOverlay(null), 500);
+    }, 420);
+  };
+
+  const handleClearPreview = () => {
+    setPreviewModule(null);
   };
 
   useEffect(() => {
@@ -142,7 +177,7 @@ export default function HomeView() {
                 Welcome
               </h2>
               <div className="flex justify-center mb-1">
-                <LeafDrawBig />
+                <LeafDrawV2 />
               </div>
               <div className="px-5 py-2 mb-1 text-left">
                 <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-1">
@@ -156,10 +191,54 @@ export default function HomeView() {
                 type="button"
                 onClick={handleBeginIntake}
                 disabled={welcomeFadingOut}
-                className="px-10 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+                className="w-48 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
               >
                 Begin Intake
               </button>
+
+              {/* Preview Activity */}
+              <div className="mt-3 flex flex-col items-center">
+                {!previewModule ? (
+                  <button
+                    type="button"
+                    onClick={() => setPreviewDrawerOpen(true)}
+                    disabled={welcomeFadingOut}
+                    className="w-48 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
+                  >
+                    Preview Activity
+                  </button>
+                ) : (
+                  <div className="w-full max-w-xs">
+                    <div className="border border-[var(--color-border)] px-4 py-3 relative text-left">
+                      <button
+                        type="button"
+                        onClick={handleClearPreview}
+                        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] text-sm leading-none transition-colors"
+                      >
+                        ×
+                      </button>
+                      <p className="text-[var(--color-text-primary)] text-xl leading-none pr-6" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>{previewModule.title}</p>
+                      <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
+                        {previewModule.defaultDuration} min · {previewModule.category}
+                      </p>
+                      {previewModule.description && (
+                        <p className="text-[var(--color-text-secondary)] text-xs mt-2 leading-relaxed">
+                          {previewModule.description}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleBeginPreview}
+                      disabled={welcomeFadingOut}
+                      className="w-48 mt-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-primary)] text-[var(--color-text-primary)]"
+                      style={{ padding: '11px 0' }}
+                    >
+                      Begin Activity
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
@@ -228,6 +307,16 @@ export default function HomeView() {
   return (
     <div className={`transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
       {renderContent()}
+
+      {/* Module Library Drawer for Preview Activity */}
+      {previewDrawerOpen && (
+        <ModuleLibraryDrawer
+          phase="pre-session"
+          onSelect={handlePreviewSelect}
+          onClose={() => setPreviewDrawerOpen(false)}
+          hideWarnings
+        />
+      )}
 
       {/* Background overlay — hides content during transition, fades out to reveal */}
       {transitionStep != null && (

@@ -72,7 +72,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
-import LeafDraw from '../capabilities/animations/LeafDraw';
+import LeafDrawV2 from '../capabilities/animations/LeafDrawV2';
 import RevealOverlay from '../capabilities/animations/RevealOverlay';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
@@ -807,7 +807,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {renderContentLines(bridgeLines)}
@@ -843,7 +843,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mb-4">
@@ -891,7 +891,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {renderContentLines(POSITIONS_INTRO.lines)}
@@ -1044,7 +1044,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {showQuote ? (

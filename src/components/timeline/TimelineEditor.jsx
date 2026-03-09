@@ -1055,7 +1055,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Warning Modal */}
       {warningModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4">Note</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -1081,7 +1081,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Error Modal */}
       {errorModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4">Can't Add Module</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">

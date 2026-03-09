@@ -16,9 +16,10 @@ const tabs = [
 export default function TabBar() {
   const currentTab = useAppStore((state) => state.currentTab);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
+  const glassEffect = useAppStore((state) => state.preferences?.glassEffect ?? true);
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 border-t border-app-gray-200 dark:border-app-gray-800" style={{ backgroundColor: 'var(--bg-primary)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', height: 'var(--tabbar-height)' }}>
+    <nav className="fixed bottom-0 left-0 right-0" style={{ borderTop: '1px solid var(--color-border)', background: glassEffect ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)' : 'var(--bg-primary)', backdropFilter: glassEffect ? 'blur(24px)' : 'none', WebkitBackdropFilter: glassEffect ? 'blur(24px)' : 'none', paddingBottom: 'env(safe-area-inset-bottom, 0px)', height: 'var(--tabbar-height)' }}>
       <div className="flex h-12">
         {tabs.map((tab) => (
           <button

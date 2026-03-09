@@ -199,7 +199,7 @@ export default function SessionHistoryModal({ onClose }) {
     <div className="fixed inset-0 z-50">
       {/* Backdrop — separate element so it never covers content */}
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/30"
         onClick={handleClose}
         style={{
           animation: isClosingModal ? 'historyFadeOut 180ms ease-in forwards' : 'historyBackdropIn 180ms ease-out',
@@ -365,7 +365,7 @@ export default function SessionHistoryModal({ onClose }) {
       {/* Load confirmation overlay */}
       {confirmSessionId && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-6"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 px-6"
           onClick={() => setConfirmSessionId(null)}
         >
           <div

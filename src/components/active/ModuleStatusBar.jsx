@@ -20,6 +20,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import ModuleProgressBar from './capabilities/ModuleProgressBar';
 
 const PHASE_CONFIG = {
   'come-up': { number: 1, name: 'Come-Up' },
@@ -91,21 +92,11 @@ export default function ModuleStatusBar({
   const phaseConfig = PHASE_CONFIG[phase] || PHASE_CONFIG['come-up'];
 
   return (
-    <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
-      {/* Progress bar at the very top of this component - uses text-primary color (dark in light mode, light in dark mode) */}
-      <div className="h-0.5 bg-[var(--color-border)]">
-        <div
-          className={`h-full transition-all duration-200 ease-linear
-            ${isPaused ? 'opacity-50' : 'opacity-100'}`}
-          style={{
-            width: `${Math.min(progress, 100)}%`,
-            backgroundColor: 'var(--text-primary)',
-          }}
-        />
-      </div>
-
-      {/* Status content */}
-      <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)] gap-3">
+    <>
+      <ModuleProgressBar progress={progress} isPaused={isPaused} />
+      <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
+        {/* Status content */}
+        <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)] gap-3">
         {/* Left: Phase info — basis matches right column for centering */}
         <div className="flex items-center space-x-2 flex-shrink-0">
           <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
@@ -133,8 +124,9 @@ export default function ModuleStatusBar({
             {sessionElapsed}
           </span>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

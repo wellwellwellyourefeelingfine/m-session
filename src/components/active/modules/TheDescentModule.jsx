@@ -49,7 +49,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
-import LeafDraw from '../capabilities/animations/LeafDraw';
+import LeafDrawV2 from '../capabilities/animations/LeafDrawV2';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -745,7 +745,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {selectedMode === 'couple' ? (
@@ -807,7 +807,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             <p className="text-[var(--color-text-secondary)] text-sm text-center mb-6">
@@ -922,7 +922,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
                 The Deep Dive
               </h2>
               <div className="flex justify-center mb-4">
-                <LeafDraw />
+                <LeafDrawV2 />
               </div>
             </div>
 
@@ -974,7 +974,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {selectedMode === 'solo' ? (
@@ -1068,7 +1068,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {selectedMode === 'solo' ? (
@@ -1162,7 +1162,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
             </h2>
 
             <div className="flex justify-center mb-4">
-              <LeafDraw />
+              <LeafDrawV2 />
             </div>
 
             {selectedMode === 'solo' ? (

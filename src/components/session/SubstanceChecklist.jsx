@@ -554,7 +554,7 @@ export default function SubstanceChecklist() {
 
       {/* Dosage Warning Modal */}
       {showDosageWarning && DOSAGE_WARNINGS[showDosageWarning] && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6 animate-fadeIn">
             <h3 className="text-[var(--color-text-primary)] mb-4 uppercase tracking-wider text-xs">
               {DOSAGE_WARNINGS[showDosageWarning].title}

@@ -20,6 +20,7 @@ export const useAppStore = create(
 
       // User preferences
       preferences: {
+        glassEffect: true, // Frosted glass effect on header/tab bar
         autoAdvance: false, // Whether modules auto-advance
         notificationsEnabled: false,
         reduceMotion: false, // Disable animations
@@ -40,11 +41,16 @@ export const useAppStore = create(
       // Transient: force-show install prompt from menu (not persisted)
       showInstallPrompt: false,
       setShowInstallPrompt: (show) => set({ showInstallPrompt: show }),
+
+      // Transient: preview activity transition overlay (not persisted)
+      // null | 'enter' | 'visible' | 'exit'
+      previewOverlay: null,
+      setPreviewOverlay: (step) => set({ previewOverlay: step }),
     }),
     {
       name: 'mdma-guide-app-state',
       partialize: (state) => {
-        const { showInstallPrompt: _showInstallPrompt, ...rest } = state;
+        const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, ...rest } = state;
         return rest;
       },
     }
