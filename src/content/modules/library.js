@@ -58,6 +58,8 @@ export const MODULE_TYPES = {
   'intention-setting': { label: 'Intention Setting', intensity: 'gentle' },
   // Life Graph (pre-session)
   'life-graph': { label: 'Life Graph', intensity: 'gentle' },
+  // Mapping the Territory (pre-session)
+  'mapping-territory': { label: 'Mapping the Territory', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
@@ -130,6 +132,23 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['life-graph', 'pre-session', 'reflection', 'visualization', 'lifeline'],
+  },
+  {
+    id: 'mapping-territory',
+    type: 'mapping-territory',
+    category: 'pre-session',
+    title: 'Mapping the Territory',
+    description: 'A brief orientation to the kinds of experience that can arise during a session. Based on the work of psychedelic researcher Bill Richards.',
+    defaultDuration: 10,
+    intensity: 'gentle',
+    allowedPhases: ['pre-session', 'come-up'],
+    recommendedPhases: ['pre-session'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['mapping', 'pre-session', 'preparation', 'education', 'Richards'],
   },
 
   // === COME-UP APPROPRIATE (Gentle) ===

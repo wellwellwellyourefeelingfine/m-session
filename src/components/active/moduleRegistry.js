@@ -36,6 +36,7 @@ const TheDescentModule = lazy(() => import('./modules/TheDescentModule'));
 const TheCycleModule = lazy(() => import('./modules/TheCycleModule'));
 const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
+const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -108,6 +109,9 @@ export const CUSTOM_MODULES = {
 
   // Life Graph — pre-session lifeline exercise with PNG visualization
   'life-graph': LifeGraphActivity,
+
+  // Mapping the Territory — pre-session educational orientation
+  'mapping-territory': MappingTerritoryActivity,
 };
 
 /**
@@ -190,6 +194,7 @@ export const MODULE_CATEGORIES = {
     'felt-sense',
     'intention-setting',
     'life-graph',
+    'mapping-territory',
     'the-descent',
     'the-cycle',
   ],

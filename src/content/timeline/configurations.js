@@ -19,6 +19,7 @@ export const TIMELINE_CONFIGS = {
       preSession: [
         { libraryId: 'intention-setting', duration: 5 },
         { libraryId: 'life-graph', duration: 5 },
+        { libraryId: 'mapping-territory', duration: 10 },
       ],
       comeUp: [
         { libraryId: 'simple-grounding', duration: 5 },
@@ -64,6 +65,7 @@ export const TIMELINE_CONFIGS = {
       preSession: [
         { libraryId: 'intention-setting', duration: 5 },
         { libraryId: 'life-graph', duration: 5 },
+        { libraryId: 'mapping-territory', duration: 10 },
       ],
       comeUp: [
         { libraryId: 'simple-grounding', duration: 5 },
@@ -113,6 +115,7 @@ export const TIMELINE_CONFIGS = {
     full: {
       preSession: [
         { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'mapping-territory', duration: 10 },
       ],
       comeUp: [
         { libraryId: 'simple-grounding', duration: 5 },
@@ -160,6 +163,7 @@ export const TIMELINE_CONFIGS = {
       preSession: [
         { libraryId: 'intention-setting', duration: 5 },
         { libraryId: 'life-graph', duration: 5 },
+        { libraryId: 'mapping-territory', duration: 10 },
       ],
       comeUp: [
         { libraryId: 'simple-grounding', duration: 5 },
@@ -206,6 +210,7 @@ export const TIMELINE_CONFIGS = {
       preSession: [
         { libraryId: 'intention-setting', duration: 5 },
         { libraryId: 'life-graph', duration: 5 },
+        { libraryId: 'mapping-territory', duration: 10 },
       ],
       comeUp: [
         { libraryId: 'simple-grounding', duration: 5 },

@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 19;
+export const SESSION_STORE_VERSION = 20;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -353,6 +353,14 @@ export const useSessionStore = create(
           journalOtherSide: '',
           journalStepOut: '',      // replaces closingIntention
           journeyReflection: '',
+          completedAt: null,
+        },
+        // Mapping the Territory captures (pre-session educational module)
+        mappingTerritory: {
+          copingPattern: null,        // screen 7 choice
+          approachStyle: null,        // screen 13 choice
+          askingForAttention: '',     // screen 10 journal
+          wordToSelf: '',             // screen 16 journal
           completedAt: null,
         },
       },
@@ -1780,6 +1788,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateMappingTerritoryCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            mappingTerritory: {
+              ...state.transitionCaptures.mappingTerritory,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2672,6 +2693,13 @@ export const useSessionStore = create(
               journeyReflection: '',
               completedAt: null,
             },
+            mappingTerritory: {
+              copingPattern: null,
+              approachStyle: null,
+              askingForAttention: '',
+              wordToSelf: '',
+              completedAt: null,
+            },
           },
           lifeGraph: {
             milestones: [],
@@ -3187,6 +3215,22 @@ export function migrateSessionState(persistedState, version) {
             journeyReflection: tc.journeyReflection || '',
             completedAt: tc.completedAt || null,
           };
+        }
+
+        // Version 19 -> 20: Add mappingTerritory to transitionCaptures
+        if (version < 20) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.mappingTerritory) {
+            state.transitionCaptures.mappingTerritory = {
+              copingPattern: null,
+              approachStyle: null,
+              askingForAttention: '',
+              wordToSelf: '',
+              completedAt: null,
+            };
+          }
         }
 
         return state;
