@@ -776,7 +776,7 @@ export const moduleLibrary = [
   {
     id: 'followup-values-compass',
     type: 'follow-up',
-    title: 'Values Compass',
+    title: 'Values Compass Revisited',
     description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
     defaultDuration: 15,
     intensity: 'gentle',
@@ -878,7 +878,7 @@ export function canAddModuleToPhase(moduleId, phase) {
       'booster-consideration',
       'followup-check-in',
       'followup-revisit',
-      'values-compass',
+      'followup-values-compass',
       'followup-integration',
       'followup-journaling',
     ];
