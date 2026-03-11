@@ -62,6 +62,8 @@ export const MODULE_TYPES = {
   'mapping-territory': { label: 'Mapping the Territory', intensity: 'gentle' },
   // Pendulation (Somatic Experiencing)
   'pendulation': { label: 'Pendulation', intensity: 'moderate' },
+  // Shaking the Tree (Somatic Movement)
+  'shaking-the-tree': { label: 'Shaking the Tree', intensity: 'gentle' },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
@@ -265,6 +267,26 @@ export const moduleLibrary = [
     },
     tags: ['music', 'dance', 'movement', 'active'],
   },
+  {
+    id: 'shaking-the-tree',
+    type: 'shaking-the-tree',
+    category: 'activity',
+    title: 'Shaking the Tree',
+    description: 'A guided somatic movement practice. Five phases of movement — from gentle sway to full expression and back — to release tension held in the body.',
+    defaultDuration: 15,
+    minDuration: 10,
+    maxDuration: 30,
+    intensity: 'gentle',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak'],
+    content: {
+      instructions: 'A guided movement practice with five phases. Pick some music, set a duration, and let your body move.',
+    },
+    capabilities: {
+      controls: { showSkipButton: true },
+    },
+    tags: ['somatic', 'movement', 'shaking', 'body', 'release'],
+  },
 
   // === PEAK APPROPRIATE (Moderate) ===
   {
@@ -395,7 +417,7 @@ export const moduleLibrary = [
     category: 'activity',
     title: 'Pendulation',
     description: 'A guided somatic experiencing practice. Track sensations as they move between activation and safety, with adaptive branching based on your experience.',
-    defaultDuration: 25,
+    defaultDuration: 40,
     intensity: 'moderate',
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],

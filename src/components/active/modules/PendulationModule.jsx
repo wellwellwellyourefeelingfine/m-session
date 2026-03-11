@@ -25,7 +25,7 @@ import { pendulationMeditation } from '../../../content/meditations/pendulation'
 import { generateTimedSequence } from '../../../content/meditations';
 import {
   INTRO_SCREENS,
-  SENSATION_VOCABULARY,
+  ACCENT_TERMS,
   CHECKPOINT_1_OPTIONS,
   CHECKPOINT_2_OPTIONS,
   DEBRIEF_CORE,
@@ -40,9 +40,10 @@ import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI
-import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
+import ModuleLayout from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import ModuleProgressBar from '../capabilities/ModuleProgressBar';
+import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
@@ -50,10 +51,67 @@ import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const FADE_MS = 400;
-const SENSATION_CYCLE_MS = 12000;
 
-// Prompt ID prefixes during which sensation vocabulary words appear (Section A only)
-const SENSATION_PROMPT_PREFIXES = ['a-track', 'a-activate', 'a-pend'];
+// ─── Accent Term Renderer ──────────────────────────────────────────────────
+//
+// Scans body paragraphs for {key} placeholders and renders them in accent color.
+// Same algorithm as FeltSenseModule/TheCycleModule renderContentLines.
+
+function renderBodyWithAccents(paragraphs, textSize = 'text-sm') {
+  return paragraphs.map((para, i) => {
+    let hasAccent = false;
+    for (const key of Object.keys(ACCENT_TERMS)) {
+      if (para.includes(`{${key}}`)) { hasAccent = true; break; }
+    }
+
+    if (!hasAccent) {
+      return (
+        <p key={i} className={`text-[var(--color-text-primary)] ${textSize} leading-relaxed`}>
+          {para}
+        </p>
+      );
+    }
+
+    const parts = [];
+    let remaining = para;
+    let partIndex = 0;
+
+    while (remaining.length > 0) {
+      let earliest = -1;
+      let earliestKey = null;
+      for (const key of Object.keys(ACCENT_TERMS)) {
+        const idx = remaining.indexOf(`{${key}}`);
+        if (idx !== -1 && (earliest === -1 || idx < earliest)) {
+          earliest = idx;
+          earliestKey = key;
+        }
+      }
+
+      if (earliest === -1) {
+        parts.push(<span key={partIndex++}>{remaining}</span>);
+        break;
+      }
+
+      if (earliest > 0) {
+        parts.push(<span key={partIndex++}>{remaining.substring(0, earliest)}</span>);
+      }
+
+      parts.push(
+        <span key={partIndex++} className="text-[var(--accent)]">
+          {ACCENT_TERMS[earliestKey]}
+        </span>
+      );
+
+      remaining = remaining.substring(earliest + earliestKey.length + 2);
+    }
+
+    return (
+      <p key={i} className={`text-[var(--color-text-primary)] ${textSize} leading-relaxed`}>
+        {parts}
+      </p>
+    );
+  });
+}
 
 // ─── MeditationSection ─────────────────────────────────────────────────────
 //
@@ -72,10 +130,6 @@ function MeditationSection({
 
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } =
     useTranscriptModal();
-
-  // Sensation word cycling state (Section A only)
-  const [sensationCategory, setSensationCategory] = useState(0);
-  const sensationCategories = useMemo(() => Object.keys(SENSATION_VOCABULARY), []);
 
   // Generate timed sequence for this section
   const [timedSequence, totalDuration] = useMemo(() => {
@@ -114,25 +168,6 @@ function MeditationSection({
       playback.handleStart();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sensation word cycling (Section A only, ~12s per category)
-  useEffect(() => {
-    if (sectionKey !== 'a') return;
-    const interval = setInterval(() => {
-      setSensationCategory((prev) => (prev + 1) % sensationCategories.length);
-    }, SENSATION_CYCLE_MS);
-    return () => clearInterval(interval);
-  }, [sectionKey, sensationCategories.length]);
-
-  // Show sensation words only during specific prompt phases of Section A
-  const showSensationWords =
-    sectionKey === 'a' &&
-    playback.currentPrompt?.id &&
-    SENSATION_PROMPT_PREFIXES.some((prefix) => playback.currentPrompt.id.startsWith(prefix));
-
-  const currentSensationWords = showSensationWords
-    ? SENSATION_VOCABULARY[sensationCategories[sensationCategory]]
-    : null;
 
   // ─── Loading state ─────────────────────────────────────────────────
 
@@ -182,7 +217,7 @@ function MeditationSection({
             {meditation.title}
           </h2>
 
-          <AsciiMoon />
+          <MorphingShapes />
 
           {/* Paused indicator */}
           <div className="h-5 flex items-center justify-center mt-3">
@@ -204,19 +239,6 @@ function MeditationSection({
             {playback.currentPrompt?.text || ''}
           </p>
 
-          {/* Sensation vocabulary cycling (Section A tracking/pendulation phases) */}
-          {showSensationWords && currentSensationWords && (
-            <div className="mt-6 flex flex-wrap justify-center gap-x-3 gap-y-1 max-w-xs mx-auto animate-fadeIn">
-              {currentSensationWords.map((word) => (
-                <span
-                  key={word}
-                  className="text-[var(--color-text-tertiary)] text-xs italic"
-                >
-                  {word}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </ModuleLayout>
 
@@ -276,6 +298,9 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
   const [introStep, setIntroStep] = useState(0);
   const [isIntroVisible, setIsIntroVisible] = useState(true);
 
+  // Meditation fade state
+  const [isMeditationVisible, setIsMeditationVisible] = useState(true);
+
   // Checkpoint state
   const [checkpoint1Selection, setCheckpoint1Selection] = useState(null);
   const [checkpoint2Selection, setCheckpoint2Selection] = useState(null);
@@ -300,6 +325,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
   // Closing state
   const [isClosingVisible, setIsClosingVisible] = useState(false);
+  const [showSources, setShowSources] = useState(false);
 
   // Idle leave animation
   const [isLeaving, setIsLeaving] = useState(false);
@@ -344,6 +370,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     if (introStep < INTRO_SCREENS.length - 1) {
       setIsIntroVisible(false);
       setTimeout(() => {
+        window.scrollTo(0, 0);
         setIntroStep((prev) => prev + 1);
         setIsIntroVisible(true);
       }, FADE_MS);
@@ -361,6 +388,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     if (introStep > 0) {
       setIsIntroVisible(false);
       setTimeout(() => {
+        window.scrollTo(0, 0);
         setIntroStep((prev) => prev - 1);
         setIsIntroVisible(true);
       }, FADE_MS);
@@ -377,31 +405,36 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     setSectionsCompleted(newCompleted);
     updatePendulationCapture('sectionsCompleted', newCompleted);
 
-    switch (section) {
-      case 'a':
-        setPhase('checkpoint-1');
-        setIsCheckpointVisible(true);
-        break;
-      case 'b':
-        setPhase('checkpoint-2');
-        setIsCheckpointVisible(true);
-        break;
-      case 'bGround':
-        // Auto-advance to D (key change forces MeditationSection remount)
-        setActiveSectionKey('d');
-        break;
-      case 'c':
-        // Auto-advance to D
-        setActiveSectionKey('d');
-        break;
-      case 'd':
-        setPhase('debrief');
-        setDebriefStep(0);
-        setIsDebriefVisible(true);
-        break;
-      default:
-        break;
-    }
+    // Fade out meditation before transitioning
+    setIsMeditationVisible(false);
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      switch (section) {
+        case 'a':
+          setPhase('checkpoint-1');
+          setIsCheckpointVisible(true);
+          break;
+        case 'b':
+          setPhase('checkpoint-2');
+          setIsCheckpointVisible(true);
+          break;
+        case 'bGround':
+          setActiveSectionKey('d');
+          setIsMeditationVisible(true);
+          break;
+        case 'c':
+          setActiveSectionKey('d');
+          setIsMeditationVisible(true);
+          break;
+        case 'd':
+          setPhase('debrief');
+          setDebriefStep(0);
+          setIsDebriefVisible(true);
+          break;
+        default:
+          break;
+      }
+    }, FADE_MS);
   }, [activeSectionKey, sectionsCompleted, updatePendulationCapture]);
 
   // ─── Checkpoint handlers ──────────────────────────────────────────
@@ -417,6 +450,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     setIsCheckpointVisible(false);
     setTimeout(() => {
       setActiveSectionKey(route);
+      setIsMeditationVisible(true);
       setPhase('meditation');
     }, FADE_MS);
   }, [checkpoint1Selection, updatePendulationCapture]);
@@ -432,6 +466,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     setIsCheckpointVisible(false);
     setTimeout(() => {
       setActiveSectionKey(route);
+      setIsMeditationVisible(true);
       setPhase('meditation');
     }, FADE_MS);
   }, [checkpoint2Selection, updatePendulationCapture]);
@@ -442,6 +477,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     if (debriefStep < debriefScreens.length - 1) {
       setIsDebriefVisible(false);
       setTimeout(() => {
+        window.scrollTo(0, 0);
         setDebriefStep((prev) => prev + 1);
         setIsDebriefVisible(true);
       }, FADE_MS);
@@ -449,6 +485,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
       // Last debrief screen → closing
       setIsDebriefVisible(false);
       setTimeout(() => {
+        window.scrollTo(0, 0);
         setPhase('closing');
         setIsClosingVisible(true);
       }, FADE_MS);
@@ -459,6 +496,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     if (debriefStep > 0) {
       setIsDebriefVisible(false);
       setTimeout(() => {
+        window.scrollTo(0, 0);
         setDebriefStep((prev) => prev - 1);
         setIsDebriefVisible(true);
       }, FADE_MS);
@@ -558,11 +596,25 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={pendulationMeditation.title}
-              description={pendulationMeditation.description}
-            />
+          <div className={`text-center space-y-4 ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+            <h2
+              className="text-2xl text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {pendulationMeditation.title}
+            </h2>
+
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+
+            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              A guided somatic experiencing practice for working with activation in the nervous system.
+            </p>
+
+            <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)]">
+              About 25 to 40 minutes
+            </p>
           </div>
         </ModuleLayout>
         <ModuleControlBar
@@ -616,32 +668,8 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
             {/* Body */}
             <div className="space-y-4">
-              {screen.body.map((para, i) => (
-                <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
-                  {para}
-                </p>
-              ))}
+              {renderBodyWithAccents(screen.body)}
             </div>
-
-            {/* Sensation vocabulary grid (screen 3) */}
-            {screen.showSensationGrid && (
-              <div className="mt-6 space-y-4">
-                {Object.entries(SENSATION_VOCABULARY).map(([category, words]) => (
-                  <div key={category}>
-                    <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1 capitalize">
-                      {category}
-                    </p>
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                      {words.map((word) => (
-                        <span key={word} className="text-[var(--color-text-tertiary)] text-xs">
-                          {word}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* Footer */}
             {screen.footer && (
@@ -672,14 +700,16 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
   if (phase === 'meditation') {
     return (
-      <MeditationSection
-        key={activeSectionKey}
-        sectionKey={activeSectionKey}
-        moduleInstanceId={module.instanceId}
-        onSectionComplete={handleSectionComplete}
-        onModuleSkip={handleModuleSkip}
-        onTimerUpdate={onTimerUpdate}
-      />
+      <div className={`transition-opacity duration-[400ms] ${isMeditationVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <MeditationSection
+          key={activeSectionKey}
+          sectionKey={activeSectionKey}
+          moduleInstanceId={module.instanceId}
+          onSectionComplete={handleSectionComplete}
+          onModuleSkip={handleModuleSkip}
+          onTimerUpdate={onTimerUpdate}
+        />
+      </div>
     );
   }
 
@@ -843,27 +873,23 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
             {/* Animation */}
             {screen.showAnimation && (
               <div className="flex justify-center mb-4">
-                <AsciiMoon />
+                {screen.animationType === 'diamond' ? <AsciiDiamond /> : <AsciiMoon />}
               </div>
             )}
 
             {/* Body paragraphs */}
             {screen.body && (
               <div className="space-y-4">
-                {screen.body.map((para, i) => (
-                  <p key={i} className="text-[var(--color-text-primary)] text-sm leading-relaxed">
-                    {para}
-                  </p>
-                ))}
+                {renderBodyWithAccents(screen.body, hasTextArea ? 'text-xs' : 'text-sm')}
               </div>
             )}
 
             {/* ─ Journal ─ */}
             {screen.type === 'journal' && (
-              <div className="mt-4">
+              <div className="mt-2">
                 {screen.prompt && (
                   <h3
-                    className="text-base font-light mb-3 text-center text-[var(--color-text-primary)]"
+                    className="text-lg font-light mb-2 text-left text-[var(--color-text-primary)]"
                     style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                   >
                     {screen.prompt}
@@ -957,9 +983,9 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
                 {/* Optional journal below choice (hybrid screen) */}
                 {screen.hasJournal && (
-                  <div className="mt-6">
+                  <div className="mt-3">
                     <h3
-                      className="text-base font-light mb-3 text-center text-[var(--color-text-primary)]"
+                      className="text-lg font-light mb-2 text-left text-[var(--color-text-primary)]"
                       style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                     >
                       {screen.journalPrompt}
@@ -986,7 +1012,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
             {/* Footer */}
             {screen.footer && (
-              <p className="text-[var(--color-text-tertiary)] text-xs mt-4 leading-relaxed">
+              <p className="text-[var(--color-text-tertiary)] text-xs mt-4 leading-relaxed text-center">
                 {screen.footer}
               </p>
             )}
@@ -1017,58 +1043,77 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
     return (
       <>
+        <ModuleProgressBar progress={100} visible={true} />
+
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
           <div
             className={`pt-6 transition-opacity duration-[400ms] ${
               isClosingVisible ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            <h2 className="text-xl font-light mb-6 text-center text-[var(--color-text-primary)]">
+            <h2
+              className="text-xl font-light mb-6 text-center text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               {CLOSING_CONTENT.title}
             </h2>
 
             <div className="flex justify-center mb-6">
-              <AsciiDiamond />
+              <AsciiMoon />
             </div>
 
-            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed text-center">
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
               {CLOSING_CONTENT.body}
             </p>
 
-            <div className="flex justify-center my-4">
-              <div className="circle-spacer" />
-            </div>
-
-            <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed">
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mt-6">
               {footerText}
             </p>
 
-            {/* Attribution */}
-            <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed mt-6">
-              {CLOSING_CONTENT.attribution}
-            </p>
-
-            {/* Resources */}
+            {/* Source material toggle */}
             {CLOSING_CONTENT.resources.length > 0 && (
-              <div className="mt-8 pt-6 border-t border-[var(--color-border)] space-y-3">
-                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider">
-                  Further Reading
-                </p>
-                {CLOSING_CONTENT.resources.map((resource, i) => (
-                  <div key={i} className="pl-3 border-l border-[var(--color-border)]">
-                    <a
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[var(--color-text-primary)] text-xs underline hover:opacity-70 transition-opacity italic leading-relaxed"
-                    >
-                      {resource.text}
-                    </a>
-                    <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed mt-0.5">
-                      {resource.note}
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowSources(!showSources)}
+                  className="flex items-center gap-2 text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]
+                    hover:text-[var(--color-text-secondary)] transition-colors"
+                >
+                  <span className="text-sm leading-none">{showSources ? '\u2212' : '+'}</span>
+                  {showSources ? 'Hide source material' : 'Show source material'}
+                </button>
+
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-out"
+                  style={{
+                    maxHeight: showSources ? '500px' : '0',
+                    opacity: showSources ? 1 : 0,
+                  }}
+                >
+                  <div className="pt-4 space-y-3">
+                    <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed">
+                      {CLOSING_CONTENT.attribution}
                     </p>
+
+                    <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-4">
+                      Further Reading
+                    </p>
+                    {CLOSING_CONTENT.resources.map((resource, i) => (
+                      <div key={i} className="pl-3 border-l border-[var(--color-border)]">
+                        <a
+                          href={resource.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[var(--color-text-primary)] text-xs underline hover:opacity-70 transition-opacity italic leading-relaxed"
+                        >
+                          {resource.text}
+                        </a>
+                        <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed mt-0.5">
+                          {resource.note}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </div>

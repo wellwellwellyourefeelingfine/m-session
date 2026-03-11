@@ -8,6 +8,18 @@
  * Framework: Somatic Experiencing (Peter Levine)
  */
 
+// ─── Accent Terms ───────────────────────────────────────────────────────────
+
+export const ACCENT_TERMS = {
+  island_of_safety: 'island of safety',
+  pendulation: 'pendulation',
+  completion_signals: 'completion signals',
+  thwarted_response: 'thwarted response',
+  trauma_vortex: 'trauma vortex',
+  healing_vortex: 'healing vortex',
+  slow_completion: 'Slow completion',
+};
+
 // ─── Pre-Education Screens ───────────────────────────────────────────────────
 
 export const INTRO_SCREENS = [
@@ -16,19 +28,10 @@ export const INTRO_SCREENS = [
     type: 'text',
     label: 'Preparation',
     title: 'Somatic Experiencing',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'This practice is based on the work of Peter Levine, who spent over forty years studying how the body processes stress and trauma.',
       'His core observation: when we go through overwhelming experiences, our bodies begin a survival response, a push, a brace, an urge to run, and something interrupts it before it can complete. That unfinished response stays stored in the nervous system. Sometimes for years.',
-    ],
-  },
-  {
-    id: 'what-is-this-2',
-    type: 'text',
-    label: 'Preparation',
-    title: 'Somatic Experiencing',
-    showAnimation: true,
-    body: [
       'This practice helps your body finish what it started.',
     ],
   },
@@ -37,9 +40,9 @@ export const INTRO_SCREENS = [
     type: 'text',
     label: 'Preparation',
     title: 'How It Works',
-    showAnimation: false,
+    showAnimation: true,
     body: [
-      'You will be guided to find a place in your body that feels calm or neutral. Levine calls this an \u201cisland of safety.\u201d This becomes your home base for the practice.',
+      'You will be guided to find a place in your body that feels calm or neutral. Levine calls this an \u201c{island_of_safety}.\u201d This becomes your home base for the practice.',
       'Then you will bring to mind something mildly activating and notice where it shows up physically. Not the story. The sensation.',
     ],
   },
@@ -48,33 +51,20 @@ export const INTRO_SCREENS = [
     type: 'text',
     label: 'Preparation',
     title: 'How It Works',
-    showAnimation: false,
+    showAnimation: true,
     body: [
-      'The core of the practice is moving your attention slowly back and forth between these two places. Calm, and activation. Safety, and charge. This oscillation is called pendulation. It is the mechanism through which the nervous system releases stored energy.',
+      'The core of the practice is moving your attention slowly back and forth between these two places. Calm, and activation. Safety, and charge. This oscillation is called {pendulation}. It is the mechanism through which the nervous system releases stored energy.',
     ],
-  },
-  {
-    id: 'sensation-vocabulary',
-    type: 'text',
-    label: 'Preparation',
-    title: 'The Language of Sensation',
-    showAnimation: false,
-    showSensationGrid: true,
-    body: [
-      'During this practice, you will be asked to notice and describe what you feel in your body. Levine found that the more specific you can be about sensation, the more effectively the practice works.',
-      'Here are some words that can help:',
-    ],
-    footer: 'You do not need to memorize these. They will also appear on screen during the meditation.',
   },
   {
     id: 'space-setup',
     type: 'text',
     label: 'Preparation',
     title: 'Your Space',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'This practice may involve slow, gentle physical movement. Your body might want to push, reach, curl up, stretch out, or press your feet against something solid.',
-      'If possible, give yourself room to move freely. A yoga mat or blanket on the floor works well. A pillow or cushion nearby can be helpful. If you are in bed, having a wall or footboard to press your feet against is useful.',
+      'If possible, give yourself room to move freely. A yoga mat or blanket on the floor works well. A pillow or cushion nearby can be helpful.',
       'Nothing strenuous will happen. But having space to follow your body\u2019s impulses, if they come, makes a real difference.',
     ],
   },
@@ -83,7 +73,7 @@ export const INTRO_SCREENS = [
     type: 'text',
     label: 'Preparation',
     title: 'What to Expect',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'The meditation will guide you through the core pendulation practice, then pause and ask how you are feeling. Your answer shapes what comes next.',
       'If your body is showing you movements it wants to complete, the meditation will continue with guidance for following those impulses. If you feel settled, it will move to closing.',
@@ -104,28 +94,6 @@ export const INTRO_SCREENS = [
   },
 ];
 
-// ─── Sensation Vocabulary ────────────────────────────────────────────────────
-
-export const SENSATION_VOCABULARY = {
-  physical: [
-    'tight', 'loose', 'heavy', 'light', 'dense', 'hollow',
-    'sharp', 'dull', 'pulsing', 'buzzing', 'tingling', 'numb',
-    'warm', 'cool', 'hot', 'cold', 'frozen', 'burning',
-  ],
-  quality: [
-    'smooth', 'rough', 'jagged', 'soft', 'hard', 'sticky',
-    'fluid', 'solid', 'wobbly', 'trembling', 'still', 'restless',
-  ],
-  movement: [
-    'expanding', 'contracting', 'rising', 'sinking', 'spreading',
-    'pulling', 'pushing', 'spinning', 'radiating', 'pressing', 'floating',
-  ],
-  energy: [
-    'charged', 'empty', 'full', 'blocked', 'flowing', 'stagnant',
-    'electric', 'quiet', 'humming', 'flickering',
-  ],
-};
-
 // ─── Checkpoint Options ──────────────────────────────────────────────────────
 
 export const CHECKPOINT_1_OPTIONS = [
@@ -143,7 +111,7 @@ export const CHECKPOINT_2_OPTIONS = [
   { id: 'shaky',      label: 'I feel shaky or stirred up.',                        route: 'bGround' },
 ];
 
-// ─── Debrief: Core (always shown, 6 screens) ────────────────────────────────
+// ─── Debrief: Core (always shown, 5 screens) ────────────────────────────────
 
 export const DEBRIEF_CORE = [
   {
@@ -162,7 +130,7 @@ export const DEBRIEF_CORE = [
     type: 'journal',
     label: 'Reflection',
     title: 'Your Island of Safety',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'The resource you found in your body is not just a meditation technique. It is a real place in your nervous system that you can return to anytime.',
     ],
@@ -176,19 +144,10 @@ export const DEBRIEF_CORE = [
     type: 'text',
     label: 'Reflection',
     title: 'Completion Signals',
-    showAnimation: false,
-    body: [
-      'During or after the practice, you may have noticed spontaneous shifts in your body. A deep breath. Trembling or shaking. Warmth spreading. Tears. A sigh. A wave of tiredness.',
-      'In somatic experiencing, these are called completion signals. They mean that stored survival energy is discharging. They are healthy.',
-    ],
-  },
-  {
-    id: 'completion-signals-2',
-    type: 'text',
-    label: 'Reflection',
-    title: 'Completion Signals',
     showAnimation: true,
     body: [
+      'During or after the practice, you may have noticed spontaneous shifts in your body. A deep breath. Trembling or shaking. Warmth spreading. Tears. A sigh. A wave of tiredness.',
+      'In somatic experiencing, these are called {completion_signals}. They mean that stored survival energy is discharging. They are healthy.',
       'If nothing dramatic happened, that is equally valid. Some processing happens quietly, beneath conscious awareness. You may notice shifts in the hours or days ahead.',
     ],
   },
@@ -220,17 +179,17 @@ export const DEBRIEF_CORE = [
     type: 'journal',
     label: 'Reflection',
     title: 'The Pendulation',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'Take a moment to describe what happened as you moved between the two places in your body.',
     ],
-    prompt: 'What changed each time you shifted? Did the activation soften, move, stay the same? What was it like to come back to your resource?',
-    placeholder: 'Whatever you noticed...',
+    prompt: 'What did you notice as you moved back and forth?',
+    placeholder: 'Did the activation soften, move, stay the same? What was it like to come back to your resource?',
     captureField: 'pendulationExperience',
   },
 ];
 
-// ─── Debrief: Fight/Flight (conditional, 5 screens) ─────────────────────────
+// ─── Debrief: Fight/Flight (conditional, 4 screens) ─────────────────────────
 
 export const DEBRIEF_FIGHT_FLIGHT = [
   {
@@ -241,16 +200,7 @@ export const DEBRIEF_FIGHT_FLIGHT = [
     showAnimation: false,
     body: [
       'When you followed that impulse to move, you were allowing your nervous system to complete a survival response that was interrupted at some point in the past.',
-      'The push, the pull, the brace, the turn: that movement was not random. In somatic experiencing, this is called a thwarted response. A motor plan that your body initiated but had to suppress, with the energy behind it remaining stored, waiting for a chance to complete.',
-    ],
-  },
-  {
-    id: 'thwarted-response-2',
-    type: 'text',
-    label: 'Going Deeper',
-    title: 'What Your Body Was Finishing',
-    showAnimation: true,
-    body: [
+      'The push, the pull, the brace, the turn: that movement was not random. In somatic experiencing, this is called a {thwarted_response}. A motor plan that your body initiated but had to suppress, with the energy behind it remaining stored, waiting for a chance to complete.',
       'By following it slowly, you allowed your nervous system to register that the response actually happened this time.',
     ],
   },
@@ -259,12 +209,12 @@ export const DEBRIEF_FIGHT_FLIGHT = [
     type: 'journal',
     label: 'Going Deeper',
     title: 'The Movement',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'Your body showed you something it wanted to do.',
     ],
-    prompt: 'Describe the impulse. What direction did it go? What did it feel like to follow it?',
-    placeholder: 'The push, the pull, the turn, the brace...',
+    prompt: 'What did your body want to do?',
+    placeholder: 'The direction, the impulse, what it felt like to follow it...',
     captureField: 'survivalMovement',
   },
   {
@@ -275,7 +225,7 @@ export const DEBRIEF_FIGHT_FLIGHT = [
     showAnimation: true,
     body: [
       'When a survival response completes at full speed, the nervous system may not register that it actually happened. The body needs enough time to feel each part of the movement, to sense the strength in the push, the power in the legs, the act of turning away.',
-      'Slow completion tells the nervous system: this response is real. It happened. You are no longer stuck.',
+      '{slow_completion} tells the nervous system: this response is real. It happened. You are no longer stuck.',
     ],
   },
   {
@@ -300,7 +250,7 @@ export const DEBRIEF_FIGHT_FLIGHT = [
   },
 ];
 
-// ─── Debrief: Freeze (conditional, 7 screens) ───────────────────────────────
+// ─── Debrief: Freeze (conditional, 5 screens) ───────────────────────────────
 
 export const DEBRIEF_FREEZE = [
   {
@@ -308,19 +258,11 @@ export const DEBRIEF_FREEZE = [
     type: 'text',
     label: 'The Freeze',
     title: 'What You Experienced',
-    showAnimation: false,
+    showAnimation: true,
+    animationType: 'diamond',
     body: [
       'That heaviness, that stillness, that difficulty moving, is one of the most ancient and powerful survival responses in the animal kingdom.',
       'When the nervous system determines that fighting and running are both impossible, it shuts down. It goes still. It numbs. This response reduces pain, conserves energy, and in nature, can cause a predator to lose interest.',
-    ],
-  },
-  {
-    id: 'about-freeze-2',
-    type: 'text',
-    label: 'The Freeze',
-    title: 'What You Experienced',
-    showAnimation: true,
-    body: [
       'The freeze response is not weakness. It is not giving up. It is an intelligent, automatic strategy that your body deployed because it was the best option available at the time.',
     ],
   },
@@ -329,7 +271,8 @@ export const DEBRIEF_FREEZE = [
     type: 'text',
     label: 'The Freeze',
     title: 'This Is Not Something You Chose',
-    showAnimation: false,
+    showAnimation: true,
+    animationType: 'diamond',
     body: [
       'Many people carry shame about freeze responses. There is a common belief that the right thing to do in a threatening situation is to fight or run, and that freezing means you failed.',
       'That belief is wrong. The freeze response is activated automatically by the oldest part of your nervous system, below the level of conscious decision-making. You did not choose to freeze, and you could not have chosen differently.',
@@ -340,7 +283,7 @@ export const DEBRIEF_FREEZE = [
     type: 'journal',
     label: 'The Freeze',
     title: 'The Stillness',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'Take a moment with what you experienced.',
     ],
@@ -354,19 +297,11 @@ export const DEBRIEF_FREEZE = [
     type: 'text',
     label: 'The Freeze',
     title: 'The Thaw',
-    showAnimation: false,
+    showAnimation: true,
+    animationType: 'diamond',
     body: [
       'When you began moving your fingers and toes, when you found the edges of the stillness and let movement slowly return, your nervous system was coming back online gradually. In somatic experiencing, this is called a titrated thaw: the freeze dissolving at a pace your body can handle, rather than all at once.',
       'If you felt a rush of emotion, sudden energy, or shaking as the freeze lifted, that was the activation underneath the stillness finally being allowed to move. It can feel intense. It means something real shifted.',
-    ],
-  },
-  {
-    id: 'the-thaw-2',
-    type: 'text',
-    label: 'The Freeze',
-    title: 'The Thaw',
-    showAnimation: true,
-    body: [
       'One of the most important things this practice can do is help you experience that your body has options. That movement is available to you now. That the freeze was then, and this is now.',
     ],
   },
@@ -375,7 +310,7 @@ export const DEBRIEF_FREEZE = [
     type: 'choice',
     label: 'The Freeze',
     title: 'Coming Back',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'As movement returned, what was most present?',
     ],
@@ -396,7 +331,7 @@ export const DEBRIEF_FREEZE = [
   },
 ];
 
-// ─── Debrief: Closing (always shown, 4 screens) ─────────────────────────────
+// ─── Debrief: Closing (always shown, 3 screens) ─────────────────────────────
 
 export const DEBRIEF_CLOSING = [
   {
@@ -404,19 +339,10 @@ export const DEBRIEF_CLOSING = [
     type: 'text',
     label: 'Understanding',
     title: 'Two Vortices',
-    showAnimation: false,
-    body: [
-      'Whenever you approach a traumatic experience, two things are always present simultaneously: the pull toward overwhelm, and something life-affirming nearby.',
-      'In somatic experiencing, these are described as two vortices. A trauma vortex, which pulls toward fear and helplessness. And a healing vortex, which pulls toward safety and aliveness. They always form together.',
-    ],
-  },
-  {
-    id: 'two-vortices-2',
-    type: 'text',
-    label: 'Understanding',
-    title: 'Two Vortices',
     showAnimation: true,
     body: [
+      'Whenever you approach a traumatic experience, two things are always present simultaneously: the pull toward overwhelm, and something life-affirming nearby.',
+      'In somatic experiencing, these are described as two vortices. A {trauma_vortex}, which pulls toward fear and helplessness. And a {healing_vortex}, which pulls toward safety and aliveness. They always form together.',
       'Your island of safety is the healing vortex. Pendulation uses its pull to prevent you from being swallowed by the trauma vortex, drawing off the stored energy a little at a time.',
     ],
   },
@@ -436,7 +362,7 @@ export const DEBRIEF_CLOSING = [
     type: 'journal',
     label: 'Integration',
     title: 'Before and After',
-    showAnimation: false,
+    showAnimation: true,
     body: [
       'One last thing. Noticing the difference between where you started and where you are now helps the nervous system consolidate what it learned.',
     ],

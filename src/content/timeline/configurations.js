@@ -75,6 +75,7 @@ export const TIMELINE_CONFIGS = {
       peak: [
         { libraryId: 'body-scan', duration: 10 },
         { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'music-listening', duration: 20 },
         { libraryId: 'stay-with-it', duration: 15 },
       ],
@@ -97,6 +98,7 @@ export const TIMELINE_CONFIGS = {
       peak: [
         { libraryId: 'body-scan', duration: 10 },
         { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'music-listening', duration: 20 },
       ],
       integration: [
@@ -173,6 +175,7 @@ export const TIMELINE_CONFIGS = {
       peak: [
         { libraryId: 'body-scan', duration: 10 },
         { libraryId: 'felt-sense', duration: 12 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'lets-dance', duration: 20 },
         { libraryId: 'open-awareness', duration: 15 },
       ],
@@ -192,6 +195,7 @@ export const TIMELINE_CONFIGS = {
       ],
       peak: [
         { libraryId: 'felt-sense', duration: 12 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'lets-dance', duration: 20 },
         { libraryId: 'open-awareness', duration: 15 },
       ],
@@ -220,6 +224,7 @@ export const TIMELINE_CONFIGS = {
       peak: [
         { libraryId: 'body-scan', duration: 10 },
         { libraryId: 'felt-sense', duration: 12 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'lets-dance', duration: 20 },
         { libraryId: 'self-compassion', duration: 11 },
       ],
@@ -239,6 +244,7 @@ export const TIMELINE_CONFIGS = {
       ],
       peak: [
         { libraryId: 'felt-sense', duration: 12 },
+        { libraryId: 'shaking-the-tree', duration: 15 },
         { libraryId: 'lets-dance', duration: 20 },
         { libraryId: 'self-compassion', duration: 11 },
       ],

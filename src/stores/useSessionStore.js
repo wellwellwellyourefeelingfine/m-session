@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 21;
+export const SESSION_STORE_VERSION = 22;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -371,6 +371,12 @@ export const useSessionStore = create(
           completionSignals: [],        // multiSelect IDs from debrief
           dischargeCompletion: null,    // B-path choice
           thawExperience: null,         // C-path choice
+          completedAt: null,
+        },
+        // Shaking the Tree captures (somatic movement)
+        shakingTheTree: {
+          bodySensations: [],           // Selected sensation IDs from check-in
+          responseKey: null,            // Which tailored response was shown
           completedAt: null,
         },
       },
@@ -1824,6 +1830,19 @@ export const useSessionStore = create(
         });
       },
 
+      updateShakingTheTreeCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            shakingTheTree: {
+              ...state.transitionCaptures.shakingTheTree,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2732,6 +2751,11 @@ export const useSessionStore = create(
               thawExperience: null,
               completedAt: null,
             },
+            shakingTheTree: {
+              bodySensations: [],
+              responseKey: null,
+              completedAt: null,
+            },
           },
           lifeGraph: {
             milestones: [],
@@ -3278,6 +3302,20 @@ export function migrateSessionState(persistedState, version) {
               completionSignals: [],
               dischargeCompletion: null,
               thawExperience: null,
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 21 -> 22: Add shakingTheTree to transitionCaptures
+        if (version < 22) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.shakingTheTree) {
+            state.transitionCaptures.shakingTheTree = {
+              bodySensations: [],
+              responseKey: null,
               completedAt: null,
             };
           }

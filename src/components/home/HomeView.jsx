@@ -171,7 +171,7 @@ export default function HomeView() {
           <div className={`max-w-md mx-auto px-6 flex flex-col items-center pt-4 transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
             <div className="text-center mt-4">
               <h2
-                className="text-3xl mb-2"
+                className="text-3xl mb-4"
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', color: 'var(--color-text-primary)' }}
               >
                 Welcome

@@ -38,6 +38,7 @@ const IntentionSettingActivity = lazy(() => import('../session/activities/Intent
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
 const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
 const PendulationModule = lazy(() => import('./modules/PendulationModule'));
+const ShakingTheTreeModule = lazy(() => import('./modules/ShakingTheTreeModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -116,6 +117,9 @@ export const CUSTOM_MODULES = {
 
   // Pendulation (Somatic Experiencing) — branching audio + checkpoints + adaptive debrief
   'pendulation': PendulationModule,
+
+  // Shaking the Tree — somatic movement practice with 5 timed phases
+  'shaking-the-tree': ShakingTheTreeModule,
 };
 
 /**
@@ -202,6 +206,7 @@ export const MODULE_CATEGORIES = {
     'the-descent',
     'the-cycle',
     'pendulation',
+    'shaking-the-tree',
   ],
   open: [
     'open-space',
