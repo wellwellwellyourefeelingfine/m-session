@@ -60,6 +60,8 @@ export const MODULE_TYPES = {
   'life-graph': { label: 'Life Graph', intensity: 'gentle' },
   // Mapping the Territory (pre-session)
   'mapping-territory': { label: 'Mapping the Territory', intensity: 'gentle' },
+  // Pendulation (Somatic Experiencing)
+  'pendulation': { label: 'Pendulation', intensity: 'moderate' },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 'gentle' },
 };
@@ -386,6 +388,24 @@ export const moduleLibrary = [
       layout: { centered: true, maxWidth: 'sm' },
     },
     tags: ['reconsolidation', 'schema', 'meditation', 'guided', 'stay-with-it', 'emotional-processing'],
+  },
+  {
+    id: 'pendulation',
+    type: 'pendulation',
+    category: 'activity',
+    title: 'Pendulation',
+    description: 'A guided somatic experiencing practice. Track sensations as they move between activation and safety, with adaptive branching based on your experience.',
+    defaultDuration: 25,
+    intensity: 'moderate',
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak'],
+    hasVariableDuration: false,
+    meditationId: 'pendulation',
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['somatic-experiencing', 'pendulation', 'meditation', 'guided', 'Levine', 'body-awareness'],
   },
   {
     id: 'felt-sense',

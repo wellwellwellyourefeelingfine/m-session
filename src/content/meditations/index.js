@@ -23,6 +23,7 @@ import { feltSenseMeditation } from './felt-sense';
 import { shortGroundingMeditation } from './short-grounding';
 import { theDescentMeditation } from './the-descent';
 import { theCycleClosingMeditation } from './the-cycle-closing';
+import { pendulationMeditation } from './pendulation';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -40,6 +41,7 @@ export const meditationLibrary = {
   'short-grounding': shortGroundingMeditation,
   'the-descent': theDescentMeditation,
   'the-cycle-closing': theCycleClosingMeditation,
+  'pendulation': pendulationMeditation,
 };
 
 // Re-export guided breath orb utilities
@@ -80,6 +82,9 @@ export { theDescentMeditation };
 
 // Re-export the cycle closing meditation
 export { theCycleClosingMeditation };
+
+// Re-export pendulation meditation
+export { pendulationMeditation };
 
 // Re-export audio duration utilities
 export { audioDurations };

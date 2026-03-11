@@ -238,6 +238,18 @@ export default function SettingsTool() {
           </button>
         </div>
 
+        {/* Gong Sound */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Gong Sound</span>
+          <button
+            onClick={() => setPreference('gongSound', !preferences.gongSound)}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            {preferences.gongSound !== false ? 'ON' : 'OFF'}
+          </button>
+        </div>
+
         {/* Download Data */}
         <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <div className="flex items-center justify-between mb-3">

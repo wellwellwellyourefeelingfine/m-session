@@ -25,6 +25,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
+import { useAppStore } from '../stores/useAppStore';
 import { getMeditationById } from '../content/meditations';
 import { useAudioPlayback } from './useAudioPlayback';
 import { composeMeditationAudio, revokeMeditationBlobUrl, CBR_BYTES_PER_SECOND } from '../services/audioComposerService';
@@ -46,9 +47,13 @@ export function useMeditationPlayback({
   onComplete,
   onSkip,
   onTimerUpdate,
+  composerOptions,
 }) {
   // Get meditation content
   const meditation = getMeditationById(meditationId);
+
+  // User preference: gong sound on/off
+  const gongSound = useAppStore((state) => state.preferences.gongSound);
 
   // Session store for persistent playback state
   const meditationPlayback = useSessionStore(state => state.meditationPlayback);
@@ -276,9 +281,13 @@ export function useMeditationPlayback({
 
     try {
       // Compose the meditation into a single continuous MP3 blob
+      // User preference overrides: when gong sound is OFF, skip both gongs globally
+      const gongOpts = gongSound === false
+        ? { skipOpeningGong: true, skipClosingGong: true }
+        : composerOptions;
       const { blobUrl, composedBytes, promptTimeMap } = await composeMeditationAudio(
         timedSequence,
-        { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
+        { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE, ...gongOpts }
       );
 
       // Store refs for playback
@@ -310,7 +319,7 @@ export function useMeditationPlayback({
     } finally {
       setIsLoading(false);
     }
-  }, [timedSequence, moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio]);
+  }, [timedSequence, moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio, composerOptions, gongSound]);
 
   // Use audio.isPaused() as the source of truth instead of store's isPlaying.
   // This reads directly from the <audio> element, so it's never stale — even

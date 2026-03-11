@@ -37,6 +37,7 @@ const TheCycleModule = lazy(() => import('./modules/TheCycleModule'));
 const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
 const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
+const PendulationModule = lazy(() => import('./modules/PendulationModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -112,6 +113,9 @@ export const CUSTOM_MODULES = {
 
   // Mapping the Territory — pre-session educational orientation
   'mapping-territory': MappingTerritoryActivity,
+
+  // Pendulation (Somatic Experiencing) — branching audio + checkpoints + adaptive debrief
+  'pendulation': PendulationModule,
 };
 
 /**
@@ -197,6 +201,7 @@ export const MODULE_CATEGORIES = {
     'mapping-territory',
     'the-descent',
     'the-cycle',
+    'pendulation',
   ],
   open: [
     'open-space',

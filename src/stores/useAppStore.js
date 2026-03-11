@@ -25,6 +25,7 @@ export const useAppStore = create(
         notificationsEnabled: false,
         reduceMotion: false, // Disable animations
         timerSound: false, // Audio alert when timer completes
+        gongSound: true, // Meditation bell at start/end of meditations
       },
       setPreference: (key, value) =>
         set((state) => ({

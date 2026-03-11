@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 20;
+export const SESSION_STORE_VERSION = 21;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -361,6 +361,16 @@ export const useSessionStore = create(
           approachStyle: null,        // screen 13 choice
           askingForAttention: '',     // screen 10 journal
           wordToSelf: '',             // screen 16 journal
+          completedAt: null,
+        },
+        // Pendulation captures (Somatic Experiencing)
+        pendulation: {
+          checkpoint1Response: null,    // 'settled'|'move'|'activated'|'frozen'|'unsure'
+          checkpoint2Response: null,    // 'released'|'processing'|'frozen'|'shaky'|null
+          sectionsCompleted: [],        // ['a','b','c','d']
+          completionSignals: [],        // multiSelect IDs from debrief
+          dischargeCompletion: null,    // B-path choice
+          thawExperience: null,         // C-path choice
           completedAt: null,
         },
       },
@@ -1801,6 +1811,19 @@ export const useSessionStore = create(
         });
       },
 
+      updatePendulationCapture: (field, value) => {
+        const state = get();
+        set({
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            pendulation: {
+              ...state.transitionCaptures.pendulation,
+              [field]: value,
+            },
+          },
+        });
+      },
+
       // ============================================
       // CLOSING RITUAL ACTIONS
       // ============================================
@@ -2700,6 +2723,15 @@ export const useSessionStore = create(
               wordToSelf: '',
               completedAt: null,
             },
+            pendulation: {
+              checkpoint1Response: null,
+              checkpoint2Response: null,
+              sectionsCompleted: [],
+              completionSignals: [],
+              dischargeCompletion: null,
+              thawExperience: null,
+              completedAt: null,
+            },
           },
           lifeGraph: {
             milestones: [],
@@ -3228,6 +3260,24 @@ export function migrateSessionState(persistedState, version) {
               approachStyle: null,
               askingForAttention: '',
               wordToSelf: '',
+              completedAt: null,
+            };
+          }
+        }
+
+        // Version 20 -> 21: Add pendulation to transitionCaptures
+        if (version < 21) {
+          if (!state.transitionCaptures) {
+            state.transitionCaptures = {};
+          }
+          if (!state.transitionCaptures.pendulation) {
+            state.transitionCaptures.pendulation = {
+              checkpoint1Response: null,
+              checkpoint2Response: null,
+              sectionsCompleted: [],
+              completionSignals: [],
+              dischargeCompletion: null,
+              thawExperience: null,
               completedAt: null,
             };
           }

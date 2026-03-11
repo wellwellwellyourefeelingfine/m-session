@@ -18,6 +18,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore } from '../stores/useSessionStore';
+import { useAppStore } from '../stores/useAppStore';
 import { useAudioPlayback } from './useAudioPlayback';
 import { composeSilenceTimer, revokeMeditationBlobUrl } from '../services/audioComposerService';
 
@@ -33,6 +34,9 @@ export function useSilenceTimer({
   onTimerUpdate,
   title = 'Timer',
 }) {
+  // User preference: gong sound on/off
+  const gongSound = useAppStore((state) => state.preferences.gongSound);
+
   // Session store for persistent playback state
   const meditationPlayback = useSessionStore(state => state.meditationPlayback);
   const startMeditationPlayback = useSessionStore(state => state.startMeditationPlayback);
@@ -198,9 +202,13 @@ export function useSilenceTimer({
     setIsLoading(true);
 
     try {
+      // User preference overrides: when gong sound is OFF, skip both gongs
+      const gongOpts = gongSound === false
+        ? { skipOpeningGong: true, skipClosingGong: true }
+        : {};
       const { blobUrl, composedBytes, totalDuration, preambleEnd } = await composeSilenceTimer(
         durationSecondsRef.current,
-        { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE }
+        { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE, ...gongOpts }
       );
 
       blobUrlRef.current = blobUrl;
@@ -225,7 +233,7 @@ export function useSilenceTimer({
     } finally {
       setIsLoading(false);
     }
-  }, [moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio]);
+  }, [moduleInstanceId, startMeditationPlayback, resetMeditationPlayback, audio, gongSound]);
 
   // Use audio.isPaused() as the source of truth instead of store's isPlaying.
   // This reads directly from the <audio> element, so it's never stale.
@@ -291,9 +299,12 @@ export function useSilenceTimer({
       // skipOpeningGong=true means no gong/preamble at the start, so the blob
       // begins directly with silence and the user won't hear the gong replay.
       const remainingSeconds = Math.max(0, newDurationSeconds - totalUserElapsed);
+      const resizeOpts = gongSound === false
+        ? { skipOpeningGong: true, skipClosingGong: true }
+        : { skipOpeningGong: true };
       const { blobUrl, composedBytes, totalDuration } = await composeSilenceTimer(
         remainingSeconds,
-        { skipOpeningGong: true }
+        resizeOpts
       );
 
       // Update offset BEFORE loading so onTimeUpdate reads the correct value immediately.
@@ -321,7 +332,7 @@ export function useSilenceTimer({
     } finally {
       isResizingRef.current = false;
     }
-  }, [audio]);
+  }, [audio, gongSound]);
 
   // Seek relative to current position (e.g., -10 or +10 seconds)
   const isSeekingRef = useRef(false);

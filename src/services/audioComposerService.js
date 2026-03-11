@@ -227,20 +227,26 @@ function concatenateBuffers(plan, bufferMap) {
  * @param {Object} options
  * @param {number} options.gongDelay - Seconds of silence before opening gong (default 1)
  * @param {number} options.gongPreamble - Total seconds before first TTS prompt (default 8)
+ * @param {boolean} options.skipOpeningGong - If true, omit opening gong and preamble (1s lead-in instead)
+ * @param {boolean} options.skipClosingGong - If true, omit closing gong and its pre-silence
  * @returns {string[]} Array of unique audio URLs to fetch
  */
-function collectAudioUrls(timedSequence, { gongDelay = 1, gongPreamble = 8 } = {}) {
+function collectAudioUrls(timedSequence, { gongDelay = 1, gongPreamble = 8, skipOpeningGong = false, skipClosingGong = false } = {}) {
   const urls = new Set();
-  urls.add(GONG_SOFT_SRC);
 
-  // Preamble silence
-  if (gongDelay > 0) {
-    for (const url of decomposeSilence(gongDelay)) urls.add(url);
-  }
-  // Gap between gong end and first prompt (uses estimated gong duration for URL collection)
-  const estimatedGap = Math.max(0, gongPreamble - gongDelay - 7.5);
-  if (estimatedGap > 0) {
-    for (const url of decomposeSilence(estimatedGap)) urls.add(url);
+  // Opening gong + preamble silence
+  if (!skipOpeningGong) {
+    urls.add(GONG_SOFT_SRC);
+    if (gongDelay > 0) {
+      for (const url of decomposeSilence(gongDelay)) urls.add(url);
+    }
+    const estimatedGap = Math.max(0, gongPreamble - gongDelay - 7.5);
+    if (estimatedGap > 0) {
+      for (const url of decomposeSilence(estimatedGap)) urls.add(url);
+    }
+  } else {
+    // Brief lead-in silence when no opening gong
+    for (const url of decomposeSilence(1)) urls.add(url);
   }
 
   // Clips + post-clip silence
@@ -251,8 +257,11 @@ function collectAudioUrls(timedSequence, { gongDelay = 1, gongPreamble = 8 } = {
     }
   }
 
-  // Closing silence
-  for (const url of decomposeSilence(1)) urls.add(url);
+  // Closing gong + pre-silence
+  if (!skipClosingGong) {
+    urls.add(GONG_SOFT_SRC);
+    for (const url of decomposeSilence(1)) urls.add(url);
+  }
 
   return [...urls];
 }
@@ -266,38 +275,50 @@ function collectAudioUrls(timedSequence, { gongDelay = 1, gongPreamble = 8 } = {
  * @param {Object} options
  * @param {number} options.gongDelay - Seconds of silence before opening gong (default 1)
  * @param {number} options.gongPreamble - Total seconds before first TTS prompt (default 8)
+ * @param {boolean} options.skipOpeningGong - If true, omit opening gong and preamble (1s lead-in instead)
+ * @param {boolean} options.skipClosingGong - If true, omit closing gong and its pre-silence
  * @param {Map} [bufferMap] - Map of URL → ArrayBuffer for computing real durations
  * @returns {{ plan: Array, promptTimeMap: Array, totalDuration: number }}
  */
-export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPreamble = 8 } = {}, bufferMap = null) {
+export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPreamble = 8, skipOpeningGong = false, skipClosingGong = false } = {}, bufferMap = null) {
   const plan = [];
   const promptTimeMap = [];
   let currentTime = 0;
 
-  // --- Opening gong preamble ---
-  // silence before gong
-  if (gongDelay > 0) {
-    const silenceBlocks = decomposeSilence(gongDelay);
-    for (const url of silenceBlocks) {
-      plan.push({ type: 'silence', url });
-    }
-    currentTime += gongDelay;
-  }
-
-  // Opening gong
-  plan.push({ type: 'gong', url: GONG_SOFT_SRC });
+  // --- Opening gong preamble (or brief lead-in when skipped) ---
   const gongBuffer = bufferMap?.get(GONG_SOFT_SRC);
   const gongDuration = gongBuffer ? estimateMp3Duration(gongBuffer) : 7.5;
-  // The gong plays, and remaining preamble time overlaps with gong ring-out
-  // We add silence to fill the gap between gong end and first TTS
-  const silenceAfterGong = Math.max(0, gongPreamble - gongDelay - gongDuration);
-  if (silenceAfterGong > 0) {
-    const silenceBlocks = decomposeSilence(silenceAfterGong);
-    for (const url of silenceBlocks) {
+
+  if (!skipOpeningGong) {
+    // silence before gong
+    if (gongDelay > 0) {
+      const silenceBlocks = decomposeSilence(gongDelay);
+      for (const url of silenceBlocks) {
+        plan.push({ type: 'silence', url });
+      }
+      currentTime += gongDelay;
+    }
+
+    // Opening gong
+    plan.push({ type: 'gong', url: GONG_SOFT_SRC });
+    // The gong plays, and remaining preamble time overlaps with gong ring-out
+    // We add silence to fill the gap between gong end and first TTS
+    const silenceAfterGong = Math.max(0, gongPreamble - gongDelay - gongDuration);
+    if (silenceAfterGong > 0) {
+      const silenceBlocks = decomposeSilence(silenceAfterGong);
+      for (const url of silenceBlocks) {
+        plan.push({ type: 'silence', url });
+      }
+    }
+    currentTime = gongPreamble; // snap to exact preamble time
+  } else {
+    // Brief 1s lead-in so the first TTS prompt doesn't start at byte 0
+    const leadInBlocks = decomposeSilence(1);
+    for (const url of leadInBlocks) {
       plan.push({ type: 'silence', url });
     }
+    currentTime = actualSilenceDuration(leadInBlocks, 1, bufferMap);
   }
-  currentTime = gongPreamble; // snap to exact preamble time
 
   // --- TTS clips interleaved with silence ---
   for (let i = 0; i < timedSequence.length; i++) {
@@ -339,15 +360,17 @@ export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPream
   }
 
   // --- Closing gong ---
-  // Small silence before closing gong
-  const closingSilence = decomposeSilence(1);
-  for (const url of closingSilence) {
-    plan.push({ type: 'silence', url });
-  }
-  currentTime += actualSilenceDuration(closingSilence, 1, bufferMap);
+  if (!skipClosingGong) {
+    // Small silence before closing gong
+    const closingSilence = decomposeSilence(1);
+    for (const url of closingSilence) {
+      plan.push({ type: 'silence', url });
+    }
+    currentTime += actualSilenceDuration(closingSilence, 1, bufferMap);
 
-  plan.push({ type: 'gong', url: GONG_SOFT_SRC });
-  currentTime += gongDuration;
+    plan.push({ type: 'gong', url: GONG_SOFT_SRC });
+    currentTime += gongDuration;
+  }
 
   return {
     plan,
@@ -363,6 +386,8 @@ export function buildConcatenationPlan(timedSequence, { gongDelay = 1, gongPream
  * @param {Object} options
  * @param {number} options.gongDelay - Seconds of silence before opening gong
  * @param {number} options.gongPreamble - Total seconds before first TTS prompt
+ * @param {boolean} options.skipOpeningGong - If true, omit opening gong and preamble (1s lead-in instead)
+ * @param {boolean} options.skipClosingGong - If true, omit closing gong and its pre-silence
  * @returns {Promise<{ blobUrl: string, promptTimeMap: Array, totalDuration: number }>}
  */
 export async function composeMeditationAudio(timedSequence, options = {}) {
@@ -429,21 +454,22 @@ export async function composeMeditationAudio(timedSequence, options = {}) {
  * @param {number} options.gongDelay - Seconds of silence before opening gong (default 1)
  * @param {number} options.gongPreamble - Total seconds before timer starts (default 3)
  * @param {boolean} options.skipOpeningGong - If true, omit opening gong and preamble (for mid-session resize)
+ * @param {boolean} options.skipClosingGong - If true, omit closing gong and its trailing silence
  * @returns {Promise<{ blobUrl: string, totalDuration: number, preambleEnd: number }>}
  */
-export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gongPreamble = 3, skipOpeningGong = false } = {}) {
+export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gongPreamble = 3, skipOpeningGong = false, skipClosingGong = false } = {}) {
   // Build the concatenation plan
   const plan = [];
 
   // Collect all URLs we need first (for parallel fetch)
   const urlSet = new Set();
-  urlSet.add(GONG_SOFT_SRC);
+  if (!skipOpeningGong || !skipClosingGong) urlSet.add(GONG_SOFT_SRC);
 
   // Pre-calculate silence blocks for each section
   const delaySilence = (!skipOpeningGong && gongDelay > 0) ? decomposeSilence(gongDelay) : [];
   const mainSilence = durationSeconds > 0 ? decomposeSilence(durationSeconds) : [];
-  const closingGap = decomposeSilence(1);
-  const trailingSilence = decomposeSilence(1);
+  const closingGap = !skipClosingGong ? decomposeSilence(1) : [];
+  const trailingSilence = !skipClosingGong ? decomposeSilence(1) : [];
 
   for (const url of [...delaySilence, ...mainSilence, ...closingGap, ...trailingSilence]) {
     urlSet.add(url);
@@ -514,21 +540,20 @@ export async function composeSilenceTimer(durationSeconds, { gongDelay = 1, gong
     plan.push({ url });
   }
 
-  // 5. Closing gap
-  for (const url of closingGap) {
-    plan.push({ url });
-  }
-
-  // 6. Closing gong
-  plan.push({ url: GONG_SOFT_SRC });
-
-  // 7. Trailing silence
-  for (const url of trailingSilence) {
-    plan.push({ url });
+  // 5–7. Closing gap + gong + trailing silence (when not skipped)
+  if (!skipClosingGong) {
+    for (const url of closingGap) {
+      plan.push({ url });
+    }
+    plan.push({ url: GONG_SOFT_SRC });
+    for (const url of trailingSilence) {
+      plan.push({ url });
+    }
   }
 
   // Calculate total duration
-  const totalDuration = preambleEnd + durationSeconds + 1 + gongDuration + 1;
+  const closingDuration = !skipClosingGong ? (1 + gongDuration + 1) : 0;
+  const totalDuration = preambleEnd + durationSeconds + closingDuration;
 
   // Concatenate and create blob
   const composed = concatenateBuffers(plan, bufferMap);

@@ -43,19 +43,13 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-40" style={{ borderBottom: '1px solid var(--color-border)', background: glassEffect ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)' : 'var(--bg-primary)', backdropFilter: glassEffect ? 'blur(24px)' : 'none', WebkitBackdropFilter: glassEffect ? 'blur(24px)' : 'none', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
         <div className="h-full flex items-end pl-0 pr-0">
           {/* App Logo + "SESSION" text */}
-          <div className="h-full flex items-end gap-1" style={{ padding: '0' }}>
+          <div className="h-full flex items-end" style={{ padding: '0' }}>
             <img
               src={`${import.meta.env.BASE_URL}${darkMode ? 'm-session-logo-black-128.png' : 'm-session-logo-light-128.png'}`}
               alt="m-session"
               className="h-full w-auto"
               style={darkMode ? { filter: 'brightness(1.3)' } : undefined}
             />
-            <span
-              className="uppercase tracking-wider leading-none"
-              style={{ fontFamily: 'Azeret Mono, monospace', fontSize: '10px', color: 'var(--accent)', marginBottom: '11px', marginLeft: '-7px' }}
-            >
-              session
-            </span>
           </div>
 
           {/* AI Assistant Tab (centered in remaining space, only visible when API key is configured) */}
