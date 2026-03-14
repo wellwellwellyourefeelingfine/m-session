@@ -38,6 +38,7 @@ export default function AISettingsPanel({ isOpen, onClose }) {
       setLocalContextSettings(savedContextSettings);
       setHasChanges(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- savedContextSettings has unstable default object; only need to reset when panel opens
   }, [isOpen]);
 
   const updateLocalContextSettings = (key, value) => {

@@ -39,7 +39,7 @@ function App() {
     if (!mountedTabs[currentTab]) {
       setMountedTabs((prev) => ({ ...prev, [currentTab]: true }));
     }
-  }, [currentTab]);
+  }, [currentTab, mountedTabs]);
 
   // AI key expiration check
   const checkKeyExpiration = useAIStore((state) => state.checkKeyExpiration);

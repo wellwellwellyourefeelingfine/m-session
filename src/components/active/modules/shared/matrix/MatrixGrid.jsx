@@ -46,7 +46,7 @@ function QuadrantCell({ id, gridArea, chips, mode, onMoveChip }) {
 
 // ─── Matrix Grid Layout ─────────────────────────────────────────────────────
 
-export const QUADRANT_LAYOUT = [
+const QUADRANT_LAYOUT = [
   { id: 'q3', gridArea: '1 / 1' },
   { id: 'q4', gridArea: '1 / 2' },
   { id: 'q2', gridArea: '2 / 1' },

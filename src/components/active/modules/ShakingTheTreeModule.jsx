@@ -1,17 +1,17 @@
 /**
  * ShakingTheTreeModule Component
  *
- * A somatic movement practice guiding users through 5 timed phases:
+ * A somatic movement practice guiding users through 5 timed sections:
  * Sway → Bounce → Shake → Move Freely → Return.
  *
  * Features:
  * - 5 psychoeducation intro screens with LeafDraw animation
  * - Duration picker (10–30 min) synced with session timeline
  * - AlarmPrompt before beginning (away-from-screen module)
- * - Phased movement timer with boundary-triggered transitions
- * - Cue text (3s bold display at phase change) + staggered guidance lines
+ * - Sectioned movement timer with boundary-triggered transitions
+ * - Cue text (3s bold display at section change) + staggered guidance lines
  * - MorphingShapes animation (default speed)
- * - Haptic pulse at phase transitions (Android only)
+ * - Haptic pulse at section transitions (Android only)
  * - Music recommendations (18 curated tracks)
  * - 7-screen post-movement check-in with body sensation grid,
  *   tailored responses, psychoeducation, and journal integration
@@ -28,7 +28,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
   INTRO_SCREENS,
-  MOVEMENT_PHASES,
+  MOVEMENT_SECTIONS,
   BODY_CHECKIN_OPTIONS,
   UNNAMED_OPTION,
   LANDING_SCREEN,
@@ -56,9 +56,8 @@ import LeafDrawV2 from '../capabilities/animations/LeafDrawV2';
 
 const DURATION_STEPS = [10, 15, 20, 25, 30];
 const FADE_MS = 400;
-const CUE_HOLD_MS = 3000;
 const CUE_FADE_MS = 200;
-const GUIDANCE_STAGGER_MS = 100;
+const SECTION_STAGGER_MS = 1000;
 const CHECKIN_STEP_COUNT = 7;
 
 // ─── Private utilities ───────────────────────────────────────────────────────
@@ -384,9 +383,10 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
   const [isIntroHeaderVisible, setIsIntroHeaderVisible] = useState(true);
 
   // ── Active state ──
-  const [currentPhaseIndex, setCurrentPhaseIndex] = useState(0);
-  const [phaseTransitionState, setPhaseTransitionState] = useState('steady');
+  const [currentSectionIndex, setCurrentPhaseIndex] = useState(0);
   const [guidanceVisibility, setGuidanceVisibility] = useState([true, true, true]);
+  const [cueVisible, setCueVisible] = useState(true);
+  const [invitationVisible, setInvitationVisible] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -403,8 +403,8 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
   const allRecsCloseTimerRef = useRef(null);
 
   // ── Refs ──
-  const phaseTransitionTimeoutsRef = useRef([]);
-  const prevPhaseIndexRef = useRef(0);
+  const sectionTransitionTimeoutsRef = useRef([]);
+  const prevSectionIndexRef = useRef(0);
   const timerRef = useRef(null);
 
   // ── Timer ──
@@ -468,67 +468,63 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
     }
   }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onTimerUpdate, phase]);
 
-  // ── Phase boundary calculation ──
-  const phaseBoundaries = useMemo(() => {
+  // ── Section boundary calculation ──
+  const sectionBoundaries = useMemo(() => {
     let accumulated = 0;
-    return MOVEMENT_PHASES.map((p) => {
+    return MOVEMENT_SECTIONS.map((p) => {
       accumulated += p.pctOfTotal * totalDurationSeconds;
       return accumulated;
     });
   }, [totalDurationSeconds]);
 
-  // ── Phase transition helpers ──
-  const clearPhaseTransitionTimeouts = useCallback(() => {
-    phaseTransitionTimeoutsRef.current.forEach(clearTimeout);
-    phaseTransitionTimeoutsRef.current = [];
+  // ── Section transition helpers ──
+  const clearSectionTransitionTimeouts = useCallback(() => {
+    sectionTransitionTimeoutsRef.current.forEach(clearTimeout);
+    sectionTransitionTimeoutsRef.current = [];
   }, []);
 
-  const triggerPhaseTransition = useCallback((newIndex) => {
-    clearPhaseTransitionTimeouts();
+  const triggerSectionTransition = useCallback((newIndex) => {
+    clearSectionTransitionTimeouts();
     hapticPulse();
-    setPhaseTransitionState('fade-out');
+    setCueVisible(false);
+    setInvitationVisible(false);
+    setGuidanceVisibility([false, false, false]);
 
-    // After fade-out: show new cue (cue persists — never fades out)
+    // After fade-out: update section index
     const t1 = setTimeout(() => {
-      setPhaseTransitionState('cue-visible');
       setCurrentPhaseIndex(newIndex);
-      setGuidanceVisibility([false, false, false]);
     }, CUE_FADE_MS);
 
-    // After cue hold: fade in invitation + guidance beneath the cue
-    const t2 = setTimeout(() => {
-      setPhaseTransitionState('fade-in');
-    }, CUE_FADE_MS + CUE_HOLD_MS);
+    const base = CUE_FADE_MS;
+    // +1s: cue appears
+    const t2 = setTimeout(() => setCueVisible(true), base + SECTION_STAGGER_MS);
+    // +2s: invitation appears
+    const t3 = setTimeout(() => setInvitationVisible(true), base + SECTION_STAGGER_MS * 2);
+    // +3s: guidance bullets stagger in
+    const t4 = setTimeout(() => setGuidanceVisibility([true, false, false]), base + SECTION_STAGGER_MS * 3);
+    const t5 = setTimeout(() => setGuidanceVisibility([true, true, false]), base + SECTION_STAGGER_MS * 3 + 300);
+    const t6 = setTimeout(() => setGuidanceVisibility([true, true, true]), base + SECTION_STAGGER_MS * 3 + 600);
 
-    const baseDelay = CUE_FADE_MS + CUE_HOLD_MS;
-    const t3 = setTimeout(() => setGuidanceVisibility([true, false, false]), baseDelay + GUIDANCE_STAGGER_MS);
-    const t4 = setTimeout(() => setGuidanceVisibility([true, true, false]), baseDelay + GUIDANCE_STAGGER_MS * 2);
-    const t5 = setTimeout(() => setGuidanceVisibility([true, true, true]), baseDelay + GUIDANCE_STAGGER_MS * 3);
+    sectionTransitionTimeoutsRef.current = [t1, t2, t3, t4, t5, t6];
+  }, [clearSectionTransitionTimeouts]);
 
-    const t6 = setTimeout(() => {
-      setPhaseTransitionState('steady');
-    }, baseDelay + GUIDANCE_STAGGER_MS * 4);
-
-    phaseTransitionTimeoutsRef.current = [t1, t2, t3, t4, t5, t6];
-  }, [clearPhaseTransitionTimeouts]);
-
-  // ── Detect phase changes from elapsed time ──
+  // ── Detect section changes from elapsed time ──
   useEffect(() => {
     if (phase !== 'active' || !hasStarted || isComplete) return;
 
-    let newIndex = MOVEMENT_PHASES.length - 1;
-    for (let i = 0; i < phaseBoundaries.length; i++) {
-      if (elapsedTime < phaseBoundaries[i]) {
+    let newIndex = MOVEMENT_SECTIONS.length - 1;
+    for (let i = 0; i < sectionBoundaries.length; i++) {
+      if (elapsedTime < sectionBoundaries[i]) {
         newIndex = i;
         break;
       }
     }
 
-    if (newIndex !== prevPhaseIndexRef.current) {
-      triggerPhaseTransition(newIndex);
-      prevPhaseIndexRef.current = newIndex;
+    if (newIndex !== prevSectionIndexRef.current) {
+      triggerSectionTransition(newIndex);
+      prevSectionIndexRef.current = newIndex;
     }
-  }, [elapsedTime, phase, hasStarted, isComplete, phaseBoundaries, triggerPhaseTransition]);
+  }, [elapsedTime, phase, hasStarted, isComplete, sectionBoundaries, triggerSectionTransition]);
 
   // ── Idle handlers ──
   const handleIdleBegin = useCallback(() => {
@@ -583,9 +579,10 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
     setTimeout(() => {
       setPhase('active');
       setCurrentPhaseIndex(0);
-      prevPhaseIndexRef.current = 0;
+      prevSectionIndexRef.current = 0;
       setGuidanceVisibility([true, true, true]);
-      setPhaseTransitionState('steady');
+      setCueVisible(true);
+      setInvitationVisible(true);
       startMeditationPlayback(module.instanceId);
     }, FADE_MS);
   }, [module.instanceId, startMeditationPlayback]);
@@ -773,25 +770,18 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
   // ── Cleanup on unmount ──
   useEffect(() => {
     return () => {
-      clearPhaseTransitionTimeouts();
+      clearSectionTransitionTimeouts();
       if (allRecsCloseTimerRef.current) clearTimeout(allRecsCloseTimerRef.current);
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [clearPhaseTransitionTimeouts]);
+  }, [clearSectionTransitionTimeouts]);
 
   // ── Derived values ──
-  const currentMovementPhase = MOVEMENT_PHASES[currentPhaseIndex];
+  const currentMovementSection = MOVEMENT_SECTIONS[currentSectionIndex];
 
-  // Time remaining in current phase
-  const phaseEndTime = phaseBoundaries[currentPhaseIndex] || totalDurationSeconds;
-  const phaseTimeRemaining = Math.max(0, phaseEndTime - elapsedTime);
-
-  // Cue: visible once it appears, stays visible (only hidden during fade-out of old content)
-  const cueOpacity = phaseTransitionState === 'fade-out' ? 0 : 1;
-  // Invitation + guidance: hidden during fade-out and cue-hold, visible after
-  const contentOpacity =
-    phaseTransitionState === 'fade-out' || phaseTransitionState === 'cue-visible'
-      ? 0 : 1;
+  // Time remaining in current section
+  const sectionEndTime = sectionBoundaries[currentSectionIndex] || totalDurationSeconds;
+  const sectionTimeRemaining = Math.max(0, sectionEndTime - elapsedTime);
 
   // Check-in: can continue on body-checkin step only if selections made
   const checkinContinueDisabled = checkinStep === 1 && selectedSensations.length === 0;
@@ -876,7 +866,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
           </ModuleLayout>
 
           <ModuleControlBar
-            phase="idle"
+            phase={getControlPhase()}
             primary={getPrimaryButton()}
             showBack={false}
             showSkip={true}
@@ -936,7 +926,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
           </ModuleLayout>
 
           <ModuleControlBar
-            phase="active"
+            phase={getControlPhase()}
             primary={getPrimaryButton()}
             showBack={true}
             onBack={handleIntroBack}
@@ -952,65 +942,64 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       {phase === 'active' && (
         <>
           <ModuleLayout layout={{ centered: false }}>
-            <div className="flex flex-col items-center w-full px-4">
-              <h2 className="font-serif text-2xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
+            <div className="flex flex-col items-center w-full px-2">
+              <h2 className="font-serif text-xl text-[var(--color-text-primary)] mb-1" style={{ textTransform: 'none' }}>
                 Shaking the Tree
               </h2>
 
-              <div className="mb-2">
+              <div className="mb-8">
                 <MorphingShapes />
               </div>
 
-              {/* Phase indicator with time remaining — above content for at-a-glance visibility */}
+              {/* Section indicator with time remaining */}
               <div className="mb-3 text-center">
                 <p
-                  className="text-lg text-[var(--color-text-primary)]"
+                  className="text-3xl text-[var(--color-text-primary)]"
                   style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                 >
-                  {currentMovementPhase?.name}
+                  {currentMovementSection?.name}
                 </p>
                 <p
-                  className="text-xs tracking-wider text-[var(--color-text-tertiary)] mt-0.5"
+                  className="text-xs tracking-wider text-[var(--color-text-tertiary)]"
                   style={{ textTransform: 'none' }}
                 >
-                  phase {currentPhaseIndex + 1} of {MOVEMENT_PHASES.length}
+                  section {currentSectionIndex + 1} of {MOVEMENT_SECTIONS.length}
                 </p>
                 <p
-                  className="text-3xl text-[var(--color-text-primary)] mt-1 tabular-nums"
+                  className="text-5xl text-[var(--color-text-primary)] mt-1 tabular-nums"
                   style={{ fontFamily: 'DM Serif Text, serif' }}
                 >
-                  {formatTime(phaseTimeRemaining)}
+                  {formatTime(sectionTimeRemaining)}
                 </p>
               </div>
 
-              {/* Cue text — appears at phase transition and persists */}
-              <p
-                className="text-base font-medium text-[var(--color-text-primary)] text-center mb-3 transition-opacity duration-200"
-                style={{ opacity: cueOpacity }}
-              >
-                {currentMovementPhase?.cue}
-              </p>
-
-              {/* Invitation + Guidance — fades in beneath the cue */}
-              <div
-                className="transition-opacity duration-200 w-full max-w-sm"
-                style={{ opacity: contentOpacity }}
-              >
-                <p className="text-sm text-[var(--color-text-primary)] text-center mb-3">
-                  {currentMovementPhase?.invitation}
+              {/* Cue + Invitation — one sentence per line, staggered fade-in */}
+              <div className="text-base text-[var(--color-text-primary)] text-center mb-1">
+                <p
+                  className="transition-opacity duration-300"
+                  style={{ opacity: cueVisible ? 1 : 0 }}
+                >
+                  {currentMovementSection?.cue}
                 </p>
+                <p
+                  className="transition-opacity duration-300"
+                  style={{ opacity: invitationVisible ? 1 : 0 }}
+                >
+                  {currentMovementSection?.invitation}
+                </p>
+              </div>
 
-                <div className="space-y-1.5">
-                  {currentMovementPhase?.guidance.map((line, i) => (
-                    <p
-                      key={`${currentPhaseIndex}-${i}`}
-                      className="text-xs text-[var(--color-text-secondary)] text-center transition-opacity duration-200"
-                      style={{ opacity: guidanceVisibility[i] ? 1 : 0 }}
-                    >
-                      {line}
-                    </p>
-                  ))}
-                </div>
+              {/* Guidance — left-aligned bullets, visually separated */}
+              <div className="w-full max-w-sm mt-3 pl-4">
+                {currentMovementSection?.guidance.map((line, i) => (
+                  <p
+                    key={`${currentSectionIndex}-${i}`}
+                    className="text-xs text-[var(--color-text-secondary)] text-left transition-opacity duration-200 mb-1"
+                    style={{ opacity: guidanceVisibility[i] ? 1 : 0 }}
+                  >
+                    • {line}
+                  </p>
+                ))}
               </div>
 
               {/* Recommendations widget — shown during active */}
@@ -1021,7 +1010,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
           </ModuleLayout>
 
           <ModuleControlBar
-            phase="active"
+            phase={getControlPhase()}
             primary={getPrimaryButton()}
             showBack={true}
             onBack={handleActiveBack}
@@ -1230,7 +1219,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
           </ModuleLayout>
 
           <ModuleControlBar
-            phase="active"
+            phase={getControlPhase()}
             primary={getPrimaryButton()}
             showBack={true}
             onBack={handleCheckinBack}
@@ -1250,7 +1239,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
           </ModuleLayout>
 
           <ModuleControlBar
-            phase="completed"
+            phase={getControlPhase()}
             primary={getPrimaryButton()}
             showSkip={false}
           />

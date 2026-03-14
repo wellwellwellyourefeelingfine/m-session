@@ -48,20 +48,14 @@ export default function ModuleShell({ module, onComplete, onSkip, onTimerUpdate 
   // Get library module for metadata and capabilities
   const libraryModule = getModuleById(module.libraryId);
 
-  // Determine capability category for defaults
-  const getCapabilityCategory = () => {
-    const type = libraryModule?.type || module.type;
-
-    if (['journaling', 'light-journaling', 'deep-journaling', 'letter-writing', 'parts-work'].includes(type)) {
-      return 'journaling';
-    }
-    return 'simple';
-  };
-
   // Merge capabilities with defaults
   const capabilities = useMemo(() => {
-    return mergeCapabilities(libraryModule?.capabilities, getCapabilityCategory());
-  }, [libraryModule]);
+    const type = libraryModule?.type || module.type;
+    const category = ['journaling', 'light-journaling', 'deep-journaling', 'letter-writing', 'parts-work'].includes(type)
+      ? 'journaling'
+      : 'simple';
+    return mergeCapabilities(libraryModule?.capabilities, category);
+  }, [libraryModule, module.type]);
 
   // Determine if this module needs a begin button
   const requiresBegin = capabilities.controls?.showBeginButton ?? false;

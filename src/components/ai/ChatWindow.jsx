@@ -3,7 +3,7 @@
  * Scrollable message list with auto-scroll and streaming support
  */
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useAIStore } from '../../stores/useAIStore';
 import ChatMessage, { TypingIndicator, ErrorMessage } from './ChatMessage';
 
@@ -23,7 +23,10 @@ export default function ChatWindow({ onRetry }) {
 
   // Get active conversation
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
-  const messages = activeConversation?.messages || [];
+  const messages = useMemo(
+    () => activeConversation?.messages || [],
+    [activeConversation?.messages]
+  );
 
   // Auto-scroll to bottom when new messages arrive or during streaming
   useEffect(() => {

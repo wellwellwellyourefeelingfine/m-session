@@ -142,6 +142,7 @@ export default memo(function AsciiDiamond({ className = '' }) {
         cancelAnimationFrame(animationRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- render is a stable pure function, real dep is gridData
   }, [gridData]);
 
   return (

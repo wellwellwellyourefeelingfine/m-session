@@ -50,6 +50,7 @@ export default function JournalingModule({ module, onComplete, onSkip, _onTimerU
       }, 600);
     }, 3000);
     return () => clearInterval(cycle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recipientSuggestions is a constant array
   }, [isLetterWriting, recipient, recipientFocused]);
 
   const addEntry = useJournalStore((state) => state.addEntry);

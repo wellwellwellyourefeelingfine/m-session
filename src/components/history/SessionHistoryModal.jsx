@@ -152,6 +152,7 @@ export default function SessionHistoryModal({ onClose }) {
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- avoids re-registering listener on every handleCollapse change
   }, [handleClose, confirmSessionId, expandedId]);
 
   const handleCollapse = useCallback((sessionId) => {

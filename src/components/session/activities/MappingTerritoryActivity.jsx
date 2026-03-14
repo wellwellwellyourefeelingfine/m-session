@@ -255,7 +255,7 @@ function AllMusicModal({ isOpen, closing, onClose }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function MappingTerritoryActivity({ module, onComplete, onSkip }) {
+export default function MappingTerritoryActivity({ _module, onComplete, onSkip }) {
   // ── Stores ──
   const updateMappingTerritoryCapture = useSessionStore((s) => s.updateMappingTerritoryCapture);
   const completePreSubstanceActivity = useSessionStore((s) => s.completePreSubstanceActivity);

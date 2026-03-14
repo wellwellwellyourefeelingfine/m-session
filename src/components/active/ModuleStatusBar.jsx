@@ -31,6 +31,7 @@ const PHASE_CONFIG = {
 /**
  * Format seconds to MM:SS or H:MM:SS
  */
+// eslint-disable-next-line react-refresh/only-export-components -- shared utility, used by ActiveView
 export function formatTime(seconds) {
   const totalSeconds = Math.floor(seconds);
   const hours = Math.floor(totalSeconds / 3600);

@@ -4,7 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0.0] - 2025-02-15
+## [1.1.0] - 2026-03-14
+
+### Added
+
+- **Shaking the Tree module**: Somatic shaking practice for releasing held tension
+- **SE Pendulation module**: Somatic Experiencing pendulation exercise with audio guidance
+- **Map the Territory module**: Pre-session mapping activity with CompassV2 visualization
+- **Welcome preview feature**: Preview session modules from the library modal before adding them
+- **LeafDrawBig animation**: New generative leaf animation on the home tab
+- **Gong sound option**: Configurable gong sound in settings for meditation transitions
+- **Timeline generation matrix config**: Expanded configuration for automated timeline generation
+
+### Changed
+
+- Refined pendulation module interactions and timing
+- Updated library modal with preview integration
+- Rewritten About section in tools
+
+### Fixed
+
+- Preview excluded modules now correctly filtered
+- ESLint config updates and unused variable cleanup
+- Globe.js animation fix
+
+[1.1.0]: https://github.com/wellwellwellyourefeelingfine/m-session/compare/v1.0.0...v1.1.0
+
+## [1.0.0] - 2026-03-07
 
 ### Added
 

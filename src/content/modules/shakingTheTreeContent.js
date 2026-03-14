@@ -1,6 +1,6 @@
 /**
  * Shaking the Tree — Somatic Movement Practice
- * Content definitions: intro screens + movement phases
+ * Content definitions: intro screens + movement sections
  *
  * Philosophical lineage (not user-facing):
  * - Somatic Experiencing (Peter Levine) — animals shaking after threat, discharge signs
@@ -15,7 +15,7 @@ export const INTRO_SCREENS = [
     header: 'What this is',
     body: [
       'This is a movement practice. Not a workout, not a dance class. The only goal is to let your body move the way it wants to.',
-      'You\u2019ll move through five phases, from gentle swaying to full-body shaking to stillness. Each phase gives your body a little more permission than the last.',
+      'You\u2019ll move through five sections, from gentle swaying to full-body shaking to stillness. Each section gives your body a little more permission than the last.',
     ],
   },
   {
@@ -55,7 +55,7 @@ export const INTRO_SCREENS = [
   },
 ];
 
-export const MOVEMENT_PHASES = [
+export const MOVEMENT_SECTIONS = [
   {
     id: 'sway',
     name: 'Sway',

@@ -86,6 +86,7 @@ export default function ActiveView() {
         isPaused: false,
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reset on instance change, not full object
   }, [currentModule?.instanceId]);
 
   // Booster timing check - polls every 60 seconds during active session
@@ -133,6 +134,7 @@ export default function ActiveView() {
         boosterCheckRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- specific properties listed, full objects too broad
   }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, comeUpCheckIn, showBoosterModal, expireBooster]);
 
   // Auto-start next module when appropriate
@@ -153,6 +155,7 @@ export default function ActiveView() {
     if (nextModule) {
       startModule(nextModule.instanceId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- inOpenSpace aliased from _modules.inOpenSpace which is in deps
   }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, _modules.inOpenSpace]);
 
   // Handler to update module timer state (called by modules)
