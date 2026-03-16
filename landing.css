@@ -611,6 +611,8 @@ html.light .cta::before {
   .hero-visual {
     order: -1;
     min-height: 300px;
+    margin-top: 12px;
+    margin-bottom: -40px;
   }
   #tree-hero {
     height: 420px;
@@ -706,6 +708,8 @@ html.light .cta::before {
   }
   .hero-visual {
     min-height: 260px;
+    margin-top: 8px;
+    margin-bottom: -36px;
   }
   #tree-hero {
     height: 340px;

@@ -1,4 +1,5 @@
 /* global THREE */
+/* eslint-disable no-redeclare */
 // ═══════════════════════════════════════
 // TREE DRAW 3D — m-session landing page
 // ═══════════════════════════════════════
@@ -189,7 +190,6 @@
         var frames = curve.computeFrenetFrames(segs, false);
         var pos = [], nrm = [], uv = [], idx = [];
   
-        var totalRings = capRings + segs;
         var baseCenter = curve.getPointAt(0);
         var N0 = frames.normals[0], B0 = frames.binormals[0];
         var T0 = frames.tangents[0];
@@ -245,7 +245,6 @@
         }
   
         // Indices for all rings (cap + tube)
-        var totalVRings = capRings + segs + 1;
         for (var i = 0; i < capRings + segs; i++) {
           for (var j = 0; j < radSegs; j++) {
             var aa = i * (radSegs + 1) + j, bb = aa + 1;
