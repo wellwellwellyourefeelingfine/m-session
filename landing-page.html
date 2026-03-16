@@ -209,8 +209,10 @@
               </div>
             </div>
           </div>
-          <div class="hero-visual rv visible rv-d2" id="hero-visual">
-            <div id="tree-hero"></div>
+          <div class="phone-showcase rv visible rv-d2">
+            <div class="phone" id="hero-phone">
+              <div class="phone-screen" id="phone-screen"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -549,28 +551,21 @@
           Add m-session to your home screen for a full-screen experience that
           works offline. No app store needed.
         </p>
-        <div class="install-content rv rv-d3">
-          <div class="install-steps">
-            <div class="install-step">
-              <div class="install-num">1</div>
-              <div class="install-text">
-                Open m-session.com in Safari (iOS) or Chrome (Android)
-              </div>
-            </div>
-            <div class="install-step">
-              <div class="install-num">2</div>
-              <div class="install-text">Tap share, then "Add to Home Screen"</div>
-            </div>
-            <div class="install-step">
-              <div class="install-num">3</div>
-              <div class="install-text">
-                Launch from home screen. Works fully offline.
-              </div>
+        <div class="install-steps rv rv-d3">
+          <div class="install-step">
+            <div class="install-num">1</div>
+            <div class="install-text">
+              Open m-session.com in Safari (iOS) or Chrome (Android)
             </div>
           </div>
-          <div class="install-phone">
-            <div class="phone" id="hero-phone">
-              <div class="phone-screen" id="phone-screen"></div>
+          <div class="install-step">
+            <div class="install-num">2</div>
+            <div class="install-text">Tap share, then "Add to Home Screen"</div>
+          </div>
+          <div class="install-step">
+            <div class="install-num">3</div>
+            <div class="install-text">
+              Launch from home screen. Works fully offline.
             </div>
           </div>
         </div>
@@ -623,7 +618,7 @@
     </footer>
 
     <script src="/shared.js"></script>
-    <script src="/tree-draw-3d.js"></script>
+    <!-- <script src="/tree-draw-3d.js"></script> -->
     <script>
       // Smooth scroll for anchor links (landing page only)
       document.querySelectorAll('a[href^="#"]').forEach(function (a) {

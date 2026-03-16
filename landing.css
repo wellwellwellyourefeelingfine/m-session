@@ -114,23 +114,14 @@ html.light .cta::before {
 }
 
 /* ═══════════════════════════════════════════
-   HERO VISUAL (animation placeholder)
-   ═══════════════════════════════════════════ */
-.hero-visual {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  min-height: 400px;
-}
-#tree-hero {
-  width: 100%;
-  height: 540px;
-}
-
-/* ═══════════════════════════════════════════
    PHONE MOCKUPS
    ═══════════════════════════════════════════ */
+.phone-showcase {
+  display: flex;
+  justify-content: center;
+  position: relative;
+  padding-top: 24px;
+}
 .phone {
   width: 270px;
   height: 560px;
@@ -487,33 +478,25 @@ html.light .cta::before {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
-.install-content {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 64px;
-  align-items: center;
-  margin-top: 56px;
-  text-align: left;
-}
 .install-steps {
   display: flex;
-  flex-direction: column;
-  gap: 32px;
+  justify-content: center;
+  gap: 72px;
+  margin-top: 56px;
+  flex-wrap: wrap;
 }
 .install-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
+  max-width: 200px;
 }
 .install-num {
   width: 40px;
   height: 40px;
-  min-width: 40px;
   border: 1.5px solid var(--accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto 18px;
   font-size: 14px;
   color: var(--accent);
   font-family: var(--serif);
@@ -522,11 +505,6 @@ html.light .cta::before {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.75;
-  padding-top: 8px;
-}
-.install-phone {
-  display: flex;
-  justify-content: center;
 }
 
 /* ═══════════════════════════════════════════
@@ -608,14 +586,8 @@ html.light .cta::before {
     margin-top: 40px;
     gap: 36px;
   }
-  .hero-visual {
+  .phone-showcase {
     order: -1;
-    min-height: 300px;
-    margin-top: 12px;
-    margin-bottom: -40px;
-  }
-  #tree-hero {
-    height: 420px;
   }
   .phone {
     width: 220px;
@@ -674,28 +646,11 @@ html.light .cta::before {
   .install-section {
     padding: 80px 24px;
   }
-  .install-content {
-    grid-template-columns: 1fr;
-    gap: 48px;
-    text-align: center;
-  }
   .install-steps {
-    align-items: center;
-  }
-  .install-step {
     flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 0;
-  }
-  .install-num {
-    margin-bottom: 18px;
-  }
-  .install-text {
-    padding-top: 0;
-  }
-  .install-phone {
-    order: 1;
+    gap: 32px;
+    margin-top: 40px;
   }
   .cta {
     padding: 100px 24px;
@@ -705,14 +660,6 @@ html.light .cta::before {
 @media (max-width: 480px) {
   .hero {
     padding-top: 64px;
-  }
-  .hero-visual {
-    min-height: 260px;
-    margin-top: 8px;
-    margin-bottom: -36px;
-  }
-  #tree-hero {
-    height: 340px;
   }
   .hero-grid {
     gap: 32px;
@@ -791,12 +738,6 @@ html.light .cta::before {
   }
   .install-section {
     padding: 64px 20px;
-  }
-  .install-content {
-    gap: 40px;
-  }
-  .install-steps {
-    gap: 28px;
   }
   .cta {
     padding: 72px 20px;
