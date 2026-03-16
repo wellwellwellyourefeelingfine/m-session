@@ -184,10 +184,11 @@
               <span class="accent">session</span>.
             </h1>
             <p class="hero-tagline rv visible rv-d1">
-              A guided companion for MDMA sessions focused on personal growth.
-              Use it on your own, with a partner, or with a sitter. Meditation,
-              breathwork, parts work, values mapping, journaling, and
-              integration. From preparation through follow-up.
+              A structured guide for MDMA sessions. Use it solo, with a
+              partner, or with a sitter. Choose from activities grounded in
+              trusted therapeutic frameworks: meditation, somatic work, values
+              mapping, journaling, and more. Every phase, from first intention
+              to lasting integration.
             </p>
             <div class="hero-actions rv visible rv-d2">
               <a href="/app" class="btn btn-primary" target="_blank" rel="noopener">Launch App &rarr;</a>
@@ -208,10 +209,8 @@
               </div>
             </div>
           </div>
-          <div class="phone-showcase rv visible rv-d2">
-            <div class="phone" id="hero-phone">
-              <div class="phone-screen" id="phone-screen"></div>
-            </div>
+          <div class="hero-visual rv visible rv-d2" id="hero-visual">
+            <div id="tree-hero"></div>
           </div>
         </div>
       </div>
@@ -550,21 +549,28 @@
           Add m-session to your home screen for a full-screen experience that
           works offline. No app store needed.
         </p>
-        <div class="install-steps rv rv-d3">
-          <div class="install-step">
-            <div class="install-num">1</div>
-            <div class="install-text">
-              Open m-session.com in Safari (iOS) or Chrome (Android)
+        <div class="install-content rv rv-d3">
+          <div class="install-steps">
+            <div class="install-step">
+              <div class="install-num">1</div>
+              <div class="install-text">
+                Open m-session.com in Safari (iOS) or Chrome (Android)
+              </div>
+            </div>
+            <div class="install-step">
+              <div class="install-num">2</div>
+              <div class="install-text">Tap share, then "Add to Home Screen"</div>
+            </div>
+            <div class="install-step">
+              <div class="install-num">3</div>
+              <div class="install-text">
+                Launch from home screen. Works fully offline.
+              </div>
             </div>
           </div>
-          <div class="install-step">
-            <div class="install-num">2</div>
-            <div class="install-text">Tap share, then "Add to Home Screen"</div>
-          </div>
-          <div class="install-step">
-            <div class="install-num">3</div>
-            <div class="install-text">
-              Launch from home screen. Works fully offline.
+          <div class="install-phone">
+            <div class="phone" id="hero-phone">
+              <div class="phone-screen" id="phone-screen"></div>
             </div>
           </div>
         </div>
@@ -617,6 +623,7 @@
     </footer>
 
     <script src="/shared.js"></script>
+    <script src="/tree-draw-3d.js"></script>
     <script>
       // Smooth scroll for anchor links (landing page only)
       document.querySelectorAll('a[href^="#"]').forEach(function (a) {

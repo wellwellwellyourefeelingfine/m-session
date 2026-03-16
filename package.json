@@ -32,7 +32,7 @@
     "dev": "vite",
     "dev:pages": "npx browser-sync start --server --serveStatic public --index landing-page.html --extensions html --files '*.html, *.css, *.js' --port 5555 --no-open --no-notify",
     "preview:full": "npm run build && npx serve dist -p 5555",
-    "build": "rm -rf dist && vite build && cp landing-page.html dist/index.html && cp about.html contribute.html faq.html privacy.html shared.css shared.js landing.css pages.css globe.js dist/ && cp public/og-image.png public/robots.txt public/sitemap.xml public/favicon-*.png public/apple-touch-icon.png dist/",
+    "build": "rm -rf dist && vite build && cp landing-page.html dist/index.html && cp about.html contribute.html faq.html privacy.html shared.css shared.js landing.css pages.css globe.js tree-draw-3d.js dist/ && cp public/og-image.png public/robots.txt public/sitemap.xml public/favicon-*.png public/apple-touch-icon.png dist/",
     "lint": "eslint .",
     "test": "vitest run",
     "preview": "vite preview"
