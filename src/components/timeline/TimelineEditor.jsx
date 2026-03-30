@@ -18,17 +18,7 @@ import FollowUpModuleModal from '../home/FollowUpModuleModal';
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
-
-// Module-level flag: true only after Generate Timeline triggers the reveal
-// animation. Resets on page refresh (module re-initializes). The tutorial
-// trigger consumes and clears it.
-let _revealAnimationPending = false;
-export function setRevealAnimationPending() { _revealAnimationPending = true; }
-export function consumeRevealAnimationPending() {
-  const v = _revealAnimationPending;
-  _revealAnimationPending = false;
-  return v;
-}
+import { consumeRevealAnimationPending } from './tutorialRevealFlag';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);

@@ -407,7 +407,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
 
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [currentStep]);
+  }, [currentStep, safeAdvance]);
 
   // ─── Interactive: advanceOnClick ──────────────────────────────────────
 
@@ -424,7 +424,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     };
     document.addEventListener('click', handler, true);
     return () => document.removeEventListener('click', handler, true);
-  }, [currentStep]);
+  }, [currentStep, safeAdvance]);
 
   // ─── Navigation Handlers ──────────────────────────────────────────────
 
