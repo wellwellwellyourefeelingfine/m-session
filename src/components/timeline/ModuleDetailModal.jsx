@@ -130,6 +130,7 @@ export default function ModuleDetailModal({
     <div
       className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleClose}
+      data-tutorial="module-detail-modal"
     >
       <div
         className={`bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm shadow-lg max-h-[85vh] overflow-y-auto ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
@@ -151,6 +152,7 @@ export default function ModuleDetailModal({
           <button
             onClick={handleClose}
             className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 text-xl leading-none"
+            data-tutorial="module-detail-close"
           >
             ×
           </button>

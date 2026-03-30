@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useAppStore } from '../../stores/useAppStore';
@@ -16,6 +17,7 @@ import TimelineSummary from './TimelineSummary';
 import FollowUpModuleModal from '../home/FollowUpModuleModal';
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
+import TimelineTutorial from './TimelineTutorial';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -474,31 +476,33 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
               {/* Pre-session content */}
               <div className="flex-1 pb-2">
-                <div className="flex items-start justify-between">
-                  <h3
-                    className="flex items-baseline gap-2"
-                    style={{ lineHeight: 1, marginBottom: '8px' }}
-                  >
-                    <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-                      Pre-Session
-                    </span>
-                  </h3>
-                  {preSessionModules.length > 1 && (
-                    <button
-                      onClick={() => setIsEditMode(!isEditMode)}
-                      className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
-                        isEditMode
-                          ? 'bg-[var(--accent)] text-white'
-                          : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-                      }`}
+                <div data-tutorial="pre-session">
+                  <div className="flex items-start justify-between">
+                    <h3
+                      className="flex items-baseline gap-2"
+                      style={{ lineHeight: 1, marginBottom: '8px' }}
                     >
-                      {isEditMode ? 'Done' : 'Edit'}
-                    </button>
-                  )}
+                      <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                        Pre-Session
+                      </span>
+                    </h3>
+                    {preSessionModules.length > 1 && (
+                      <button
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
+                          isEditMode
+                            ? 'bg-[var(--accent)] text-white'
+                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {isEditMode ? 'Done' : 'Edit'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '8px' }}>
+                    Optional activities to prepare you for your session. You can also preview any activity from the main session timeline here.
+                  </p>
                 </div>
-                <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '8px' }}>
-                  Optional activities to prepare you for your session. You can also preview any activity from the main session timeline here.
-                </p>
 
                 {/* Module cards */}
                 {preSessionModules.length > 0 && (
@@ -904,30 +908,31 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         )}
       </div>
 
-      {/* Summary - hide for completed sessions */}
-      {!isCompletedSession && (
-        <TimelineSummary
-          totalDuration={totalDuration}
-          targetDuration={targetDuration}
-          moduleCount={moduleItems.length}
-          isActiveSession={isActiveSession}
-        />
-      )}
+      {/* Summary + Begin Session — wrapped for tutorial spotlight */}
+      <div data-tutorial="begin-session">
+        {!isCompletedSession && (
+          <TimelineSummary
+            totalDuration={totalDuration}
+            targetDuration={targetDuration}
+            moduleCount={moduleItems.length}
+            isActiveSession={isActiveSession}
+          />
+        )}
 
-      {/* Begin Session Button (only show pre-session) */}
-      {!isActiveSession && !isCompletedSession && onBeginSession && (
-        <div className="mt-8 space-y-4">
-          <p className="text-[var(--accent)] text-xs uppercase tracking-wider text-left leading-tight">
-            Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet. Press begin when you&apos;re ready.
-          </p>
-          <button
-            onClick={onBeginSession}
-            className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
-          >
-            Begin Session
-          </button>
-        </div>
-      )}
+        {!isActiveSession && !isCompletedSession && onBeginSession && (
+          <div className="mt-8 space-y-4">
+            <p className="text-[var(--accent)] text-xs uppercase tracking-wider text-left leading-tight">
+              Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet. Press begin when you&apos;re ready.
+            </p>
+            <button
+              onClick={onBeginSession}
+              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+            >
+              Begin Session
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Pre-Session Section — collapsed at bottom during/after session */}
       {(isActiveSession || isCompletedSession) && preSessionModules.length > 0 && (
@@ -1148,6 +1153,43 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           </button>
         </div>
       )}
+
+      {/* Timeline Tutorial Overlay (pre-session only, shows once) */}
+      {!isActiveSession && !isCompletedSession && <TimelineTutorialTrigger />}
     </div>
+  );
+}
+
+/**
+ * TimelineTutorialTrigger
+ * Waits for the reveal animation to finish before showing the tutorial overlay.
+ * On first mount: 6.5s delay (reveal takes ~4.7s + 2s breathing room).
+ * On re-trigger (from "Show Tutorial" menu): 800ms delay.
+ */
+function TimelineTutorialTrigger() {
+  const dismissed = useAppStore((state) => state.dismissedBanners['timeline-tutorial']);
+  const dismissBanner = useAppStore((state) => state.dismissBanner);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const hasTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (dismissed) return;
+    const delay = hasTriggeredRef.current ? 800 : 7500;
+    hasTriggeredRef.current = true;
+    const timer = setTimeout(() => setShowTutorial(true), delay);
+    return () => clearTimeout(timer);
+  }, [dismissed]);
+
+  if (!showTutorial || dismissed) return null;
+
+  return createPortal(
+    <TimelineTutorial
+      isActive={true}
+      onDismiss={() => {
+        setShowTutorial(false);
+        dismissBanner('timeline-tutorial');
+      }}
+    />,
+    document.body
   );
 }

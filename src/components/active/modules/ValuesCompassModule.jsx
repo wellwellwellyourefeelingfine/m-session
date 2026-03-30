@@ -17,7 +17,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 
 import ModuleLayout from '../capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../capabilities/ModuleControlBar';
-import CompassAnimation from '../capabilities/animations/Compass';
+import CompassAnimation from '../capabilities/animations/CompassV2';
 import RevealOverlay from '../capabilities/animations/RevealOverlay';
 
 import {

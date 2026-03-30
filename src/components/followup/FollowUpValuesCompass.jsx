@@ -20,7 +20,7 @@ import { useJournalStore } from '../../stores/useJournalStore';
 
 import ModuleControlBar, { SlotButton } from '../active/capabilities/ModuleControlBar';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
-import CompassAnimation from '../active/capabilities/animations/Compass';
+import CompassAnimation from '../active/capabilities/animations/CompassV2';
 import { TransitionTextarea } from '../session/transitions/shared';
 
 import MatrixModal, { ViewMatrixIcon } from '../active/modules/shared/matrix/MatrixModal';

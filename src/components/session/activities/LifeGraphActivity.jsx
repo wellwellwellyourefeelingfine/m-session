@@ -1,21 +1,25 @@
 /**
  * LifeGraphActivity Component
  *
- * A 6-page pre-session flow where users chart life milestones against a
+ * A pre-session flow where users chart life milestones against a
  * 0-10 well-being scale and see the results visualized as a life graph PNG.
  *
- * Pages: welcome → guided entry → open entry → review & generate →
- * reflection → closing.
+ * Base flow: welcome → guided entry → open entry → review & generate →
+ * reflection → check-in → closing.
+ *
+ * Optional "go deeper" branch (from check-in): 3 guided journaling pages
+ * inserted before closing. Responses saved as a single combined journal entry.
  *
  * Follows IntentionSettingActivity pattern for step navigation.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
-  PROGRESS_STEPS,
+  BASE_STEP_COUNT,
   LIFE_GRAPH_STEPS,
+  JOURNAL_BRANCH_STEPS,
   RATING_ANCHORS,
   MILESTONE_SOFT_MAX,
 } from './lifeGraphContent';
@@ -120,6 +124,10 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
   const [showGraphModal, setShowGraphModal] = useState(false);
   const [graphModalClosing, setGraphModalClosing] = useState(false);
 
+  // ── Journal branch state ──
+  const [deepenBranch, setDeepenBranch] = useState(false);
+  const [journalResponses, setJournalResponses] = useState({});
+
   // ── Combined open entry + generate state ──
   const [isDone, setIsDone] = useState(false);
   const [showGenerateButton, setShowGenerateButton] = useState(false);
@@ -175,11 +183,26 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
     return () => clearInterval(timer);
   }, [currentStepIndex, guidedLabel]);
 
+  // ── Dynamic step assembly ──
+  const steps = useMemo(() => {
+    if (deepenBranch) {
+      const closingIndex = LIFE_GRAPH_STEPS.findIndex((s) => s.id === 'closing');
+      return [
+        ...LIFE_GRAPH_STEPS.slice(0, closingIndex),
+        ...JOURNAL_BRANCH_STEPS,
+        LIFE_GRAPH_STEPS[closingIndex],
+      ];
+    }
+    return LIFE_GRAPH_STEPS;
+  }, [deepenBranch]);
+
+  const totalSteps = steps.length;
+
   // ── Derived ──
-  const currentStep = LIFE_GRAPH_STEPS[currentStepIndex];
-  const totalSteps = LIFE_GRAPH_STEPS.length;
+  const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === totalSteps - 1;
-  const progress = ((currentStepIndex + 1) / PROGRESS_STEPS) * 100;
+  const progressSteps = deepenBranch ? totalSteps : BASE_STEP_COUNT;
+  const progress = ((currentStepIndex + 1) / progressSteps) * 100;
 
   // ── Step navigation helpers ──
   const advanceStep = useCallback(() => {
@@ -187,6 +210,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
     setTimeout(() => {
       setCurrentStepIndex((prev) => prev + 1);
       setIsVisible(true);
+      document.querySelector('main')?.scrollTo(0, 0);
     }, FADE_MS);
   }, []);
 
@@ -196,6 +220,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
     setTimeout(() => {
       setCurrentStepIndex((prev) => Math.max(0, prev - 1));
       setIsVisible(true);
+      document.querySelector('main')?.scrollTo(0, 0);
     }, FADE_MS);
   }, [currentStepIndex]);
 
@@ -322,6 +347,7 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
 
     advanceTimerRef.current = setTimeout(() => {
       setCurrentStepIndex((prev) => prev + 1);
+      document.querySelector('main')?.scrollTo(0, 0);
       setShowGraphModal(true);
     }, delay);
   }, [milestones, graphUrl, addEntry, sessionId, setLifeGraphGenerated]);
@@ -348,11 +374,42 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
     }
   }, [graphUrl]);
 
-  // ── Module completion (journal already saved at generate time) ──
+  // ── Journal branch handlers ──
+  const handleDeepen = useCallback(() => {
+    setDeepenBranch(true);
+    advanceStep();
+  }, [advanceStep]);
+
+  const handleWrapUp = useCallback(() => {
+    advanceStep();
+  }, [advanceStep]);
+
+  const updateJournalResponse = useCallback((stepId, text) => {
+    setJournalResponses((prev) => ({ ...prev, [stepId]: text }));
+  }, []);
+
+  // ── Module completion ──
   const handleModuleComplete = useCallback(() => {
+    // Save combined journal entry if user went through the branch
+    if (deepenBranch) {
+      const sections = JOURNAL_BRANCH_STEPS
+        .filter((step) => journalResponses[step.id]?.trim())
+        .map((step) => `${step.content.prompt}\n${journalResponses[step.id].trim()}`);
+
+      if (sections.length > 0) {
+        addEntry({
+          content: `LIFE GRAPH REFLECTIONS\n\n${sections.join('\n\n')}`,
+          source: 'session',
+          sessionId,
+          moduleTitle: 'Life Graph',
+          isEdited: false,
+        });
+      }
+    }
+
     completePreSubstanceActivity('life-graph');
     onComplete();
-  }, [completePreSubstanceActivity, onComplete]);
+  }, [deepenBranch, journalResponses, addEntry, sessionId, completePreSubstanceActivity, onComplete]);
 
   // ── Skip handler (exits module) ──
   const handleModuleSkip = useCallback(() => {
@@ -664,11 +721,23 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodyTertiary}
         </p>
+        <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed text-center">
+          (Tap the{' '}
+          <svg
+            width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"
+            className="inline-block align-[-2px]"
+          >
+            <line x1="1" y1="14" x2="1" y2="2" />
+            <line x1="1" y1="14" x2="14" y2="14" />
+            <polyline points="3,10 6,5 9,8 12,3" />
+          </svg>
+          {' '}icon at the bottom right to view your life graph anytime.)
+        </p>
       </div>
     );
   };
 
-  const renderClosingStep = () => {
+  const renderCheckInStep = () => {
     const { content } = currentStep;
     return (
       <div className="space-y-6 pb-24">
@@ -687,6 +756,122 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
         <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
           {content.bodySecondary}
         </p>
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+          {content.bodyTertiary}
+        </p>
+        {/* Branching buttons */}
+        <div className="flex flex-col gap-3 items-center pt-2">
+          <button
+            onClick={handleDeepen}
+            className="w-full py-4 uppercase tracking-wider text-xs"
+            style={{
+              backgroundColor: 'var(--color-text-primary)',
+              color: 'var(--color-bg)',
+            }}
+          >
+            {content.deepenButton}
+          </button>
+          <button
+            onClick={handleWrapUp}
+            className="w-full py-4 border uppercase tracking-wider text-xs"
+            style={{
+              borderColor: 'var(--color-text-primary)',
+              color: 'var(--color-text-primary)',
+            }}
+          >
+            {content.closeButton}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderJournalStep = () => {
+    const { content } = currentStep;
+    const stepId = currentStep.id;
+    return (
+      <div className="space-y-6 pb-24">
+        <h2
+          className="text-[var(--color-text-primary)] text-xl text-center"
+          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+        >
+          {content.title}
+        </h2>
+        <div className="flex justify-center">
+          <LeafDrawV2 />
+        </div>
+        <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+          {content.body}
+        </p>
+        {content.bodySecondary && (
+          <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+            {content.bodySecondary}
+          </p>
+        )}
+        {content.bodyTertiary && (
+          <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+            {content.bodyTertiary}
+          </p>
+        )}
+
+        {/* Journal prompt + textarea */}
+        <div>
+          <h3
+            className="text-[var(--color-text-primary)] text-lg mb-1.5"
+            style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+          >
+            {content.prompt}
+          </h3>
+          <textarea
+            value={journalResponses[stepId] || ''}
+            onChange={(e) => updateJournalResponse(stepId, e.target.value)}
+            placeholder={content.placeholder}
+            rows={5}
+            className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
+              focus:outline-none focus:border-[var(--accent)] text-[var(--color-text-primary)]
+              text-sm placeholder:text-[var(--color-text-tertiary)] resize-none leading-relaxed"
+            style={{ textTransform: 'none' }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderClosingStep = () => {
+    const { content } = currentStep;
+    return (
+      <div className="space-y-6 pb-24">
+        <h2
+          className="text-[var(--color-text-primary)] text-xl text-center"
+          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+        >
+          {content.title}
+        </h2>
+        <div className="flex justify-center">
+          <LeafDrawV2 />
+        </div>
+        {deepenBranch ? (
+          <>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {content.bodyDeepened}
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {content.bodyDeepenedSecondary}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {content.body}
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {content.bodySecondary}
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              {content.bodyTertiary}
+            </p>
+          </>
+        )}
       </div>
     );
   };
@@ -697,6 +882,8 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
       case 'guidedEntry': return renderGuidedEntryStep();
       case 'openEntry': return renderOpenEntryStep();
       case 'reflection': return renderReflectionStep();
+      case 'checkIn': return renderCheckInStep();
+      case 'journal': return renderJournalStep();
       case 'closing': return renderClosingStep();
       default: return null;
     }
@@ -719,6 +906,13 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
         return null;
 
       case 'reflection':
+        return { label: 'Continue', onClick: advanceStep };
+
+      case 'checkIn':
+        // Inline buttons handle this
+        return null;
+
+      case 'journal':
         return { label: 'Continue', onClick: advanceStep };
 
       case 'closing':

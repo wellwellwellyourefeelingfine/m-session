@@ -21,6 +21,7 @@ export default function ModuleCard({
   isCurrentModule = false,
   canRemove = true,
   isEditMode = false,
+  dataTutorial,
 }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -132,6 +133,7 @@ export default function ModuleCard({
     <div
       className={`group relative bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-all duration-200 cursor-pointer flex-1 ${getBorderClass()} ${isBooster ? 'rounded-3xl' : ''}`}
       onClick={handleCardClick}
+      data-tutorial={dataTutorial}
     >
       <div className={`${isBooster ? 'pl-6 pr-2 pt-2 pb-1' : 'pl-3 pr-2 py-3'}`}>
         {isBooster ? (

@@ -38,6 +38,11 @@ export const useAppStore = create(
         set((state) => ({
           dismissedBanners: { ...state.dismissedBanners, [id]: true },
         })),
+      undismissBanner: (id) =>
+        set((state) => {
+          const { [id]: _, ...rest } = state.dismissedBanners;
+          return { dismissedBanners: rest };
+        }),
 
       // Transient: force-show install prompt from menu (not persisted)
       showInstallPrompt: false,

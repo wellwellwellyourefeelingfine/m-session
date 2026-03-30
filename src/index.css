@@ -606,3 +606,12 @@
 .animate-swap-down {
   animation: swapDown 0.2s ease-out;
 }
+
+/* Tutorial overlay text entrance */
+@keyframes tutorialTextIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-tutorial-text-in {
+  animation: tutorialTextIn 0.4s var(--ease-out) forwards;
+}

@@ -148,7 +148,7 @@ const PhaseSection = forwardRef(function PhaseSection(
       {/* Phase content */}
       <div className={`flex-1 pb-6 ${getPhaseOpacity()}`}>
         {/* Phase header - new design with DM Serif font */}
-        <div className="mb-4">
+        <div className="mb-4" data-tutorial={`phase-${phase}`}>
           <div className="flex items-start justify-between">
             <h3
               className="flex items-baseline gap-2"
@@ -299,6 +299,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                     isCurrentModule={module.instanceId === currentModuleId}
                     canRemove={canRemoveModule(module)}
                     isEditMode={canShowEditMode}
+                    dataTutorial={phase === 'come-up' && index === 0 ? 'module-card-first' : undefined}
                   />
                 </div>
               );
@@ -310,6 +311,7 @@ const PhaseSection = forwardRef(function PhaseSection(
         {isEditable && (
           <button
             onClick={onAddModule}
+            data-tutorial={isFirst ? 'add-activity-first' : undefined}
             className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-between px-4"
           >
             <span>+ Add Activity</span>

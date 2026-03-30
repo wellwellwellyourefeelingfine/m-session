@@ -67,12 +67,13 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
       />
 
       {/* Drawer */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl h-[80vh] flex flex-col shadow-lg ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl h-[80vh] flex flex-col shadow-lg ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`} data-tutorial="library-drawer">
         {/* Close button - positioned in top-right corner of drawer */}
         <button
           onClick={handleClose}
           className="absolute top-3 right-4 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] text-sm leading-none transition-colors z-10"
           aria-label="Close"
+          data-tutorial="library-close"
         >
           ×
         </button>
@@ -99,6 +100,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
             <FilterButton
               active={filter === 'recommended'}
               onClick={() => setFilter('recommended')}
+              dataTutorial="filter-recommended"
             >
               Recommended
             </FilterButton>
@@ -197,10 +199,11 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
   );
 }
 
-function FilterButton({ children, active, onClick }) {
+function FilterButton({ children, active, onClick, dataTutorial }) {
   return (
     <button
       onClick={onClick}
+      data-tutorial={dataTutorial}
       className={`px-3 py-1.5 text-sm rounded-full whitespace-nowrap transition-colors ${
         active
           ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)]'

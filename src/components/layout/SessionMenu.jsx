@@ -16,6 +16,9 @@ import SessionHistoryModal from '../history/SessionHistoryModal';
 import DataDownloadModal from '../session/DataDownloadModal';
 import { APP_VERSION } from '../../constants';
 
+// Banner ID must match the one used in TimelineEditor/TimelineTutorial
+const TUTORIAL_BANNER_ID = 'timeline-tutorial';
+
 export default function SessionMenu() {
   const [isOpen, setIsOpen] = useState(false);
   const [isClosingMenu, setIsClosingMenu] = useState(false);
@@ -31,6 +34,8 @@ export default function SessionMenu() {
   const darkMode = useAppStore((s) => s.darkMode);
   const toggleDarkMode = useAppStore((s) => s.toggleDarkMode);
   const setShowInstallPrompt = useAppStore((s) => s.setShowInstallPrompt);
+  const undismissBanner = useAppStore((s) => s.undismissBanner);
+  const setCurrentTab = useAppStore((s) => s.setCurrentTab);
   const { canPromptNatively, promptNativeInstall, isStandalone } = useInstallPrompt();
   const showInstallButton = !isStandalone;
 
@@ -211,6 +216,23 @@ export default function SessionMenu() {
           >
             New Session
           </button>
+          {sessionPhase === 'pre-session' && (
+            <>
+              <div className="border-t border-[var(--color-border)]" />
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  undismissBanner(TUTORIAL_BANNER_ID);
+                  setCurrentTab('home');
+                }}
+                className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                style={{ fontFamily: 'Azeret Mono, monospace' }}
+              >
+                Show Tutorial
+              </button>
+            </>
+          )}
           <div className="border-t border-[var(--color-border)]" />
           <button
             type="button"

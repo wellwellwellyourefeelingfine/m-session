@@ -30,10 +30,10 @@ export async function exportLifeGraphAsPNG(milestones) {
   await document.fonts.ready;
 
   // Layout constants
-  const LEFT_PAD = 80;
+  const LEFT_PAD = 100;
   const RIGHT_PAD = 60;
   const TOP_PAD = 60;
-  const BOTTOM_PAD = 120;
+  const BOTTOM_PAD = 140;
   const FOOTER_Y = H - 30;
   const CHART_W = W - LEFT_PAD - RIGHT_PAD;
   const CHART_H = H - TOP_PAD - BOTTOM_PAD;
@@ -50,7 +50,7 @@ export async function exportLifeGraphAsPNG(milestones) {
 
     // Grid line
     ctx.strokeStyle = gridLine;
-    ctx.lineWidth = 0.5;
+    ctx.lineWidth = 0.75;
     ctx.beginPath();
     ctx.moveTo(LEFT_PAD, y);
     ctx.lineTo(LEFT_PAD + CHART_W, y);
@@ -58,13 +58,13 @@ export async function exportLifeGraphAsPNG(milestones) {
 
     // Number label
     ctx.fillStyle = textTertiary;
-    ctx.font = '14px monospace';
-    ctx.fillText(String(i), LEFT_PAD - 12, y);
+    ctx.font = '20px monospace';
+    ctx.fillText(String(i), LEFT_PAD - 14, y);
   }
 
   // Y-axis anchors
   ctx.fillStyle = textTertiary;
-  ctx.font = '10px monospace';
+  ctx.font = '14px monospace';
   ctx.textAlign = 'right';
   ctx.save();
   ctx.translate(18, TOP_PAD + CHART_H / 2);
@@ -95,11 +95,11 @@ export async function exportLifeGraphAsPNG(milestones) {
       ? LEFT_PAD + CHART_W / 2
       : LEFT_PAD + (i / (count - 1)) * CHART_W;
     const y = TOP_PAD + CHART_H - (m.rating / 10) * CHART_H;
-    return { x, y, label: m.label };
+    return { x, y, label: m.label, note: m.note, rating: m.rating };
   });
 
   // Dynamic label sizing
-  const labelFontSize = count > 10 ? 10 : count > 7 ? 11 : 13;
+  const labelFontSize = count > 10 ? 14 : count > 7 ? 15 : 17;
   const labelRotation = count > 12 ? -Math.PI / 3 : count > 5 ? -Math.PI / 4 : 0;
   const maxLabelChars = count > 15 ? 12 : count > 10 ? 18 : 30;
 
@@ -108,7 +108,7 @@ export async function exportLifeGraphAsPNG(milestones) {
   ctx.font = `${labelFontSize}px monospace`;
   for (const pt of points) {
     ctx.save();
-    ctx.translate(pt.x, TOP_PAD + CHART_H + 16);
+    ctx.translate(pt.x, TOP_PAD + CHART_H + 20);
     ctx.rotate(labelRotation);
     ctx.textAlign = labelRotation ? 'right' : 'center';
     ctx.textBaseline = 'top';
@@ -125,12 +125,12 @@ export async function exportLifeGraphAsPNG(milestones) {
     // Single dot
     ctx.fillStyle = dotFill;
     ctx.beginPath();
-    ctx.arc(points[0].x, points[0].y, 6, 0, Math.PI * 2);
+    ctx.arc(points[0].x, points[0].y, 7, 0, Math.PI * 2);
     ctx.fill();
   } else if (points.length === 2) {
     // Straight line
     ctx.strokeStyle = curveStroke;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
     ctx.lineTo(points[1].x, points[1].y);
@@ -140,52 +140,93 @@ export async function exportLifeGraphAsPNG(milestones) {
     ctx.fillStyle = dotFill;
     for (const pt of points) {
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
       ctx.fill();
     }
   } else if (points.length > 2) {
     // Smooth bezier curve — quadratic with midpoint control points
     ctx.strokeStyle = curveStroke;
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    for (let i = 0; i < points.length - 1; i++) {
+    for (let i = 0; i < points.length - 2; i++) {
       const curr = points[i];
       const next = points[i + 1];
       const midX = (curr.x + next.x) / 2;
       const midY = (curr.y + next.y) / 2;
-
-      if (i === 0) {
-        // First segment: quadratic to midpoint
-        ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
-      } else {
-        // Middle segments: quadratic from previous midpoint through current point to next midpoint
-        ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
-      }
+      ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
     }
 
-    // Last segment: quadratic to final point
+    // Final segment: smooth curve through second-to-last point to last point
     const last = points[points.length - 1];
     const secondLast = points[points.length - 2];
     ctx.quadraticCurveTo(secondLast.x, secondLast.y, last.x, last.y);
-
-    // Actually: use the last point as the final destination
-    // The curve from the last midpoint to the final point
     ctx.stroke();
 
     // Dots
     ctx.fillStyle = dotFill;
     for (const pt of points) {
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 5, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
       ctx.fill();
+    }
+  }
+
+  // Note labels (word-wrapped, rendered near each dot)
+  const noteFontSize = count > 10 ? 11 : 13;
+  const noteLineHeight = noteFontSize + 4;
+  const noteMaxWidth = count > 1
+    ? Math.min(140, (CHART_W / (count - 1)) * 0.7)
+    : 140;
+  ctx.fillStyle = textTertiary;
+  ctx.font = `${noteFontSize}px monospace`;
+  ctx.textAlign = 'center';
+
+  for (let i = 0; i < points.length; i++) {
+    const pt = points[i];
+    if (!pt.note?.trim()) continue;
+
+    // Placement: above at 0 and 7–9, below at 1–6 and 10
+    const placeAbove = pt.rating === 0 || (pt.rating >= 7 && pt.rating <= 9);
+
+    // Word-wrap into lines that fit within noteMaxWidth
+    const words = pt.note.trim().split(/\s+/);
+    const lines = [];
+    let currentLine = words[0];
+    for (let w = 1; w < words.length; w++) {
+      const test = currentLine + ' ' + words[w];
+      if (ctx.measureText(test).width <= noteMaxWidth) {
+        currentLine = test;
+      } else {
+        lines.push(currentLine);
+        currentLine = words[w];
+      }
+    }
+    lines.push(currentLine);
+
+    // Position the block of lines relative to the dot
+    const gap = 14; // space between dot and first line of text
+    if (placeAbove) {
+      // Stack upward: last line closest to dot
+      ctx.textBaseline = 'bottom';
+      for (let l = 0; l < lines.length; l++) {
+        const lineY = pt.y - gap - (lines.length - 1 - l) * noteLineHeight;
+        ctx.fillText(lines[l], pt.x, lineY);
+      }
+    } else {
+      // Stack downward: first line closest to dot
+      ctx.textBaseline = 'top';
+      for (let l = 0; l < lines.length; l++) {
+        const lineY = pt.y + gap + l * noteLineHeight;
+        ctx.fillText(lines[l], pt.x, lineY);
+      }
     }
   }
 
   // Footer
   ctx.fillStyle = textTertiary;
-  ctx.font = '12px monospace';
+  ctx.font = '15px monospace';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(
