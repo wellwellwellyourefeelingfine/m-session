@@ -256,6 +256,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                 <div
                   key={module.instanceId}
                   ref={(el) => { moduleRefs.current[module.instanceId] = el; }}
+                  data-tutorial={phase === 'come-up' && index === 0 ? 'module-card-spotlight' : undefined}
                   className={`relative flex items-start group/reorder transition-all duration-200 ${
                     isDeleting ? 'opacity-0 scale-95 -translate-x-4' : 'opacity-100 scale-100'
                   } ${getSwapAnimationClass()}`}
@@ -311,7 +312,7 @@ const PhaseSection = forwardRef(function PhaseSection(
         {isEditable && (
           <button
             onClick={onAddModule}
-            data-tutorial={isFirst ? 'add-activity-first' : undefined}
+            data-tutorial={phase === 'peak' ? 'add-activity-first' : undefined}
             className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-between px-4"
           >
             <span>+ Add Activity</span>

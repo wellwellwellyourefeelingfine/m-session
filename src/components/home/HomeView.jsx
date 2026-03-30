@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
-import TimelineEditor from '../timeline/TimelineEditor';
+import TimelineEditor, { setRevealAnimationPending } from '../timeline/TimelineEditor';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import { getModuleById } from '../../content/modules/library';
 import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
@@ -141,6 +141,8 @@ export default function HomeView() {
 
   // Called by IntakeFlow after its fade-out completes
   const handleIntakeComplete = () => {
+    // Signal that the reveal animation is playing — tutorial should wait
+    setRevealAnimationPending();
     // Put the overlay up FIRST (covers whatever is currently rendered)
     setTransitionStep('moon-enter');
 

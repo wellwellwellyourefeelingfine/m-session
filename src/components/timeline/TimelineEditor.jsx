@@ -19,6 +19,17 @@ import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
 
+// Module-level flag: true only after Generate Timeline triggers the reveal
+// animation. Resets on page refresh (module re-initializes). The tutorial
+// trigger consumes and clears it.
+let _revealAnimationPending = false;
+export function setRevealAnimationPending() { _revealAnimationPending = true; }
+export function consumeRevealAnimationPending() {
+  const v = _revealAnimationPending;
+  _revealAnimationPending = false;
+  return v;
+}
+
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(null);
@@ -1163,19 +1174,19 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 /**
  * TimelineTutorialTrigger
  * Waits for the reveal animation to finish before showing the tutorial overlay.
- * On first mount: 6.5s delay (reveal takes ~4.7s + 2s breathing room).
- * On re-trigger (from "Show Tutorial" menu): 800ms delay.
+ * On first mount (initial page load): 7.5s delay (reveal takes ~4.7s + buffer).
+ * On re-trigger (from "Show Tutorial" menu): 500ms delay.
  */
 function TimelineTutorialTrigger() {
   const dismissed = useAppStore((state) => state.dismissedBanners['timeline-tutorial']);
   const dismissBanner = useAppStore((state) => state.dismissBanner);
   const [showTutorial, setShowTutorial] = useState(false);
-  const hasTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (dismissed) return;
-    const delay = hasTriggeredRef.current ? 800 : 7500;
-    hasTriggeredRef.current = true;
+    // Only wait for reveal animation if Generate Timeline was just pressed.
+    // Page refreshes, "Show Tutorial" menu clicks → near-instant.
+    const delay = consumeRevealAnimationPending() ? 7500 : 50;
     const timer = setTimeout(() => setShowTutorial(true), delay);
     return () => clearTimeout(timer);
   }, [dismissed]);

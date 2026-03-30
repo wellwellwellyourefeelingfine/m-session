@@ -22,7 +22,7 @@ const TUTORIAL_STEPS = [
     noHaze: true,
     title: 'Your Session Timeline',
     description:
-      'This is your personalized session plan. It maps out the full arc of your experience with guided activities across three distinct phases. You can customize everything before you begin.',
+      'This is your session plan, organized into three phases that follow the natural arc of the experience. Everything here can be customized before you begin.',
   },
   {
     id: 'pre-session',
@@ -30,7 +30,7 @@ const TUTORIAL_STEPS = [
     position: 'below',
     title: 'Pre-Session',
     description:
-      'These are optional preparation activities you can complete before your session begins. Breathwork, journaling, intention-setting — anything that helps you arrive feeling grounded.',
+      'These are optional activities you can do before the session starts. Things like breathwork, journaling, or intention-setting to help you settle in.',
   },
   {
     id: 'phase-come-up',
@@ -38,7 +38,7 @@ const TUTORIAL_STEPS = [
     position: 'below',
     title: 'Phase 1 — Come-Up',
     description:
-      'Your session is divided into three phases. Each one matches a different stage of the experience. Phase 1 covers the onset — gentle, grounding activities while the effects begin.',
+      'The session is split into three phases, each matching a different stage of the experience. This first phase covers the onset with gentle, grounding activities.',
   },
   {
     id: 'phase-peak',
@@ -47,7 +47,7 @@ const TUTORIAL_STEPS = [
     spotlightAdjust: { top: -6 },
     title: 'Phase 2 — Peak',
     description:
-      'The heart of the experience. This is where the deeper explorations happen — activities aligned with whatever you came here to work on.',
+      'This is where the deeper work happens, with activities aligned to whatever you came here to explore.',
   },
   {
     id: 'phase-integration',
@@ -56,15 +56,15 @@ const TUTORIAL_STEPS = [
     spotlightAdjust: { top: -6 },
     title: 'Phase 3 — Integration',
     description:
-      'The reflective close. As the intensity eases, these activities help you capture what surfaced and bring the session to a gentle end.',
+      'As things wind down, these activities help you process what came up and bring the session to a close.',
   },
   {
     id: 'module-card',
-    target: '[data-tutorial="module-card-first"]',
+    target: '[data-tutorial="module-card-spotlight"]',
     position: 'below',
     title: 'Activity Cards',
     description:
-      'Each card is a guided activity scheduled into your timeline. Tap one to see what it involves and adjust its duration. Try tapping this one now.',
+      'Each card is a guided activity in your timeline. Tap one to see what it involves and adjust its duration. Try tapping this one.',
     interactive: true,
     nextClick: '[data-tutorial="module-card-first"]',
     advanceOnAppear: '[data-tutorial="module-detail-modal"]',
@@ -75,7 +75,7 @@ const TUTORIAL_STEPS = [
     position: 'screen-bottom',
     title: 'Activity Detail',
     description:
-      'Here you can read about what the activity involves, how it works, and adjust its duration. Close this whenever you\'re ready to continue.',
+      'From here you can read about the activity, see how it works, and adjust its duration. Close this when you\'re ready to move on.',
     interactive: true,
     tooltipZ: 110,
     waitFor: '[data-tutorial="module-detail-modal"]',
@@ -89,7 +89,7 @@ const TUTORIAL_STEPS = [
     position: 'above',
     title: 'Add Activities',
     description:
-      'You can add new activities to any phase from the library. Try opening it now.',
+      'You can add new activities to any phase from the library. Try opening it.',
     interactive: true,
     nextClick: '[data-tutorial="add-activity-first"]',
     advanceOnAppear: '[data-tutorial="library-drawer"]',
@@ -101,11 +101,12 @@ const TUTORIAL_STEPS = [
     noHaze: true,
     title: 'Activity Library',
     description:
-      'Browse all available activities. Tap Recommended to see what fits this phase.',
+      'Browse activities. Tap Recommended to filter by phase.',
     interactive: true,
     tooltipZ: 110,
     waitFor: '[data-tutorial="library-drawer"]',
     nextClick: '[data-tutorial="filter-recommended"]',
+    fallbackClick: '[data-tutorial="add-activity-first"]',
     advanceOnClick: '[data-tutorial="filter-recommended"]',
     cleanupClick: '[data-tutorial="library-close"]',
   },
@@ -116,7 +117,7 @@ const TUTORIAL_STEPS = [
     noHaze: true,
     title: 'Recommended',
     description:
-      'Activities curated for this phase. Add any that feel right, or close when you\'re done.',
+      'Activities suggested for this phase. Add any that fit, or close when done.',
     interactive: true,
     tooltipZ: 110,
     waitFor: '[data-tutorial="library-drawer"]',
@@ -130,7 +131,7 @@ const TUTORIAL_STEPS = [
     position: 'screen-top',
     title: 'Begin When Ready',
     description:
-      'We recommend scheduling enough activities to fill about 3 to 5 hours, though you can add as much or as little as feels right. When you\'re ready, press Begin Session — you\'ll be guided through everything step by step.',
+      'A typical session runs 3 to 5 hours, but add as much or as little as feels right. When you\'re ready, press Begin Session and you\'ll be guided through everything.',
   },
 ];
 
@@ -140,12 +141,15 @@ const SPOTLIGHT_PADDING = 12;
 const TOOLTIP_GAP = 28;
 const BLUR_RADIUS = 14;
 const TRANSITION_MS = 400;
-const SCROLL_SETTLE_MS = 400;
+const SCROLL_START_DELAY_MS = 300; // let scrollIntoView begin before polling
+const SCROLL_STABLE_FRAMES = 3;    // consecutive stable rAF frames before measuring
+const SCROLL_MAX_WAIT_MS = 2000;   // safety cap
 const FADE_OUT_MS = 500;
 const TOP_SAFE_ZONE = 60;
 const BOTTOM_SAFE_ZONE = 100;
 const MIN_TOOLTIP_SPACE = 120;
 const CLEANUP_DELAY_MS = 350;
+const TEXT_FADE_OUT_MS = 200;
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -153,7 +157,9 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [phase, setPhase] = useState('entering'); // 'entering' | 'visible' | 'exiting'
   const [spotlightRect, setSpotlightRect] = useState(null);
-  const [textKey, setTextKey] = useState(0);
+  const [textFading, setTextFading] = useState(false);
+  const [displayedDesc, setDisplayedDesc] = useState(TUTORIAL_STEPS[0].description);
+  const [positionSettled, setPositionSettled] = useState(true);
   const [stepReady, setStepReady] = useState(true);
 
   const reduceMotion = useAppStore((state) => state.preferences?.reduceMotion);
@@ -162,7 +168,6 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
 
   const scrollContainerRef = useRef(null);
   const dismissedRef = useRef(false);
-  const clickCleanupRef = useRef(null);
   const advancingRef = useRef(false);
 
   const fadeDuration = reduceMotion ? '0ms' : `${FADE_OUT_MS}ms`;
@@ -175,6 +180,8 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   const safeAdvance = useCallback(() => {
     if (advancingRef.current) return;
     advancingRef.current = true;
+    setTextFading(true);
+    setPositionSettled(false);
     setCurrentStep((s) => {
       const next = s + 1;
       return next < TUTORIAL_STEPS.length ? next : s;
@@ -185,6 +192,33 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   useEffect(() => {
     advancingRef.current = false;
   }, [currentStep]);
+
+  // ─── Text Fade Out / In ────────────────────────────────────────────────
+  // textFading is set to true synchronously by safeAdvance/handleBack
+  // (same event handler as setCurrentStep, so React batches them — no flash).
+  // This effect waits for fade-out + position settled + stepReady, then fades in.
+
+  useEffect(() => {
+    if (!textFading) return;
+    if (!positionSettled) return; // wait for tooltip to reach final position
+    if (!stepReady) return;       // wait for interactive element to appear
+
+    const newDesc = TUTORIAL_STEPS[Math.min(currentStep, TUTORIAL_STEPS.length - 1)].description;
+
+    if (reduceMotion) {
+      setDisplayedDesc(newDesc);
+      setTextFading(false);
+      return;
+    }
+
+    // Wait for CSS fade-out to finish, swap text, then let card resize
+    // before starting the fade-in (one rAF separates resize from opacity)
+    const timer = setTimeout(() => {
+      setDisplayedDesc(newDesc);
+      requestAnimationFrame(() => setTextFading(false));
+    }, TEXT_FADE_OUT_MS);
+    return () => clearTimeout(timer);
+  }, [textFading, currentStep, positionSettled, stepReady, reduceMotion]);
 
   // ─── Refs & Setup ───────────────────────────────────────────────────────
 
@@ -246,44 +280,80 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     return () => document.removeEventListener('keydown', handler);
   }, [handleDismiss]);
 
-  // ─── Scroll Lock ────────────────────────────────────────────────────────
+  // ─── Scroll to Top & Lock ──────────────────────────────────────────────
 
   useEffect(() => {
     const main = scrollContainerRef.current;
     if (!main) return;
+    // Always start tutorial from top of timeline
+    main.scrollTop = 0;
     const prev = main.style.overflow;
     main.style.overflow = 'hidden';
     return () => { main.style.overflow = prev; };
   }, []);
 
   // ─── Scroll-into-View & Measure ─────────────────────────────────────────
+  // Instead of a fixed timeout, poll the element's position via rAF until it
+  // stabilises for SCROLL_STABLE_FRAMES consecutive frames. This guarantees
+  // we only measure *after* smooth-scroll finishes, regardless of duration.
 
   useEffect(() => {
     const step = TUTORIAL_STEPS[currentStep];
-    setTextKey((k) => k + 1);
 
     if (!step.target) {
       setSpotlightRect(null);
+      setPositionSettled(true);
       return;
     }
 
     const el = document.querySelector(step.target);
     if (!el) {
       setSpotlightRect(null);
+      setPositionSettled(true);
       return;
     }
 
+    setPositionSettled(false);
     const main = scrollContainerRef.current;
     if (main) main.style.overflow = 'auto';
 
     el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
 
-    const timer = setTimeout(() => {
-      if (main) main.style.overflow = 'hidden';
-      setSpotlightRect(measureTarget(step.target, step.spotlightAdjust));
-    }, reduceMotion ? 50 : SCROLL_SETTLE_MS);
+    // Wait for scroll to begin, then poll until position stabilises.
+    // The initial delay prevents false "stable" detection before scroll starts.
+    let cancelled = false;
+    const delay = reduceMotion ? 50 : SCROLL_START_DELAY_MS;
 
-    return () => clearTimeout(timer);
+    const delayTimer = setTimeout(() => {
+      if (cancelled) return;
+      let lastTop = el.getBoundingClientRect().top;
+      let stableFrames = 0;
+      const startTime = Date.now();
+
+      const checkStable = () => {
+        if (cancelled) return;
+        const top = el.getBoundingClientRect().top;
+
+        if (Math.abs(top - lastTop) < 1) {
+          stableFrames++;
+        } else {
+          stableFrames = 0;
+        }
+        lastTop = top;
+
+        if (stableFrames >= SCROLL_STABLE_FRAMES || Date.now() - startTime > SCROLL_MAX_WAIT_MS) {
+          if (main) main.style.overflow = 'hidden';
+          setSpotlightRect(measureTarget(step.target, step.spotlightAdjust));
+          setPositionSettled(true);
+          return;
+        }
+
+        requestAnimationFrame(checkStable);
+      };
+      requestAnimationFrame(checkStable);
+    }, delay);
+
+    return () => { cancelled = true; clearTimeout(delayTimer); };
   }, [currentStep, measureTarget, reduceMotion]);
 
   // ─── Re-measure on Resize ──────────────────────────────────────────────
@@ -345,22 +415,15 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     const step = TUTORIAL_STEPS[currentStep];
     if (!step.advanceOnClick) return;
 
-    // Small delay for DOM to settle after step transition
-    const timerId = setTimeout(() => {
-      const el = document.querySelector(step.advanceOnClick);
-      if (!el) return;
-      const handler = () => safeAdvance();
-      el.addEventListener('click', handler, { once: true });
-      clickCleanupRef.current = () => el.removeEventListener('click', handler);
-    }, 100);
-
-    return () => {
-      clearTimeout(timerId);
-      if (clickCleanupRef.current) {
-        clickCleanupRef.current();
-        clickCleanupRef.current = null;
+    // Use event delegation so it works even if the target element is
+    // destroyed and recreated (e.g. library modal closed and reopened).
+    const handler = (e) => {
+      if (e.target.closest(step.advanceOnClick)) {
+        safeAdvance();
       }
     };
+    document.addEventListener('click', handler, true);
+    return () => document.removeEventListener('click', handler, true);
   }, [currentStep]);
 
   // ─── Navigation Handlers ──────────────────────────────────────────────
@@ -376,6 +439,20 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
         if (step.advanceOnAppear || step.advanceOnDisappear || step.advanceOnClick) {
           return;
         }
+      } else if (step.fallbackClick) {
+        // Target not in DOM (e.g. library closed) — reopen via fallback,
+        // then click the target once it appears.
+        const fallback = document.querySelector(step.fallbackClick);
+        if (fallback) {
+          fallback.click();
+          const waitAndClick = () => {
+            const target = document.querySelector(step.nextClick);
+            if (target) { target.click(); return; }
+            requestAnimationFrame(waitAndClick);
+          };
+          requestAnimationFrame(waitAndClick);
+        }
+        return;
       }
     }
 
@@ -392,12 +469,16 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
       if (closeEl) {
         closeEl.click();
         setTimeout(() => {
+          setTextFading(true);
+          setPositionSettled(false);
           setCurrentStep((s) => s - 1);
         }, CLEANUP_DELAY_MS);
         return;
       }
     }
 
+    setTextFading(true);
+    setPositionSettled(false);
     setCurrentStep((s) => s - 1);
   }, [currentStep]);
 
@@ -418,7 +499,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // ─── Tooltip Positioning ──────────────────────────────────────────────
 
   const getTooltipStyle = () => {
-    const zIndex = step.tooltipZ || 57;
+    const zIndex = step.tooltipZ || 110;
 
     if (step.position === 'bottom-third') {
       return { position: 'fixed', top: '60%', left: '50%', transform: 'translateX(-50%)', zIndex };
@@ -469,26 +550,25 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // ─── Render ───────────────────────────────────────────────────────────
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 55,
-        opacity: overlayOpacity,
-        transition: `opacity ${fadeDuration} var(--ease-default)`,
-        pointerEvents: phase === 'exiting' ? 'none' : isInteractive ? 'none' : 'auto',
-      }}
-    >
-      {/* Click absorber — only for non-interactive steps */}
-      {!isInteractive && (
-        <div
-          style={{ position: 'absolute', inset: 0, zIndex: 55 }}
-          onClick={(e) => e.stopPropagation()}
-        />
-      )}
+    <>
+      {/* Overlay layer — haze + click absorber (z-55, below modals) */}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 55,
+          opacity: overlayOpacity,
+          transition: `opacity ${fadeDuration} var(--ease-default)`,
+          pointerEvents: phase === 'exiting' ? 'none' : isInteractive ? 'none' : 'auto',
+        }}
+      >
+        {!isInteractive && (
+          <div
+            style={{ position: 'absolute', inset: 0, zIndex: 55 }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
 
-      {/* Haze overlay with diffuse spotlight — hidden for noHaze steps */}
-      {!step.noHaze && (
         <div
           style={{
             position: 'fixed',
@@ -497,101 +577,85 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
             width: isCenter || !spotlightRect ? 0 : spotlightRect.width,
             height: isCenter || !spotlightRect ? 0 : spotlightRect.height,
             borderRadius: '24px',
+            opacity: step.noHaze ? 0 : 1,
             boxShadow: `0 0 0 9999px ${hazeColor}`,
             filter: reduceMotion ? 'none' : `blur(${BLUR_RADIUS}px)`,
-            transition: reduceMotion ? 'none' : `top ${TRANSITION_MS}ms var(--ease-default), left ${TRANSITION_MS}ms var(--ease-default), width ${TRANSITION_MS}ms var(--ease-default), height ${TRANSITION_MS}ms var(--ease-default)`,
+            transition: reduceMotion ? 'none' : `opacity ${TRANSITION_MS}ms var(--ease-default), top ${TRANSITION_MS}ms var(--ease-default), left ${TRANSITION_MS}ms var(--ease-default), width ${TRANSITION_MS}ms var(--ease-default), height ${TRANSITION_MS}ms var(--ease-default)`,
             zIndex: 55,
             pointerEvents: 'none',
           }}
         />
-      )}
+      </div>
 
-      {/* Tooltip card — self-contained navigation unit */}
-      {stepReady && (
+      {/* Tooltip card — independent stacking context above modals (z-110) */}
+      <div
+        style={{
+          ...getTooltipStyle(),
+          pointerEvents: 'auto',
+          opacity: overlayOpacity,
+          transition: `opacity ${fadeDuration} var(--ease-default)`,
+        }}
+        className="w-[calc(100%-3rem)] max-w-sm"
+      >
+        <div className="flex justify-end mb-1 pr-1">
+          <button
+            onClick={handleDismiss}
+            className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            Skip
+          </button>
+        </div>
+
         <div
-          style={{ ...getTooltipStyle(), pointerEvents: 'auto' }}
-          className="w-[calc(100%-3rem)] max-w-sm"
+          className="bg-[var(--color-bg)] rounded-2xl px-5 pt-3 pb-3"
+          style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 0 24px 12px var(--color-bg)' }}
         >
-          {/* Skip button — floats above card */}
-          <div className="flex justify-end mb-1 pr-1">
+          <p
+            className="text-[var(--accent)] text-sm leading-relaxed"
+            style={{
+              textTransform: 'none',
+              opacity: textFading ? 0 : 1,
+              visibility: textFading ? 'hidden' : 'visible',
+              transition: reduceMotion ? 'none' : `opacity ${TEXT_FADE_OUT_MS}ms ease, visibility ${TEXT_FADE_OUT_MS}ms`,
+            }}
+          >
+            {displayedDesc}
+          </p>
+
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
             <button
-              onClick={handleDismiss}
-              className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+              onClick={handleBack}
+              disabled={isFirst}
+              className={`px-2 py-1 uppercase tracking-wider text-[10px] transition-opacity ${
+                isFirst ? 'opacity-0 pointer-events-none' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+              }`}
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              Skip
+              Back
+            </button>
+
+            <div className="flex gap-1">
+              {TUTORIAL_STEPS.map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
+                    i === clampedStep ? 'bg-[var(--accent)]' : 'bg-[var(--color-text-tertiary)] opacity-30'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={isLast ? handleDismiss : handleNext}
+              className="px-2 py-1 uppercase tracking-wider text-[10px] text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)] transition-opacity"
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
+            >
+              {isLast ? 'Done' : 'Next'}
             </button>
           </div>
-
-          <div
-            key={textKey}
-            className={reduceMotion ? '' : 'animate-tutorial-text-in'}
-            style={{ opacity: reduceMotion ? 1 : 0 }}
-          >
-            <div
-              className="bg-[var(--color-bg)] rounded-2xl px-5 pt-4 pb-3"
-              style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 0 24px 12px var(--color-bg)' }}
-            >
-              {/* Title row with step counter */}
-              <div className="flex items-baseline justify-between mb-1">
-                <h3
-                  className="text-lg text-[var(--accent)]"
-                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-                >
-                  {step.title}
-                </h3>
-                <p
-                  className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider flex-shrink-0 ml-3"
-                  style={{ fontFamily: 'Azeret Mono, monospace' }}
-                >
-                  {clampedStep + 1} of {TUTORIAL_STEPS.length}
-                </p>
-              </div>
-
-              {/* Description — accent color */}
-              <p
-                className="text-[var(--accent)] text-sm leading-relaxed"
-                style={{ textTransform: 'none' }}
-              >
-                {step.description}
-              </p>
-
-              {/* Navigation: Back / dots / Next — inside card */}
-              <div className="flex items-center justify-between mt-3 pt-2 border-t border-[var(--color-border)]">
-                <button
-                  onClick={handleBack}
-                  disabled={isFirst}
-                  className={`px-2 py-1 uppercase tracking-wider text-[10px] transition-opacity ${
-                    isFirst ? 'opacity-0 pointer-events-none' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-                  }`}
-                  style={{ fontFamily: 'Azeret Mono, monospace' }}
-                >
-                  Back
-                </button>
-
-                <div className="flex gap-1">
-                  {TUTORIAL_STEPS.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                        i === clampedStep ? 'bg-[var(--accent)]' : 'bg-[var(--color-text-tertiary)] opacity-30'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                <button
-                  onClick={isLast ? handleDismiss : handleNext}
-                  className="px-2 py-1 uppercase tracking-wider text-[10px] text-[var(--color-text-primary)] hover:text-[var(--color-text-secondary)] transition-opacity"
-                  style={{ fontFamily: 'Azeret Mono, monospace' }}
-                >
-                  {isLast ? 'Done' : 'Next'}
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 }
