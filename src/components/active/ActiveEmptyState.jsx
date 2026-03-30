@@ -41,61 +41,117 @@ export default function ActiveEmptyState() {
         </p>
       </div>
 
-      {/* ── The Filter ── */}
+      {/* ── What Gets in the Way ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
         <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Understanding</p>
         <h2
           className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
           style={{ fontFamily: 'DM Serif Text, serif' }}
         >
-          The Filter
+          What Gets in the Way
         </h2>
         <div className="text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
           <p>
-            Your mind runs a filter you never asked for. Every thought about yourself,
-            every memory, every feeling — it gets intercepted and labeled before you
-            can really look at it. <em>Threatening. Shameful. Don't go there.</em>
+            Most people have a limited ability to be truly honest with themselves. This
+            isn't a character flaw. The brain has a threat-detection system that intercepts
+            emotionally difficult material before it fully reaches conscious awareness.
+            Painful memories, uncomfortable truths about yourself or your relationships,
+            grief you set aside because life kept moving: this system suppresses, avoids,
+            or reframes that material automatically, and it operates faster than conscious
+            thought.
           </p>
           <p>
-            This is why honest self-reflection is hard. Not because you lack courage,
-            but because the filter is faster than you are. Challenging material gets
-            blocked before it reaches conscious awareness. You don't even know what
-            you're not seeing.
-          </p>
-          <p>
-            MDMA softens this filter. The automatic judgment quiets down — and what
-            often takes its place is something warmer. You can look at yourself with
-            less defensiveness. Hold difficult feelings without drowning in them.
-            Be honest about things you've been avoiding, and be kind to yourself
-            about what you find.
+            This is useful for getting through the day. It's less useful when you want to
+            understand yourself more deeply, examine how you show up in your relationships,
+            or simply take an honest look at where you are in your life.
           </p>
         </div>
       </div>
 
-      {/* ── You Already Know ── */}
+      {/* ── What MDMA Changes ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
         <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Insight</p>
         <h2
           className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
           style={{ fontFamily: 'DM Serif Text, serif' }}
         >
-          You Already Know
+          What MDMA Changes
         </h2>
         <div className="text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
           <p>
-            Here's the thing nobody tells you: <strong className="text-[var(--color-text-primary)]">you already know what you need to look at.</strong>
+            MDMA reduces this defensiveness directly. It lowers the reactivity of the
+            brain's threat-response system while leaving your thinking clear and intact.
+            You stay lucid, coherent, and in control of your experience. What changes is
+            your relationship to difficult material: it becomes approachable rather than
+            overwhelming.
           </p>
           <p>
-            The relationship patterns you keep repeating. The grief you never
-            processed. The ways you've been out of alignment with your own values.
-            The conversations you've been afraid to have. You know. You've just
-            gotten very good at not knowing that you know.
+            What tends to replace the usual guardedness is a sense of warmth and honesty.
+            People report being able to look at themselves and their lives with a kind of
+            clear-eyed compassion that is hard to access under ordinary conditions.
+            Self-criticism quiets. Difficult feelings can be held without being consumed
+            by them. Things you've avoided become things you can actually sit with.
           </p>
           <p>
-            MDMA doesn't give you new information. It gives you access to information
-            you've been keeping from yourself. The insights don't come from the drug.
-            They come from you. The drug just clears the path.
+            The substance invites material forward. It doesn't force it. Sometimes what
+            surfaces is exactly what you expected to work on. Sometimes it's something
+            you didn't see coming: a forgotten memory, a feeling you didn't know you were
+            carrying, a sudden clarity about a relationship or a part of yourself. There
+            is no single version of what a session looks like, and you don't need to
+            direct the process. Your role is to stay open to what arises and trust that
+            what comes up is worth your attention.
           </p>
+        </div>
+      </div>
+
+      {/* ── The Science ── */}
+      <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
+        <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Research</p>
+        <h2
+          className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
+          style={{ fontFamily: 'DM Serif Text, serif' }}
+        >
+          Our Current Understanding
+        </h2>
+        <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
+          Research over the past two decades has identified several mechanisms that work
+          together to create the therapeutic window MDMA opens. None of these operate in
+          isolation, but understanding them individually can help you make sense of what
+          you experience during a session.
+        </p>
+        <div className="space-y-[1px] bg-[var(--border)] border border-[var(--border)]">
+          {[
+            {
+              label: 'Reduced amygdala reactivity',
+              body: 'The amygdala is the brain region most associated with detecting and responding to threat. MDMA decreases its activation, particularly in response to negative emotional stimuli. Neuroimaging studies show reduced reactivity to angry and fearful facial expressions, and reduced blood flow to the amygdala correlates with the intensity of MDMA\u2019s subjective effects. This is the neurological basis for the reduced defensiveness described above: your brain\u2019s alarm system turns down, allowing emotionally charged material to surface without triggering the usual defensive reactions.',
+            },
+            {
+              label: 'Preserved cognitive lucidity',
+              body: 'Unlike classical psychedelics, MDMA maintains ego functioning and perceptual lucidity. You can think clearly, speak coherently, and reflect on your experience while it\u2019s happening. This combination of reduced defensiveness with intact cognition is unusual among psychoactive substances and is central to why MDMA lends itself to therapeutic work.',
+            },
+            {
+              label: 'Increased self-compassion',
+              body: 'MDMA consistently reduces self-criticism and increases self-directed warmth. Recent research from phase 3 clinical trials found that increases in self-compassion specifically mediated MDMA\u2019s therapeutic effects on PTSD symptoms, depression, and substance use. In practical terms: you become more able to look at yourself with honesty and kindness at the same time.',
+            },
+            {
+              label: 'Oxytocin surge',
+              body: 'MDMA triggers a substantial release of oxytocin, reaching plasma levels up to four times baseline. This effect is unique to MDMA and not observed with LSD or amphetamine. Oxytocin is involved in trust, social bonding, and the encoding of emotional information as safe rather than threatening. This surge likely contributes to the feelings of openness, connection, and safety that people commonly report, and may play a role in reducing the fear response to difficult emotional material.',
+            },
+            {
+              label: 'BDNF and neuroplasticity',
+              body: 'MDMA increases expression of brain-derived neurotrophic factor (BDNF), a protein essential for the formation of new neural connections. BDNF plays a central role in learning, memory updating, and fear extinction \u2014 the process by which old threat associations lose their grip. When BDNF signaling is blocked in animal studies, MDMA\u2019s effects on fear extinction disappear entirely. This mechanism is likely a key reason why the changes people experience during MDMA sessions tend to persist well beyond the acute effects of the substance.',
+            },
+          ].map((item, i) => (
+            <div key={i} className="bg-[var(--bg-primary)] px-5 pt-4 pb-5">
+              <div className="flex items-center gap-2.5 uppercase tracking-[0.1em] text-[11px] text-[var(--color-text-primary)] font-medium mb-2">
+                <span className="inline-block w-[6px] h-[6px] rounded-full border-[1.5px] border-[var(--accent)] shrink-0" />
+                {item.label}
+              </div>
+              <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed">
+                {item.body}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
