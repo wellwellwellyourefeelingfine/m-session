@@ -26,6 +26,7 @@ export const useAppStore = create(
         reduceMotion: false, // Disable animations
         timerSound: false, // Audio alert when timer completes
         gongSound: true, // Meditation bell at start/end of meditations
+        alternateAppLogo: false, // Animated text logo instead of PNG
       },
       setPreference: (key, value) =>
         set((state) => ({
@@ -48,6 +49,10 @@ export const useAppStore = create(
       showInstallPrompt: false,
       setShowInstallPrompt: (show) => set({ showInstallPrompt: show }),
 
+      // Transient: logo animation trigger counter (not persisted)
+      logoAnimationTrigger: 0,
+      triggerLogoAnimation: () => set((s) => ({ logoAnimationTrigger: s.logoAnimationTrigger + 1 })),
+
       // Transient: preview activity transition overlay (not persisted)
       // null | 'enter' | 'visible' | 'exit'
       previewOverlay: null,
@@ -56,7 +61,7 @@ export const useAppStore = create(
     {
       name: 'mdma-guide-app-state',
       partialize: (state) => {
-        const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, ...rest } = state;
+        const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, logoAnimationTrigger: _logoAnimationTrigger, ...rest } = state;
         return rest;
       },
     }

@@ -25,6 +25,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useAppStore } from '../../../stores/useAppStore';
 
 /**
  * @param {object} props
@@ -60,6 +61,7 @@ export default function ModuleControlBar({
   const [showBackConfirm, setShowBackConfirm] = useState(false);
   const [showSkipConfirm, setShowSkipConfirm] = useState(false);
   const [isPrimaryPressed, setIsPrimaryPressed] = useState(false);
+  const triggerLogoAnimation = useAppStore((state) => state.triggerLogoAnimation);
 
   const handleBackClick = () => {
     // If no confirmation message provided, go back directly
@@ -126,7 +128,7 @@ export default function ModuleControlBar({
 
             {primary?.label && !primary.disabled ? (
               <button
-                onClick={primary.onClick}
+                onClick={() => { primary.onClick?.(); triggerLogoAnimation(); }}
                 onTouchStart={() => setIsPrimaryPressed(true)}
                 onTouchEnd={() => setIsPrimaryPressed(false)}
                 onMouseDown={() => setIsPrimaryPressed(true)}

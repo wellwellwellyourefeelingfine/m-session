@@ -16,6 +16,7 @@ const tabs = [
 export default function TabBar() {
   const currentTab = useAppStore((state) => state.currentTab);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
+  const triggerLogoAnimation = useAppStore((state) => state.triggerLogoAnimation);
   const glassEffect = useAppStore((state) => state.preferences?.glassEffect ?? true);
 
   return (
@@ -24,7 +25,7 @@ export default function TabBar() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setCurrentTab(tab.id)}
+            onClick={() => { setCurrentTab(tab.id); triggerLogoAnimation(); }}
             className={`flex-1 flex items-center justify-center text-[12px] uppercase tracking-wider transition-opacity duration-300 touch-target
               ${
                 currentTab === tab.id
