@@ -14,22 +14,22 @@ export default memo(function AnimatedTextLogo() {
         if (!el || useAppStore.getState().preferences?.reduceMotion) return;
         el.style.animation = 'none';
         el.offsetHeight;
-        el.style.animation = 'hyphen-flip 1.3s var(--ease-default)';
+        el.style.animation = 'hyphen-flip 1.15s var(--ease-default)';
       }
     });
     return unsub;
   }, []);
 
-  const hyphenColor = darkMode ? 'var(--accent)' : '#999';
+  const hyphenColor = darkMode ? 'var(--accent)' : 'var(--text-primary)';
 
   return (
     <span
       style={{
-        fontFamily: "'Azeret Mono', monospace",
-        fontWeight: 700,
-        fontSize: '14px',
-        letterSpacing: '0.14em',
-        textTransform: 'uppercase',
+        fontFamily: "'DM Serif Text', serif",
+        fontWeight: 600,
+        fontSize: '22px',
+        letterSpacing: '0.04em',
+        textTransform: 'none',
         display: 'inline-flex',
         alignItems: 'center',
         whiteSpace: 'nowrap',
@@ -45,17 +45,17 @@ export default memo(function AnimatedTextLogo() {
           width: '1ch',
           height: '1em',
           letterSpacing: 0,
-          marginLeft: '-0.1em',
+          marginLeft: '-0.05em',
         }}
       >
         <span
           ref={barRef}
           style={{
             position: 'absolute',
-            left: '50%',
-            top: '50%',
+            left: '48%',
+            top: '60%',
             transform: 'translate(-50%, -50%)',
-            width: '0.40em',
+            width: '0.30em',
             height: '0.12em',
             backgroundColor: hyphenColor,
             borderRadius: '0.5px',

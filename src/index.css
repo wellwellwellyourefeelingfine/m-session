@@ -618,7 +618,7 @@
 
 @keyframes hyphen-flip {
   0%   { transform: translate(-50%, -50%) rotate(0deg); }
-  38%  { transform: translate(-50%, -50%) rotate(180deg); }
-  62%  { transform: translate(-50%, -50%) rotate(180deg); }
+  43%  { transform: translate(-50%, -50%) rotate(180deg); }
+  57%  { transform: translate(-50%, -50%) rotate(180deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
