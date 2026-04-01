@@ -403,6 +403,8 @@ export const useSessionStore = create(
       session: {
         closedAt: null,                // Timestamp when session was closed
         finalDurationSeconds: null,    // Final session duration in seconds
+        dataExportedAt: null,          // Timestamp when session data was exported
+        sessionNumber: null,           // Locked-in ordinal (e.g. 3 = third completed session)
       },
 
       // ============================================
@@ -1914,6 +1916,7 @@ export const useSessionStore = create(
           session: {
             closedAt: now,
             finalDurationSeconds,
+            dataExportedAt: null,
           },
           // Follow-up unlock times (millisecond timestamps)
           followUp: {
@@ -1926,6 +1929,13 @@ export const useSessionStore = create(
             },
           },
         });
+      },
+
+      // Record that session data was exported
+      recordDataExport: () => {
+        set((state) => ({
+          session: { ...state.session, dataExportedAt: Date.now() },
+        }));
       },
 
       // ============================================
@@ -2768,6 +2778,8 @@ export const useSessionStore = create(
           session: {
             closedAt: null,
             finalDurationSeconds: null,
+            dataExportedAt: null,
+            sessionNumber: null,
           },
           followUp: {
             unlockTimes: {

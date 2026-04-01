@@ -206,7 +206,7 @@ export default function ActiveView() {
             {/* Shared progress bar - overlaps header border */}
             <ModuleProgressBar progress={moduleTimerState.progress} isPaused={moduleTimerState.isPaused} />
             {/* Pre-Session indicator bar with optional timer */}
-            <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
+            <div className="fixed left-0 right-0 z-30" style={{ top: 'var(--header-height)' }}>
               <div className="flex items-center px-4 py-2 gap-3">
                 <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] flex-shrink-0">
                   Pre-Session

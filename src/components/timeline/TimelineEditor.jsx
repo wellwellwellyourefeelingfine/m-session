@@ -12,6 +12,8 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
+import ModuleCard from './ModuleCard';
+import { ClockIcon, SparkleIcon, CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
 import FollowUpModuleModal from '../home/FollowUpModuleModal';
@@ -30,6 +32,27 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
   const [followUpCountdown, setFollowUpCountdown] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
+
+  // Pre-session collapse state (mirrors PhaseSection pattern)
+  const [preSessionCollapsed, setPreSessionCollapsed] = useState(false);
+  const [preSessionContentVisible, setPreSessionContentVisible] = useState(true);
+  const [preSessionHeightCollapsed, setPreSessionHeightCollapsed] = useState(false);
+
+  const handleTogglePreSessionCollapse = () => {
+    if (!preSessionCollapsed) {
+      setPreSessionContentVisible(false);
+      setTimeout(() => {
+        setPreSessionHeightCollapsed(true);
+        setPreSessionCollapsed(true);
+      }, 250);
+    } else {
+      setPreSessionHeightCollapsed(false);
+      setTimeout(() => {
+        setPreSessionContentVisible(true);
+        setPreSessionCollapsed(false);
+      }, 600);
+    }
+  };
   const [selectedPreSessionModule, setSelectedPreSessionModule] = useState(null);
   const [preSessionExpanded, setPreSessionExpanded] = useState(true);
   const [clockNoteOpen, setClockNoteOpen] = useState(false);
@@ -465,8 +488,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Timeline with integrated nodes in each phase section */}
       <div>
-        {/* Pre-Session Section — above Phase 1 (only before session starts) */}
-        {!isActiveSession && !isCompletedSession && (
+        {/* Pre-Session Section — above Phase 1 (before session starts + completed session) */}
+        {!isActiveSession && (
           <div className="mb-2">
             <div className="relative flex">
               {/* Timeline node and vertical bar */}
@@ -483,40 +506,85 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                       className="flex items-baseline gap-2"
                       style={{ lineHeight: 1, marginBottom: '8px' }}
                     >
-                      <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                      <span className="font-serif text-[22px]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
                         Pre-Session
                       </span>
                     </h3>
-                    {preSessionModules.length > 1 && (
+                    {isCompletedSession ? (
                       <button
-                        onClick={() => setIsEditMode(!isEditMode)}
-                        className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
-                          isEditMode
-                            ? 'bg-[var(--accent)] text-white'
-                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-                        }`}
+                        onClick={handleTogglePreSessionCollapse}
+                        className="flex-shrink-0 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
                       >
-                        {isEditMode ? 'Done' : 'Edit'}
+                        {preSessionCollapsed
+                          ? <CirclePlusIcon size={18} className="text-current" />
+                          : <CircleSkipIcon size={18} className="text-current" />
+                        }
                       </button>
+                    ) : (
+                      preSessionModules.length > 1 && (
+                        <button
+                          onClick={() => setIsEditMode(!isEditMode)}
+                          className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
+                            isEditMode
+                              ? 'bg-[var(--accent)] text-white'
+                              : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                          }`}
+                        >
+                          {isEditMode ? 'Done' : 'Edit'}
+                        </button>
+                      )
                     )}
                   </div>
-                  <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '8px' }}>
-                    Optional activities to prepare you for your session. You can also preview any activity from the main session timeline here.
-                  </p>
+                  {!isCompletedSession && (
+                    <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '8px' }}>
+                      Optional activities to prepare you for your session. You can also preview any activity from the main session timeline here.
+                    </p>
+                  )}
                 </div>
+
+                {/* Pre-session timestamp — always visible, outside collapsible content */}
+                {isCompletedSession && (() => {
+                  const startedTimes = preSessionModules.map((m) => m.startedAt).filter(Boolean);
+                  const completedTimes = preSessionModules.map((m) => m.completedAt).filter(Boolean);
+                  const earliest = startedTimes.length > 0 ? Math.min(...startedTimes) : null;
+                  const latest = completedTimes.length > 0 ? Math.max(...completedTimes) : null;
+                  return (
+                    <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
+                      {earliest
+                        ? <>
+                            {new Date(earliest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {latest && ` – ${new Date(latest).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                          </>
+                        : 'Activities prior to session'
+                      }
+                    </p>
+                  );
+                })()}
+
+                {/* Collapsible content — staged animation matching PhaseSection */}
+                <div
+                  className="overflow-hidden ease-in-out"
+                  style={{
+                    maxHeight: preSessionHeightCollapsed ? 0 : '2000px',
+                    transition: preSessionHeightCollapsed ? 'max-height 300ms ease-in-out' : 'max-height 500ms ease-in-out',
+                  }}
+                >
+                  <div
+                    className="transition-opacity duration-250 ease-in-out"
+                    style={{ opacity: preSessionContentVisible ? 1 : 0 }}
+                  >
 
                 {/* Module cards */}
                 {preSessionModules.length > 0 && (
                   <div className="space-y-2">
                     {preSessionModules.map((module, index) => {
-                      const libraryModule = getModuleById(module.libraryId);
                       const canMoveUp = index > 0;
                       const canMoveDown = index < preSessionModules.length - 1;
 
                       return (
                         <div key={module.instanceId} className="relative flex items-start">
                           {/* Reorder arrows — only in edit mode with multiple modules */}
-                          {isEditMode && preSessionModules.length > 1 && (
+                          {!isCompletedSession && isEditMode && preSessionModules.length > 1 && (
                             <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
                               <button
                                 type="button"
@@ -547,65 +615,30 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                             </div>
                           )}
 
-                          <div
-                            role="button"
-                            tabIndex={0}
+                          <ModuleCard
+                            module={module}
+                            onRemove={!isCompletedSession ? () => handleRemoveModule(module.instanceId) : undefined}
+                            isEditMode={!isCompletedSession && isEditMode}
                             onClick={() => setSelectedPreSessionModule(module)}
-                            className={`flex-1 text-left border-2 border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors cursor-pointer ${isEditMode ? 'border-dashed border-[var(--accent)]' : ''}`}
-                          >
-                            <div className="pl-3 pr-2 py-3">
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-start flex-1 min-w-0">
-                                  <p className="text-[var(--color-text-primary)] flex-1 min-w-0 uppercase tracking-wider text-xs">
-                                    {module.title}
-                                  </p>
-                                </div>
-                                <div className="flex items-start space-x-1 flex-shrink-0 ml-2">
-                                  <span className="text-[var(--color-text-tertiary)] text-sm">
-                                    {module.duration}m
-                                  </span>
-                                  {isEditMode && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRemoveModule(module.instanceId);
-                                      }}
-                                      className="ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm
-                                                 bg-[var(--color-bg)] border border-[var(--accent)] text-[var(--accent)]
-                                                 hover:bg-[var(--accent)] hover:text-white transition-colors"
-                                      title="Remove"
-                                    >
-                                      ×
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                              {(module.status === 'completed' || module.status === 'skipped') && module.startedAt ? (
-                                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1">
-                                  {formatTime(module.startedAt, { includeDate: true })}
-                                  {module.completedAt && ` – ${formatTime(module.completedAt, { includeDate: true })}`}
-                                </p>
-                              ) : (
-                                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 line-clamp-2">
-                                  {libraryModule?.description || ''}
-                                </p>
-                              )}
-                            </div>
-                          </div>
+                          />
                         </div>
                       );
                     })}
                   </div>
                 )}
 
-                {/* Add Pre-Session Activity button */}
-                <button
-                  onClick={() => handleAddModuleClick('pre-session')}
-                  className="mt-2 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
-                >
-                  + Add Pre-Session Activity
-                </button>
+                {/* Add Pre-Session Activity button — only before session */}
+                {!isCompletedSession && (
+                  <button
+                    onClick={() => handleAddModuleClick('pre-session')}
+                    className="mt-2 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
+                  >
+                    + Add Pre-Session Activity
+                  </button>
+                )}
+
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -638,6 +671,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
+          phaseStartedAt={timeline?.phases?.comeUp?.startedAt}
+          phaseEndedAt={timeline?.phases?.comeUp?.endedAt}
         />
 
         {/* Peak Phase */}
@@ -660,6 +695,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
+          phaseStartedAt={timeline?.phases?.peak?.startedAt}
+          phaseEndedAt={timeline?.phases?.peak?.endedAt}
         />
 
         {/* Integration Phase */}
@@ -682,6 +719,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
           onMoveModuleDown={handleMoveModuleDown}
+          phaseStartedAt={timeline?.phases?.integration?.startedAt}
+          phaseEndedAt={timeline?.phases?.integration?.endedAt}
         />
 
         {/* Closing Ritual - final node on the main session timeline */}
@@ -699,10 +738,10 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           {/* Closing Ritual content */}
           <div className="flex-1">
             <h3
-              className="font-serif text-lg"
+              className="font-serif text-[22px]"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
             >
-              Closing Ritual {isCompletedSession && <span className="text-[var(--color-text-tertiary)]">✓</span>}
+              Closing Ritual
             </h3>
             <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
               {isCompletedSession ? 'Completed' : 'End of session'}
@@ -724,25 +763,19 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
                 {/* Starting node */}
                 <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
-                {/* Vertical bar extending down to modules */}
+                {/* Vertical bar extending down */}
                 <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
               </div>
 
               {/* Phase 4 content */}
-              <div className="flex-1 pb-4">
+              <div className="flex-1">
                 {/* Phase header - matching PhaseSection styling */}
                 <div className="mb-4">
                   <h3
-                    className="flex items-baseline gap-2"
-                    style={{ lineHeight: 1, marginBottom: '8px' }}
+                    className="font-serif text-[22px]"
+                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
                   >
-                    <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-                      Phase 4
-                    </span>
-                    <span className="text-[var(--color-text-primary)]">-</span>
-                    <span className="text-[var(--color-text-primary)] text-[13px]">
-                      Follow-Up
-                    </span>
+                    Follow-Up
                   </h3>
 
                   {/* Timing info */}
@@ -752,68 +785,44 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                   {/* Phase description */}
                   <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
-                    Short reflections to help you integrate what you experienced.
+                    Reflections and exercises to help you integrate your experience. Some are available within hours, others are better suited for the days and weeks ahead. Add more activities at any time.
                   </p>
                 </div>
 
-                {/* Follow-up module cards - styled like ModuleCard */}
+                {/* Follow-up module cards */}
                 <div className="space-y-2">
                   {['checkIn', 'revisit', 'integration'].map((moduleId) => {
                     const moduleState = followUp?.modules?.[moduleId];
                     const status = moduleState?.status || 'locked';
-                    const isModuleCompleted = status === 'completed';
                     const isLocked = status === 'locked';
-                    const isAvailable = status === 'available';
+                    const isCompleted = status === 'completed';
 
                     const moduleInfo = {
-                      checkIn: { title: 'Check-In', description: 'A brief check-in on how you are feeling since your session.', duration: '5m' },
-                      revisit: { title: 'Revisit', description: 'Read back what you wrote during your session.', duration: '10m' },
-                      integration: { title: 'Integration Reflection', description: 'Deeper reflection on how insights are integrating into your life.', duration: '10m' },
+                      checkIn: { title: 'Check-In', description: 'A brief check-in on how you are feeling since your session.', duration: 5 },
+                      revisit: { title: 'Revisit', description: 'Read back what you wrote during your session.', duration: 10 },
+                      integration: { title: 'Integration Reflection', description: 'Deeper reflection on how insights are integrating into your life.', duration: 10 },
                     };
 
                     const info = moduleInfo[moduleId];
 
+                    const statusText = isLocked && followUpCountdown[moduleId]
+                      ? followUpCountdown[moduleId]
+                      : status === 'available' ? 'Available now'
+                      : isCompleted ? 'Completed'
+                      : info.description;
+
+                    const icon = isLocked
+                      ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
+                      : <SparkleIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
+
                     return (
-                      <button
+                      <ModuleCard
                         key={moduleId}
-                        type="button"
+                        module={{ instanceId: moduleId, title: info.title, duration: info.duration, libraryId: moduleId }}
                         onClick={() => setSelectedFollowUpModule(moduleId)}
-                        className={`group w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${
-                          isModuleCompleted ? 'opacity-50' : ''
-                        }`}
-                      >
-                        <div className="pl-3 pr-2 py-3">
-                          {/* Top row: Title, Duration */}
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start flex-1 min-w-0">
-                              {/* Status indicator */}
-                              <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
-                                {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
-                                {isLocked && <span className="text-[var(--color-text-tertiary)]">🔒</span>}
-                                {isAvailable && <span className="text-[var(--color-text-tertiary)]">○</span>}
-                              </div>
-                              {/* Title */}
-                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
-                                {info.title}
-                              </p>
-                            </div>
-                            {/* Duration */}
-                            <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
-                              {info.duration}
-                            </span>
-                          </div>
-                          {/* Description */}
-                          <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
-                            {isLocked && followUpCountdown[moduleId]
-                              ? followUpCountdown[moduleId]
-                              : isAvailable
-                                ? 'Available now'
-                                : isModuleCompleted
-                                  ? 'Completed'
-                                  : info.description}
-                          </p>
-                        </div>
-                      </button>
+                        statusText={statusText}
+                        statusIcon={icon}
+                      />
                     );
                   })}
                 </div>
@@ -829,9 +838,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                         ? closedAt + unlockDelayHours * 60 * 60 * 1000
                         : null;
                       const isUnlocked = unlockTime ? Date.now() >= unlockTime : true;
-                      const isModuleCompleted = module.status === 'completed';
+                      const isCompleted = module.status === 'completed';
 
-                      // Calculate countdown for locked modules
                       let countdownText = '';
                       if (unlockTime && !isUnlocked) {
                         const remaining = unlockTime - Date.now();
@@ -840,69 +848,45 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                         countdownText = hours > 0 ? `Available in ${hours}h ${minutes}m` : `Available in ${minutes}m`;
                       }
 
+                      const statusText = !isUnlocked && !isCompleted
+                        ? countdownText
+                        : isUnlocked && !isCompleted
+                          ? 'Available now'
+                          : 'Completed';
+
+                      const icon = (!isUnlocked && !isCompleted)
+                        ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
+                        : <SparkleIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
+
                       return (
-                        <button
+                        <ModuleCard
                           key={module.instanceId}
-                          type="button"
+                          module={module}
                           onClick={() => setSelectedAddedFollowUpModule(module)}
-                          className={`group w-full text-left border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-bg-secondary)] transition-colors ${
-                            isModuleCompleted ? 'opacity-50' : ''
-                          }`}
-                        >
-                          <div className="pl-3 pr-2 py-3">
-                            {/* Top row: Title, Duration */}
-                            <div className="flex items-start justify-between">
-                              <div className="flex items-start flex-1 min-w-0">
-                                {/* Status indicator */}
-                                <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
-                                  {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
-                                  {!isUnlocked && !isModuleCompleted && <span className="text-[var(--color-text-tertiary)]">🔒</span>}
-                                  {isUnlocked && !isModuleCompleted && <span className="text-[var(--color-text-tertiary)]">○</span>}
-                                </div>
-                                {/* Title */}
-                                <p className="text-[var(--color-text-primary)] flex-1 min-w-0">
-                                  {module.title}
-                                </p>
-                              </div>
-                              {/* Duration */}
-                              <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
-                                {module.duration}m
-                              </span>
-                            </div>
-                            {/* Description/Status */}
-                            <p className="text-[var(--color-text-tertiary)] text-xs mt-1 ml-7 line-clamp-2">
-                              {!isUnlocked && !isModuleCompleted
-                                ? countdownText
-                                : isUnlocked && !isModuleCompleted
-                                  ? 'Available now'
-                                  : 'Completed'}
-                            </p>
-                          </div>
-                        </button>
+                          statusText={statusText}
+                          statusIcon={icon}
+                        />
                       );
                     })}
                   </div>
                 )}
-
-                {/* Add Activity button for follow-up phase */}
-                <button
-                  onClick={() => handleAddModuleClick('follow-up')}
-                  className="mt-3 w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
-                >
-                  + Add Activity
-                </button>
               </div>
             </div>
 
-            {/* Ending node for Phase 4 timeline */}
-            <div className="relative flex">
+            {/* Ending row: timeline node centered with Add Activity button */}
+            <div className="flex">
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-1 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className="flex-1" />
               </div>
-              <div className="flex-1">
-                <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1 }}>
-                  End of follow-up
-                </p>
+              <div className="flex-1 pt-3 pb-3">
+                <button
+                  onClick={() => handleAddModuleClick('follow-up')}
+                  className="w-full py-3 border border-dashed border-[var(--color-border)] text-[var(--color-text-tertiary)] hover:border-[var(--color-text-secondary)] hover:text-[var(--color-text-secondary)] transition-colors text-sm flex items-center justify-center"
+                >
+                  + Add Activity
+                </button>
               </div>
             </div>
           </div>
@@ -935,8 +919,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         )}
       </div>
 
-      {/* Pre-Session Section — collapsed at bottom during/after session */}
-      {(isActiveSession || isCompletedSession) && preSessionModules.length > 0 && (
+      {/* Pre-Session Section — collapsed at bottom during active session (only if at least one activity was completed) */}
+      {isActiveSession && !isCompletedSession && preSessionModules.length > 0 && preSessionModules.some((m) => m.status === 'completed') && (
         <div className="mt-6">
           <div className="relative flex">
             {/* Timeline node and vertical bar */}
@@ -959,7 +943,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 className="flex items-baseline gap-2 w-full text-left"
                 style={{ lineHeight: 1, marginBottom: preSessionExpanded ? '8px' : '0' }}
               >
-                <span className={`font-serif text-lg ${preSessionExpanded ? '' : 'text-[var(--color-text-tertiary)]'}`} style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                <span className={`font-serif text-xl ${preSessionExpanded ? '' : 'text-[var(--color-text-tertiary)]'}`} style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
                   Pre-Session
                 </span>
                 <span className="text-[var(--color-text-tertiary)] text-xs">
@@ -972,54 +956,15 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
               {preSessionExpanded && (
                 <div className="space-y-2">
-                  {preSessionModules.map((module) => {
-                    const isModuleCompleted = module.status === 'completed';
-                    const isModuleSkipped = module.status === 'skipped';
-                    const libraryModule = getModuleById(module.libraryId);
-
-                    // During active session, cards are display-only (not clickable)
-                    const isClickable = isCompletedSession;
-
-                    return (
-                      <div
-                        key={module.instanceId}
-                        role={isClickable ? 'button' : undefined}
-                        tabIndex={isClickable ? 0 : undefined}
-                        onClick={isClickable ? () => setSelectedPreSessionModule(module) : undefined}
-                        className={`w-full text-left border-2 border-[var(--color-border)] bg-[var(--color-bg)] transition-colors ${
-                          (isModuleCompleted || isModuleSkipped) ? 'opacity-50' : ''
-                        } ${isClickable ? 'hover:bg-[var(--color-bg-secondary)] cursor-pointer' : ''}`}
-                      >
-                        <div className="pl-3 pr-2 py-3">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start flex-1 min-w-0">
-                              <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
-                                {isModuleCompleted && <span className="text-[var(--accent)]">✓</span>}
-                                {isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
-                                {!isModuleCompleted && !isModuleSkipped && <span className="text-[var(--color-text-tertiary)]">○</span>}
-                              </div>
-                              <p className="text-[var(--color-text-primary)] flex-1 min-w-0 uppercase tracking-wider text-xs">
-                                {module.title}
-                              </p>
-                            </div>
-                            <span className="text-[var(--color-text-tertiary)] text-sm flex-shrink-0 ml-2">
-                              {module.duration}m
-                            </span>
-                          </div>
-                          {(isModuleCompleted || isModuleSkipped) && module.startedAt ? (
-                            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 ml-7">
-                              {formatTime(module.startedAt, { includeDate: true })}
-                              {module.completedAt && ` – ${formatTime(module.completedAt, { includeDate: true })}`}
-                            </p>
-                          ) : (
-                            <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 ml-7 line-clamp-2">
-                              {libraryModule?.description || ''}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {preSessionModules.map((module) => (
+                    <ModuleCard
+                      key={module.instanceId}
+                      module={module}
+                      isActiveSession={isActiveSession || isCompletedSession}
+                      canRemove={false}
+                      onClick={isCompletedSession ? () => setSelectedPreSessionModule(module) : undefined}
+                    />
+                  ))}
                 </div>
               )}
             </div>

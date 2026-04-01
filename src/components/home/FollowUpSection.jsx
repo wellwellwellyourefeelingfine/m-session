@@ -142,11 +142,11 @@ export default function FollowUpSection() {
             className="flex items-baseline gap-2"
             style={{ lineHeight: 1, marginBottom: '8px' }}
           >
-            <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+            <span className="font-serif text-[22px]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
               Phase 4
             </span>
             <span className="text-[var(--color-text-primary)]">-</span>
-            <span className="text-[var(--color-text-primary)] text-[13px]">
+            <span className="text-[var(--color-text-primary)] text-[15px]">
               Follow-Up
             </span>
           </h3>

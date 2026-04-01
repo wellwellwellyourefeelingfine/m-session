@@ -14,7 +14,7 @@ export default memo(function AnimatedTextLogo() {
         if (!el || useAppStore.getState().preferences?.reduceMotion) return;
         el.style.animation = 'none';
         el.offsetHeight;
-        el.style.animation = 'hyphen-flip 1.15s var(--ease-default)';
+        el.style.animation = 'hyphen-flip 1.1s var(--ease-default)';
       }
     });
     return unsub;

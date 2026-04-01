@@ -13,6 +13,7 @@ import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionSt
 import DurationPicker from '../shared/DurationPicker';
 import ModuleDetailModal from './ModuleDetailModal';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import { SparkleIcon, CircleCheckIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function ModuleCard({
   module,
@@ -22,6 +23,10 @@ export default function ModuleCard({
   canRemove = true,
   isEditMode = false,
   dataTutorial,
+  onClick,
+  statusIcon,
+  statusText,
+  phaseCompleted = false,
 }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -86,7 +91,7 @@ export default function ModuleCard({
     }
     if (isCurrentModule) return 'border-2 border-[var(--accent)]';
     if (isBooster && isGrayedOut) return 'border-2 border-[var(--accent)] opacity-80';
-    if (isGrayedOut) return 'border-2 border-[var(--color-border)] opacity-50';
+    if (isGrayedOut) return `border-2 border-[var(--color-border)] ${phaseCompleted ? '' : 'opacity-50'}`;
     if (isBooster) return 'border-2 border-[var(--accent)] bg-[var(--accent-bg)]';
     return 'border-2 border-[var(--color-border)]';
   };
@@ -99,6 +104,10 @@ export default function ModuleCard({
 
   // Handle card click to open detail modal
   const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+      return;
+    }
     if (isBooster) {
       setShowBoosterInfo(true);
       return;
@@ -135,7 +144,7 @@ export default function ModuleCard({
       onClick={handleCardClick}
       data-tutorial={dataTutorial}
     >
-      <div className={`${isBooster ? 'pl-6 pr-2 pt-2 pb-1' : 'pl-3 pr-2 py-3'}`}>
+      <div className={`${isBooster ? 'pl-6 pr-2 pt-2 pb-1' : isGrayedOut ? 'pl-3 pr-4 py-1.5' : 'pl-3 pr-4 pt-3 pb-0.5'}`}>
         {isBooster ? (
           // Booster module - left-aligned layout matching other modules
           <div className="w-full">
@@ -183,18 +192,8 @@ export default function ModuleCard({
             <div className="flex items-start justify-between">
               {/* Left side: Status indicator + Title */}
               <div className="flex items-start flex-1 min-w-0">
-                {/* Status indicator for active session */}
-                {isActiveSession && (
-                  <div className="mr-3 w-4 flex-shrink-0 pt-0.5">
-                    {isCompleted && <span className="text-[var(--accent)]">✓</span>}
-                    {isSkipped && <span className="text-[var(--color-text-tertiary)]">—</span>}
-                    {isCurrentModule && <span className="text-[var(--accent)]">●</span>}
-                    {!isCompleted && !isSkipped && !isCurrentModule && <span className="text-[var(--color-text-tertiary)]">○</span>}
-                  </div>
-                )}
-
                 {/* Title - top left aligned */}
-                <p className={`${getTextClass()} flex-1 min-w-0 uppercase tracking-wider text-xs`}>
+                <p className={`${getTextClass()} flex-1 min-w-0 text-[18px]`} style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
                   {module.title}
                 </p>
               </div>
@@ -238,15 +237,24 @@ export default function ModuleCard({
 
             {/* Description or completion times */}
             {isActiveSession && (isCompleted || isSkipped) && module.startedAt ? (
-              <p className={`text-[var(--color-text-tertiary)] text-xs mt-1 ml-7`}>
-                {formatTimestamp(module.startedAt)}
-                {module.completedAt && ` – ${formatTimestamp(module.completedAt)}`}
-              </p>
-            ) : (
-              libraryModule?.description && (
-                <p className={`text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mt-1 line-clamp-2 ${isActiveSession ? 'ml-7' : ''}`}>
-                  {libraryModule.description}
+              <div className="flex items-center gap-2 -mt-2 overflow-visible" style={{ height: '16px' }}>
+                {isCompleted
+                  ? <CircleCheckIcon size={24} className="text-[var(--accent)] flex-shrink-0 -mt-2.5" />
+                  : <CircleSkipIcon size={24} className="text-[var(--color-text-tertiary)] flex-shrink-0 -mt-2.5" />
+                }
+                <p className="text-[var(--color-text-tertiary)] text-xs" style={{ transform: 'translateY(2.5px)' }}>
+                  {formatTimestamp(module.startedAt)}
+                  {module.completedAt && ` – ${formatTimestamp(module.completedAt)}`}
                 </p>
+              </div>
+            ) : (
+              (statusText || libraryModule?.description) && (
+                <div className="flex items-start gap-2.5 -mt-0.5">
+                  {statusIcon || <SparkleIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />}
+                  <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider line-clamp-3 min-w-0">
+                    {statusText || libraryModule.description}
+                  </p>
+                </div>
               )
             )}
           </>

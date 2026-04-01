@@ -95,7 +95,7 @@ export default function ModuleStatusBar({
   return (
     <>
       <ModuleProgressBar progress={progress} isPaused={isPaused} />
-      <div className="fixed left-0 right-0 z-30 bg-[var(--color-bg)]" style={{ top: 'var(--header-height)' }}>
+      <div className="fixed left-0 right-0 z-30" style={{ top: 'var(--header-height)' }}>
         {/* Status content */}
         <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)] gap-3">
         {/* Left: Phase info — basis matches right column for centering */}

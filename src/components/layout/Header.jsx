@@ -47,16 +47,16 @@ export default function Header() {
           {/* App Logo + "SESSION" text */}
           <div className="h-full flex items-end" style={{ padding: '0' }}>
             {alternateAppLogo ? (
-              <div style={{ paddingBottom: '8px', paddingLeft: '12px' }}>
-                <AnimatedTextLogo />
-              </div>
-            ) : (
               <img
                 src={`${import.meta.env.BASE_URL}${darkMode ? 'm-session-logo-black-128.png' : 'm-session-logo-light-128.png'}`}
                 alt="m-session"
                 className="h-full w-auto"
                 style={darkMode ? { filter: 'brightness(1.3)' } : undefined}
               />
+            ) : (
+              <div style={{ paddingBottom: '8px', paddingLeft: '12px' }}>
+                <AnimatedTextLogo />
+              </div>
             )}
           </div>
 

@@ -26,7 +26,7 @@ export const useAppStore = create(
         reduceMotion: false, // Disable animations
         timerSound: false, // Audio alert when timer completes
         gongSound: true, // Meditation bell at start/end of meditations
-        alternateAppLogo: false, // Animated text logo instead of PNG
+        alternateAppLogo: false, // PNG logo instead of animated text
       },
       setPreference: (key, value) =>
         set((state) => ({

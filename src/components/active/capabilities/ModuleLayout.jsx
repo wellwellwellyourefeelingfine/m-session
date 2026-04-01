@@ -27,7 +27,7 @@
  * - Safe area padding
  */
 
-import MorphingShapes from './animations/MorphingShapes';
+import LeafDrawV2 from './animations/LeafDrawV2';
 import AsciiMoon from './animations/AsciiMoon';
 
 /**
@@ -139,8 +139,8 @@ export function ModuleContent({
  * Shown when a module finishes successfully
  */
 export function CompletionScreen({
-  title = 'Well done.',
-  message = 'Take a moment before moving on.',
+  title = 'Well done',
+  message = 'Take a moment before moving on',
 }) {
   return (
     <div className="text-center space-y-4 animate-fadeIn">
@@ -172,10 +172,10 @@ export function IdleScreen({
   duration,
 }) {
   return (
-    <div className="text-center space-y-4 animate-fadeIn">
+    <div className="space-y-4 animate-fadeIn px-6">
       {title && (
         <h2
-          className="text-2xl text-[var(--color-text-primary)]"
+          className="text-2xl text-[var(--color-text-primary)] text-center"
           style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
           {title}
@@ -183,17 +183,17 @@ export function IdleScreen({
       )}
 
       <div className="flex justify-center">
-        <MorphingShapes />
+        <AsciiMoon />
       </div>
 
       {description && (
-        <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+        <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed text-left">
           {description}
         </p>
       )}
 
       {duration && (
-        <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)]">
+        <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] text-center">
           {duration} minutes
         </p>
       )}

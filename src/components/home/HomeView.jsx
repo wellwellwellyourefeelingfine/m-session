@@ -16,6 +16,10 @@ import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import { getModuleById } from '../../content/modules/library';
 import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
+import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
+import { useJournalStore } from '../../stores/useJournalStore';
+import { AwardIcon, CirclePlusIcon } from '../shared/Icons';
+import { downloadSessionData } from '../../utils/downloadSessionData';
 
 /**
  * Format date nicely
@@ -57,6 +61,22 @@ export default function HomeView() {
   const addModule = useSessionStore((state) => state.addModule);
   const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
+  const archivedSessions = useSessionHistoryStore((s) => s.sessions);
+  const modules = useSessionStore((state) => state.modules);
+  const followUp = useSessionStore((state) => state.followUp);
+  const journalEntries = useJournalStore((s) => s.entries);
+
+  const recordDataExport = useSessionStore((state) => state.recordDataExport);
+
+  // Lock in session number on first completed render
+  useEffect(() => {
+    if (sessionPhase === 'completed' && session?.sessionNumber == null) {
+      const priorCompleted = archivedSessions.filter((s) => s.metadata?.closedAt).length;
+      useSessionStore.setState((state) => ({
+        session: { ...state.session, sessionNumber: priorCompleted + 1 },
+      }));
+    }
+  }, [sessionPhase, session?.sessionNumber, archivedSessions]);
 
   // Preview Activity state
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
@@ -273,28 +293,82 @@ export default function HomeView() {
       case 'paused':
         return <TimelineEditor isActiveSession={true} />;
 
-      case 'completed':
+      case 'completed': {
+        const moduleItems = modules?.items || [];
+        const moduleHistory = modules?.history || [];
+        const preSessionCount = moduleItems.filter((m) => m.phase === 'pre-session' && m.status === 'completed').length;
+        const completedCount = moduleItems.filter((m) => m.phase !== 'pre-session' && m.phase !== 'follow-up' && m.status === 'completed').length;
+        const longestModule = moduleHistory.reduce((longest, m) => {
+          if (!m.actualDuration) return longest;
+          return !longest || m.actualDuration > longest.actualDuration ? m : longest;
+        }, null);
+        const longestName = longestModule?.title;
+        const longestMins = longestModule?.actualDuration ? Math.round(longestModule.actualDuration / 60) : null;
+        const defaultFollowUpCompleted = ['checkIn', 'revisit', 'integration'].filter(
+          (id) => followUp?.modules?.[id]?.status === 'completed'
+        ).length;
+        const addedFollowUpCompleted = moduleItems.filter((m) => m.phase === 'follow-up' && m.status === 'completed').length;
+        const followUpCount = defaultFollowUpCompleted + addedFollowUpCompleted;
+        const exportDate = session?.dataExportedAt
+          ? new Date(session.dataExportedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
+          : null;
+
         return (
-          <div className="max-w-md mx-auto px-6 pb-8">
+          <div className="max-w-md mx-auto pb-8">
             {/* Session Complete Header */}
-            <div className="pt-6 pb-4 text-center border-b border-[var(--color-border)]">
-              <h2 className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)] mb-2">
-                Session Complete
-              </h2>
-              <p className="text-[var(--color-text-secondary)] text-sm">
-                {formatDate(substanceChecklist?.ingestionTime || session?.closedAt)}
-              </p>
-              {session?.finalDurationSeconds && (
-                <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
-                  Duration: {formatDuration(session.finalDurationSeconds)}
+            <div className="pt-6 pb-4 px-6 border-b border-[var(--color-border)] flex items-start justify-between">
+              <div>
+                <h2
+                  className="text-[22px] mb-1"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', color: 'var(--accent)' }}
+                >
+                  Session Complete
+                </h2>
+                <p className="text-[var(--color-text-secondary)] text-sm">
+                  {formatDate(substanceChecklist?.ingestionTime || session?.closedAt)}
                 </p>
-              )}
+                <div className="text-[var(--color-text-secondary)] text-xs mt-1.5 space-y-0.5">
+                  {(substanceChecklist?.ingestionTime || session?.closedAt) && (
+                    <p>
+                      {substanceChecklist?.ingestionTime && new Date(substanceChecklist.ingestionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {substanceChecklist?.ingestionTime && session?.closedAt && ' – '}
+                      {session?.closedAt && new Date(session.closedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  )}
+                  {session?.finalDurationSeconds && (
+                    <p>Duration: {formatDuration(session.finalDurationSeconds)}</p>
+                  )}
+                  <p>Pre-session activities: {preSessionCount}</p>
+                  <p>Session activities: {completedCount}</p>
+                  <p>Follow-up activities: {followUpCount}</p>
+                  <p>Longest activity: {longestName ? `${longestName}${longestMins ? ` (${longestMins}m)` : ''}` : 'n/a'}</p>
+                  <p>Journal entries: {journalEntries.length}</p>
+                  <p>Session data: {exportDate
+                    ? `Exported on ${exportDate}`
+                    : <button
+                        onClick={() => { downloadSessionData(); recordDataExport(); }}
+                        className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
+                        style={{ textTransform: 'none' }}
+                      >
+                        Not yet exported
+                        <CirclePlusIcon size={14} className="text-[var(--accent)]" />
+                      </button>
+                  }</p>
+                </div>
+              </div>
+              <AwardIcon
+                size={48}
+                className="text-[var(--accent)] flex-shrink-0 mt-1"
+                number={session?.sessionNumber > 1 ? session.sessionNumber : undefined}
+              />
             </div>
 
             {/* Frozen Timeline with integrated Phase 4 Follow-Up */}
             <TimelineEditor isActiveSession={false} isCompletedSession={true} />
+
           </div>
         );
+      }
 
       default:
         return (

@@ -5,13 +5,16 @@
 
 import { downloadSessionData, downloadSessionImages } from '../../utils/downloadSessionData';
 import { useJournalStore } from '../../stores/useJournalStore';
+import { useSessionStore } from '../../stores/useSessionStore';
 
 export default function DataDownloadModal({ onClose }) {
   const journalEntries = useJournalStore((s) => s.entries);
   const hasImages = journalEntries.some((e) => e.hasImage && e.source === 'session');
+  const recordDataExport = useSessionStore((s) => s.recordDataExport);
 
   const handleDownloadText = () => {
     downloadSessionData();
+    recordDataExport();
     onClose();
   };
 

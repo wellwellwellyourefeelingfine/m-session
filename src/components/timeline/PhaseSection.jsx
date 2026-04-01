@@ -7,6 +7,7 @@
 
 import { forwardRef, useState, useRef } from 'react';
 import ModuleCard from './ModuleCard';
+import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
 
 // Phase descriptions - static text for each phase
 const PHASE_DESCRIPTIONS = {
@@ -51,9 +52,33 @@ const PhaseSection = forwardRef(function PhaseSection(
     onMoveModuleDown,
     isFirst = false,
     previousPhaseCompleted = false,
+    phaseStartedAt = null,
+    phaseEndedAt = null,
   },
   ref
 ) {
+  // Track collapse animation stages
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [contentVisible, setContentVisible] = useState(true);
+  const [heightCollapsed, setHeightCollapsed] = useState(false);
+
+  const handleToggleCollapse = () => {
+    if (!isCollapsed) {
+      // Collapsing: fade out content → collapse height
+      setContentVisible(false);
+      setTimeout(() => {
+        setHeightCollapsed(true);
+        setIsCollapsed(true);
+      }, 250);
+    } else {
+      // Expanding: expand height → wait → fade in content
+      setHeightCollapsed(false);
+      setTimeout(() => {
+        setContentVisible(true);
+        setIsCollapsed(false);
+      }, 600);
+    }
+  };
   // Track modules being deleted for fade-out animation
   const [deletingModuleId, setDeletingModuleId] = useState(null);
   // Track modules being swapped for smooth animation
@@ -146,46 +171,78 @@ const PhaseSection = forwardRef(function PhaseSection(
       </div>
 
       {/* Phase content */}
-      <div className={`flex-1 pb-6 ${getPhaseOpacity()}`}>
+      <div className={`flex-1 ${heightCollapsed ? 'pb-2' : 'pb-6'} ${getPhaseOpacity()} transition-all duration-300`}>
         {/* Phase header - new design with DM Serif font */}
-        <div className="mb-4" data-tutorial={`phase-${phase}`}>
+        <div data-tutorial={`phase-${phase}`}>
           <div className="flex items-start justify-between">
             <h3
               className="flex items-baseline gap-2"
               style={{ lineHeight: 1, marginBottom: '8px' }}
             >
-              <span className="font-serif text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+              <span className="font-serif text-[22px]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
                 {PHASE_NUMBERS[phase]}
               </span>
               <span className="text-[var(--color-text-primary)]">-</span>
-              <span className="text-[var(--color-text-primary)] text-[13px]">
+              <span className="text-[var(--color-text-primary)] text-[15px]">
                 {PHASE_NAMES[phase]}
               </span>
             </h3>
-            {!isCompletedSession && onToggleEditMode && (
+            {phaseStatus === 'completed' ? (
               <button
-                onClick={onToggleEditMode}
-                className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
-                  isEditMode
-                    ? 'bg-[var(--accent)] text-white'
-                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
-                }`}
+                onClick={handleToggleCollapse}
+                className="flex-shrink-0 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
               >
-                {isEditMode ? 'Done' : 'Edit'}
+                {isCollapsed
+                  ? <CirclePlusIcon size={18} className="text-current" />
+                  : <CircleSkipIcon size={18} className="text-current" />
+                }
               </button>
+            ) : (
+              !isCompletedSession && onToggleEditMode && (
+                <button
+                  onClick={onToggleEditMode}
+                  className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
+                    isEditMode
+                      ? 'bg-[var(--accent)] text-white'
+                      : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  {isEditMode ? 'Done' : 'Edit'}
+                </button>
+              )
             )}
           </div>
 
-          {/* Phase duration text - tightly beneath header */}
-          <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-            {phase === 'come-up' ? '0 to 1 hour in length' : 'About 2 hours in length'}
-          </p>
+        </div>
+
+        {/* Phase duration text or timestamp for completed phases — always visible */}
+        <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
+          {phaseStatus === 'completed' && phaseStartedAt
+            ? <>
+                {new Date(phaseStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {phaseEndedAt && ` – ${new Date(phaseEndedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+              </>
+            : phase === 'come-up' ? '0 to 1 hour in length' : 'About 2 hours in length'
+          }
+        </p>
+
+        {/* Collapsible content — staged animation: fade content, then collapse height */}
+        <div
+          className="overflow-hidden ease-in-out"
+          style={{
+            maxHeight: heightCollapsed ? 0 : '2000px',
+            transition: heightCollapsed ? 'max-height 300ms ease-in-out' : 'max-height 500ms ease-in-out',
+          }}
+        >
+          <div
+            className="transition-opacity duration-250 ease-in-out"
+            style={{ opacity: contentVisible ? 1 : 0 }}
+          >
 
           {/* Phase description - compact styling */}
-          <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
+          <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '16px' }}>
             {PHASE_DESCRIPTIONS[phase] || ''}
           </p>
-        </div>
 
         {/* Modules list */}
         <div className="space-y-2">
@@ -301,6 +358,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                     canRemove={canRemoveModule(module)}
                     isEditMode={canShowEditMode}
                     dataTutorial={phase === 'come-up' && index === 0 ? 'module-card-first' : undefined}
+                    phaseCompleted={phaseStatus === 'completed'}
                   />
                 </div>
               );
@@ -321,6 +379,8 @@ const PhaseSection = forwardRef(function PhaseSection(
             </span>
           </button>
         )}
+        </div>
+        </div>
       </div>
     </div>
   );

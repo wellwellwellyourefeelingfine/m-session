@@ -39,6 +39,10 @@ const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActi
 const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
 const PendulationModule = lazy(() => import('./modules/PendulationModule'));
 const ShakingTheTreeModule = lazy(() => import('./modules/ShakingTheTreeModule'));
+const LetterWritingModule = lazy(() => import('./modules/LetterWritingModule'));
+const InnerChildLetterModule = lazy(() => import('./modules/InnerChildLetterModule'));
+const FeelingDialogueModule = lazy(() => import('./modules/FeelingDialogueModule'));
+const CommittedActionLetterModule = lazy(() => import('./modules/CommittedActionLetterModule'));
 
 // Import the generic shell (small, stays in main chunk)
 import { ModuleShell } from './capabilities';
@@ -55,9 +59,19 @@ export const CUSTOM_MODULES = {
   journaling: JournalingModule,
   'light-journaling': JournalingModule,
   'deep-journaling': JournalingModule,
-  'letter-writing': JournalingModule,
+  'letter-writing': LetterWritingModule,
+  'inner-child-letter': InnerChildLetterModule,
+  'feeling-dialogue': FeelingDialogueModule,
+  'committed-action': CommittedActionLetterModule,
+  'integration-reflection-journal': JournalingModule,
+  'relationships-reflection': JournalingModule,
+  'lifestyle-reflection': JournalingModule,
+  'spirit-meaning': JournalingModule,
+  'body-somatic': JournalingModule,
+  'nature-connection': JournalingModule,
   'parts-work': JournalingModule,
   'therapy-exercise': JournalingModule,
+  'time-capsule': JournalingModule,
   // Note: 'closing-ritual' is now a transition flow, not a module
 
   // Open awareness has audio-text sync with variable duration
