@@ -221,20 +221,7 @@ export default function ActiveView() {
                   )}
                 </div>
                 <button
-                  onClick={() => {
-                    if (sessionPhase === 'not-started') {
-                      const { setPreviewOverlay } = useAppStore.getState();
-                      setPreviewOverlay('enter');
-                      setTimeout(() => setPreviewOverlay('visible'), 20);
-                      setTimeout(() => {
-                        exitPreSessionModule();
-                        setTimeout(() => setPreviewOverlay('exit'), 100);
-                        setTimeout(() => setPreviewOverlay(null), 500);
-                      }, 420);
-                    } else {
-                      exitPreSessionModule();
-                    }
-                  }}
+                  onClick={() => exitPreSessionModule()}
                   className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
                 >
                   Exit
@@ -245,36 +232,8 @@ export default function ActiveView() {
               <ModuleRenderer
                 module={preSessionModule}
                 onTimerUpdate={handleModuleTimerUpdate}
-                onComplete={() => {
-                  if (sessionPhase === 'not-started') {
-                    const { setPreviewOverlay, setCurrentTab } = useAppStore.getState();
-                    setPreviewOverlay('enter');
-                    setTimeout(() => setPreviewOverlay('visible'), 20);
-                    setTimeout(() => {
-                      completePreSessionModule(preSessionModule.instanceId);
-                      setCurrentTab('home');
-                      setTimeout(() => setPreviewOverlay('exit'), 100);
-                      setTimeout(() => setPreviewOverlay(null), 500);
-                    }, 420);
-                  } else {
-                    completePreSessionModule(preSessionModule.instanceId);
-                  }
-                }}
-                onSkip={() => {
-                  if (sessionPhase === 'not-started') {
-                    const { setPreviewOverlay, setCurrentTab } = useAppStore.getState();
-                    setPreviewOverlay('enter');
-                    setTimeout(() => setPreviewOverlay('visible'), 20);
-                    setTimeout(() => {
-                      skipPreSessionModule(preSessionModule.instanceId);
-                      setCurrentTab('home');
-                      setTimeout(() => setPreviewOverlay('exit'), 100);
-                      setTimeout(() => setPreviewOverlay(null), 500);
-                    }, 420);
-                  } else {
-                    skipPreSessionModule(preSessionModule.instanceId);
-                  }
-                }}
+                onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
+                onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
               />
             </div>
           </div>
@@ -350,19 +309,50 @@ export default function ActiveView() {
           </div>
         );
 
-      case 'completed':
+      case 'completed': {
+        // If a follow-up library module is actively running, render it
+        if (currentModule && currentModule.phase === 'follow-up') {
+          return (
+            <ModuleRenderer
+              module={currentModule}
+              onTimerUpdate={handleModuleTimerUpdate}
+            />
+          );
+        }
+
+        // Follow-up landing page (mirrors the pre-session landing page)
+        // Find the next available follow-up module (from library modules added to timeline)
+        const nextFollowUpModule = _modules.items
+          .filter((m) => m.phase === 'follow-up' && (m.status === 'active' || m.status === 'upcoming'))
+          .sort((a, b) => a.order - b.order)[0];
+
         return (
-          <div className="min-h-[60vh] flex items-center justify-center px-6">
-            <div className="text-center space-y-8">
-              <p className="text-[var(--color-text-secondary)]">
-                Session complete.
-              </p>
-              <p className="text-[var(--color-text-tertiary)] max-w-sm mx-auto">
-                Take time to rest and integrate. Your notes are saved in the Journal tab.
-              </p>
+          <div className="min-h-[60vh] flex flex-col items-center justify-center px-6">
+            <h2
+              className="text-2xl mb-8 text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Follow-Up
+            </h2>
+            <div className="mb-8">
+              <AsciiMoon />
             </div>
+            {nextFollowUpModule ? (
+              <button
+                onClick={() => startModule(nextFollowUpModule.instanceId)}
+                className="mb-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] px-6 py-3 text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
+              >
+                Continue Follow-Up Activity
+              </button>
+            ) : null}
+            <p
+              className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider leading-relaxed max-w-[16rem] text-center"
+            >
+              Take time to rest and integrate. Your notes are saved in the Journal tab. You can add follow-up activities from your timeline.
+            </p>
           </div>
         );
+      }
 
       default:
         return (

@@ -13,7 +13,7 @@ import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
 import ModuleCard from './ModuleCard';
-import { ClockIcon, SparkleIcon, CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
+import { ClockIcon, LeafIcon, CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
 import FollowUpModuleModal from '../home/FollowUpModuleModal';
@@ -813,7 +813,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                     const icon = isLocked
                       ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-                      : <SparkleIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
+                      : <LeafIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
 
                     return (
                       <ModuleCard
@@ -856,7 +856,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                       const icon = (!isUnlocked && !isCompleted)
                         ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-                        : <SparkleIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
+                        : <LeafIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
 
                       return (
                         <ModuleCard

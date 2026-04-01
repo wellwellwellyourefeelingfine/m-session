@@ -8,7 +8,7 @@ import { useState, useCallback } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES } from '../../content/modules';
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false }) {
-  const [filter, setFilter] = useState('all'); // 'all' | 'recommended' | phase filter
+  const [filter, setFilter] = useState('recommended'); // 'all' | 'recommended' | phase filter
   const [closing, setClosing] = useState(false);
 
   const handleClose = useCallback(() => {
