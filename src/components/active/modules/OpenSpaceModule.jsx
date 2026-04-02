@@ -17,6 +17,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { getModuleById } from '../../../content/modules';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { useSilenceTimer } from '../../../hooks/useSilenceTimer';
 
 // Shared UI components
@@ -35,16 +36,18 @@ function formatTime(seconds) {
 
 export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
-  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
+
+  // Derive hasStarted from store (needed before useSyncedDuration call)
+  const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
+  const hasStarted = meditationPlayback.moduleInstanceId === module.instanceId && meditationPlayback.hasStarted;
+
+  // Duration (synced with session store)
+  const duration = useSyncedDuration(module, { hasStarted });
 
   // Local UI state
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 20
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
 
-  const totalDurationSeconds = selectedDuration * 60;
+  const totalDurationSeconds = duration.selected * 60;
 
   // Silence timer hook — replaces the old setInterval + Date.now() timer
   const timer = useSilenceTimer({
@@ -64,14 +67,13 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
     return step || DURATION_STEPS[DURATION_STEPS.length - 1];
   }, [timer.hasStarted, timer.elapsedTime]);
 
-  // Duration change handler — resizes blob if timer is running
+  // Duration change handler — syncs via hook + resizes blob if timer is running
   const handleDurationChange = useCallback((newDuration) => {
-    setSelectedDuration(newDuration);
-    updateModuleDuration(module.instanceId, newDuration);
+    duration.handleChange(newDuration);
     if (timer.hasStarted && !timer.isComplete) {
       timer.resize(newDuration * 60);
     }
-  }, [module.instanceId, updateModuleDuration, timer]);
+  }, [duration, timer]);
 
   // Begin: start timer directly (background audio handles alerting)
   const handleBegin = useCallback(() => {
@@ -136,11 +138,11 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
               {/* Duration picker button */}
               <div className="mb-6">
                 <button
-                  onClick={() => setShowDurationPicker(true)}
+                  onClick={() => duration.setShowPicker(true)}
                   className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                     hover:border-[var(--color-text-tertiary)] transition-colors"
                 >
-                  <span className="text-2xl font-light">{selectedDuration}</span>
+                  <span className="text-2xl font-light">{duration.selected}</span>
                   <span className="text-sm ml-1">min</span>
                 </button>
               </div>
@@ -170,12 +172,12 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
 
               {/* Elapsed timer — tap to adjust duration */}
               <button
-                onClick={() => setShowDurationPicker(true)}
+                onClick={() => duration.setShowPicker(true)}
                 className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                   hover:border-[var(--color-text-tertiary)] transition-colors"
               >
                 <span className="text-2xl font-light">{formatTime(timer.elapsedTime)}</span>
-                <span className="text-xs ml-2 text-[var(--color-text-tertiary)]">/ {selectedDuration}m</span>
+                <span className="text-xs ml-2 text-[var(--color-text-tertiary)]">/ {duration.selected}m</span>
               </button>
 
               {/* Set external timer link */}
@@ -206,7 +208,7 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
 
               <div className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)] inline-block">
                 <span className="text-2xl font-light">{formatTime(totalDurationSeconds)}</span>
-                <span className="text-xs ml-2 text-[var(--color-text-tertiary)]">/ {selectedDuration}m</span>
+                <span className="text-xs ml-2 text-[var(--color-text-tertiary)]">/ {duration.selected}m</span>
               </div>
             </div>
           )}
@@ -233,10 +235,10 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
 
       {/* Duration picker modal — minDuration constrained by elapsed time when running */}
       <DurationPicker
-        isOpen={showDurationPicker}
-        onClose={() => setShowDurationPicker(false)}
+        isOpen={duration.showPicker}
+        onClose={() => duration.setShowPicker(false)}
         onSelect={handleDurationChange}
-        currentDuration={selectedDuration}
+        currentDuration={duration.selected}
         durationSteps={DURATION_STEPS}
         minDuration={timer.hasStarted ? minDurationWhileRunning : 5}
         maxDuration={60}
@@ -246,7 +248,7 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
       <AlarmPrompt
         isOpen={showAlarmPrompt}
         onProceed={() => setShowAlarmPrompt(false)}
-        durationMinutes={selectedDuration}
+        durationMinutes={duration.selected}
         activityName="Open Space"
         hasBackgroundAudio
       />

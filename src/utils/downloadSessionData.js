@@ -93,6 +93,8 @@ function getSessionData() {
       decisionAt: booster?.boosterDecisionAt,
       doseMg: booster?.boosterDoseMg || null,
       checkInResponses: booster?.checkInResponses || null,
+      snoozeCount: booster?.snoozeCount || 0,
+      boosterPrepared: booster?.boosterPrepared,
     } : null,
     intention: {
       original: intake?.responses?.holdingQuestion || '',
@@ -569,13 +571,37 @@ ${centerText(`Exported ${exportDate}`)}
 
   // ── Booster check-in ───────────────────────────────────
 
-  if (data.booster?.checkInResponses) {
+  if (data.booster) {
     const r = data.booster.checkInResponses;
-    if (r.experienceQuality || r.physicalState || r.trajectory) {
+    const hasCheckIn = r && (r.experienceQuality || r.physicalState || r.trajectory);
+
+    if (hasCheckIn || data.booster.snoozeCount > 0) {
       text += `\n\n\n${section('BOOSTER CHECK-IN')}\n`;
-      if (r.experienceQuality) text += `\n  Experience Quality:  ${r.experienceQuality}`;
-      if (r.physicalState) text += `\n  Physical State:      ${r.physicalState}`;
-      if (r.trajectory) text += `\n  Trajectory:          ${r.trajectory}`;
+
+      if (hasCheckIn) {
+        const expLabels = { 'deep-meaningful': 'Deep and meaningful', 'pleasant-open': 'Pleasant and open', 'settled': 'Settled but ready to shift', 'intense': 'Intense', 'uncertain': 'Uncertain' };
+        const physLabels = { 'comfortable': 'Comfortable', 'some-tension': 'Some tension', 'temperature': 'Temperature fluctuations', 'noticeable': 'Noticeable physical effects', 'uncomfortable': 'Uncomfortable' };
+        const trajLabels = { 'more-to-explore': 'More to explore', 'middle-of-something': 'In the middle of something', 'complete': 'Feeling complete', 'ready-to-integrate': 'Ready to integrate' };
+
+        if (r.experienceQuality) text += `\n  Experience Quality:  ${expLabels[r.experienceQuality] || r.experienceQuality}`;
+        if (r.physicalState) text += `\n  Physical State:      ${physLabels[r.physicalState] || r.physicalState}`;
+        if (r.trajectory) text += `\n  Trajectory:          ${trajLabels[r.trajectory] || r.trajectory}`;
+      }
+
+      if (data.booster.status === 'taken') {
+        text += `\n\n  Decision:            Taken`;
+        if (data.booster.doseMg) text += `\n  Booster Dose:        ${data.booster.doseMg}mg`;
+        if (data.booster.takenAt) text += `\n  Taken At:            ${formatDate(data.booster.takenAt)}`;
+      } else if (data.booster.status === 'skipped') {
+        text += `\n\n  Decision:            Skipped`;
+        if (data.booster.decisionAt) text += `\n  Decided At:          ${formatDate(data.booster.decisionAt)}`;
+      } else if (data.booster.status === 'expired') {
+        text += `\n\n  Decision:            Expired (not taken within window)`;
+      }
+
+      if (data.booster.snoozeCount > 0) {
+        text += `\n  Times Snoozed:       ${data.booster.snoozeCount}`;
+      }
     }
   }
 
@@ -661,6 +687,60 @@ ${centerText(`Exported ${exportDate}`)}
       else if (entry.source === 'manual') text += ` — Personal Entry`;
       text += `\n  ${entry.content}\n`;
     });
+  }
+
+  // ── Intake Form Responses ───────────────────────────────
+
+  const intake = data.intake;
+  if (intake && Object.keys(intake).length > 0) {
+    const optionLabels = {
+      experienceLevel: { 'first-time': 'First time', 'beginner': '1–3 sessions', 'experienced': '4+ sessions' },
+      sessionMode: { 'solo': 'Solo', 'with-partner': 'With a partner', 'with-sitter': 'With a sitter', 'group': 'Group setting' },
+      primaryFocus: { 'self-understanding': 'Self-understanding', 'healing': 'Emotional healing', 'relationship': 'Relationship exploration', 'creativity': 'Creativity & insight', 'open': 'Open exploration' },
+      guidanceLevel: { 'full': 'Full guidance', 'moderate': 'Moderate guidance', 'minimal': 'Minimal — mostly open space' },
+      hasMDMA: { 'yes': 'Yes', 'not-yet': 'Not yet' },
+      hasTested: { 'yes': 'Yes', 'not-yet': 'Not yet' },
+      considerBooster: { 'yes': 'Yes', 'no': 'No, just one dose', 'decide-later': 'Decide during session' },
+      physicalPreparation: { 'yes': 'Yes', 'not-yet': 'Not yet' },
+      lastMDMAUse: { 'first-time': 'First time', 'more-than-3-months': 'More than 3 months ago', '1-3-months': '1–3 months ago', 'less-than-1-month': 'Less than 1 month ago', 'unsure': 'Not sure' },
+      emergencyContact: { 'yes': 'Yes', 'no-okay': 'No, but comfortable', 'no-fine': 'No' },
+      contraindicatedMedications: { 'yes': 'Yes', 'no': 'No' },
+      heartConditions: { 'yes': 'Yes', 'no': 'No' },
+      psychiatricHistory: { 'yes': 'Yes', 'no': 'No' },
+    };
+
+    const fieldLabels = {
+      experienceLevel: 'Experience Level',
+      sessionMode: 'Session Mode',
+      primaryFocus: 'Primary Focus',
+      holdingQuestion: 'Intention',
+      guidanceLevel: 'Guidance Level',
+      activityPreferences: 'Activity Preferences',
+      hasMDMA: 'Has MDMA',
+      hasTested: 'Has Tested',
+      considerBooster: 'Consider Booster',
+      physicalPreparation: 'Physical Preparation',
+      lastMDMAUse: 'Last MDMA Use',
+      emergencyContact: 'Emergency Contact',
+      contraindicatedMedications: 'Contraindicated Medications',
+      heartConditions: 'Heart Conditions',
+      psychiatricHistory: 'Psychiatric History',
+      hasResearchedDosage: 'Researched Dosage',
+    };
+
+    text += `\n\n\n${section('INTAKE FORM')}\n`;
+
+    for (const [key, value] of Object.entries(intake)) {
+      if (value === null || value === undefined || value === '') continue;
+      const label = fieldLabels[key] || key;
+      if (Array.isArray(value)) {
+        text += `\n  ${label}:  ${value.join(', ')}`;
+      } else if (optionLabels[key]?.[value]) {
+        text += `\n  ${label}:  ${optionLabels[key][value]}`;
+      } else {
+        text += `\n  ${label}:  ${value}`;
+      }
+    }
   }
 
   // ── Footer ──────────────────────────────────────────────

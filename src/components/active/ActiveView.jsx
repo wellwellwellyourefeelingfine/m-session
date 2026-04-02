@@ -29,6 +29,7 @@ import FollowUpValuesCompass from '../followup/FollowUpValuesCompass';
 
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
+  const [followUpNow, setFollowUpNow] = useState(Date.now());
 
   // Module timer state (passed up from modules via context or prop drilling)
   const [moduleTimerState, setModuleTimerState] = useState({
@@ -48,6 +49,7 @@ export default function ActiveView() {
   const closingCheckIn = useSessionStore((state) => state.closingCheckIn);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const activeFollowUpModule = useSessionStore((state) => state.activeFollowUpModule);
+  const followUp = useSessionStore((state) => state.followUp);
   const activePreSessionModule = useSessionStore((state) => state.activePreSessionModule);
   const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
   const skipPreSessionModule = useSessionStore((state) => state.skipPreSessionModule);
@@ -67,6 +69,13 @@ export default function ActiveView() {
   const currentPhase = timeline.currentPhase;
   const activeTransition = phaseTransitions?.activeTransition;
   const boosterCheckRef = useRef(null);
+
+  // Live countdown for follow-up phase lock
+  useEffect(() => {
+    if (sessionPhase !== 'completed' || !followUp?.phaseUnlockTime || Date.now() >= followUp.phaseUnlockTime) return;
+    const interval = setInterval(() => setFollowUpNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [sessionPhase, followUp?.phaseUnlockTime]);
 
   // Trigger fade-in when component mounts
   useEffect(() => {
@@ -321,35 +330,70 @@ export default function ActiveView() {
         }
 
         // Follow-up landing page (mirrors the pre-session landing page)
+        const isPhaseLocked = followUp?.phaseUnlockTime && followUpNow < followUp.phaseUnlockTime;
+
         // Find the next available follow-up module (from library modules added to timeline)
-        const nextFollowUpModule = _modules.items
-          .filter((m) => m.phase === 'follow-up' && (m.status === 'active' || m.status === 'upcoming'))
-          .sort((a, b) => a.order - b.order)[0];
+        const nextFollowUpModule = !isPhaseLocked
+          ? _modules.items
+              .filter((m) => m.phase === 'follow-up' && (m.status === 'active' || m.status === 'upcoming'))
+              .sort((a, b) => a.order - b.order)[0]
+          : null;
+
+        // Active countdown clock for locked phase
+        let countdownClock = '';
+        if (isPhaseLocked) {
+          const remaining = followUp.phaseUnlockTime - followUpNow;
+          const hours = Math.floor(remaining / (60 * 60 * 1000));
+          const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+          const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+          countdownClock = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
 
         return (
           <div className="min-h-[60vh] flex flex-col items-center justify-center px-6">
             <h2
-              className="text-2xl mb-8 text-[var(--color-text-primary)]"
+              className="text-2xl mb-4 text-[var(--color-text-primary)]"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
             >
               Follow-Up
             </h2>
-            <div className="mb-8">
+            <div className="mb-6">
               <AsciiMoon />
             </div>
-            {nextFollowUpModule ? (
-              <button
-                onClick={() => startModule(nextFollowUpModule.instanceId)}
-                className="mb-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] px-6 py-3 text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
-              >
-                Continue Follow-Up Activity
-              </button>
-            ) : null}
-            <p
-              className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider leading-relaxed max-w-[16rem] text-center"
-            >
-              Take time to rest and integrate. Your notes are saved in the Journal tab. You can add follow-up activities from your timeline.
-            </p>
+            {isPhaseLocked ? (
+              <>
+                <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-2">
+                  Available in
+                </p>
+                <p
+                  className="text-3xl text-[var(--color-text-primary)] mb-4"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  {countdownClock}
+                </p>
+                <p
+                  className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider leading-relaxed max-w-[16rem] text-center"
+                >
+                  The follow-up phase is time-locked to give you space to rest after your session. You can add activities to your timeline in the meantime.
+                </p>
+              </>
+            ) : (
+              <>
+                {nextFollowUpModule ? (
+                  <button
+                    onClick={() => startModule(nextFollowUpModule.instanceId)}
+                    className="mb-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] px-6 py-3 text-xs uppercase tracking-wider hover:opacity-80 transition-opacity"
+                  >
+                    Continue Follow-Up Activity
+                  </button>
+                ) : null}
+                <p
+                  className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider leading-relaxed max-w-[16rem] text-center"
+                >
+                  Your notes are saved in the Journal tab. You can add follow-up activities from your timeline.
+                </p>
+              </>
+            )}
           </div>
         );
       }

@@ -4,6 +4,7 @@
  */
 
 export const bodySomaticContent = {
+  instructions: 'A guided journaling exercise to notice what your body is holding, releasing, and asking for after your session. Includes prompts about physical sensations, tension, comfort, and what your body is communicating.',
   screens: [
     {
       type: 'text',

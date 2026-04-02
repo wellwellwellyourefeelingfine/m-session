@@ -63,7 +63,7 @@ export default function HomeView() {
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
   const archivedSessions = useSessionHistoryStore((s) => s.sessions);
   const modules = useSessionStore((state) => state.modules);
-  const followUp = useSessionStore((state) => state.followUp);
+
   const journalEntries = useJournalStore((s) => s.entries);
 
   const recordDataExport = useSessionStore((state) => state.recordDataExport);
@@ -304,11 +304,7 @@ export default function HomeView() {
         }, null);
         const longestName = longestModule?.title;
         const longestMins = longestModule?.actualDuration ? Math.round(longestModule.actualDuration / 60) : null;
-        const defaultFollowUpCompleted = ['checkIn', 'revisit', 'integration'].filter(
-          (id) => followUp?.modules?.[id]?.status === 'completed'
-        ).length;
-        const addedFollowUpCompleted = moduleItems.filter((m) => m.phase === 'follow-up' && m.status === 'completed').length;
-        const followUpCount = defaultFollowUpCompleted + addedFollowUpCompleted;
+        const followUpCount = moduleItems.filter((m) => m.phase === 'follow-up' && m.status === 'completed').length;
         const exportDate = session?.dataExportedAt
           ? new Date(session.dataExportedAt).toLocaleDateString([], { month: 'short', day: 'numeric' })
           : null;

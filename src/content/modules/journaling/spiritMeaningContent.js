@@ -4,6 +4,7 @@
  */
 
 export const spiritMeaningContent = {
+  instructions: 'A guided journaling exercise to explore the existential, spiritual, or meaning-making dimensions of your session. Includes prompts about what felt larger than yourself, shifts in perspective, and what meaning is emerging.',
   screens: [
     {
       type: 'text',

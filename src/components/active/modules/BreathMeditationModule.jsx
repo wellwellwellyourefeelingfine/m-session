@@ -23,6 +23,7 @@ import {
   getMeditationById,
 } from '../../../content/meditations';
 import { useWakeLock } from '../../../hooks/useWakeLock';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 
 // Shared UI components
 import ModuleControlBar, { SlotButton, VolumeButton } from '../capabilities/ModuleControlBar';
@@ -78,11 +79,11 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
   // Check if this module has custom sequences (non-guided mode)
   const hasCustomSequences = !!(module.content?.breathSequences || libraryModule?.content?.breathSequences || meditationContent?.segments);
 
-  // Duration state (only used for guided mode with adjustable duration)
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 10
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  // Module state (hasStarted needed before useSyncedDuration call)
+  const [hasStarted, setHasStarted] = useState(false);
+
+  // Duration (synced with session store)
+  const duration = useSyncedDuration(module, { hasStarted });
 
   // Convert meditation content segments to breath controller sequences
   const convertSegmentsToSequences = useCallback((segments) => {
@@ -114,8 +115,8 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
       return module.content?.breathSequences || libraryModule?.content?.breathSequences;
     }
     // Use guided breath orb sequences
-    return generateBreathSequences(selectedDuration);
-  }, [meditationContent, hasCustomSequences, module.content?.breathSequences, libraryModule?.content?.breathSequences, selectedDuration, convertSegmentsToSequences]);
+    return generateBreathSequences(duration.selected);
+  }, [meditationContent, hasCustomSequences, module.content?.breathSequences, libraryModule?.content?.breathSequences, duration.selected, convertSegmentsToSequences]);
 
   // Generate simple prompts for custom sequences based on total duration
   const generateSimplePrompts = useCallback((seqs) => {
@@ -165,11 +166,9 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
       // Generate simple prompts for custom sequences
       return generateSimplePrompts(sequences);
     }
-    return generateTimedPrompts(selectedDuration);
-  }, [meditationContent, hasCustomSequences, selectedDuration, sequences, generateSimplePrompts]);
+    return generateTimedPrompts(duration.selected);
+  }, [meditationContent, hasCustomSequences, duration.selected, sequences, generateSimplePrompts]);
 
-  // Module state
-  const [hasStarted, setHasStarted] = useState(false);
   const [isWaitingForIdleComplete, setIsWaitingForIdleComplete] = useState(false);
 
   // Visual toggles
@@ -342,11 +341,6 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
     onSkip();
   }, [breathController, onSkip]);
 
-  // Handle duration change
-  const handleDurationChange = useCallback((newDuration) => {
-    setSelectedDuration(newDuration);
-  }, []);
-
   // Determine control phase
   const getControlPhase = () => {
     if (!hasStarted) return 'idle';
@@ -498,11 +492,11 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
               {/* Duration selector button (only for guided mode, not fixed duration) */}
               {!hasCustomSequences && !isFixedDuration && (
                 <button
-                  onClick={() => setShowDurationPicker(true)}
+                  onClick={() => duration.setShowPicker(true)}
                   className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                     hover:border-[var(--color-text-tertiary)] transition-colors"
                 >
-                  <span className="text-2xl font-light">{selectedDuration}</span>
+                  <span className="text-2xl font-light">{duration.selected}</span>
                   <span className="text-sm ml-1">min</span>
                 </button>
               )}
@@ -560,10 +554,10 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
       {/* Duration picker modal (only for guided mode, not fixed duration) */}
       {!hasCustomSequences && !isFixedDuration && (
         <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={handleDurationChange}
-          currentDuration={selectedDuration}
+          isOpen={duration.showPicker}
+          onClose={() => duration.setShowPicker(false)}
+          onSelect={duration.handleChange}
+          currentDuration={duration.selected}
           durationSteps={guidedBreathOrbMeditation.durationSteps}
           minDuration={guidedBreathOrbMeditation.minDuration / 60}
           maxDuration={guidedBreathOrbMeditation.maxDuration / 60}

@@ -272,7 +272,7 @@ export default function ModuleCard({
               </div>
             ) : (
               (statusText || libraryModule?.description) && (
-                <div className="flex items-start gap-2.5 -mt-0.5">
+                <div className="flex items-start gap-3.5 -mt-0.5">
                   {statusIcon || (() => { const Icon = getModuleIcon(module.libraryId, libraryModule?.category); return <Icon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />; })()}
                   <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider line-clamp-3 min-w-0">
                     {statusText || libraryModule.description}

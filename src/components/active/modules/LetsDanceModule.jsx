@@ -10,8 +10,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getModuleById } from '../../../content/modules';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { danceRecommendations, getInitialDanceRecommendations } from '../../../content/modules/danceRecommendations';
 
 // Shared UI components
@@ -337,25 +337,21 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
 }
 
 export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpdate }) {
-  const libraryModule = getModuleById(module.libraryId);
-
   // Session store actions
   const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
   const startMeditationPlayback = useSessionStore((state) => state.startMeditationPlayback);
   const pauseMeditationPlayback = useSessionStore((state) => state.pauseMeditationPlayback);
   const resetMeditationPlayback = useSessionStore((state) => state.resetMeditationPlayback);
-  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
 
   // Check if this module's playback is active
   const isThisModule = meditationPlayback.moduleInstanceId === module.instanceId;
   const hasStarted = isThisModule && meditationPlayback.hasStarted;
   const isPlaying = isThisModule && meditationPlayback.isPlaying;
 
+  // Duration (synced with session store)
+  const duration = useSyncedDuration(module, { hasStarted });
+
   // Local UI state
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 20
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
   const [showAddTime, setShowAddTime] = useState(false);
   const [addTimeAmount, setAddTimeAmount] = useState(5);
@@ -368,7 +364,7 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
   const allRecsCloseTimerRef = useRef(null);
 
   const timerRef = useRef(null);
-  const totalDurationSeconds = selectedDuration * 60;
+  const totalDurationSeconds = duration.selected * 60;
 
   // Timer update loop (timestamp-based)
   useEffect(() => {
@@ -422,22 +418,15 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
     });
   }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onTimerUpdate]);
 
-  // Duration change handler
-  const handleDurationChange = useCallback((newDuration) => {
-    setSelectedDuration(newDuration);
-    updateModuleDuration(module.instanceId, newDuration);
-  }, [module.instanceId, updateModuleDuration]);
-
   // Add time: max additional minutes before hitting 120 min total
-  const maxAddableMinutes = Math.max(0, 120 - selectedDuration);
+  const maxAddableMinutes = Math.max(0, 120 - duration.selected);
 
   const handleAddTime = useCallback(() => {
-    const newDuration = selectedDuration + addTimeAmount;
-    setSelectedDuration(newDuration);
-    updateModuleDuration(module.instanceId, newDuration);
+    const newDuration = duration.selected + addTimeAmount;
+    duration.setSelected(newDuration);
     setShowAddTime(false);
     setAddTimeAmount(5);
-  }, [selectedDuration, addTimeAmount, module.instanceId, updateModuleDuration]);
+  }, [duration, addTimeAmount]);
 
   // Begin flow: show alarm prompt
   const handleBegin = useCallback(() => {
@@ -540,11 +529,11 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
             {/* Duration picker button */}
             <div className="mb-2">
               <button
-                onClick={() => setShowDurationPicker(true)}
+                onClick={() => duration.setShowPicker(true)}
                 className="w-[80px] py-1 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                   hover:border-[var(--color-text-tertiary)] transition-colors text-center"
               >
-                <span className="text-2xl font-light">{selectedDuration}</span>
+                <span className="text-2xl font-light">{duration.selected}</span>
                 <span className="text-sm ml-1">min</span>
               </button>
             </div>
@@ -620,10 +609,10 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
 
       {/* Duration picker modal */}
       <DurationPicker
-        isOpen={showDurationPicker}
-        onClose={() => setShowDurationPicker(false)}
-        onSelect={handleDurationChange}
-        currentDuration={selectedDuration}
+        isOpen={duration.showPicker}
+        onClose={() => duration.setShowPicker(false)}
+        onSelect={duration.handleChange}
+        currentDuration={duration.selected}
         durationSteps={DURATION_STEPS}
         minDuration={10}
         maxDuration={120}
@@ -633,7 +622,7 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
       <AlarmPrompt
         isOpen={showAlarmPrompt}
         onProceed={handleAlarmProceed}
-        durationMinutes={selectedDuration}
+        durationMinutes={duration.selected}
         activityName="Let's Dance"
       />
 
@@ -676,7 +665,7 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
               </div>
 
               <p className="text-[10px] text-[var(--color-text-tertiary)] text-center">
-                New total: {selectedDuration + addTimeAmount} min
+                New total: {duration.selected + addTimeAmount} min
               </p>
 
               {/* Confirm */}

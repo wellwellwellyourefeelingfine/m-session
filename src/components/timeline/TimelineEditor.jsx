@@ -13,10 +13,10 @@ import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
 import ModuleCard from './ModuleCard';
-import { ClockIcon, LeafIcon, CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
+import { CircleSkipIcon, CirclePlusIcon, LockIcon } from '../shared/Icons';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
 import TimelineSummary from './TimelineSummary';
-import FollowUpModuleModal from '../home/FollowUpModuleModal';
+
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
@@ -28,9 +28,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [warningModal, setWarningModal] = useState(null);
   const [errorModal, setErrorModal] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedFollowUpModule, setSelectedFollowUpModule] = useState(null);
   const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
-  const [followUpCountdown, setFollowUpCountdown] = useState({});
   const [isEditMode, setIsEditMode] = useState(false);
 
   // Pre-session collapse state (mirrors PhaseSection pattern)
@@ -112,6 +110,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const checkFollowUpAvailability = useSessionStore((state) => state.checkFollowUpAvailability);
   const getEntryById = useJournalStore((state) => state.getEntryById);
   const addModule = useSessionStore((state) => state.addModule);
+  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
   const removeModule = useSessionStore((state) => state.removeModule);
   const swapModuleOrder = useSessionStore((state) => state.swapModuleOrder);
   const getPhaseDuration = useSessionStore((state) => state.getPhaseDuration);
@@ -202,34 +201,13 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     return () => clearInterval(interval);
   }, [isActiveSession, isCompletedSession, substanceChecklist?.ingestionTime, session?.finalDurationSeconds]);
 
-  // Update follow-up countdowns for completed sessions
+  // Check follow-up availability for completed sessions
   useEffect(() => {
     if (!isCompletedSession) return;
-
-    const formatCountdown = (unlockTime) => {
-      if (!unlockTime) return '';
-      const now = Date.now();
-      const remaining = unlockTime - now;
-      if (remaining <= 0) return 'Available now';
-      const hours = Math.floor(remaining / (60 * 60 * 1000));
-      const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-      if (hours > 0) return `Available in ${hours}h ${minutes}m`;
-      return `Available in ${minutes}m`;
-    };
-
-    const updateCountdowns = () => {
-      checkFollowUpAvailability();
-      setFollowUpCountdown({
-        checkIn: formatCountdown(followUp?.unlockTimes?.checkIn),
-        revisit: formatCountdown(followUp?.unlockTimes?.revisit),
-        integration: formatCountdown(followUp?.unlockTimes?.integration),
-      });
-    };
-
-    updateCountdowns();
-    const interval = setInterval(updateCountdowns, 60000);
+    checkFollowUpAvailability();
+    const interval = setInterval(checkFollowUpAvailability, 60000);
     return () => clearInterval(interval);
-  }, [isCompletedSession, followUp?.unlockTimes, checkFollowUpAvailability]);
+  }, [isCompletedSession, checkFollowUpAvailability]);
 
   // Format elapsed time as HH:MM:SS
   const formatElapsedClock = (totalSeconds) => {
@@ -274,12 +252,13 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     setDrawerOpen(true);
   };
 
-  const handleModuleSelect = (libraryId, warning) => {
+  const handleModuleSelect = (libraryId, warning, customDuration) => {
     if (warning) {
       setWarningModal({
         libraryId,
         phase: activePhase,
         message: warning,
+        customDuration,
       });
       return;
     }
@@ -288,7 +267,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     if (activePhase === 'come-up') {
       const currentDuration = getPhaseDuration('come-up');
       const libraryModule = getModuleById(libraryId);
-      const newTotal = currentDuration + (libraryModule?.defaultDuration || 0);
+      const moduleDuration = customDuration || libraryModule?.defaultDuration || 0;
+      const newTotal = currentDuration + moduleDuration;
       const maxDuration = timeline?.phases?.comeUp?.maxDuration || 60;
 
       if (newTotal > maxDuration) {
@@ -296,6 +276,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           libraryId,
           phase: activePhase,
           message: `Adding this activity will bring the Come-Up phase to ${newTotal} minutes, which exceeds the recommended ${maxDuration} minutes. The come-up phase should generally not exceed ${maxDuration} minutes. Are you sure you want to add this activity?`,
+          customDuration,
         });
         return;
       }
@@ -306,17 +287,20 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       setErrorModal({ message: result.error });
       return;
     }
-
-    setDrawerOpen(false);
-    setActivePhase(null);
+    if (customDuration && customDuration !== result.module.duration) {
+      updateModuleDuration(result.module.instanceId, customDuration);
+    }
+    // Drawer stays open — user can add more modules
   };
 
   const handleWarningConfirm = () => {
-    const { libraryId, phase } = warningModal;
-    addModule(libraryId, phase);
+    const { libraryId, phase, customDuration } = warningModal;
+    const result = addModule(libraryId, phase);
+    if (result.success && customDuration && customDuration !== result.module.duration) {
+      updateModuleDuration(result.module.instanceId, customDuration);
+    }
     setWarningModal(null);
-    setDrawerOpen(false);
-    setActivePhase(null);
+    // Drawer stays open
   };
 
   const handleRemoveModule = (instanceId) => {
@@ -780,96 +764,35 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                   {/* Timing info */}
                   <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-                    Available 24-48 hours after session
+                    Available 8 hours after session
                   </p>
 
                   {/* Phase description */}
                   <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
-                    Reflections and exercises to help you integrate your experience. Some are available within hours, others are better suited for the days and weeks ahead. Add more activities at any time.
+                    Reflections and exercises to help you integrate your experience. Add more activities at any time.
                   </p>
                 </div>
 
                 {/* Follow-up module cards */}
                 <div className="space-y-2">
-                  {['checkIn', 'revisit', 'integration'].map((moduleId) => {
-                    const moduleState = followUp?.modules?.[moduleId];
-                    const status = moduleState?.status || 'locked';
-                    const isLocked = status === 'locked';
-                    const isCompleted = status === 'completed';
-
-                    const moduleInfo = {
-                      checkIn: { title: 'Check-In', description: 'A brief check-in on how you are feeling since your session.', duration: 5 },
-                      revisit: { title: 'Revisit', description: 'Read back what you wrote during your session.', duration: 10 },
-                      integration: { title: 'Integration Reflection', description: 'Deeper reflection on how insights are integrating into your life.', duration: 10 },
-                    };
-
-                    const info = moduleInfo[moduleId];
-
-                    const statusText = isLocked && followUpCountdown[moduleId]
-                      ? followUpCountdown[moduleId]
-                      : status === 'available' ? 'Available now'
-                      : isCompleted ? 'Completed'
-                      : info.description;
-
-                    const icon = isLocked
-                      ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-                      : <LeafIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
+                  {followUpModules.map((module) => {
+                    const isCompleted = module.status === 'completed';
+                    const isFollowUpLocked = followUp?.phaseUnlockTime && Date.now() < followUp.phaseUnlockTime;
 
                     return (
                       <ModuleCard
-                        key={moduleId}
-                        module={{ instanceId: moduleId, title: info.title, duration: info.duration, libraryId: moduleId }}
-                        onClick={() => setSelectedFollowUpModule(moduleId)}
-                        statusText={statusText}
-                        statusIcon={icon}
+                        key={module.instanceId}
+                        module={module}
+                        onClick={() => setSelectedAddedFollowUpModule(module)}
+                        statusText={isCompleted ? 'Completed' : undefined}
+                        statusIcon={isFollowUpLocked && !isCompleted
+                          ? <LockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
+                          : undefined
+                        }
                       />
                     );
                   })}
                 </div>
-
-                {/* Added follow-up modules from library */}
-                {followUpModules.length > 0 && (
-                  <div className="space-y-2 mt-2">
-                    {followUpModules.map((module) => {
-                      const libraryModule = getModuleById(module.libraryId);
-                      const unlockDelayHours = libraryModule?.unlockDelay || 24;
-                      const closedAt = session?.closedAt;
-                      const unlockTime = closedAt
-                        ? closedAt + unlockDelayHours * 60 * 60 * 1000
-                        : null;
-                      const isUnlocked = unlockTime ? Date.now() >= unlockTime : true;
-                      const isCompleted = module.status === 'completed';
-
-                      let countdownText = '';
-                      if (unlockTime && !isUnlocked) {
-                        const remaining = unlockTime - Date.now();
-                        const hours = Math.floor(remaining / (60 * 60 * 1000));
-                        const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-                        countdownText = hours > 0 ? `Available in ${hours}h ${minutes}m` : `Available in ${minutes}m`;
-                      }
-
-                      const statusText = !isUnlocked && !isCompleted
-                        ? countdownText
-                        : isUnlocked && !isCompleted
-                          ? 'Available now'
-                          : 'Completed';
-
-                      const icon = (!isUnlocked && !isCompleted)
-                        ? <ClockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-                        : <LeafIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />;
-
-                      return (
-                        <ModuleCard
-                          key={module.instanceId}
-                          module={module}
-                          onClick={() => setSelectedAddedFollowUpModule(module)}
-                          statusText={statusText}
-                          statusIcon={icon}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -1048,15 +971,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         </div>
       )}
 
-      {/* Follow-Up Module Modal (built-in modules) */}
-      {selectedFollowUpModule && (
-        <FollowUpModuleModal
-          moduleId={selectedFollowUpModule}
-          onClose={() => setSelectedFollowUpModule(null)}
-        />
-      )}
-
-      {/* Added Follow-Up Module Modal (library modules) */}
+      {/* Follow-Up Module Modal */}
       {selectedAddedFollowUpModule && (
         <AltSessionModuleModal
           module={selectedAddedFollowUpModule}
@@ -1100,8 +1015,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         </div>
       )}
 
-      {/* Timeline Tutorial Overlay (pre-session only, shows once) */}
-      {!isActiveSession && !isCompletedSession && <TimelineTutorialTrigger />}
+      {/* Timeline Tutorial Overlay */}
+      <TimelineTutorialTrigger />
     </div>
   );
 }

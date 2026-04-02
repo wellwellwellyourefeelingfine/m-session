@@ -23,8 +23,8 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { getModuleById } from '../../../content/modules';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
   INTRO_SCREENS,
@@ -345,15 +345,12 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTimerUpdate }) {
-  const libraryModule = getModuleById(module.libraryId);
-
   // Session store
   const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
   const startMeditationPlayback = useSessionStore((state) => state.startMeditationPlayback);
   const pauseMeditationPlayback = useSessionStore((state) => state.pauseMeditationPlayback);
   const resumeMeditationPlayback = useSessionStore((state) => state.resumeMeditationPlayback);
   const resetMeditationPlayback = useSessionStore((state) => state.resetMeditationPlayback);
-  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
   const updateShakingTheTreeCapture = useSessionStore((state) => state.updateShakingTheTreeCapture);
   const sessionId = useSessionStore((state) => state.sessionId);
 
@@ -365,15 +362,14 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
   const hasStarted = isThisModule && meditationPlayback.hasStarted;
   const isPlaying = isThisModule && meditationPlayback.isPlaying;
 
+  // Duration (synced with session store)
+  const duration = useSyncedDuration(module, { hasStarted });
+
   // ── Module phase state machine ──
   const [phase, setPhase] = useState('idle');
   // 'idle' | 'intro' | 'active' | 'checkin' | 'completion'
 
   // ── Idle state ──
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 15
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
   const [isIdleVisible, setIsIdleVisible] = useState(true);
 
@@ -408,7 +404,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
   const timerRef = useRef(null);
 
   // ── Timer ──
-  const totalDurationSeconds = selectedDuration * 60;
+  const totalDurationSeconds = duration.selected * 60;
 
   // Timer update loop (timestamp-based, LetsDanceModule pattern)
   useEffect(() => {
@@ -536,11 +532,6 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       setIsIntroHeaderVisible(true);
     }, FADE_MS);
   }, []);
-
-  const handleDurationChange = useCallback((newDuration) => {
-    setSelectedDuration(newDuration);
-    updateModuleDuration(module.instanceId, newDuration);
-  }, [module.instanceId, updateModuleDuration]);
 
   // ── Intro handlers ──
   const handleIntroContinue = useCallback(() => {
@@ -846,11 +837,11 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
 
               <div className="mb-3">
                 <button
-                  onClick={() => setShowDurationPicker(true)}
+                  onClick={() => duration.setShowPicker(true)}
                   className="w-[80px] py-1 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                     hover:border-[var(--color-text-tertiary)] transition-colors text-center"
                 >
-                  <span className="text-2xl font-light">{selectedDuration}</span>
+                  <span className="text-2xl font-light">{duration.selected}</span>
                   <span className="text-sm ml-1">min</span>
                 </button>
               </div>
@@ -1249,10 +1240,10 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       {/* ── Modals ── */}
 
       <DurationPicker
-        isOpen={showDurationPicker}
-        onClose={() => setShowDurationPicker(false)}
-        onSelect={handleDurationChange}
-        currentDuration={selectedDuration}
+        isOpen={duration.showPicker}
+        onClose={() => duration.setShowPicker(false)}
+        onSelect={duration.handleChange}
+        currentDuration={duration.selected}
         durationSteps={DURATION_STEPS}
         minDuration={10}
         maxDuration={30}
@@ -1261,7 +1252,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       <AlarmPrompt
         isOpen={showAlarmPrompt}
         onProceed={handleAlarmProceed}
-        durationMinutes={selectedDuration}
+        durationMinutes={duration.selected}
         activityName="Shaking the Tree"
       />
 

@@ -6,7 +6,27 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { getModuleById, MODULE_TYPES } from '../../content/modules';
+import { getModuleById, CATEGORY_ICONS, MODULE_ICONS, FRAMEWORKS } from '../../content/modules';
+import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon } from '../shared/Icons';
+
+const ICON_MAP = {
+  sparkle: SparkleIcon,
+  compass: CompassIcon,
+  waves: WavesIcon,
+  boat: BoatIcon,
+  'notebook-pen': NotebookPenIcon,
+  leaf: LeafIcon,
+  music: MusicIcon,
+  'heart-handshake': HeartHandshakeIcon,
+  snail: SnailIcon,
+  clock: ClockIcon,
+};
+
+function getModuleIcon(libraryId, category) {
+  if (libraryId && MODULE_ICONS[libraryId]) return ICON_MAP[MODULE_ICONS[libraryId]] || SparkleIcon;
+  if (category && CATEGORY_ICONS[category]) return ICON_MAP[CATEGORY_ICONS[category]] || SparkleIcon;
+  return SparkleIcon;
+}
 
 // Generate duration steps if not provided (5-minute increments)
 function generateDurationSteps(min, max) {
@@ -26,10 +46,10 @@ export default function ModuleDetailModal({
   onClose,
   module,
   onDurationChange,
-  isActiveSession = false,
+  mode = 'info',  // 'info' (timeline card click) or 'add' (library selection)
+  onAdd,          // callback for 'add' mode
 }) {
   const libraryModule = getModuleById(module?.libraryId);
-  const moduleType = MODULE_TYPES[libraryModule?.type];
 
   // Check if this module supports variable duration
   // Show stepper if hasVariableDuration is true OR if min/max duration differ
@@ -119,12 +139,6 @@ export default function ModuleDetailModal({
     return `${mins}m`;
   };
 
-  // Capitalize first letter of intensity
-  const formatIntensity = (intensity) => {
-    if (!intensity) return '';
-    return intensity.charAt(0).toUpperCase() + intensity.slice(1);
-  };
-
   // Use portal to render modal at document body level for proper z-index stacking
   return createPortal(
     <div
@@ -133,47 +147,64 @@ export default function ModuleDetailModal({
       data-tutorial="module-detail-modal"
     >
       <div
-        className={`bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm shadow-lg max-h-[85vh] overflow-y-auto ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        className={`relative bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl w-full max-w-sm shadow-lg max-h-[92vh] overflow-y-auto ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Close button — top-right corner */}
+        <button
+          onClick={handleClose}
+          className="absolute top-3 right-4 text-[var(--color-text-tertiary)] opacity-70 hover:opacity-100 transition-opacity z-10"
+          aria-label="Close"
+          data-tutorial="module-detail-close"
+        >
+          <CircleXIcon size={26} />
+        </button>
+
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-start">
-          <div className="flex-1 min-w-0 pr-4">
-            <h3
-              className="font-serif text-xl"
-              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-            >
-              {module.title}
-            </h3>
-            <p className="text-[var(--color-text-tertiary)] text-sm mt-1">
-              {moduleType?.label || libraryModule?.type} • {formatIntensity(libraryModule?.intensity)}
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 text-xl leading-none"
-            data-tutorial="module-detail-close"
+        <div className="px-6 pt-4 pr-14">
+          <h3
+            className="font-serif text-2xl"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1.1 }}
           >
-            ×
-          </button>
+            {module.title}
+          </h3>
+          {(() => {
+            const Icon = getModuleIcon(module.libraryId, libraryModule?.category);
+            return (
+              <div className="mt-2 mb-1">
+                <Icon size={40} className="text-[var(--accent)]" />
+              </div>
+            );
+          })()}
         </div>
 
         {/* Body */}
-        <div className="px-6 py-4 space-y-4">
+        <div className="px-6 pt-1 pb-0 space-y-3">
           {/* Description */}
           {libraryModule?.description && (
-            <p className="text-[var(--color-text-secondary)]">
-              {libraryModule.description}
-            </p>
+            <div>
+              <p
+                className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                Activity Summary:
+              </p>
+              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                {libraryModule.description}
+              </p>
+            </div>
           )}
 
           {/* Instructions (if available) */}
           {libraryModule?.content?.instructions && (
             <div>
-              <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-2">
-                How it works
+              <p
+                className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                How It Works:
               </p>
-              <p className="text-[var(--color-text-secondary)] text-sm">
+              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
                 {libraryModule.content.instructions}
               </p>
             </div>
@@ -181,18 +212,20 @@ export default function ModuleDetailModal({
         </div>
 
         {/* Duration Section */}
-        <div className="px-6 py-4 border-t border-[var(--color-border)]">
-          <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-3 text-center">
+        <div className="px-6 py-2">
+          <p
+            className="text-lg text-[var(--color-text-tertiary)] mb-2 text-center"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+          >
             Duration
           </p>
 
-          {hasVariableDuration && !isActiveSession ? (
-            // Editable stepper
+          {hasVariableDuration && module.status !== 'completed' && module.status !== 'skipped' ? (
             <div className="flex items-center justify-center gap-6">
               <button
                 onClick={handleDecrement}
                 disabled={isAtMin}
-                className={`w-10 h-10 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+                className={`w-10 h-10 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
                   isAtMin ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
                 }`}
                 aria-label="Decrease duration"
@@ -202,14 +235,17 @@ export default function ModuleDetailModal({
                 </svg>
               </button>
 
-              <span className="text-3xl font-light tracking-wide min-w-[70px] text-center">
+              <span
+                className="text-3xl min-w-[70px] text-center"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
                 {formatDuration(validSteps[selectedIndex])}
               </span>
 
               <button
                 onClick={handleIncrement}
                 disabled={isAtMax}
-                className={`w-10 h-10 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+                className={`w-10 h-10 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
                   isAtMax ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
                 }`}
                 aria-label="Increase duration"
@@ -221,38 +257,100 @@ export default function ModuleDetailModal({
               </button>
             </div>
           ) : (
-            // Static display
-            <p className="text-2xl font-light tracking-wide text-center">
+            <p
+              className="text-2xl text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               {formatDuration(module.duration)}
             </p>
           )}
         </div>
 
-        {/* Tags */}
-        {libraryModule?.tags?.length > 0 && (
-          <div className="px-6 py-3 border-t border-[var(--color-border)]">
-            <div className="flex flex-wrap gap-2">
-              {libraryModule.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-secondary)] px-2 py-1"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
+        {/* Add to Timeline button — placed after duration, before metadata */}
+        {mode === 'add' && (
+          <div className="px-6 py-3">
+            <button
+              onClick={() => { onAdd?.(); handleClose(); }}
+              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+            >
+              Add to Timeline
+            </button>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-[var(--color-border)]">
-          <button
-            onClick={handleClose}
-            className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
-          >
-            Close
-          </button>
-        </div>
+        {/* Intensity + Tags */}
+        {(libraryModule?.intensity != null || libraryModule?.tags?.length > 0) && (
+          <div className="px-6 py-3">
+            {/* Intensity */}
+            {libraryModule?.intensity != null && (
+              <div className="flex items-baseline gap-2 -mb-2">
+                <p
+                  className="text-lg text-[var(--color-text-tertiary)] leading-none"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  Intensity:
+                </p>
+                <span className="flex items-center space-x-1" style={{ transform: 'translateY(-1px)' }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={`w-2 h-2 rounded-full ${
+                        i <= libraryModule.intensity ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+                      }`}
+                    />
+                  ))}
+                </span>
+              </div>
+            )}
+
+            {/* Therapeutic Frameworks */}
+            {libraryModule?.framework?.length > 0 && (
+              <p className="mb-0.5 leading-relaxed">
+                <span
+                  className="text-lg text-[var(--color-text-tertiary)]"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  Framework{libraryModule.framework.length > 1 ? 's' : ''}:
+                </span>
+                {' '}
+                <span className="text-xs text-[var(--color-text-secondary)] uppercase tracking-wider">
+                  {libraryModule.framework.map((f) => {
+                    const fw = FRAMEWORKS[f];
+                    if (fw?.abbreviation) return `${fw.abbreviation} (${fw.label})`;
+                    return fw?.label || f;
+                  }).join(', ')}
+                </span>
+              </p>
+            )}
+
+            {/* Tags */}
+            {libraryModule?.tags?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                  {libraryModule.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs text-[var(--color-text-tertiary)] border border-[var(--color-border)] rounded-full px-3 py-1 whitespace-nowrap"
+                      style={{ textTransform: 'none' }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Footer — only shown in info mode (add mode button is above intensity) */}
+        {mode === 'info' && (
+          <div className="px-6 py-4">
+            <button
+              onClick={handleClose}
+              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+            >
+              Close
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body

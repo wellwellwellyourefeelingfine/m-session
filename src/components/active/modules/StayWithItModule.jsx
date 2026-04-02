@@ -13,7 +13,6 @@
  */
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { getModuleById } from '../../../content/modules';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
@@ -21,6 +20,7 @@ import {
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
@@ -214,7 +214,6 @@ function renderContentLines(lines) {
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function StayWithItModule({ module, onComplete, onSkip, onTimerUpdate }) {
-  const libraryModule = getModuleById(module.libraryId);
   const meditation = getMeditationById('stay-with-it');
 
   // Store integration
@@ -223,16 +222,19 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
   const updateStayWithItCapture = useSessionStore((s) => s.updateStayWithItCapture);
 
+  // Derive hasStarted from store (needed before useSyncedDuration call)
+  const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
+  const hasStartedFromStore = meditationPlayback.moduleInstanceId === module.instanceId && meditationPlayback.hasStarted;
+
+  // Duration (synced with session store)
+  const duration = useSyncedDuration(module, { hasStarted: hasStartedFromStore });
+
   // ─── State ──────────────────────────────────────────────────────────────
 
   // Module phase: idle → meditation → checkin → response → psychoeducation → journaling → closing
   const [phase, setPhase] = useState('idle');
 
   // Meditation state
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 15
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
   // Check-in state
@@ -267,12 +269,12 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
-    const durationSeconds = selectedDuration * 60;
+    const durationSeconds = duration.selected * 60;
 
     // Filter out conditional prompts that don't meet duration requirements
     const filteredPrompts = meditation.prompts.filter(prompt => {
       if (!prompt.conditional) return true;
-      if (prompt.conditional.minDuration && selectedDuration < prompt.conditional.minDuration) {
+      if (prompt.conditional.minDuration && duration.selected < prompt.conditional.minDuration) {
         return false;
       }
       return true;
@@ -289,7 +291,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
 
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, selectedDuration]);
+  }, [meditation, duration.selected]);
 
   // ─── Meditation completion → check-in transition ────────────────────────
 
@@ -564,11 +566,11 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
 
               {/* Duration selector */}
               <button
-                onClick={() => setShowDurationPicker(true)}
+                onClick={() => duration.setShowPicker(true)}
                 className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                   hover:border-[var(--color-text-tertiary)] transition-colors"
               >
-                <span className="text-2xl font-light">{selectedDuration}</span>
+                <span className="text-2xl font-light">{duration.selected}</span>
                 <span className="text-sm ml-1">min</span>
               </button>
             </div>
@@ -592,10 +594,10 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
 
         {!playback.isLoading && (
           <DurationPicker
-            isOpen={showDurationPicker}
-            onClose={() => setShowDurationPicker(false)}
-            onSelect={setSelectedDuration}
-            currentDuration={selectedDuration}
+            isOpen={duration.showPicker}
+            onClose={() => duration.setShowPicker(false)}
+            onSelect={duration.setSelected}
+            currentDuration={duration.selected}
             durationSteps={meditation.durationSteps}
             minDuration={meditation.minDuration / 60}
             maxDuration={meditation.maxDuration / 60}

@@ -216,23 +216,20 @@ export default function SessionMenu() {
           >
             New Session
           </button>
-          {sessionPhase === 'pre-session' && (
-            <>
-              <div className="border-t border-[var(--color-border)]" />
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  undismissBanner(TUTORIAL_BANNER_ID);
-                  setCurrentTab('home');
-                }}
-                className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-                style={{ fontFamily: 'Azeret Mono, monospace' }}
-              >
-                Show Tutorial
-              </button>
-            </>
-          )}
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={() => {
+              closeMenu();
+              undismissBanner(TUTORIAL_BANNER_ID);
+              setCurrentTab('home');
+            }}
+            disabled={sessionPhase === 'not-started' || sessionPhase === 'intake'}
+            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-30 disabled:cursor-default"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            Show Tutorial
+          </button>
           <div className="border-t border-[var(--color-border)]" />
           <button
             type="button"

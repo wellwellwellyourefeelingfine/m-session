@@ -8,7 +8,8 @@ export {
   MODULE_TYPES,
   CATEGORY_ICONS,
   MODULE_ICONS,
-  PHASE_INTENSITY_RULES,
+  FRAMEWORKS,
+  VALID_PHASES,
   moduleLibrary,
   getModuleById,
   getModulesForPhase,
@@ -17,3 +18,9 @@ export {
   getModulesGroupedByIntensity,
   getFollowUpModules,
 } from './library';
+
+import { FRAMEWORKS as _FRAMEWORKS } from './library';
+
+export function getFrameworkById(id) {
+  return _FRAMEWORKS[id] || null;
+}

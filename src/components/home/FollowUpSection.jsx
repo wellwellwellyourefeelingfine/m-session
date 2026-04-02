@@ -153,7 +153,7 @@ export default function FollowUpSection() {
 
           {/* Timing info */}
           <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-            Available 8-24 hours after session
+            Available 8 hours after session
           </p>
 
           {/* Phase description */}

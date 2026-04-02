@@ -15,36 +15,31 @@ export default function DurationPicker({
   minDuration = 10,
   maxDuration = 30,
 }) {
-  // Filter steps to only include valid ones
   const validSteps = useMemo(
     () => durationSteps.filter((step) => step >= minDuration && step <= maxDuration),
     [durationSteps, minDuration, maxDuration]
   );
 
-  // Track selected index into validSteps
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [closing, setClosing] = useState(false);
 
-  // Sync index when picker opens
   useEffect(() => {
     if (isOpen) {
       const index = validSteps.indexOf(currentDuration);
       setSelectedIndex(index >= 0 ? index : 0);
+      setClosing(false);
     }
   }, [isOpen, currentDuration, validSteps]);
 
-  // Handle escape key
   useEffect(() => {
     if (!isOpen) return;
-
     const handleEscape = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') handleClose();
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -56,6 +51,11 @@ export default function DurationPicker({
     };
   }, [isOpen]);
 
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  };
+
   const handleDecrement = () => {
     setSelectedIndex((i) => Math.max(0, i - 1));
   };
@@ -66,7 +66,7 @@ export default function DurationPicker({
 
   const handleConfirm = () => {
     onSelect(validSteps[selectedIndex]);
-    onClose();
+    handleClose();
   };
 
   if (!isOpen) return null;
@@ -74,26 +74,40 @@ export default function DurationPicker({
   const isAtMin = selectedIndex === 0;
   const isAtMax = selectedIndex === validSteps.length - 1;
 
+  const formatDuration = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    if (hours > 0) {
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+    return `${mins}m`;
+  };
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
-      onClick={onClose}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      onClick={handleClose}
     >
       <div
-        className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-xs shadow-lg"
+        className={`bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-xs shadow-lg ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-[var(--color-border)]">
-          <h3 className="text-center">Duration</h3>
+        <div className="px-6 pt-4 pb-2">
+          <p
+            className="text-lg text-[var(--color-text-tertiary)] text-center"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+          >
+            Duration
+          </p>
         </div>
 
         {/* Stepper */}
-        <div className="flex items-center justify-center gap-6 py-10">
+        <div className="flex items-center justify-center gap-6 py-6">
           <button
             onClick={handleDecrement}
             disabled={isAtMin}
-            className={`w-12 h-12 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+            className={`w-12 h-12 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
               isAtMin ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
             }`}
             aria-label="Decrease duration"
@@ -103,14 +117,17 @@ export default function DurationPicker({
             </svg>
           </button>
 
-          <span className="text-4xl font-light tracking-wide min-w-[80px] text-center">
-            {validSteps[selectedIndex]}m
+          <span
+            className="text-4xl min-w-[80px] text-center"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+          >
+            {formatDuration(validSteps[selectedIndex])}
           </span>
 
           <button
             onClick={handleIncrement}
             disabled={isAtMax}
-            className={`w-12 h-12 flex items-center justify-center border border-[var(--color-border)] transition-opacity ${
+            className={`w-12 h-12 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
               isAtMax ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
             }`}
             aria-label="Increase duration"
@@ -122,8 +139,8 @@ export default function DurationPicker({
           </button>
         </div>
 
-        {/* Footer with buttons */}
-        <div className="px-6 py-4 border-t border-[var(--color-border)] space-y-3">
+        {/* Footer */}
+        <div className="px-6 pt-2 pb-4 space-y-3">
           <button
             onClick={handleConfirm}
             className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
@@ -131,8 +148,8 @@ export default function DurationPicker({
             Confirm
           </button>
           <button
-            onClick={onClose}
-            className="w-full py-2 text-[var(--color-text-tertiary)] text-sm"
+            onClick={handleClose}
+            className="w-full py-2 text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider hover:text-[var(--color-text-secondary)] transition-colors"
           >
             Cancel
           </button>

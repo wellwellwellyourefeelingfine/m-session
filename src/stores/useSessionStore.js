@@ -1888,8 +1888,27 @@ export const useSessionStore = create(
         // Check if Values Compass was completed during this session
         const vcCompleted = state.transitionCaptures.valuesCompass?.completedAt != null;
 
+        // Auto-add integration reflection journal to follow-up phase
+        const irLib = getModuleById('integration-reflection-journal');
+        const followUpModule = {
+          instanceId: generateId(),
+          libraryId: 'integration-reflection-journal',
+          phase: 'follow-up',
+          title: irLib?.title || 'Integration Reflection',
+          duration: irLib?.duration || 25,
+          status: 'upcoming',
+          order: 0,
+          content: irLib?.content || {},
+          startedAt: null,
+          completedAt: null,
+        };
+
         set({
           sessionPhase: 'completed',
+          modules: {
+            ...state.modules,
+            items: [...state.modules.items, followUpModule],
+          },
           phaseTransitions: {
             ...state.phaseTransitions,
             activeTransition: null,
@@ -1918,14 +1937,15 @@ export const useSessionStore = create(
             finalDurationSeconds,
             dataExportedAt: null,
           },
-          // Follow-up unlock times (millisecond timestamps)
+          // Follow-up phase unlock (single 8-hour lock on entire phase)
           followUp: {
             ...state.followUp,
+            phaseUnlockTime: now + 8 * HOUR_MS,
             unlockTimes: {
               checkIn: now + 8 * HOUR_MS,
               revisit: now + 8 * HOUR_MS,
-              integration: now + DAY_MS,
-              ...(vcCompleted ? { valuesCompassFollowUp: now + 12 * HOUR_MS } : {}),
+              integration: now + 8 * HOUR_MS,
+              ...(vcCompleted ? { valuesCompassFollowUp: now + 8 * HOUR_MS } : {}),
             },
           },
         });
@@ -1942,27 +1962,24 @@ export const useSessionStore = create(
       // FOLLOW-UP SESSION ACTIONS
       // ============================================
 
-      // Check and update follow-up module availability based on current time
+      // Check and update follow-up module availability based on phase unlock time
       checkFollowUpAvailability: () => {
         const state = get();
         const now = Date.now();
-        const { unlockTimes, modules } = state.followUp;
+        const { phaseUnlockTime, modules } = state.followUp;
 
-        if (!unlockTimes.checkIn) return; // No unlock times set
+        if (!phaseUnlockTime) return;
+        if (now < phaseUnlockTime) return; // Phase still locked
 
+        // Phase is unlocked — set all locked modules to available
         const updates = {};
-
-        // Check each module's unlock status
         ['checkIn', 'revisit', 'integration', 'valuesCompassFollowUp'].forEach((moduleId) => {
-          const unlockTime = unlockTimes[moduleId];
           const module = modules[moduleId];
-
-          if (module && module.status === 'locked' && unlockTime && now >= unlockTime) {
+          if (module && module.status === 'locked') {
             updates[moduleId] = { ...module, status: 'available' };
           }
         });
 
-        // Only update if there are changes
         if (Object.keys(updates).length > 0) {
           set({
             followUp: {

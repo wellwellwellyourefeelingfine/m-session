@@ -16,6 +16,7 @@ import HelpTool from './HelpTool';
 import PhilosophyTool from './PhilosophyTool';
 import AboutTool from './AboutTool';
 import HowToUseTool from './HowToUseTool';
+import SourcesTool from './SourcesTool';
 const tools = [
   { id: 'about', label: 'ABOUT', component: AboutTool },
   { id: 'how-to-use', label: 'HOW TO USE THIS APP', component: HowToUseTool },
@@ -24,6 +25,7 @@ const tools = [
   { id: 'help', label: 'I NEED HELP', component: HelpTool },
   { id: 'resources', label: 'RESOURCES', component: ResourcesTool },
   { id: 'dosage', label: 'DOSAGE ASSISTANT', component: DosageTool },
+  { id: 'sources', label: 'SOURCES & ACKNOWLEDGEMENTS', component: SourcesTool },
   { id: 'settings', label: 'SETTINGS', component: SettingsTool },
 ];
 

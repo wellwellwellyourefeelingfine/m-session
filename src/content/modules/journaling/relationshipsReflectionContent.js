@@ -4,6 +4,7 @@
  */
 
 export const relationshipsReflectionContent = {
+  instructions: 'A guided journaling exercise to explore how your session has shifted the way you see the people in your life. Includes prompts about connection, repair, and what you want to bring forward.',
   screens: [
     {
       type: 'text',

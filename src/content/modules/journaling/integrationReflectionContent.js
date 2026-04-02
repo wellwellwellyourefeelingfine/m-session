@@ -4,6 +4,7 @@
  */
 
 export const integrationReflectionContent = {
+  instructions: 'A structured journaling exercise to reflect on what stayed with you from your session. You will move through guided prompts about insights, emotions, and how the experience is settling in your life.',
   screens: [
     {
       type: 'text',

@@ -10,7 +10,7 @@ Developer documentation for M-SESSION. For an overview of the project, see [READ
 src/
 ├── components/
 │   ├── active/                    # Active session (meditation playback)
-│   │   ├── modules/               # 17+ lazy-loaded custom module components
+│   │   ├── modules/               # 25+ lazy-loaded custom module components
 │   │   │   └── shared/            # Shared module sub-components (cycle/, matrix/)
 │   │   ├── capabilities/          # Composable UI building blocks
 │   │   │   ├── animations/        # BreathOrb, AsciiMoon, AsciiDiamond, MorphingShapes,
@@ -40,11 +40,11 @@ src/
 │   │   │   ├── IntentionSettingActivity.jsx  # Guided intention refinement
 │   │   │   └── LifeGraphActivity.jsx         # Lifecycle visualization + PNG export
 │   │   └── transitions/           # Transition step content & shared components
-│   ├── followup/                  # Follow-up modules (12-48h post-session)
-│   │   ├── FollowUpCheckIn.jsx    # How-are-you check-in (24h)
-│   │   ├── FollowUpRevisit.jsx    # Revisit session writings (24h)
-│   │   ├── FollowUpIntegration.jsx # Integration reflection (48h)
-│   │   ├── FollowUpValuesCompass.jsx # Revisit values compass (12h, conditional)
+│   ├── followup/                  # Follow-up modules (8h+ post-session, phase-level lock)
+│   │   ├── FollowUpCheckIn.jsx    # How-are-you check-in
+│   │   ├── FollowUpRevisit.jsx    # Revisit session writings
+│   │   ├── FollowUpIntegration.jsx # Integration reflection
+│   │   ├── FollowUpValuesCompass.jsx # Revisit values compass (conditional)
 │   │   └── content/              # Follow-up step content
 │   ├── ai/                        # AI Assistant components
 │   │   ├── AIAssistantModal.jsx   # Main chat interface
@@ -61,7 +61,7 @@ src/
 │   ├── tools/                     # FAQ, dosage, settings, resources, philosophy, about
 │   ├── intake/                    # Questionnaire components
 │   ├── timeline/                  # Timeline editor components
-│   ├── shared/                    # Reusable UI components (Button, Modal, DurationPicker, etc.)
+│   ├── shared/                    # Reusable UI components (Icons, DurationPicker, etc.)
 │   └── layout/                    # AppShell, Header, TabBar, SessionMenu
 ├── stores/
 │   ├── useSessionStore.js         # Core session logic (~2,700 lines)
@@ -79,12 +79,21 @@ src/
 │   ├── useAudioPlayback.js        # Single <audio> element lifecycle (play/pause/resume)
 │   ├── useMeditationPlayback.js   # Shared TTS meditation playback orchestration
 │   ├── useSilenceTimer.js         # Gong-bookended silence timer (for non-TTS modules)
+│   ├── useSyncedDuration.js       # Two-way duration sync between module UI and session store
 │   ├── useWakeLock.js             # Screen Wake Lock API wrapper
 │   ├── useInstallPrompt.js        # PWA install prompt detection
 │   └── useTranscriptModal.js      # Meditation transcript viewer
 ├── content/
 │   ├── modules/                   # Module definitions + content
-│   │   ├── library.js             # All module definitions
+│   │   ├── library.js             # All module definitions (metadata only — content extracted)
+│   │   ├── journaling/            # Extracted journaling module content
+│   │   │   ├── journalingContent.js           # Light, deep, gratitude, time capsule
+│   │   │   ├── integrationReflectionContent.js
+│   │   │   ├── relationshipsReflectionContent.js
+│   │   │   ├── lifestyleReflectionContent.js
+│   │   │   ├── spiritMeaningContent.js
+│   │   │   ├── bodySomaticContent.js
+│   │   │   └── natureConnectionContent.js
 │   │   ├── protectorDialogueContent.js
 │   │   ├── theCycleContent.js
 │   │   ├── theDeepDiveReflectionContent.js
@@ -144,8 +153,22 @@ public/
 - `TheDescentModule` — EFT relationship exploration: guided meditation + journaling (Part 1 of linked pair)
 - `TheCycleModule` — EFT relationship cycle mapping with interactive diagram + closing meditation (Part 2)
 
-*Journaling:*
-- `JournalingModule` — Journal store integration (handles 6 types: light, deep, letter-writing, parts-work, therapy-exercise, and general)
+*Journaling (shared framework):*
+- `JournalingModule` — Flexible journaling framework with configurable screen types (text, prompt, selector). Supports `content.screens` array for any mix of education pages, writing prompts, and selector grids. Used by: light journaling, deep journaling, gratitude reflection, time capsule, parts work, therapy exercise, and 6 follow-up integration modules.
+
+*Letter-Writing (custom modules):*
+- `LetterWritingModule` — Guided letter to someone: education → recipient + 3 prompts → full review with salutation → closing reflection
+- `InnerChildLetterModule` — Letter to younger self: age selection → 3 prompts → review → closing
+- `FeelingDialogueModule` — Back-and-forth conversation with a named feeling (Gestalt/IFS): name feeling → 4 dialogue prompts → review → closing
+- `CommittedActionLetterModule` — ACT-based value → barrier → willingness → commitment → review → closing
+
+*Follow-Up Integration Modules (use JournalingModule framework):*
+- `Integration Reflection` — What stayed, emotional check-in (selector), shifted perspectives, unresolved material
+- `Relationships Reflection` — Who's on your mind, relationship shift (selector), patterns, communication
+- `Lifestyle Reflection` — What's working, area for change (selector), boundaries, habits
+- `Spirit & Meaning` — Ineffable experiences, spiritual experience (multi-select), purpose shifts, practices
+- `Body & Somatic Awareness` — Body scan, physical changes (multi-select), somatic practices (multi-select)
+- `Nature & Connection` — Nature relationship, elements (multi-select), nature practices (multi-select)
 
 *Open-Ended:*
 - `MusicListeningModule` — Duration picker, alarm prompt, genre recommendations
@@ -412,6 +435,69 @@ export const CUSTOM_MODULES = { ...existing, 'my-meditation': MyMeditationModule
 **Step 6: Generate audio** — create `scripts/generate-my-meditation-audio.mjs` following the pattern of existing scripts. Use `--dry-run` first, then generate with `ELEVENLABS_API_KEY`.
 
 **Step 7: Build and test** — `npm run build`, then verify the full flow: idle screen → begin → prompts with audio → pause/resume → mute toggle → completion.
+
+### Adding a Journaling Module (No Custom Component)
+
+The `JournalingModule` framework supports configurable screen types, making it possible to create rich multi-screen journaling activities without writing any custom component code.
+
+**Screen types available:**
+- `text` — Education/reflection page with header and content lines (supports `§` spacers)
+- `prompt` — DM Serif prompt question with textarea (optional `context` description above)
+- `selector` — Grid of selectable options (2 or 3 columns, single or multi-select) with optional textarea
+
+**Step 1: Create content file** in `src/content/modules/journaling/myContent.js`:
+
+```javascript
+export const myContent = {
+  screens: [
+    { type: 'text', header: 'Introduction', lines: ['First paragraph.', '§', 'Second paragraph.'] },
+    { type: 'prompt', prompt: 'What do you notice?', context: 'Optional description.', placeholder: 'Write here...' },
+    { type: 'selector', prompt: 'How do you feel?', key: 'feeling', columns: 2, multiSelect: false,
+      options: [{ id: 'calm', label: 'Calm' }, { id: 'energized', label: 'Energized' }],
+      journal: { prompt: 'Say more?', placeholder: 'Details...', rows: 3 } },
+    { type: 'text', header: 'Closing', lines: ['Final reflection.'] },
+  ],
+};
+```
+
+**Step 2: Add module definition** in `library.js` with `content: myContent` (imported).
+
+**Step 3: Register** in `moduleRegistry.js` as `JournalingModule`.
+
+**Legacy format** (still supported): `content.introScreens` + `content.prompts` + `content.closingScreens`.
+
+### Duration Sync Hook
+
+All modules with variable duration should use the shared `useSyncedDuration` hook for two-way sync between the module's UI and the session store:
+
+```javascript
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
+
+const duration = useSyncedDuration(module, { hasStarted });
+// duration.selected       — current duration in minutes
+// duration.setSelected    — set duration (syncs to store)
+// duration.showPicker     — boolean for picker visibility
+// duration.setShowPicker  — toggle picker
+// duration.handleChange   — change handler (local + store)
+```
+
+This ensures duration changes from the timeline card modal are reflected in the module's idle screen and vice versa.
+
+### Intensity Rating
+
+Modules use a numeric 1–5 intensity scale (not string labels). Set via the `intensity` field on each module definition:
+
+```javascript
+{ id: 'my-module', intensity: 3, ... }  // 1=low, 3=moderate, 5=high
+```
+
+Displayed in the module detail modal as filled/unfilled dots.
+
+### Follow-Up Phase Lock
+
+The follow-up phase uses a single 8-hour phase-level time lock (`followUp.phaseUnlockTime`) rather than per-module locks. All follow-up activities become available simultaneously once the phase unlocks. The lock is checked in:
+- `ActiveView.jsx` — follow-up landing page shows countdown when locked
+- `FollowUpModuleModal.jsx` / `AltSessionModuleModal.jsx` — Begin button disabled with countdown when locked
 
 ---
 

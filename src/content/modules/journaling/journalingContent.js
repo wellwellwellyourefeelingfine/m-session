@@ -92,6 +92,7 @@ export const gratitudeReflectionContent = {
 };
 
 export const timeCapsuleContent = {
+  instructions: 'A guided writing exercise to capture what feels clear right now and send it forward to your future self. You will move through a brief introduction, write your message, and seal it.',
   introScreens: [
     {
       header: 'Time Capsule',

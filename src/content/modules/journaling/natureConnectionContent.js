@@ -4,6 +4,7 @@
  */
 
 export const natureConnectionContent = {
+  instructions: 'A guided journaling exercise to explore how your relationship to the natural world has shifted since your session. Includes prompts about presence, interconnection, and what the natural world is offering you.',
   screens: [
     {
       type: 'text',

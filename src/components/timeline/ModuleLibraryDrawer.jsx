@@ -4,12 +4,21 @@
  * Filters modules based on the target phase
  */
 
-import { useState, useCallback } from 'react';
-import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES } from '../../content/modules';
+import { useState, useCallback, useEffect } from 'react';
+import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES, FRAMEWORKS } from '../../content/modules';
+import { CircleXIcon } from '../shared/Icons';
+import ModuleDetailModal from './ModuleDetailModal';
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false }) {
   const [filter, setFilter] = useState('recommended'); // 'all' | 'recommended' | phase filter
   const [closing, setClosing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [selectedDuration, setSelectedDuration] = useState(null);
+
+  useEffect(() => {
+    requestAnimationFrame(() => setMounted(true));
+  }, []);
 
   const handleClose = useCallback(() => {
     setClosing(true);
@@ -50,8 +59,15 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
   });
 
   const handleSelect = (module) => {
-    const check = canAddModuleToPhase(module.id, phase);
-    onSelect(module.id, check.warning);
+    setSelectedModule(module);
+    setSelectedDuration(module.defaultDuration);
+  };
+
+  const handleAddFromDetail = () => {
+    if (!selectedModule) return;
+    const check = canAddModuleToPhase(selectedModule.id, phase);
+    onSelect(selectedModule.id, check.warning, selectedDuration);
+    // Don't clear selectedModule here — let the detail modal's onClose do it after animation
   };
 
   const formatDuration = (minutes) => {
@@ -62,7 +78,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${closing ? 'opacity-0' : 'opacity-100'}`}
+        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${closing ? 'opacity-0' : mounted ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
       />
 
@@ -71,11 +87,11 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
         {/* Close button - positioned in top-right corner of drawer */}
         <button
           onClick={handleClose}
-          className="absolute top-3 right-4 w-7 h-7 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] text-sm leading-none transition-colors z-10"
+          className="absolute top-3 right-4 text-[var(--color-text-tertiary)] opacity-70 hover:opacity-100 transition-opacity z-10"
           aria-label="Close"
           data-tutorial="library-close"
         >
-          ×
+          <CircleXIcon size={26} />
         </button>
 
         {/* Handle */}
@@ -94,6 +110,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
             <FilterButton
               active={filter === 'all'}
               onClick={() => setFilter('all')}
+              dataTutorial="filter-all"
             >
               All
             </FilterButton>
@@ -186,6 +203,27 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
                         <p className="text-[var(--color-text-secondary)] text-sm -mt-px">
                           {module.description}
                         </p>
+                        {(module.framework?.length > 0 || module.intensity != null) && (
+                          <div className="flex items-center justify-between mt-0.5 mb-0.5">
+                            {module.framework?.length > 0 ? (
+                              <span className="text-[var(--color-text-tertiary)] text-[9px] uppercase tracking-wider leading-none">
+                                {module.framework.map((f) => FRAMEWORKS[f]?.abbreviation || FRAMEWORKS[f]?.label || f).join(', ')}
+                              </span>
+                            ) : <span />}
+                            {module.intensity != null && (
+                              <span className="flex items-center space-x-0.5">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                  <span
+                                    key={i}
+                                    className={`w-1.5 h-1.5 rounded-full ${
+                                      i <= module.intensity ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+                                    }`}
+                                  />
+                                ))}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -195,6 +233,23 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
           )}
         </div>
       </div>
+
+      {/* Detail modal — opens on top of drawer when a module is selected */}
+      {selectedModule && (
+        <ModuleDetailModal
+          isOpen={true}
+          onClose={() => setSelectedModule(null)}
+          module={{
+            libraryId: selectedModule.id,
+            title: selectedModule.title,
+            duration: selectedDuration,
+            status: 'upcoming',
+          }}
+          onDurationChange={(newDuration) => setSelectedDuration(newDuration)}
+          mode="add"
+          onAdd={handleAddFromDetail}
+        />
+      )}
     </div>
   );
 }

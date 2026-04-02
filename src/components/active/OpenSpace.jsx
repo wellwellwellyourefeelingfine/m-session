@@ -204,7 +204,10 @@ function OpenSpaceLibraryDrawer({ phase, onSelect, onClose }) {
   const filteredModules = availableModules.filter((module) => {
     if (filter === 'all') return true;
     if (filter === 'recommended') return module.recommendedPhases?.includes(phase);
-    return module.intensity === filter;
+    if (filter === 'low') return module.intensity <= 2;
+    if (filter === 'moderate') return module.intensity === 3;
+    if (filter === 'high') return module.intensity >= 4;
+    return true;
   });
 
   const handleSelect = (module) => {
@@ -214,25 +217,16 @@ function OpenSpaceLibraryDrawer({ phase, onSelect, onClose }) {
 
   const formatDuration = (minutes) => `${minutes} min`;
 
-  // Intensity dots
-  const getIntensityDots = (intensity) => {
-    switch (intensity) {
-      case 'gentle': return 1;
-      case 'moderate': return 2;
-      case 'deep': return 3;
-      default: return 1;
-    }
-  };
-
+  // Intensity dots (1-5 scale)
   const renderIntensityDots = (intensity) => {
-    const dotCount = getIntensityDots(intensity);
+    const level = intensity || 1;
     return (
       <span className="flex items-center space-x-1">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5].map((i) => (
           <span
             key={i}
             className={`w-1.5 h-1.5 rounded-full ${
-              i <= dotCount ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+              i <= level ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
             }`}
           />
         ))}
@@ -290,17 +284,15 @@ function OpenSpaceLibraryDrawer({ phase, onSelect, onClose }) {
             <FilterButton active={filter === 'recommended'} onClick={() => setFilter('recommended')}>
               Recommended
             </FilterButton>
-            <FilterButton active={filter === 'gentle'} onClick={() => setFilter('gentle')}>
-              Gentle
+            <FilterButton active={filter === 'low'} onClick={() => setFilter('low')}>
+              Low
             </FilterButton>
             <FilterButton active={filter === 'moderate'} onClick={() => setFilter('moderate')}>
               Moderate
             </FilterButton>
-            {phase === 'integration' && (
-              <FilterButton active={filter === 'deep'} onClick={() => setFilter('deep')}>
-                Deep
-              </FilterButton>
-            )}
+            <FilterButton active={filter === 'high'} onClick={() => setFilter('high')}>
+              High
+            </FilterButton>
           </div>
         </div>
 

@@ -9,8 +9,9 @@
  * Rendered via createPortal onto document.body (escapes the scrollable <main>).
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
+import { useSessionStore } from '../../stores/useSessionStore';
 
 // ─── Step Definitions ───────────────────────────────────────────────────────
 
@@ -101,23 +102,23 @@ const TUTORIAL_STEPS = [
     noHaze: true,
     title: 'Activity Library',
     description:
-      'Browse activities. Tap Recommended to filter by phase.',
+      'When you open the library, you first see activities recommended for this phase. Tap All to browse everything available.',
     interactive: true,
     tooltipZ: 110,
     waitFor: '[data-tutorial="library-drawer"]',
-    nextClick: '[data-tutorial="filter-recommended"]',
+    nextClick: '[data-tutorial="filter-all"]',
     fallbackClick: '[data-tutorial="add-activity-first"]',
-    advanceOnClick: '[data-tutorial="filter-recommended"]',
+    advanceOnClick: '[data-tutorial="filter-all"]',
     cleanupClick: '[data-tutorial="library-close"]',
   },
   {
-    id: 'library-recommended',
+    id: 'library-all',
     target: null,
     position: 'screen-top',
     noHaze: true,
-    title: 'Recommended',
+    title: 'All Activities',
     description:
-      'Activities suggested for this phase. Add any that fit, or close when done.',
+      'Here you can see all available activities. Add any that interest you, or close the library when you\'re done.',
     interactive: true,
     tooltipZ: 110,
     waitFor: '[data-tutorial="library-drawer"]',
@@ -131,7 +132,7 @@ const TUTORIAL_STEPS = [
     position: 'screen-top',
     title: 'Begin When Ready',
     description:
-      'A typical session runs 3 to 5 hours, but add as much or as little as feels right. When you\'re ready, press Begin Session and you\'ll be guided through everything.',
+      'A typical session runs 4 to 6 hours, but add as much or as little as feels right. When you\'re ready, press Begin Session and you\'ll be guided through everything.',
   },
 ];
 
@@ -154,6 +155,15 @@ const TEXT_FADE_OUT_MS = 200;
 // ─── Component ──────────────────────────────────────────────────────────────
 
 export default function TimelineTutorial({ isActive, onDismiss }) {
+  const sessionPhase = useSessionStore((state) => state.sessionPhase);
+
+  const steps = useMemo(() =>
+    sessionPhase === 'pre-session'
+      ? TUTORIAL_STEPS
+      : TUTORIAL_STEPS.filter(s => s.id !== 'pre-session'),
+    [sessionPhase]
+  );
+
   const [currentStep, setCurrentStep] = useState(0);
   const [phase, setPhase] = useState('entering'); // 'entering' | 'visible' | 'exiting'
   const [spotlightRect, setSpotlightRect] = useState(null);
@@ -184,9 +194,9 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     setPositionSettled(false);
     setCurrentStep((s) => {
       const next = s + 1;
-      return next < TUTORIAL_STEPS.length ? next : s;
+      return next < steps.length ? next : s;
     });
-  }, []);
+  }, [steps.length]);
 
   // Reset guard when step changes
   useEffect(() => {
@@ -203,7 +213,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     if (!positionSettled) return; // wait for tooltip to reach final position
     if (!stepReady) return;       // wait for interactive element to appear
 
-    const newDesc = TUTORIAL_STEPS[Math.min(currentStep, TUTORIAL_STEPS.length - 1)].description;
+    const newDesc = steps[Math.min(currentStep, steps.length - 1)].description;
 
     if (reduceMotion) {
       setDisplayedDesc(newDesc);
@@ -298,7 +308,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // we only measure *after* smooth-scroll finishes, regardless of duration.
 
   useEffect(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
 
     if (!step.target) {
       setSpotlightRect(null);
@@ -360,7 +370,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
 
   useEffect(() => {
     const handleResize = () => {
-      const step = TUTORIAL_STEPS[currentStep];
+      const step = steps[currentStep];
       if (step.target) setSpotlightRect(measureTarget(step.target, step.spotlightAdjust));
     };
     window.addEventListener('resize', handleResize);
@@ -370,7 +380,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // ─── Interactive: waitFor Polling ──────────────────────────────────────
 
   useEffect(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
     if (!step.waitFor) {
       setStepReady(true);
       return;
@@ -392,7 +402,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // ─── Interactive: advanceOnAppear / advanceOnDisappear ─────────────────
 
   useEffect(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
     if (!step.advanceOnAppear && !step.advanceOnDisappear) return;
 
     const observer = new MutationObserver(() => {
@@ -406,13 +416,37 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
     });
 
     observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
+
+    // Immediate check — catches elements that appeared in the same React commit
+    // (before the observer was connected, so it wouldn't see the mutation).
+    if (step.advanceOnAppear && document.querySelector(step.advanceOnAppear)) {
+      safeAdvance();
+    }
+    if (step.advanceOnDisappear && !document.querySelector(step.advanceOnDisappear)) {
+      safeAdvance();
+    }
+
+    // Polling backup for advanceOnDisappear — catches cases where MutationObserver
+    // misses the portal removal (e.g. React batching the unmount across frames).
+    let pollId;
+    if (step.advanceOnDisappear) {
+      pollId = setInterval(() => {
+        if (!document.querySelector(step.advanceOnDisappear)) {
+          safeAdvance();
+        }
+      }, 300);
+    }
+
+    return () => {
+      observer.disconnect();
+      if (pollId) clearInterval(pollId);
+    };
   }, [currentStep, safeAdvance]);
 
   // ─── Interactive: advanceOnClick ──────────────────────────────────────
 
   useEffect(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
     if (!step.advanceOnClick) return;
 
     // Use event delegation so it works even if the target element is
@@ -429,7 +463,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
   // ─── Navigation Handlers ──────────────────────────────────────────────
 
   const handleNext = useCallback(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
 
     if (step.nextClick) {
       const el = document.querySelector(step.nextClick);
@@ -453,15 +487,24 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
           requestAnimationFrame(waitAndClick);
         }
         return;
+      } else {
+        // nextClick target is gone and no fallbackClick — try to pre-trigger the
+        // next step's action so the transition is seamless (e.g. module-detail
+        // modal already closed → open the library before advancing).
+        const nextStep = steps[currentStep + 1];
+        if (nextStep?.nextClick) {
+          const nextEl = document.querySelector(nextStep.nextClick);
+          if (nextEl) nextEl.click();
+        }
       }
     }
 
     // Default: just advance
     safeAdvance();
-  }, [currentStep, safeAdvance]);
+  }, [currentStep, steps, safeAdvance]);
 
   const handleBack = useCallback(() => {
-    const step = TUTORIAL_STEPS[currentStep];
+    const step = steps[currentStep];
 
     // If this step has a cleanup action (close modal/drawer), do it first
     if (step.cleanupClick) {
@@ -488,10 +531,10 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
 
   // ─── Derived State ────────────────────────────────────────────────────
 
-  const clampedStep = Math.min(currentStep, TUTORIAL_STEPS.length - 1);
-  const step = TUTORIAL_STEPS[clampedStep];
+  const clampedStep = Math.min(currentStep, steps.length - 1);
+  const step = steps[clampedStep];
   const isFirst = clampedStep === 0;
-  const isLast = clampedStep === TUTORIAL_STEPS.length - 1;
+  const isLast = clampedStep === steps.length - 1;
   const isCenter = !step.target || step.position === 'center';
   const overlayOpacity = phase === 'visible' ? 1 : 0;
   const isInteractive = !!step.interactive;
@@ -636,7 +679,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
             </button>
 
             <div className="flex gap-1">
-              {TUTORIAL_STEPS.map((_, i) => (
+              {steps.map((_, i) => (
                 <div
                   key={i}
                   className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${

@@ -4,6 +4,7 @@
  */
 
 export const lifestyleReflectionContent = {
+  instructions: 'A guided journaling exercise to identify what to keep, what to change, and where to start. Includes prompts about daily habits, routines, and the practical changes your session brought into focus.',
   screens: [
     {
       type: 'text',
