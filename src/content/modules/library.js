@@ -89,55 +89,55 @@ export const MODULE_TYPES = {
   'body-scan': { label: 'Body Scan', intensity: 1 },
   'simple-grounding': { label: 'Session Grounding', intensity: 1 },
   'short-grounding': { label: 'Basic Grounding', intensity: 1 },
-  'light-journaling': { label: 'Light Journaling', intensity: 3 },
-  'deep-journaling': { label: 'Deep Journaling', intensity: 5 },
+  'light-journaling': { label: 'Light Journaling', intensity: 2 },
+  'deep-journaling': { label: 'Deep Journaling', intensity: 3 },
   'therapy-exercise': { label: 'Therapy Exercise', intensity: 5 },
   'parts-work': { label: 'Parts Work', intensity: 5 },
-  'letter-writing': { label: 'Letter Writing', intensity: 5 },
+  'letter-writing': { label: 'Letter Writing', intensity: 2 },
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
   'open-space': { label: 'Open Space', intensity: 1 },
-  'lets-dance': { label: "Let's Dance", intensity: 1 },
+  'lets-dance': { label: "Let's Dance", intensity: 5 },
   // Leaves on a Stream (ACT cognitive defusion)
-  'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 1 },
+  'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 2 },
   // Protector Dialogue (IFS) — linked two-part module
-  'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 3 },
-  'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 5 },
+  'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 4 },
+  'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 4 },
   // Values Compass (ACT Matrix)
-  'values-compass': { label: 'Values Compass', intensity: 3 },
+  'values-compass': { label: 'Values Compass', intensity: 2 },
   // Felt Sense (Focusing)
-  'felt-sense': { label: 'Felt Sense', intensity: 3 },
+  'felt-sense': { label: 'Felt Sense', intensity: 4 },
   // The Deep Dive (EFT) — linked two-part module
-  'the-descent': { label: 'The Deep Dive', intensity: 3 },
-  'the-cycle': { label: 'The Cycle', intensity: 3 },
+  'the-descent': { label: 'The Deep Dive', intensity: 5 },
+  'the-cycle': { label: 'The Cycle', intensity: 4 },
   'booster-consideration': { label: 'Booster Check-In', intensity: 1 },
   // Intention Setting (pre-session)
   'intention-setting': { label: 'Intention Setting', intensity: 1 },
   // Life Graph (pre-session)
-  'life-graph': { label: 'Life Graph', intensity: 1 },
+  'life-graph': { label: 'Life Graph', intensity: 2 },
   // Mapping the Territory (pre-session)
   'mapping-territory': { label: 'Mapping the Territory', intensity: 1 },
   // Pendulation (Somatic Experiencing)
-  'pendulation': { label: 'Pendulation', intensity: 3 },
+  'pendulation': { label: 'Pendulation', intensity: 4 },
   // Shaking the Tree (Somatic Movement)
-  'shaking-the-tree': { label: 'Shaking the Tree', intensity: 1 },
+  'shaking-the-tree': { label: 'Shaking the Tree', intensity: 3 },
   // Time Capsule (Future Self Journaling)
   'time-capsule': { label: 'Time Capsule', intensity: 3 },
   // Inner Child Letter
-  'inner-child-letter': { label: 'Inner Child Letter', intensity: 5 },
+  'inner-child-letter': { label: 'Inner Child Letter', intensity: 3 },
   // Feeling Dialogue
   'feeling-dialogue': { label: 'Dialogue with a Feeling', intensity: 3 },
   // Committed Action (ACT)
-  'committed-action': { label: 'Committed Action', intensity: 3 },
+  'committed-action': { label: 'Committed Action', intensity: 2 },
   // Integration Reflection (Follow-Up)
-  'integration-reflection-journal': { label: 'Integration Reflection', intensity: 3 },
+  'integration-reflection-journal': { label: 'Integration Reflection', intensity: 2 },
   // Relationships Reflection (Follow-Up)
-  'relationships-reflection': { label: 'Relationships Reflection', intensity: 3 },
+  'relationships-reflection': { label: 'Relationships Reflection', intensity: 2 },
   // Lifestyle Reflection (Follow-Up)
-  'lifestyle-reflection': { label: 'Lifestyle Reflection', intensity: 3 },
+  'lifestyle-reflection': { label: 'Lifestyle Reflection', intensity: 2 },
   // Spirit & Meaning (Follow-Up)
-  'spirit-meaning': { label: 'Spirit & Meaning', intensity: 5 },
+  'spirit-meaning': { label: 'Spirit & Meaning', intensity: 3 },
   // Body & Somatic Awareness (Follow-Up)
-  'body-somatic': { label: 'Body & Somatic Awareness', intensity: 3 },
+  'body-somatic': { label: 'Body & Somatic Awareness', intensity: 2 },
   // Nature & Connection (Follow-Up)
   'nature-connection': { label: 'Nature & Connection', intensity: 1 },
   // Follow-up phase modules (time-locked, available 8-24h after session)
@@ -161,7 +161,6 @@ export const moduleLibrary = [
     title: 'Intention Setting',
     description: 'A guided flow to refine your session intention. Includes optional grounding meditation, self-inquiry, and writing exercises.',
     defaultDuration: 5,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up'],
     recommendedPhases: ['pre-session', 'come-up'],
     hasVariableDuration: false,
@@ -180,7 +179,6 @@ export const moduleLibrary = [
     title: 'Life Graph',
     description: 'Chart significant life milestones against a well-being scale, then see your journey visualized as a life graph.',
     defaultDuration: 5,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up', 'peak', 'integration'],
     recommendedPhases: ['pre-session', 'come-up'],
     hasVariableDuration: false,
@@ -199,7 +197,6 @@ export const moduleLibrary = [
     title: 'Mapping the Territory',
     description: 'A brief orientation to the kinds of experience that can arise during a session. Based on the work of psychedelic researcher Bill Richards.',
     defaultDuration: 10,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up'],
     recommendedPhases: ['pre-session'],
     hasVariableDuration: false,
@@ -220,7 +217,6 @@ export const moduleLibrary = [
     title: 'Session Grounding',
     description: 'A guided grounding practice designed for use during an active MDMA session. Settle into your body, notice your senses, and find your footing in the present moment.',
     defaultDuration: 8,
-    intensity: 1,
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up'],
     hasVariableDuration: false,
@@ -244,7 +240,6 @@ export const moduleLibrary = [
     title: 'Basic Grounding',
     description: 'A brief 5-minute grounding reset. Body contact, senses, and breath — just enough to come back to center.',
     defaultDuration: 5,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak', 'integration'],
     hasVariableDuration: false,
@@ -270,7 +265,6 @@ export const moduleLibrary = [
     title: 'Calming Breath',
     description: 'A 15-minute guided breathing meditation that progressively deepens your breath, then gently returns to natural breathing.',
     defaultDuration: 15,
-    intensity: 1,
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up'],
     content: {
@@ -296,7 +290,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 60,
-    intensity: 1,
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak'],
     content: {
@@ -318,7 +311,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 60,
-    intensity: 1,
     allowedPhases: ['peak'],
     recommendedPhases: ['peak'],
     content: {
@@ -340,7 +332,6 @@ export const moduleLibrary = [
     defaultDuration: 15,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 1,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     content: {
@@ -363,7 +354,6 @@ export const moduleLibrary = [
     defaultDuration: 15,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 3,
     allowedPhases: ['pre-session', 'peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: true,
@@ -390,7 +380,6 @@ export const moduleLibrary = [
     defaultDuration: 10,
     minDuration: 10,
     maxDuration: 15,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak'],
     hasVariableDuration: true,
@@ -415,7 +404,6 @@ export const moduleLibrary = [
     title: 'Self-Compassion',
     description: 'Channel the natural self-compassion that opens during this experience.',
     defaultDuration: 11,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     meditationId: 'self-compassion',
@@ -441,7 +429,6 @@ export const moduleLibrary = [
     defaultDuration: 10,
     minDuration: 10,
     maxDuration: 20,
-    intensity: 1,
     allowedPhases: ['pre-session', 'come-up', 'peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: true,
@@ -468,7 +455,6 @@ export const moduleLibrary = [
     defaultDuration: 15,
     minDuration: 10,
     maxDuration: 25,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: true,
@@ -493,7 +479,6 @@ export const moduleLibrary = [
     title: 'Pendulation',
     description: 'A guided somatic experiencing practice. Track sensations as they move between activation and safety, with adaptive branching based on your experience.',
     defaultDuration: 40,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: false,
@@ -513,7 +498,6 @@ export const moduleLibrary = [
     title: 'Felt Sense',
     description: 'Turn inward and let your body show you what it\u2019s holding. No words needed.',
     defaultDuration: 12,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak', 'integration'],
     hasVariableDuration: false,
@@ -538,7 +522,6 @@ export const moduleLibrary = [
     title: 'The Deep Dive',
     description: 'A two-part relationship-guided audio meditation for one person or two. Discover what lies beneath your surface reactions, then map the cycle that plays out between you.',
     defaultDuration: 45,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     isLinkedParent: true,
@@ -558,7 +541,6 @@ export const moduleLibrary = [
     title: 'The Deep Dive (Part 1)',
     description: 'A relationship-guided audio meditation for one person or two. Explore what lies beneath surface-level reactions.',
     defaultDuration: 25,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     hidden: true,
     isLinkedPart: true,
@@ -580,7 +562,6 @@ export const moduleLibrary = [
     title: 'The Cycle (Part 2)',
     description: 'Map the repeating pattern in your relationship and see it from above.',
     defaultDuration: 25,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     hidden: true,
     isLinkedPart: true,
@@ -600,7 +581,6 @@ export const moduleLibrary = [
     title: 'Values Compass',
     description: 'An interactive exercise for mapping what you care about, what gets in the way, and how you actually move through your life. Based on the ACT Matrix.',
     defaultDuration: 25,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak', 'integration'],
     hasVariableDuration: false,
@@ -621,7 +601,6 @@ export const moduleLibrary = [
     defaultDuration: 15,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     content: lightJournalingContent,
@@ -646,7 +625,6 @@ export const moduleLibrary = [
     defaultDuration: 30,
     minDuration: 20,
     maxDuration: 60,
-    intensity: 5,
     allowedPhases: ['integration'],
     recommendedPhases: ['integration'],
     content: deepJournalingContent,
@@ -670,7 +648,6 @@ export const moduleLibrary = [
     defaultDuration: 30,
     minDuration: 20,
     maxDuration: 45,
-    intensity: 5,
     allowedPhases: ['integration'],
     recommendedPhases: ['integration'],
     content: {
@@ -701,7 +678,6 @@ export const moduleLibrary = [
     defaultDuration: 25,
     minDuration: 15,
     maxDuration: 45,
-    intensity: 5,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
@@ -724,7 +700,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: gratitudeReflectionContent,
@@ -749,7 +724,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: timeCapsuleContent,
@@ -773,7 +747,6 @@ export const moduleLibrary = [
     defaultDuration: 25,
     minDuration: 15,
     maxDuration: 45,
-    intensity: 5,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
@@ -797,7 +770,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 15,
     maxDuration: 40,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     content: {
@@ -821,7 +793,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 30,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
@@ -845,7 +816,6 @@ export const moduleLibrary = [
     defaultDuration: 25,
     minDuration: 15,
     maxDuration: 45,
-    intensity: 3,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -868,7 +838,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 40,
-    intensity: 3,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -891,7 +860,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 40,
-    intensity: 3,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -914,7 +882,6 @@ export const moduleLibrary = [
     defaultDuration: 30,
     minDuration: 15,
     maxDuration: 60,
-    intensity: 5,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -937,7 +904,6 @@ export const moduleLibrary = [
     defaultDuration: 25,
     minDuration: 15,
     maxDuration: 45,
-    intensity: 3,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -960,7 +926,6 @@ export const moduleLibrary = [
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 40,
-    intensity: 1,
     isFollowUpModule: true,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
@@ -984,7 +949,6 @@ export const moduleLibrary = [
     title: 'Dialogue with a Protector',
     description: 'A two-part IFS practice. Meet a protective part of yourself through guided meditation and reflection, then deepen the dialogue during integration.',
     defaultDuration: 55,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     isLinkedParent: true,
@@ -1004,7 +968,6 @@ export const moduleLibrary = [
     title: 'Meeting a Protector (Part 1)',
     description: 'Guided meditation and reflection to meet a protective part of yourself.',
     defaultDuration: 25,
-    intensity: 3,
     allowedPhases: ['peak', 'integration'],
     hidden: true,
     isLinkedPart: true,
@@ -1026,7 +989,6 @@ export const moduleLibrary = [
     title: 'Understanding Your Protector (Part 2)',
     description: 'Deepen your dialogue with the protector you met. Journaling and reflection.',
     defaultDuration: 30,
-    intensity: 5,
     allowedPhases: ['peak', 'integration'],
     hidden: true,
     isLinkedPart: true,
@@ -1052,7 +1014,6 @@ export const moduleLibrary = [
     maxDuration: 60,
     hasVariableDuration: true,
     durationSteps: [5, 10, 15, 20, 30, 45, 60],
-    intensity: 1,
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up', 'peak', 'integration'],
     content: {
@@ -1075,7 +1036,6 @@ export const moduleLibrary = [
     title: 'Booster Check-In',
     description: 'A guided check-in at the 90-minute mark to consider whether a supplemental dose is right for you.',
     defaultDuration: 5,
-    intensity: 1,
     allowedPhases: ['peak'],
     recommendedPhases: ['peak'],
     isBoosterModule: true,
@@ -1093,7 +1053,6 @@ export const moduleLibrary = [
     title: 'Check-In',
     description: 'A brief check-in on how you are feeling since your session.',
     defaultDuration: 5,
-    intensity: 1,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1110,7 +1069,6 @@ export const moduleLibrary = [
     title: 'Revisit',
     description: 'Read back what you wrote during your session.',
     defaultDuration: 10,
-    intensity: 1,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1127,7 +1085,6 @@ export const moduleLibrary = [
     title: 'Values Compass Revisited',
     description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
     defaultDuration: 15,
-    intensity: 1,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1144,7 +1101,6 @@ export const moduleLibrary = [
     title: 'Integration Reflection',
     description: 'Deeper reflection on how insights are integrating into your life.',
     defaultDuration: 10,
-    intensity: 1,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1161,7 +1117,6 @@ export const moduleLibrary = [
     title: 'Follow-Up Journaling',
     description: 'Open journaling space to continue processing your experience.',
     defaultDuration: 15,
-    intensity: 1,
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1183,6 +1138,13 @@ export const moduleLibrary = [
     framework: ['general'],
   },
 ];
+
+// Derive intensity from MODULE_TYPES (single source of truth)
+moduleLibrary.forEach((m) => {
+  if (MODULE_TYPES[m.type]) {
+    m.intensity = MODULE_TYPES[m.type].intensity;
+  }
+});
 
 /**
  * Get a module by its library ID
@@ -1213,6 +1175,11 @@ export function canAddModuleToPhase(moduleId, phase) {
   const module = getModuleById(moduleId);
   if (!module) {
     return { allowed: false, error: 'Module not found' };
+  }
+
+  // Preview mode: allow all modules
+  if (phase === 'preview') {
+    return { allowed: true };
   }
 
   if (!VALID_PHASES.includes(phase)) {

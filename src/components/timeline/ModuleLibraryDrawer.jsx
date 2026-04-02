@@ -10,7 +10,7 @@ import { CircleXIcon } from '../shared/Icons';
 import ModuleDetailModal from './ModuleDetailModal';
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false }) {
-  const [filter, setFilter] = useState('recommended'); // 'all' | 'recommended' | phase filter
+  const [filter, setFilter] = useState(phase === 'preview' ? 'all' : 'recommended'); // 'all' | 'recommended' | phase filter
   const [closing, setClosing] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);

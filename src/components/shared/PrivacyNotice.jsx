@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
+import { CircleXIcon } from './Icons';
 
 const BANNER_ID = 'privacy-notice';
 
@@ -39,12 +40,19 @@ export default function PrivacyNotice() {
 
   return (
     <div
-      className={`fixed bottom-0 left-0 right-0 z-50 p-4 transition-all duration-300 ${
+      className={`fixed bottom-0 left-0 right-0 z-30 p-4 pointer-events-none transition-all duration-300 ${
         hiding ? 'opacity-0 translate-y-full' : 'opacity-100 translate-y-0 animate-slideUp'
       }`}
     >
-      <div className="max-w-md mx-auto bg-[var(--color-bg)] border border-[var(--color-border)] p-5 shadow-lg rounded-lg">
-        <h3 className="text-[var(--color-text-primary)] text-xs uppercase tracking-wider font-medium mb-3">
+      <div className="max-w-md mx-auto bg-[var(--color-bg)] border border-[var(--color-border)] p-5 shadow-lg rounded-lg relative pointer-events-auto">
+        <button
+          onClick={handleDismiss}
+          className="absolute top-3 right-3 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+          aria-label="Close"
+        >
+          <CircleXIcon size={20} />
+        </button>
+        <h3 className="text-[var(--color-text-primary)] text-xs uppercase tracking-wider font-medium mb-3 pr-6">
           Your Privacy
         </h3>
         <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed mb-4">

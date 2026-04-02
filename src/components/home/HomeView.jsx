@@ -384,7 +384,7 @@ export default function HomeView() {
       {/* Module Library Drawer for Preview Activity */}
       {previewDrawerOpen && (
         <ModuleLibraryDrawer
-          phase="pre-session"
+          phase="preview"
           onSelect={handlePreviewSelect}
           onClose={() => setPreviewDrawerOpen(false)}
           hideWarnings
