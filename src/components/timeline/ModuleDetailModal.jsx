@@ -147,7 +147,7 @@ export default function ModuleDetailModal({
       data-tutorial="module-detail-modal"
     >
       <div
-        className={`relative bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl w-full max-w-sm shadow-lg max-h-[92vh] overflow-y-auto ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        className={`relative bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl w-full max-w-sm shadow-lg max-h-[78vh] overflow-y-auto ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button — top-right corner */}

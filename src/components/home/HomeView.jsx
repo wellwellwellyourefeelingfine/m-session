@@ -13,12 +13,13 @@ import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
 import { setRevealAnimationPending } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
+import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
 import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useJournalStore } from '../../stores/useJournalStore';
-import { AwardIcon, CirclePlusIcon } from '../shared/Icons';
+import { AwardIcon, CirclePlusIcon, CircleXIcon } from '../shared/Icons';
 import { downloadSessionData } from '../../utils/downloadSessionData';
 
 /**
@@ -81,6 +82,8 @@ export default function HomeView() {
   // Preview Activity state
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
   const [previewModule, setPreviewModule] = useState(null);
+  const [previewDetailOpen, setPreviewDetailOpen] = useState(false);
+  const [previewDismissing, setPreviewDismissing] = useState(false);
 
   // Welcome → Intake fade transition
   const [welcomeFadingOut, setWelcomeFadingOut] = useState(false);
@@ -93,12 +96,21 @@ export default function HomeView() {
     }, 800);
   };
 
+  const [previewDrawerClosing, setPreviewDrawerClosing] = useState(false);
+
   const handlePreviewSelect = (libraryId) => {
     const moduleDef = getModuleById(libraryId);
     if (moduleDef) {
       setPreviewModule(moduleDef);
     }
-    setPreviewDrawerOpen(false);
+    // Wait for detail modal fade-out (200ms), then slide drawer down (300ms)
+    setTimeout(() => {
+      setPreviewDrawerClosing(true);
+      setTimeout(() => {
+        setPreviewDrawerOpen(false);
+        setPreviewDrawerClosing(false);
+      }, 300);
+    }, 200);
   };
 
   const handleBeginPreview = () => {
@@ -118,7 +130,11 @@ export default function HomeView() {
   };
 
   const handleClearPreview = () => {
-    setPreviewModule(null);
+    setPreviewDismissing(true);
+    setTimeout(() => {
+      setPreviewModule(null);
+      setPreviewDismissing(false);
+    }, 350);
   };
 
   useEffect(() => {
@@ -220,7 +236,7 @@ export default function HomeView() {
               </button>
 
               {/* Preview Activity */}
-              <div className="mt-3 flex flex-col items-center">
+              <div className="mt-3 pb-24 flex flex-col items-center">
                 {!previewModule ? (
                   <button
                     type="button"
@@ -231,14 +247,24 @@ export default function HomeView() {
                     Preview Activity
                   </button>
                 ) : (
-                  <div className="w-full max-w-xs">
-                    <div className="border border-[var(--color-border)] px-4 py-3 relative text-left">
+                  <div
+                    className="w-full max-w-xs overflow-hidden transition-all duration-300 ease-out"
+                    style={{
+                      maxHeight: previewDismissing ? '42px' : '300px',
+                      opacity: previewDismissing ? 0 : 1,
+                    }}
+                  >
+                    <div
+                      className="border-2 border-[var(--color-border)] px-4 py-3 relative text-left cursor-pointer hover:border-[var(--color-text-tertiary)] transition-colors"
+                      onClick={() => setPreviewDetailOpen(true)}
+                    >
                       <button
                         type="button"
-                        onClick={handleClearPreview}
-                        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-border)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-text-primary)] text-sm leading-none transition-colors"
+                        onClick={(e) => { e.stopPropagation(); handleClearPreview(); }}
+                        className="absolute top-2 right-2 opacity-70 hover:opacity-100 transition-opacity"
+                        aria-label="Remove preview"
                       >
-                        ×
+                        <CircleXIcon size={20} className="text-[var(--color-text-tertiary)]" />
                       </button>
                       <p className="text-[var(--color-text-primary)] text-xl leading-none pr-6" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>{previewModule.title}</p>
                       <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
@@ -249,16 +275,16 @@ export default function HomeView() {
                           {previewModule.description}
                         </p>
                       )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleBeginPreview(); }}
+                        disabled={welcomeFadingOut}
+                        className="w-48 mx-auto block mt-2 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-primary)] text-[var(--color-text-primary)]"
+                        style={{ padding: '11px 0' }}
+                      >
+                        Begin Activity
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleBeginPreview}
-                      disabled={welcomeFadingOut}
-                      className="w-48 mt-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-primary)] text-[var(--color-text-primary)]"
-                      style={{ padding: '11px 0' }}
-                    >
-                      Begin Activity
-                    </button>
                   </div>
                 )}
               </div>
@@ -388,6 +414,17 @@ export default function HomeView() {
           onSelect={handlePreviewSelect}
           onClose={() => setPreviewDrawerOpen(false)}
           hideWarnings
+          externalClosing={previewDrawerClosing}
+        />
+      )}
+
+      {/* Preview Activity Detail Modal */}
+      {previewDetailOpen && previewModule && (
+        <ModuleDetailModal
+          isOpen={previewDetailOpen}
+          onClose={() => setPreviewDetailOpen(false)}
+          module={{ libraryId: previewModule.id, title: previewModule.title, duration: previewModule.defaultDuration }}
+          mode="info"
         />
       )}
 

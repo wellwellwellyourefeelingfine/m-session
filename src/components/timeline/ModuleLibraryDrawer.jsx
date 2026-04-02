@@ -9,9 +9,10 @@ import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES, FRAMEWORKS } fro
 import { CircleXIcon } from '../shared/Icons';
 import ModuleDetailModal from './ModuleDetailModal';
 
-export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false }) {
+export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false, externalClosing = false }) {
   const [filter, setFilter] = useState(phase === 'preview' ? 'all' : 'recommended'); // 'all' | 'recommended' | phase filter
   const [closing, setClosing] = useState(false);
+  const isClosing = closing || externalClosing;
   const [mounted, setMounted] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
@@ -78,12 +79,12 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${closing ? 'opacity-0' : mounted ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${isClosing ? 'opacity-0' : mounted ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
       />
 
       {/* Drawer */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl h-[80vh] flex flex-col shadow-lg ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`} data-tutorial="library-drawer">
+      <div className={`absolute bottom-0 left-0 right-0 bg-[var(--color-bg)] border-t border-[var(--color-border)] rounded-t-2xl h-[80vh] flex flex-col shadow-lg ${isClosing ? 'animate-slideDownOut' : 'animate-slideUp'}`} data-tutorial="library-drawer">
         {/* Close button - positioned in top-right corner of drawer */}
         <button
           onClick={handleClose}
