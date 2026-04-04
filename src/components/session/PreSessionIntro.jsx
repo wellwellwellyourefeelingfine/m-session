@@ -18,7 +18,7 @@ import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleStatusBar from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import TransitionBuffer from './TransitionBuffer';
 
@@ -610,25 +610,18 @@ export default function PreSessionIntro() {
 
   return (
     <>
-      {/* Progress bar at top */}
-      <ModuleProgressBar
+      <ModuleStatusBar
         progress={getProgress()}
-        visible={!isExiting}
-        showTime={false}
-      />
-
-      {/* Fixed layout container - fills space between progress bar and control bar */}
-      <div className={`fixed left-0 right-0 flex flex-col overflow-hidden transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`} style={{ top: 'var(--header-height)', bottom: 'var(--bottom-chrome)' }}>
-        {/* Header - below progress bar with proper spacing */}
-        <div className="flex-shrink-0 px-6 pt-6 pb-2 flex justify-between items-center">
-          <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
-            Opening Ritual
-          </span>
+        leftLabel="Opening Ritual"
+        rightContent={
           <span className="text-[var(--color-text-tertiary)] text-xs">
             {step + 1} of {TOTAL_STEPS}
           </span>
-        </div>
+        }
+      />
 
+      {/* Fixed layout container - fills space between status bar and control bar */}
+      <div className={`fixed left-0 right-0 flex flex-col overflow-hidden transition-opacity duration-700 ${isExiting ? 'opacity-0' : 'opacity-100'}`} style={{ top: 'var(--header-plus-status)', bottom: 'var(--bottom-chrome)' }}>
         {/* Animation container - fixed height, anchored */}
         {/* Moon fades in on first page entrance, stays visible during transitions, fades out only on exit */}
         <div

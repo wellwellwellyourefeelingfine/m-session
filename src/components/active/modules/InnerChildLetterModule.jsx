@@ -11,6 +11,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { getModuleById } from '../../../content/modules';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -124,7 +125,7 @@ function renderContentLines(lines) {
 
 // ── Main Component ─────────────────────────────────────────
 
-export default function InnerChildLetterModule({ module, onComplete, onSkip }) {
+export default function InnerChildLetterModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const [phase, setPhase] = useState('idle');
   const [stepIndex, setStepIndex] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -155,6 +156,17 @@ export default function InnerChildLetterModule({ module, onComplete, onSkip }) {
   const screen = SCREENS[stepIndex];
   const isLastScreen = stepIndex >= SCREENS.length - 1;
 
+  // ── Progress reporting ──────────────────────────────────
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    if (phase === 'active') {
+      report.step(stepIndex + 1, SCREENS.length);
+    } else {
+      report.idle();
+    }
+  }, [phase, stepIndex, report]);
+
   const getFontClass = () => {
     const size = settings.fontSize === 'small' ? 'text-sm' : settings.fontSize === 'large' ? 'text-lg' : 'text-base';
     const family = settings.fontFamily === 'serif' ? 'font-serif' : settings.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
@@ -168,10 +180,11 @@ export default function InnerChildLetterModule({ module, onComplete, onSkip }) {
   };
 
   const assembleLetter = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let assembled = `${getRecipientLabel()},\n\n`;
-    if (opening.trim()) assembled += `${opening.trim()}\n\n`;
-    if (body.trim()) assembled += `${body.trim()}\n\n`;
-    if (closing.trim()) assembled += `${closing.trim()}`;
+    assembled += `${opening.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `${body.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += closing.trim() || `[no entry — ${ts}]`;
     return assembled;
   }, [age, opening, body, closing]);
 

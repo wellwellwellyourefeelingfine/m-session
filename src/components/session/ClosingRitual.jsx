@@ -20,7 +20,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleStatusBar, { formatTime } from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import PostCloseScreen from './PostCloseScreen';
 import DataDownloadModal from './DataDownloadModal';
@@ -28,23 +28,11 @@ import DataDownloadModal from './DataDownloadModal';
 import { TransitionTextarea } from './transitions/shared';
 import { CLOSING_RITUAL_STEPS } from './transitions/content/closingRitualContent';
 
-// Helper to format elapsed time nicely
-const formatElapsedTime = (minutes) => {
-  if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (mins === 0) {
-    return `${hours} hour${hours !== 1 ? 's' : ''}`;
-  }
-  return `${hours} hour${hours !== 1 ? 's' : ''} and ${mins} minute${mins !== 1 ? 's' : ''}`;
-};
 
 export default function ClosingRitual() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [sessionElapsed, setSessionElapsed] = useState('0:00');
   const [showPostCloseAnimation, setShowPostCloseAnimation] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
@@ -60,17 +48,20 @@ export default function ClosingRitual() {
   // Store selectors
   const updateClosingCapture = useSessionStore((state) => state.updateClosingCapture);
   const completeSession = useSessionStore((state) => state.completeSession);
-  const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const addEntry = useJournalStore((state) => state.addEntry);
 
-  // Update elapsed time every minute
+  // Update session elapsed time every second
   useEffect(() => {
-    setElapsedMinutes(getElapsedMinutes());
-    const interval = setInterval(() => {
-      setElapsedMinutes(getElapsedMinutes());
-    }, 60000);
+    if (!ingestionTime) return;
+    const update = () => {
+      const secs = Math.floor((Date.now() - ingestionTime) / 1000);
+      setSessionElapsed(formatTime(secs));
+    };
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [getElapsedMinutes]);
+  }, [ingestionTime]);
 
   const currentStep = CLOSING_RITUAL_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === CLOSING_RITUAL_STEPS.length - 1;
@@ -429,27 +420,21 @@ export default function ClosingRitual() {
 
   return (
     <>
-      {/* Progress bar at top */}
-      <ModuleProgressBar
+      {/* Status bar at top */}
+      <ModuleStatusBar
         progress={progress}
-        visible={isVisible}
-        showTime={false}
+        leftLabel={currentStep.content.label}
+        centerContent={
+          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
+            {sessionElapsed}
+          </span>
+        }
       />
 
       {/* Fixed layout container - fills space between header and tab bar */}
-      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
+      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-plus-status)', bottom: 'var(--tabbar-height)' }}>
         {/* Anchored header section - doesn't scroll */}
         <div className="flex-shrink-0 pt-4 pb-4">
-          {/* Header: Closing + elapsed time */}
-          <div className="text-center mb-4">
-            <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
-              {currentStep.content.label}
-            </p>
-            <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
-              {formatElapsedTime(elapsedMinutes)} into session
-            </p>
-          </div>
-
           {/* ASCII Moon animation - anchored */}
           <div className="flex justify-center">
             <AsciiMoon />

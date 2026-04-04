@@ -25,7 +25,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
-export default function SelfCompassionModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function SelfCompassionModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('self-compassion');
 
   // Variation selection (replaces duration picker)
@@ -73,7 +73,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
     totalDuration,
     onComplete,
     onSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // Fade out idle screen before starting composition
@@ -102,9 +102,9 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onTim
   // Hide timer when entering CompletionScreen
   useEffect(() => {
     if (showCompletion) {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [showCompletion, onTimerUpdate]);
+  }, [showCompletion, onProgressUpdate]);
 
   // Fallback if no meditation found
   if (!meditation) {

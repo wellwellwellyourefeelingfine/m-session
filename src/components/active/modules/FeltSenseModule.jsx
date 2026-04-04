@@ -412,7 +412,7 @@ function ReflectionScreen({ screen, journalValues, onJournalChange, selectorValu
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export default function FeltSenseModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function FeltSenseModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('felt-sense');
 
   // Store integration
@@ -503,7 +503,7 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onTimerUpd
     totalDuration,
     onComplete: handleMeditationComplete,
     onSkip: handleMeditationSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // ─── Phase transitions ────────────────────────────────────────────────
@@ -511,9 +511,9 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onTimerUpd
   // Hide timer during reflection
   useEffect(() => {
     if (phase === 'reflection') {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [phase, onTimerUpdate]);
+  }, [phase, onProgressUpdate]);
 
   // Track when we enter meditation phase
   useEffect(() => {
@@ -548,30 +548,22 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onTimerUpd
   // ─── Journal save ─────────────────────────────────────────────────────
 
   const saveJournalEntry = useCallback(() => {
-    const hasContent = journalValues.experience.trim() || journalValues.shift.trim() || journalValues.bodyKnowing.trim();
-    if (!hasContent) return;
-
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let content = 'FELT SENSE\n';
 
-    if (journalValues.experience.trim()) {
-      content += `\nWhat came up?\n${journalValues.experience.trim()}\n`;
-    }
+    content += `\nWhat came up?\n`;
+    content += journalValues.experience.trim() ? `${journalValues.experience.trim()}\n` : `[no entry — ${timestamp}]\n`;
 
     // Include shift check-in selection + optional elaboration
     const shiftOption = REFLECTION_SCREENS[5]?.selector?.options?.find(o => o.id === selectorValues.shiftCheckIn);
-    if (shiftOption || journalValues.shift.trim()) {
-      content += `\nWhat shifted\n`;
-      if (shiftOption) {
-        content += `${shiftOption.label}\n`;
-      }
-      if (journalValues.shift.trim()) {
-        content += `${journalValues.shift.trim()}\n`;
-      }
+    content += `\nWhat shifted\n`;
+    if (shiftOption) {
+      content += `${shiftOption.label}\n`;
     }
+    content += journalValues.shift.trim() ? `${journalValues.shift.trim()}\n` : `[no entry — ${timestamp}]\n`;
 
-    if (journalValues.bodyKnowing.trim()) {
-      content += `\nWhat my body knows\n${journalValues.bodyKnowing.trim()}\n`;
-    }
+    content += `\nWhat my body knows\n`;
+    content += journalValues.bodyKnowing.trim() ? `${journalValues.bodyKnowing.trim()}\n` : `[no entry — ${timestamp}]\n`;
 
     addEntry({
       content: content.trim(),

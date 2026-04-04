@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 
@@ -411,7 +412,7 @@ function SchematicModal({ isOpen, closing, onClose }) {
 
 // ─── Main Module Component ──────────────────────────────────────────────────
 
-export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate }) {
+export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpdate }) {
   // ── Phase state ──
   const [phase, setPhase] = useState('idle');
   const [isVisible, setIsVisible] = useState(true);
@@ -449,10 +450,19 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
   const updateCapture = useSessionStore((s) => s.updateValuesCompassCapture);
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
 
-  // ── Hide timer for all phases ──
+  const report = useProgressReporter(onProgressUpdate);
+
+  // ── Report step-based progress ──
   useEffect(() => {
-    onTimerUpdate?.({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
-  }, [onTimerUpdate]);
+    if (phase === 'idle') {
+      report.idle();
+    } else {
+      const idx = PHASE_SEQUENCE.indexOf(phase);
+      // Total active steps = all phases after 'idle'
+      const totalSteps = PHASE_SEQUENCE.length - 1;
+      report.step(idx, totalSteps);
+    }
+  }, [phase, report]);
 
   // ── Phase transitions ──
   const fadeToPhase = useCallback((nextPhase) => {
@@ -500,8 +510,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
 
   // ── Journal save ──
   const saveJournalEntry = useCallback(async () => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let content = 'VALUES COMPASS\n';
-    let hasContent = false;
     const hasQuadrantData = QUADRANT_ORDER.some((qId) => quadrants[qId].length > 0);
 
     const quadrantLabels = {
@@ -513,10 +523,11 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
 
     for (const qId of QUADRANT_ORDER) {
       const chips = quadrants[qId];
+      content += `\n${quadrantLabels[qId]}:\n`;
       if (chips.length > 0) {
-        content += `\n${quadrantLabels[qId]}:\n`;
         chips.forEach((c) => { content += `  - ${c.text}\n`; });
-        hasContent = true;
+      } else {
+        content += `  [no items added — ${timestamp}]\n`;
       }
     }
 
@@ -532,29 +543,25 @@ export default function ValuesCompassModule({ onComplete, onSkip, onTimerUpdate 
     ];
 
     for (const { value, label } of journalSections) {
-      if (value.trim()) {
-        content += `\n${label}:\n${value.trim()}\n`;
-        hasContent = true;
-      }
+      content += `\n${label}:\n`;
+      content += value.trim() ? `${value.trim()}\n` : `[no entry — ${timestamp}]\n`;
     }
 
-    if (hasContent) {
-      const entry = addEntry({
-        content: content.trim(),
-        source: 'session',
-        sessionId,
-        moduleTitle: 'Values Compass',
-        hasImage: hasQuadrantData,
-      });
+    const entry = addEntry({
+      content: content.trim(),
+      source: 'session',
+      sessionId,
+      moduleTitle: 'Values Compass',
+      hasImage: hasQuadrantData,
+    });
 
-      // Generate and save matrix PNG to IndexedDB
-      if (hasQuadrantData) {
-        try {
-          const blob = await exportMatrixAsPNG(quadrants);
-          await saveImage(entry.id, blob);
-        } catch (err) {
-          console.warn('Failed to save matrix image:', err);
-        }
+    // Generate and save matrix PNG to IndexedDB (only if quadrant data exists)
+    if (hasQuadrantData) {
+      try {
+        const blob = await exportMatrixAsPNG(quadrants);
+        await saveImage(entry.id, blob);
+      } catch (err) {
+        console.warn('Failed to save matrix image:', err);
       }
     }
 

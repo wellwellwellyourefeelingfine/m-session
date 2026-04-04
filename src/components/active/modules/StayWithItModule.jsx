@@ -213,7 +213,7 @@ function renderContentLines(lines) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function StayWithItModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function StayWithItModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('stay-with-it');
 
   // Store integration
@@ -314,7 +314,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
     totalDuration,
     onComplete: handleMeditationComplete,
     onSkip: handleMeditationSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // ─── Phase transitions ────────────────────────────────────────────────
@@ -323,9 +323,9 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   useEffect(() => {
     if (phase === 'checkin' || phase === 'response' || phase === 'psychoeducation' ||
         phase === 'journaling' || phase === 'closing') {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [phase, onTimerUpdate]);
+  }, [phase, onProgressUpdate]);
 
   // Track when we enter meditation phase (playback starts)
   // Gate on !isLoading so the idle block persists during audio composition,
@@ -466,30 +466,23 @@ export default function StayWithItModule({ module, onComplete, onSkip, onTimerUp
   // ─── Journaling save & complete ───────────────────────────────────────
 
   const saveJournalEntry = useCallback(() => {
-    const hasContent = journalEntry1.trim() || journalEntry2.trim() || journalEntry3.trim()
-      || juxtaposition1.trim() || juxtaposition2.trim();
-    if (!hasContent) return;
-
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let content = 'STAY WITH IT\n';
 
-    if (journalEntry1.trim()) {
-      content += `\nWhat was most present during the meditation?\n${journalEntry1.trim()}\n`;
-    }
-    if (journalEntry2.trim()) {
-      content += `\nWas there a moment where your attention pulled away?\n${journalEntry2.trim()}\n`;
-    }
-    if (journalEntry3.trim()) {
-      content += `\nWhat's different now compared to when you started?\n${journalEntry3.trim()}\n`;
-    }
-    if (juxtaposition1.trim() || juxtaposition2.trim()) {
-      content += `\nJuxtaposition Exercise\n`;
-      if (juxtaposition1.trim()) {
-        content += `Part of me knows... ${juxtaposition1.trim()}\n`;
-      }
-      if (juxtaposition2.trim()) {
-        content += `And at the same time, I also know... ${juxtaposition2.trim()}\n`;
-      }
-    }
+    content += `\nWhat was most present during the meditation?\n`;
+    content += journalEntry1.trim() ? `${journalEntry1.trim()}\n` : `[no entry — ${timestamp}]\n`;
+
+    content += `\nWas there a moment where your attention pulled away?\n`;
+    content += journalEntry2.trim() ? `${journalEntry2.trim()}\n` : `[no entry — ${timestamp}]\n`;
+
+    content += `\nWhat's different now compared to when you started?\n`;
+    content += journalEntry3.trim() ? `${journalEntry3.trim()}\n` : `[no entry — ${timestamp}]\n`;
+
+    content += `\nJuxtaposition Exercise\n`;
+    content += `Part of me knows... `;
+    content += juxtaposition1.trim() ? `${juxtaposition1.trim()}\n` : `[no entry — ${timestamp}]\n`;
+    content += `And at the same time, I also know... `;
+    content += juxtaposition2.trim() ? `${juxtaposition2.trim()}\n` : `[no entry — ${timestamp}]\n`;
 
     addEntry({
       content: content.trim(),

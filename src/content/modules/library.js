@@ -25,6 +25,8 @@ import { lifestyleReflectionContent } from './journaling/lifestyleReflectionCont
 import { spiritMeaningContent } from './journaling/spiritMeaningContent';
 import { bodySomaticContent } from './journaling/bodySomaticContent';
 import { natureConnectionContent } from './journaling/natureConnectionContent';
+import { testModuleContent } from './master/testModule';
+import { routingTestModuleContent } from './master/routingTestModule';
 
 // Display order and labels for module categories in the Add Activity drawer
 export const MODULE_CATEGORIES = {
@@ -117,7 +119,7 @@ export const MODULE_TYPES = {
   // Mapping the Territory (pre-session)
   'mapping-territory': { label: 'Mapping the Territory', intensity: 1 },
   // Pendulation (Somatic Experiencing)
-  'pendulation': { label: 'Pendulation', intensity: 4 },
+  'pendulation': { label: 'Pendulation', intensity: 5 },
   // Shaking the Tree (Somatic Movement)
   'shaking-the-tree': { label: 'Shaking the Tree', intensity: 3 },
   // Time Capsule (Future Self Journaling)
@@ -142,6 +144,9 @@ export const MODULE_TYPES = {
   'nature-connection': { label: 'Nature & Connection', intensity: 1 },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 1 },
+  // MasterModule test module
+  'test-master-module': { label: 'Test Master Module', intensity: 2 },
+  'routing-test-module': { label: 'Routing & Continuation Test', intensity: 1 },
 };
 
 // Phase restrictions for module intensities
@@ -170,7 +175,7 @@ export const moduleLibrary = [
     },
     tags: ['intention', 'pre-session', 'writing', 'grounding', 'self-inquiry'],
     framework: ['general'],
-    content: { instructions: 'A multi-step guided flow. You will move through optional grounding, self-inquiry, and a writing exercise to refine your intention for the session.' },
+    content: { instructions: 'Begins with education on the difference between intentions and expectations. An optional 5-minute grounding meditation helps you settle in. Self-inquiry prompts help you identify what\'s asking for attention, followed by sentence-stem warm-ups and a main intention-writing exercise.' },
   },
   {
     id: 'life-graph',
@@ -188,7 +193,7 @@ export const moduleLibrary = [
     },
     tags: ['life-graph', 'pre-session', 'reflection', 'visualization', 'lifeline'],
     framework: ['general'],
-    content: { instructions: 'You will chart significant life milestones against a well-being scale, then see the results visualized as a life graph. An optional journaling section lets you go deeper into what you notice.' },
+    content: { instructions: 'You\'ll plot key moments from your life on a 0\u201310 well-being scale, starting with two guided entries, then adding as many as you like. The app generates a visual lifeline from your data. An optional deep-dive section offers journaling prompts to explore the patterns you notice.' },
   },
   {
     id: 'mapping-territory',
@@ -206,7 +211,7 @@ export const moduleLibrary = [
     },
     tags: ['mapping', 'pre-session', 'preparation', 'education', 'Richards'],
     framework: ['general'],
-    content: { instructions: 'A self-paced orientation based on the work of psychedelic researcher Bill Richards. You will read through the kinds of experience that can arise during a session, with interactive sections and journaling prompts along the way.' },
+    content: { instructions: 'A self-paced read-through covering the experiential territories \u2014 sensory, biographical, peak, and challenging. Includes self-assessment choices, journaling prompts, and curated music recommendations with streaming links.' },
   },
 
   // === COME-UP APPROPRIATE (Gentle) ===
@@ -215,8 +220,8 @@ export const moduleLibrary = [
     type: 'simple-grounding',
     category: 'meditation',
     title: 'Session Grounding',
-    description: 'A guided grounding practice designed for use during an active MDMA session. Settle into your body, notice your senses, and find your footing in the present moment.',
-    defaultDuration: 8,
+    description: 'A guided grounding meditation designed for an active session. Settle into your body, notice your senses, and find your footing.',
+    defaultDuration: 9,
     allowedPhases: ['come-up', 'peak', 'integration'],
     recommendedPhases: ['come-up'],
     hasVariableDuration: false,
@@ -231,7 +236,7 @@ export const moduleLibrary = [
     },
     tags: ['grounding', 'calming', 'come-up', 'guided'],
     framework: ['general'],
-    content: { instructions: 'An audio-guided grounding meditation tailored for an active session. You will be led through noticing your body, your senses, and your surroundings to anchor yourself when the experience feels intense or unfamiliar.' },
+    content: { instructions: 'Audio-guided, approximately 9 minutes. Five sections: settling in, noticing where your body makes contact, tuning into your senses, following your breath, and a gentle closing. Text prompts appear in sync with the voice guidance.' },
   },
   {
     id: 'short-grounding',
@@ -253,7 +258,7 @@ export const moduleLibrary = [
     },
     tags: ['grounding', 'brief', 'calming', 'guided'],
     framework: ['general'],
-    content: { instructions: 'A brief audio-guided reset. Notice where your body makes contact, tune into your senses, and follow a few breaths to come back to center.' },
+    content: { instructions: 'Audio-guided, approximately 4 minutes. A lighter, quicker version of the Session Grounding \u2014 the same five-section structure compressed into a short reset you can use between activities or whenever you need to reorient.' },
   },
 
   // === BREATH MEDITATION (with BreathOrb animation) ===
@@ -335,7 +340,7 @@ export const moduleLibrary = [
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     content: {
-      instructions: 'A guided movement practice with five phases. Pick some music, set a duration, and let your body move.',
+      instructions: 'Pick music from the curated recommendations and set a duration. Five timed phases guide you through: Sway, Bounce, Shake, Move Freely, and Return to stillness \u2014 with haptic pulses at each transition. Afterward, a body-sensation check-in, brief psychoeducation on somatic release, and journaling.',
     },
     capabilities: {
       controls: { showSkipButton: true },
@@ -369,7 +374,7 @@ export const moduleLibrary = [
     },
     tags: ['meditation', 'vipassana', 'open-awareness', 'guided'],
     framework: ['mindfulness'],
-    content: { instructions: 'A vipassana-inspired audio-guided meditation. You will progressively widen your awareness from breath to body to the space around you, with periods of silence that expand with longer durations.' },
+    content: { instructions: 'A vipassana-inspired audio-guided meditation. You\'ll progressively widen awareness from breath to body to the space around you. Longer durations add extended periods of silence rather than additional instruction, giving you more room to simply rest in awareness.' },
   },
   {
     id: 'body-scan',
@@ -395,7 +400,7 @@ export const moduleLibrary = [
     },
     tags: ['meditation', 'body-scan', 'somatic', 'guided'],
     framework: ['mindfulness'],
-    content: { instructions: 'An audio-guided progressive body scan. You will move attention slowly through each region of your body, noticing sensation without needing to change anything.' },
+    content: { instructions: 'Audio-guided. You\'ll move attention progressively from your feet through your legs, pelvis, torso, arms, and head, pausing at each region. Longer durations add extended silence in the later regions rather than covering more ground.' },
   },
   {
     id: 'self-compassion',
@@ -425,7 +430,7 @@ export const moduleLibrary = [
     type: 'leaves-on-a-stream',
     category: 'activity',
     title: 'Leaves on a Stream',
-    description: 'A guided meditation for observing your thoughts with curiosity rather than getting caught in them. You\'ll practice watching thoughts come and go, like leaves floating past on a stream.',
+    description: 'A guided meditation for observing your thoughts without getting caught in them. Practice watching them come and go, like leaves floating past on a stream.',
     defaultDuration: 10,
     minDuration: 10,
     maxDuration: 20,
@@ -444,14 +449,14 @@ export const moduleLibrary = [
     },
     tags: ['ACT', 'cognitive-defusion', 'meditation', 'guided', 'leaves-on-a-stream', 'mindfulness'],
     framework: ['act'],
-    content: { instructions: 'An audio-guided cognitive defusion meditation followed by a reflection exercise and journaling. You will practice observing your thoughts as they come and go, like leaves floating past on a stream.' },
+    content: { instructions: 'Audio-guided meditation followed by a six-screen reflection on cognitive defusion \u2014 the skill of noticing thoughts without engaging them. Ends with two journaling prompts to capture what showed up and what it was like to let thoughts pass.' },
   },
   {
     id: 'stay-with-it',
     type: 'stay-with-it',
     category: 'activity',
     title: 'Stay With It',
-    description: 'A meditation for turning toward whatever you\u2019re feeling and staying present with it. Includes a check-in, brief psychoeducation, and journaling.',
+    description: 'A meditation for turning toward whatever you\u2019re feeling and staying present with it, rather than pulling away.',
     defaultDuration: 15,
     minDuration: 10,
     maxDuration: 25,
@@ -470,14 +475,14 @@ export const moduleLibrary = [
     },
     tags: ['reconsolidation', 'schema', 'meditation', 'guided', 'stay-with-it', 'emotional-processing'],
     framework: ['coherence-therapy'],
-    content: { instructions: 'An audio-guided meditation for turning toward what you are feeling. Afterward, you will move through a check-in, brief psychoeducation on how emotional processing works, and guided journaling.' },
+    content: { instructions: 'Four parts: an audio-guided meditation, a check-in where you select how you\'re feeling from five options (each gives a different tailored response), a seven-screen psychoeducation section on schemas and emotional reconsolidation, and three journaling prompts with an optional juxtaposition exercise.' },
   },
   {
     id: 'pendulation',
     type: 'pendulation',
     category: 'activity',
     title: 'Pendulation',
-    description: 'A guided somatic experiencing practice. Track sensations as they move between activation and safety, with adaptive branching based on your experience.',
+    description: 'A guided somatic experiencing practice. Track sensations as they move between activation and safety in your body.',
     defaultDuration: 40,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
@@ -489,7 +494,7 @@ export const moduleLibrary = [
     },
     tags: ['somatic-experiencing', 'pendulation', 'meditation', 'guided', 'Levine', 'body-awareness'],
     framework: ['somatic-experiencing'],
-    content: { instructions: 'A guided somatic practice with brief education followed by an audio meditation. You will track sensations as they move between activation and safety, with adaptive checkpoints that adjust the experience based on what you are noticing.' },
+    content: { instructions: 'Begins with six screens of somatic education, then moves into an extended audio meditation. At two points during the meditation, you\'ll pause and choose which somatic path to follow based on what you\'re noticing in your body \u2014 the meditation branches accordingly. Ends with a tailored debrief that reflects the path you took. Allow around 40 minutes.' },
   },
   {
     id: 'felt-sense',
@@ -531,7 +536,7 @@ export const moduleLibrary = [
     ],
     tags: ['EFT', 'relationship', 'attachment', 'emotion', 'guided', 'meditation', 'couples'],
     framework: ['eft'],
-    content: { instructions: 'A two-part guided practice for exploring relationship patterns. Part 1 is an audio meditation to discover what lies beneath your surface reactions. Part 2 maps the repeating cycle between you and another person.' },
+    content: { instructions: 'Part 1: Choose solo or couple mode, then enter a guided meditation on attachment and surface reactions. Followed by an adaptive check-in, EFT psychoeducation, and reflection journaling. Part 2: Build an interactive map of the friction cycle between you and another person, with a pattern reveal, closing meditation, and journaling. Data from Part 1 carries forward.' },
   },
   // Part 1 — hidden from drawer, added automatically by linked parent
   {
@@ -579,7 +584,7 @@ export const moduleLibrary = [
     type: 'values-compass',
     category: 'activity',
     title: 'Values Compass',
-    description: 'An interactive exercise for mapping what you care about, what gets in the way, and how you actually move through your life. Based on the ACT Matrix.',
+    description: 'Learn and build your own ACT Matrix \u2014 a four-quadrant map of what you value, what hooks you, and the moves you make toward and away from what matters.',
     defaultDuration: 25,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak', 'integration'],
@@ -590,7 +595,7 @@ export const moduleLibrary = [
     },
     tags: ['ACT', 'values', 'matrix', 'interactive', 'journaling'],
     framework: ['act'],
-    content: { instructions: 'An interactive exercise based on the ACT Matrix. You will map what you care about, what gets in the way, and the moves you make toward and away from what matters. Includes a visual matrix reveal and guided journaling.' },
+    content: { instructions: 'Five intro screens teach you the ACT Matrix framework \u2014 two axes (toward/away and inner/outer) forming four quadrants. You\'ll then build each quadrant by adding your own items or choosing from examples, positioning them by drag-and-drop. Once complete, the full matrix is revealed and you\'ll journal through eight guided prompts. Your matrix is saved to your journal as both text and an exportable image.' },
   },
   {
     id: 'light-journaling',
@@ -681,7 +686,7 @@ export const moduleLibrary = [
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
-      instructions: 'A guided letter-writing experience to help you express what matters most.',
+      instructions: 'Choose a recipient, then write in three parts: what you feel, what you\'ve never been able to say, and how you want to leave things. The app assembles your entries into a complete letter with a salutation for you to review and edit. Closes with a reflection.',
     },
     // Uses dedicated LetterWritingModule with multi-step flow
     capabilities: {
@@ -750,7 +755,7 @@ export const moduleLibrary = [
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
-      instructions: 'A guided letter to a younger version of yourself.',
+      instructions: 'Choose an age that feels significant. Three guided prompts help you write directly to that younger version of yourself. The app assembles your entries into a full letter for review. Closes with a reflection on what came up.',
     },
     capabilities: {
       controls: { showBeginButton: true, showSkipButton: true },
@@ -766,14 +771,14 @@ export const moduleLibrary = [
     type: 'feeling-dialogue',
     category: 'journaling',
     title: 'Dialogue with a Feeling',
-    description: 'Name a feeling and have a conversation with it.',
+    description: 'Name a feeling that\'s present and have a back-and-forth conversation with it.',
     defaultDuration: 20,
     minDuration: 15,
     maxDuration: 40,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['peak'],
     content: {
-      instructions: 'A guided conversation with a feeling that is present.',
+      instructions: 'A Gestalt-inspired exercise. Name a feeling and notice where it lives in your body, then move through four written exchanges \u2014 you speak to it, it responds, you reply, and it tells you what it needs. The assembled dialogue is shown for review, followed by a closing reflection.',
     },
     capabilities: {
       controls: { showBeginButton: true, showSkipButton: true },
@@ -789,14 +794,14 @@ export const moduleLibrary = [
     type: 'committed-action',
     category: 'journaling',
     title: 'Committed Action',
-    description: 'Identify a value, explore what gets in the way, and write a commitment to act. Based on the ACT framework.',
+    description: 'Identify a value, name what gets in the way, and write a commitment to act.',
     defaultDuration: 20,
     minDuration: 10,
     maxDuration: 30,
     allowedPhases: ['peak', 'integration'],
     recommendedPhases: ['integration'],
     content: {
-      instructions: 'A guided commitment based on Acceptance and Commitment Therapy.',
+      instructions: 'An ACT-based guided flow in four steps: name a value that matters, identify a barrier, explore your willingness to move forward despite discomfort, and write a concrete action commitment. The app assembles your responses for review.',
     },
     capabilities: {
       controls: { showBeginButton: true, showSkipButton: true },
@@ -1027,6 +1032,48 @@ export const moduleLibrary = [
     },
     tags: ['open', 'flexible', 'unstructured'],
     framework: ['general'],
+  },
+
+  // === MASTER MODULE TEST ===
+  {
+    id: 'test-master-module',
+    type: 'test-master-module',
+    category: 'activity',
+    title: 'Test Master Module',
+    description: 'A comprehensive test of the MasterModule system. Exercises every screen type (text, prompt, selector, choice, animation, alarm) and every section type (screens, meditation, timer).',
+    defaultDuration: 15,
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['peak'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: true, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['test', 'master-module'],
+    framework: ['general'],
+    content: {
+      instructions: 'A comprehensive test of the MasterModule system. Exercises every screen type and section type.',
+      masterModuleContent: testModuleContent,
+    },
+  },
+
+  // === ROUTING & CONTINUATION TEST ===
+  {
+    id: 'routing-test-module',
+    type: 'routing-test-module',
+    category: 'activity',
+    title: 'Routing & Continuation Test',
+    description: 'Tests skip-ahead routing, custom bookmarks, visited-section skipping, and section visit conditions.',
+    defaultDuration: 5,
+    allowedPhases: ['come-up', 'peak', 'integration'],
+    recommendedPhases: ['peak'],
+    hasVariableDuration: false,
+    tags: ['test', 'routing'],
+    framework: ['general'],
+    content: {
+      instructions: 'Tests the routing and bookmark system. Expected flow: 0 → 1 → 2 → 5 → 4 → 6.',
+      masterModuleContent: routingTestModuleContent,
+    },
   },
 
   // === BOOSTER CONSIDERATION ===

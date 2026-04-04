@@ -18,7 +18,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleStatusBar, { formatTime } from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import TransitionBuffer from './TransitionBuffer';
 
@@ -29,23 +29,11 @@ import {
   UNNAMED_SENSATION,
 } from './transitions/content/peakTransitionContent';
 
-// Helper to format elapsed time nicely
-const formatElapsedTime = (minutes) => {
-  if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (mins === 0) {
-    return `${hours} hour${hours !== 1 ? 's' : ''}`;
-  }
-  return `${hours} hour${hours !== 1 ? 's' : ''} and ${mins} minute${mins !== 1 ? 's' : ''}`;
-};
 
 export default function PeakTransition() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [elapsedMinutes, setElapsedMinutes] = useState(0);
+  const [sessionElapsed, setSessionElapsed] = useState('0:00');
   const [isFadingToBuffer, setIsFadingToBuffer] = useState(false);
   const [showPostBuffer, setShowPostBuffer] = useState(false);
 
@@ -59,17 +47,20 @@ export default function PeakTransition() {
   // Store selectors
   const transitionToPeak = useSessionStore((state) => state.transitionToPeak);
   const updatePeakCapture = useSessionStore((state) => state.updatePeakCapture);
-  const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
+  const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const addEntry = useJournalStore((state) => state.addEntry);
 
-  // Update elapsed time every minute
+  // Update session elapsed time every second
   useEffect(() => {
-    setElapsedMinutes(getElapsedMinutes());
-    const interval = setInterval(() => {
-      setElapsedMinutes(getElapsedMinutes());
-    }, 60000);
+    if (!ingestionTime) return;
+    const update = () => {
+      const secs = Math.floor((Date.now() - ingestionTime) / 1000);
+      setSessionElapsed(formatTime(secs));
+    };
+    update();
+    const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [getElapsedMinutes]);
+  }, [ingestionTime]);
 
   const currentStep = PEAK_TRANSITION_STEPS[currentStepIndex];
   const isLastStep = currentStepIndex === PEAK_TRANSITION_STEPS.length - 1;
@@ -309,27 +300,21 @@ One Word: ${oneWord || 'Not captured'}
         isFadingToBuffer ? 'opacity-0' : 'opacity-100'
       }`}
     >
-      {/* Progress bar at top */}
-      <ModuleProgressBar
+      {/* Status bar at top */}
+      <ModuleStatusBar
         progress={progress}
-        visible={true}
-        showTime={false}
+        leftLabel="Transition"
+        centerContent={
+          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
+            {sessionElapsed}
+          </span>
+        }
       />
 
       {/* Fixed layout container - fills space between header and tab bar */}
-      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
+      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-plus-status)', bottom: 'var(--tabbar-height)' }}>
         {/* Anchored header section - doesn't scroll */}
         <div className="flex-shrink-0 pt-4 pb-4">
-          {/* Header: Transition + elapsed time */}
-          <div className="text-center mb-4">
-            <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
-              Transition
-            </p>
-            <p className="text-[var(--color-text-tertiary)] text-xs mt-1">
-              {formatElapsedTime(elapsedMinutes)} into session
-            </p>
-          </div>
-
           {/* ASCII Moon animation - anchored */}
           <div className="flex justify-center">
             <AsciiMoon />

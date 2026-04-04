@@ -27,7 +27,7 @@ import { musicRecommendations, getInitialRecommendations } from '../../../conten
 // Shared UI components
 import ModuleLayout from '../../active/capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../../active/capabilities/ModuleProgressBar';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import CompassAnimation from '../../active/capabilities/animations/CompassV2';
 
 // ─── Inline music components (not exported from MusicListeningModule) ───
@@ -255,12 +255,15 @@ function AllMusicModal({ isOpen, closing, onClose }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function MappingTerritoryActivity({ _module, onComplete, onSkip }) {
+export default function MappingTerritoryActivity({ _module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const updateMappingTerritoryCapture = useSessionStore((s) => s.updateMappingTerritoryCapture);
   const completePreSubstanceActivity = useSessionStore((s) => s.completePreSubstanceActivity);
   const sessionId = useSessionStore((s) => s.sessionId);
   const addEntry = useJournalStore((s) => s.addEntry);
+
+  // ── Progress reporting ──
+  const report = useProgressReporter(onProgressUpdate);
 
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -301,6 +304,11 @@ export default function MappingTerritoryActivity({ _module, onComplete, onSkip }
   const totalSteps = MAPPING_SCREENS.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
   const progress = ((currentStepIndex + 1) / PROGRESS_STEPS) * 100;
+
+  // ── Report step progress to parent status bar ──
+  useEffect(() => {
+    report.step(currentStepIndex + 1, PROGRESS_STEPS);
+  }, [currentStepIndex, report]);
 
   // ── Save captures for current step before navigating away ──
   const saveCurrentStepCapture = useCallback(() => {
@@ -589,11 +597,6 @@ export default function MappingTerritoryActivity({ _module, onComplete, onSkip }
 
   return (
     <>
-      <ModuleProgressBar
-        progress={progress}
-        visible={true}
-      />
-
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         <div className={`pt-2 transition-opacity duration-[400ms] ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div key={currentStepIndex} className="animate-fadeIn">

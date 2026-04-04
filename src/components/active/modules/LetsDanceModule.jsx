@@ -336,7 +336,7 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
   );
 }
 
-export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function LetsDanceModule({ module, onComplete, onSkip, onProgressUpdate }) {
   // Session store actions
   const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
   const startMeditationPlayback = useSessionStore((state) => state.startMeditationPlayback);
@@ -403,20 +403,23 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onTimerUpd
 
   // Report timer state to parent
   useEffect(() => {
-    if (!onTimerUpdate) return;
+    if (!onProgressUpdate) return;
 
     const progress = totalDurationSeconds > 0
       ? (elapsedTime / totalDurationSeconds) * 100
       : 0;
 
-    onTimerUpdate({
+    onProgressUpdate({
       progress,
+      mode: 'timer',
       elapsed: elapsedTime,
       total: totalDurationSeconds,
       showTimer: hasStarted && !isComplete,
       isPaused: !isPlaying,
+      currentStep: 0,
+      totalSteps: 0,
     });
-  }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onTimerUpdate]);
+  }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onProgressUpdate]);
 
   // Add time: max additional minutes before hitting 120 min total
   const maxAddableMinutes = Math.max(0, 120 - duration.selected);

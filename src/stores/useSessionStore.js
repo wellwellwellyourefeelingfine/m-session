@@ -586,7 +586,7 @@ export const useSessionStore = create(
               libraryId: spec.libraryId,
               phase,
               title: lib?.title || spec.libraryId,
-              duration: spec.duration,
+              duration: lib?.defaultDuration || 10,
               status: 'upcoming',
               order: index,
               content: lib?.content || {},

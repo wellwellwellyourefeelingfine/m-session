@@ -2,16 +2,10 @@
  * Module Registry
  *
  * Maps module types to their rendering components.
- * This replaces the switch statement in ModuleRenderer with a clean lookup.
  *
  * ADDING A NEW MODULE TYPE:
- * 1. If it can be rendered with capabilities alone, add it to SHELL_MODULE_TYPES
- * 2. If it needs custom logic, create a component and add it to CUSTOM_MODULES
- *
- * The system will:
- * - Use custom components for types in CUSTOM_MODULES
- * - Use ModuleShell for types in SHELL_MODULE_TYPES
- * - Fall back to ModuleShell for unknown types
+ * 1. For content-driven modules, use MasterModule (add content config + register type here)
+ * 2. For highly interactive modules, create a custom component and add it to CUSTOM_MODULES
  */
 
 import { lazy } from 'react';
@@ -43,9 +37,7 @@ const LetterWritingModule = lazy(() => import('./modules/LetterWritingModule'));
 const InnerChildLetterModule = lazy(() => import('./modules/InnerChildLetterModule'));
 const FeelingDialogueModule = lazy(() => import('./modules/FeelingDialogueModule'));
 const CommittedActionLetterModule = lazy(() => import('./modules/CommittedActionLetterModule'));
-
-// Import the generic shell (small, stays in main chunk)
-import { ModuleShell } from './capabilities';
+const MasterModule = lazy(() => import('./modules/MasterModule/MasterModule'));
 
 /**
  * Custom module components
@@ -134,29 +126,19 @@ export const CUSTOM_MODULES = {
 
   // Shaking the Tree — somatic movement practice with 5 timed phases
   'shaking-the-tree': ShakingTheTreeModule,
-};
 
-/**
- * Module types that should use the generic ModuleShell
- * These modules are fully defined by their capabilities configuration
- */
-export const SHELL_MODULE_TYPES = [
-  // Reserved for future capability-only modules
-];
+  // MasterModule — content-driven universal module framework
+  'test-master-module': MasterModule,
+  'routing-test-module': MasterModule,
+};
 
 /**
  * Get the component to render for a given module type
  * @param {string} moduleType - The module type from library
- * @returns {React.Component} The component to render
+ * @returns {React.Component|null} The component to render
  */
 export function getModuleComponent(moduleType) {
-  // Check for custom component first
-  if (CUSTOM_MODULES[moduleType]) {
-    return CUSTOM_MODULES[moduleType];
-  }
-
-  // Otherwise use the generic shell
-  return ModuleShell;
+  return CUSTOM_MODULES[moduleType] || null;
 }
 
 /**
@@ -169,22 +151,11 @@ export function hasCustomComponent(moduleType) {
 }
 
 /**
- * Check if a module type should use the shell
- * @param {string} moduleType - The module type from library
- * @returns {boolean}
- */
-export function usesShell(moduleType) {
-  return SHELL_MODULE_TYPES.includes(moduleType) || !hasCustomComponent(moduleType);
-}
-
-/**
  * Get all registered module types
  * @returns {string[]} Array of all module types
  */
 export function getAllModuleTypes() {
-  const customTypes = Object.keys(CUSTOM_MODULES);
-  const allTypes = new Set([...customTypes, ...SHELL_MODULE_TYPES]);
-  return Array.from(allTypes);
+  return Object.keys(CUSTOM_MODULES);
 }
 
 /**
@@ -221,6 +192,8 @@ export const MODULE_CATEGORIES = {
     'the-cycle',
     'pendulation',
     'shaking-the-tree',
+    'test-master-module',
+    'routing-test-module',
   ],
   open: [
     'open-space',

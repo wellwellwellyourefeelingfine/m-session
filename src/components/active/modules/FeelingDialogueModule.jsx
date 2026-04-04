@@ -6,7 +6,8 @@
  * Flow: Idle → Education → Name → You speak → It speaks → You respond → What it needs → Review → Closing → Completion
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { getModuleById } from '../../../content/modules';
@@ -100,7 +101,7 @@ const SCREENS = [
 
 // ── Main Component ─────────────────────────────────────────
 
-export default function FeelingDialogueModule({ module, onComplete, onSkip }) {
+export default function FeelingDialogueModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const [phase, setPhase] = useState('idle');
   const [stepIndex, setStepIndex] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -130,6 +131,18 @@ export default function FeelingDialogueModule({ module, onComplete, onSkip }) {
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
 
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    if (phase === 'idle') {
+      report.idle();
+    } else if (phase === 'complete') {
+      report.step(SCREENS.length, SCREENS.length);
+    } else if (phase === 'active') {
+      report.step(stepIndex + 1, SCREENS.length);
+    }
+  }, [phase, stepIndex, report]);
+
   const screen = SCREENS[stepIndex];
   const isLastScreen = stepIndex >= SCREENS.length - 1;
   const feeling = feelingName.trim() || 'this feeling';
@@ -142,14 +155,16 @@ export default function FeelingDialogueModule({ module, onComplete, onSkip }) {
   };
 
   const assembleDialogue = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const feeling = feelingName.trim() || 'Feeling';
     let assembled = '';
-    if (feelingName.trim()) assembled += `Feeling: ${feelingName.trim()}\n`;
-    if (feelingBody.trim()) assembled += `Where I feel it: ${feelingBody.trim()}\n`;
+    assembled += `Feeling: ${feelingName.trim() || `[no entry — ${ts}]`}\n`;
+    assembled += `Where I feel it: ${feelingBody.trim() || `[no entry — ${ts}]`}\n`;
     assembled += '\n';
-    if (youSay.trim()) assembled += `Me: ${youSay.trim()}\n\n`;
-    if (itSays.trim()) assembled += `${feelingName.trim() || 'Feeling'}: ${itSays.trim()}\n\n`;
-    if (youRespond.trim()) assembled += `Me: ${youRespond.trim()}\n\n`;
-    if (itNeeds.trim()) assembled += `What it needs: ${itNeeds.trim()}`;
+    assembled += `Me: ${youSay.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `${feeling}: ${itSays.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `Me: ${youRespond.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `What it needs: ${itNeeds.trim() || `[no entry — ${ts}]`}`;
     return assembled;
   }, [feelingName, feelingBody, youSay, itSays, youRespond, itNeeds]);
 

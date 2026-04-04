@@ -185,7 +185,7 @@ function renderContentLines(lines) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function TheCycleModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('the-cycle-closing');
 
   // Store integration
@@ -273,9 +273,9 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   // Hide timer for non-meditation phases
   useEffect(() => {
     if (phase !== 'meditation') {
-      onTimerUpdate?.({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [phase, onTimerUpdate]);
+  }, [phase, onProgressUpdate]);
 
   // Clean up blob URL on unmount
   useEffect(() => {
@@ -381,7 +381,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
     totalDuration,
     onComplete: handleMeditationComplete,
     onSkip: handleMeditationSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   useEffect(() => {
@@ -431,19 +431,20 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
         ? (partnerMoveId ? getMoveLabel(partnerPos, partnerMoveId) : '')
         : (theirMoveId ? getMoveLabel(partnerPos, theirMoveId) : '');
 
+      const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       let content = 'THE CYCLE\n';
       content += `\nMode: ${mode}`;
-      if (friction.trim()) content += `\nFriction: ${friction.trim()}`;
+      content += `\nFriction: ${friction.trim() || `[no entry — ${ts}]`}`;
       content += `\nMy position: ${myPosition}`;
-      content += `\nMy move: ${myMoveLabel}`;
-      if (yourUnderneath.trim()) content += `\nMy underneath: ${yourUnderneath.trim()}`;
-      content += `\nTheir move: ${partnerLabel}`;
-      if (mode === 'couple' && partnerUnderneath.trim()) {
-        content += `\nTheir underneath: ${partnerUnderneath.trim()}`;
-      } else if (mode === 'solo' && theirUnderneath.trim()) {
-        content += `\nTheir underneath (imagined): ${theirUnderneath.trim()}`;
+      content += `\nMy move: ${myMoveLabel || `[no entry — ${ts}]`}`;
+      content += `\nMy underneath: ${yourUnderneath.trim() || `[no entry — ${ts}]`}`;
+      content += `\nTheir move: ${partnerLabel || `[no entry — ${ts}]`}`;
+      if (mode === 'couple') {
+        content += `\nTheir underneath: ${partnerUnderneath.trim() || `[no entry — ${ts}]`}`;
+      } else {
+        content += `\nTheir underneath (imagined): ${theirUnderneath.trim() || `[no entry — ${ts}]`}`;
       }
-      content += `\nCycle name: ${cycleName}`;
+      content += `\nCycle name: ${cycleName || `[no entry — ${ts}]`}`;
 
       const entry = addEntry({
         content,
@@ -647,41 +648,32 @@ export default function TheCycleModule({ module, onComplete, onSkip, onTimerUpda
   }, [mode, myPosition, friction, myMoveId, myMoveMotivation, yourUnderneath, theirMoveId, theirUnderneath, partnerMoveId, partnerUnderneath, cycleName, meditationCapture, checkInResponse, journalSurprise, journalOtherSide, journalStepOut, journeyReflection, updateTheCycleCapture]);
 
   const buildReflectionJournal = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let content = 'THE CYCLE \u2014 Reflections\n';
 
-    if (meditationCapture.trim()) {
-      content += `\nFirst impressions\n${meditationCapture.trim()}\n`;
-    }
+    content += `\nFirst impressions\n${meditationCapture.trim() || `[no entry — ${ts}]`}\n`;
+
     if (checkInResponse) {
       const option = CYCLE_CHECKIN_OPTIONS.find(o => o.id === checkInResponse);
       content += `\nCheck-in: ${option?.label || checkInResponse}\n`;
     }
-    if (journalSurprise.trim()) {
-      content += `\nWhat surprised me\n${journalSurprise.trim()}\n`;
-    }
-    if (journalOtherSide.trim()) {
-      content += `\nThe other side\n${journalOtherSide.trim()}\n`;
-    }
-    if (journalStepOut.trim()) {
-      content += `\nOne different move\n${journalStepOut.trim()}\n`;
-    }
-    if (journeyReflection.trim()) {
-      content += `\nCarrying forward\n${journeyReflection.trim()}\n`;
-    }
+
+    content += `\nWhat surprised me\n${journalSurprise.trim() || `[no entry — ${ts}]`}\n`;
+    content += `\nThe other side\n${journalOtherSide.trim() || `[no entry — ${ts}]`}\n`;
+    content += `\nOne different move\n${journalStepOut.trim() || `[no entry — ${ts}]`}\n`;
+    content += `\nCarrying forward\n${journeyReflection.trim() || `[no entry — ${ts}]`}\n`;
 
     return content.trim();
   }, [meditationCapture, checkInResponse, journalSurprise, journalOtherSide, journalStepOut, journeyReflection]);
 
   const handleComplete = useCallback(() => {
     const content = buildReflectionJournal();
-    if (content.length > 'THE CYCLE \u2014 Reflections'.length) {
-      addEntry({
-        content,
-        source: 'session',
-        sessionId,
-        moduleTitle: 'The Cycle',
-      });
-    }
+    addEntry({
+      content,
+      source: 'session',
+      sessionId,
+      moduleTitle: 'The Cycle',
+    });
 
     saveAllCaptures();
     setIsPhaseVisible(false);

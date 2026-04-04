@@ -19,7 +19,7 @@
  *     totalDuration,
  *     onComplete,
  *     onSkip,
- *     onTimerUpdate,
+ *     onProgressUpdate,
  *   });
  */
 
@@ -46,7 +46,7 @@ export function useMeditationPlayback({
   totalDuration,
   onComplete,
   onSkip,
-  onTimerUpdate,
+  onProgressUpdate,
   composerOptions,
 }) {
   // Get meditation content
@@ -82,8 +82,8 @@ export function useMeditationPlayback({
   const lastPromptRef = useRef(-1);
   const textFadeTimeoutRef = useRef(null);
   const lastPositionUpdateRef = useRef(0); // Throttle setPositionState to ~1/sec
-  const onTimerUpdateRef = useRef(onTimerUpdate);
-  useEffect(() => { onTimerUpdateRef.current = onTimerUpdate; });
+  const onProgressUpdateRef = useRef(onProgressUpdate);
+  useEffect(() => { onProgressUpdateRef.current = onProgressUpdate; });
 
   // Audio playback hook (single-source continuous player)
   const audio = useAudioPlayback({
@@ -244,20 +244,23 @@ export function useMeditationPlayback({
   // Report timer state to parent for ModuleStatusBar.
   // Timer shows full duration including gongs — elapsed and total are both
   // derived from the physical blob, so they always match and elapsed never overshoots.
-  // onTimerUpdate is stored in a ref to prevent re-render loops — parent creates
+  // onProgressUpdate is stored in a ref to prevent re-render loops — parent creates
   // a new function reference each render, which would cause infinite updates.
   useEffect(() => {
-    if (!onTimerUpdateRef.current) return;
+    if (!onProgressUpdateRef.current) return;
 
     const displayTotal = composedDurationRef.current || totalDuration;
     const userElapsed = Math.min(elapsedTime, displayTotal);
     const progress = displayTotal > 0 ? Math.min((userElapsed / displayTotal) * 100, 100) : 0;
-    onTimerUpdateRef.current({
+    onProgressUpdateRef.current({
       progress,
+      mode: 'timer',
       elapsed: userElapsed,
       total: displayTotal,
       showTimer: hasStarted,
       isPaused: !isPlaying,
+      currentStep: 0,
+      totalSteps: 0,
     });
   }, [elapsedTime, totalDuration, hasStarted, isPlaying]);
 

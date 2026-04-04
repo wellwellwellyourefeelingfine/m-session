@@ -7,7 +7,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { getModuleById, CATEGORY_ICONS, MODULE_ICONS, FRAMEWORKS } from '../../content/modules';
-import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon } from '../shared/Icons';
+import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon, CirclePlusIcon, CircleSkipIcon, StarIcon } from '../shared/Icons';
+import { useAppStore } from '../../stores/useAppStore';
 
 const ICON_MAP = {
   sparkle: SparkleIcon,
@@ -52,10 +53,10 @@ export default function ModuleDetailModal({
   const libraryModule = getModuleById(module?.libraryId);
 
   // Check if this module supports variable duration
-  // Show stepper if hasVariableDuration is true OR if min/max duration differ
+  // Only show stepper when explicitly enabled — modules without hasVariableDuration are fixed
+  const hasVariableDuration = libraryModule?.hasVariableDuration === true;
   const minDuration = libraryModule?.minDuration || 10;
   const maxDuration = libraryModule?.maxDuration || 30;
-  const hasVariableDuration = libraryModule?.hasVariableDuration === true || minDuration !== maxDuration;
   const durationSteps = libraryModule?.durationSteps || generateDurationSteps(minDuration, maxDuration);
 
   // Filter steps to only include valid ones
@@ -67,6 +68,41 @@ export default function ModuleDetailModal({
   // Track selected index into validSteps
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+
+  // Favorites
+  const favoriteModules = useAppStore((s) => s.favoriteModules || []);
+  const toggleFavorite = useAppStore((s) => s.toggleFavorite);
+  const isFavorited = module?.libraryId ? favoriteModules.includes(module.libraryId) : false;
+  const [starAnimating, setStarAnimating] = useState(null); // 'adding' | 'removing' | null
+
+  const handleStarClick = () => {
+    if (!module?.libraryId) return;
+    setStarAnimating(isFavorited ? 'removing' : 'adding');
+    toggleFavorite(module.libraryId);
+  };
+
+  // "More info" collapsible — default collapsed
+  const [isInfoCollapsed, setIsInfoCollapsed] = useState(true);
+  const [infoContentVisible, setInfoContentVisible] = useState(false);
+  const [infoHeightCollapsed, setInfoHeightCollapsed] = useState(true);
+
+  const handleToggleInfo = () => {
+    if (!isInfoCollapsed) {
+      // Collapse: fade out content, then shrink height
+      setInfoContentVisible(false);
+      setTimeout(() => {
+        setInfoHeightCollapsed(true);
+        setIsInfoCollapsed(true);
+      }, 120);
+    } else {
+      // Expand: grow height, fade in once space is opening
+      setInfoHeightCollapsed(false);
+      setTimeout(() => {
+        setInfoContentVisible(true);
+        setIsInfoCollapsed(false);
+      }, 150);
+    }
+  };
 
   // Handle close with animation
   const handleClose = () => {
@@ -162,12 +198,33 @@ export default function ModuleDetailModal({
 
         {/* Header */}
         <div className="px-6 pt-4 pr-14">
-          <h3
-            className="font-serif text-2xl"
-            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1.1 }}
-          >
-            {module.title}
-          </h3>
+          <div className="flex items-center gap-3">
+            <h3
+              className="font-serif text-2xl"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1.1 }}
+            >
+              {module.title}
+            </h3>
+            {module.libraryId && (
+              <button
+                onClick={handleStarClick}
+                className="flex-shrink-0"
+                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <span
+                  className={starAnimating === 'adding' ? 'animate-star-add' : starAnimating === 'removing' ? 'animate-star-remove' : ''}
+                  onAnimationEnd={() => setStarAnimating(null)}
+                  style={{ display: 'inline-flex', transform: 'translateY(-4px)' }}
+                >
+                  <StarIcon
+                    size={26}
+                    filled={isFavorited}
+                    className={isFavorited ? 'text-[var(--accent)]' : 'text-[var(--color-text-tertiary)] opacity-50'}
+                  />
+                </span>
+              </button>
+            )}
+          </div>
           {(() => {
             const Icon = getModuleIcon(module.libraryId, libraryModule?.category);
             return (
@@ -195,18 +252,48 @@ export default function ModuleDetailModal({
             </div>
           )}
 
-          {/* Instructions (if available) */}
+          {/* More info — collapsible instructions */}
           {libraryModule?.content?.instructions && (
             <div>
-              <p
-                className="text-lg text-[var(--color-text-tertiary)] mb-1"
-                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              <button
+                onClick={handleToggleInfo}
+                className="flex items-center gap-1.5 mb-1 cursor-pointer"
+                aria-expanded={!isInfoCollapsed}
               >
-                How It Works:
-              </p>
-              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
-                {libraryModule.content.instructions}
-              </p>
+                <span
+                  className="text-lg text-[var(--color-text-tertiary)]"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  More Info:
+                </span>
+                <span className="text-[var(--color-text-tertiary)] flex items-center">
+                  {isInfoCollapsed
+                    ? <CirclePlusIcon size={16} className="text-current" />
+                    : <CircleSkipIcon size={16} className="text-current" />
+                  }
+                </span>
+              </button>
+
+              <div
+                className="overflow-hidden"
+                style={{
+                  maxHeight: infoHeightCollapsed ? 0 : '500px',
+                  transition: infoHeightCollapsed
+                    ? 'max-height 250ms ease-in-out'
+                    : 'max-height 350ms ease-in-out',
+                }}
+              >
+                <div
+                  style={{
+                    opacity: infoContentVisible ? 1 : 0,
+                    transition: 'opacity 200ms ease-in-out',
+                  }}
+                >
+                  <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                    {libraryModule.content.instructions}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>

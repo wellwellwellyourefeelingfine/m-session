@@ -9,7 +9,7 @@
  * Creates a journal entry on completion.
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
@@ -32,13 +32,13 @@ import { useBreathController } from '../hooks/useBreathController';
 // Shared UI components
 import ModuleLayout from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
-import ModuleProgressBar from '../capabilities/ModuleProgressBar';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import BreathOrb from '../capabilities/animations/BreathOrb';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
-export default function ProtectorDialoguePart1Module({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function ProtectorDialoguePart1Module({ module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const updateProtectorCapture = useSessionStore((s) => s.updateProtectorCapture);
   const addEntry = useJournalStore((s) => s.addEntry);
@@ -150,15 +150,24 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
     totalDuration: meditationTotalDuration,
     onComplete: advanceFromMeditation,
     onSkip: advanceFromMeditation,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // ── Derived values ──
   const currentStep = PART1_STEPS[currentStepIndex];
   const totalSteps = PART1_STEPS.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
-  const progress = ((currentStepIndex + 1) / totalSteps) * 100;
   const protectorLabel = getProtectorName(protectorName);
+  const meditationStepIndex = PART1_STEPS.findIndex((s) => s.type === 'meditation');
+
+  // ── Progress reporting (step-based for non-meditation steps) ──
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    if (currentStepIndex !== meditationStepIndex) {
+      report.step(currentStepIndex + 1, totalSteps);
+    }
+  }, [currentStepIndex, totalSteps, meditationStepIndex, report]);
 
   // ── Step navigation ──
   const advanceStep = useCallback(() => {
@@ -204,39 +213,27 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
     }
     updateProtectorCapture('completedAt', Date.now());
 
-    // Create journal entry (only if there's meaningful content)
+    // Create journal entry with timestamps for empty fields
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let journalContent = 'PROTECTOR DIALOGUE — PART 1\n\n';
-    let hasContent = false;
 
-    if (protectorName.trim()) {
-      journalContent += `Protector: ${protectorName.trim()}\n`;
-      hasContent = true;
-    }
-    if (protectorDescription.trim()) {
-      journalContent += `Description: ${protectorDescription.trim()}\n\n`;
-      hasContent = true;
-    }
+    journalContent += `Protector: ${protectorName.trim() || `[no entry — ${timestamp}]`}\n`;
+    journalContent += `Description: ${protectorDescription.trim() || `[no entry — ${timestamp}]`}\n\n`;
+
     if (feelTowardSelection) {
       const label = FEEL_TOWARD_OPTIONS.find((o) => o.id === feelTowardSelection)?.label || feelTowardSelection;
       journalContent += `Feel Toward: ${label}\n\n`;
     }
-    if (bodyLocation.trim()) {
-      journalContent += `Body Location: ${bodyLocation.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (protectorMessage.trim()) {
-      journalContent += `Message to Protector:\n${protectorMessage.trim()}\n`;
-      hasContent = true;
-    }
 
-    if (hasContent) {
-      addEntry({
-        content: journalContent.trim(),
-        source: 'session',
-        sessionId,
-        moduleTitle: 'Dialogue with a Protector (Part 1)',
-      });
-    }
+    journalContent += `Body Location: ${bodyLocation.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `Message to Protector:\n${protectorMessage.trim() || `[no entry — ${timestamp}]`}\n`;
+
+    addEntry({
+      content: journalContent.trim(),
+      source: 'session',
+      sessionId,
+      moduleTitle: 'Dialogue with a Protector (Part 1)',
+    });
 
     onComplete();
   }, [
@@ -1127,8 +1124,6 @@ export default function ProtectorDialoguePart1Module({ module, onComplete, onSki
 
   return (
     <>
-      <ModuleProgressBar progress={progress} visible={isVisible} showTime={false} />
-
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         <div className={`pt-6 transition-opacity duration-[400ms] ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div key={`${currentStepIndex}-${feelTowardSubPhase}`} className="animate-fadeIn">

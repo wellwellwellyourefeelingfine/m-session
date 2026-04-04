@@ -23,7 +23,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
-export default function SimpleGroundingModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function SimpleGroundingModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
   const meditationId = libraryModule?.meditationId || 'simple-grounding';
   const meditation = getMeditationById(meditationId);
@@ -54,7 +54,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
     totalDuration,
     onComplete,
     onSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // Fade out idle screen before starting composition
@@ -83,9 +83,9 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onTi
   // Hide timer when entering CompletionScreen
   useEffect(() => {
     if (showCompletion) {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [showCompletion, onTimerUpdate]);
+  }, [showCompletion, onProgressUpdate]);
 
   // Fallback if no meditation found
   if (!meditation) {

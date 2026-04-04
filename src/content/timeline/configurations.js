@@ -6,7 +6,8 @@
  *   TIMELINE_CONFIGS[focus][guidanceLevel] = { comeUp, peak, integration }
  *   TIMELINE_CONFIGS.minimal              = { comeUp, peak, integration }
  *
- * Each phase array contains module specs: { libraryId, duration }
+ * Each phase array contains module specs: { libraryId }
+ * Duration is pulled from the library's defaultDuration (single source of truth).
  * Linked modules add: { linkedGroup, linkedRole }
  */
 
@@ -17,42 +18,42 @@ export const TIMELINE_CONFIGS = {
   'self-understanding': {
     full: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
-        { libraryId: 'life-graph', duration: 5 },
-        { libraryId: 'mapping-territory', duration: 10 },
+        { libraryId: 'intention-setting' },
+        { libraryId: 'life-graph' },
+        { libraryId: 'mapping-territory' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'music-listening', duration: 20 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'body-scan' },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'music-listening' },
+        { libraryId: 'self-compassion' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
-        { libraryId: 'open-awareness', duration: 15 },
+        { libraryId: 'values-compass' },
+        { libraryId: 'open-awareness' },
       ],
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'intention-setting' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'music-listening', duration: 20 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'music-listening' },
+        { libraryId: 'self-compassion' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
+        { libraryId: 'values-compass' },
       ],
     },
   },
@@ -63,49 +64,49 @@ export const TIMELINE_CONFIGS = {
   healing: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
-        { libraryId: 'life-graph', duration: 5 },
-        { libraryId: 'mapping-territory', duration: 10 },
+        { libraryId: 'intention-setting' },
+        { libraryId: 'life-graph' },
+        { libraryId: 'mapping-territory' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'self-compassion', duration: 11 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'music-listening', duration: 20 },
-        { libraryId: 'stay-with-it', duration: 15 },
+        { libraryId: 'body-scan' },
+        { libraryId: 'self-compassion' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'music-listening' },
+        { libraryId: 'stay-with-it' },
       ],
       integration: [
-        { libraryId: 'protector-dialogue-p1', duration: 25, linkedGroup: 'protector', linkedRole: 'part1' },
-        { libraryId: 'music-listening', duration: 20 },
-        { libraryId: 'protector-dialogue-p2', duration: 30, linkedGroup: 'protector', linkedRole: 'part2' },
-        { libraryId: 'values-compass', duration: 25 },
+        { libraryId: 'protector-dialogue-p1', linkedGroup: 'protector', linkedRole: 'part1' },
+        { libraryId: 'music-listening' },
+        { libraryId: 'protector-dialogue-p2', linkedGroup: 'protector', linkedRole: 'part2' },
+        { libraryId: 'values-compass' },
       ],
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'intention-setting' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'self-compassion', duration: 11 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'body-scan' },
+        { libraryId: 'self-compassion' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'music-listening' },
       ],
       integration: [
-        { libraryId: 'protector-dialogue-p1', duration: 25, linkedGroup: 'protector', linkedRole: 'part1' },
-        { libraryId: 'music-listening', duration: 20 },
-        { libraryId: 'protector-dialogue-p2', duration: 30, linkedGroup: 'protector', linkedRole: 'part2' },
-        { libraryId: 'values-compass', duration: 25 },
+        { libraryId: 'protector-dialogue-p1', linkedGroup: 'protector', linkedRole: 'part1' },
+        { libraryId: 'music-listening' },
+        { libraryId: 'protector-dialogue-p2', linkedGroup: 'protector', linkedRole: 'part2' },
+        { libraryId: 'values-compass' },
       ],
     },
   },
@@ -116,43 +117,43 @@ export const TIMELINE_CONFIGS = {
   relationship: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
-        { libraryId: 'mapping-territory', duration: 10 },
+        { libraryId: 'intention-setting' },
+        { libraryId: 'mapping-territory' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'self-compassion', duration: 11 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'the-descent-p1', duration: 25, linkedGroup: 'descent-cycle', linkedRole: 'part1' },
+        { libraryId: 'body-scan' },
+        { libraryId: 'self-compassion' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'the-descent-p1', linkedGroup: 'descent-cycle', linkedRole: 'part1' },
       ],
       integration: [
-        { libraryId: 'the-cycle-p2', duration: 25, linkedGroup: 'descent-cycle', linkedRole: 'part2' },
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'the-cycle-p2', linkedGroup: 'descent-cycle', linkedRole: 'part2' },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'music-listening' },
       ],
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'intention-setting' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'self-compassion', duration: 11 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'the-descent-p1', duration: 25, linkedGroup: 'descent-cycle', linkedRole: 'part1' },
+        { libraryId: 'self-compassion' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'the-descent-p1', linkedGroup: 'descent-cycle', linkedRole: 'part1' },
       ],
       integration: [
-        { libraryId: 'the-cycle-p2', duration: 25, linkedGroup: 'descent-cycle', linkedRole: 'part2' },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'the-cycle-p2', linkedGroup: 'descent-cycle', linkedRole: 'part2' },
+        { libraryId: 'music-listening' },
       ],
     },
   },
@@ -163,45 +164,45 @@ export const TIMELINE_CONFIGS = {
   creativity: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
-        { libraryId: 'life-graph', duration: 5 },
-        { libraryId: 'mapping-territory', duration: 10 },
+        { libraryId: 'intention-setting' },
+        { libraryId: 'life-graph' },
+        { libraryId: 'mapping-territory' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'open-awareness', duration: 15 },
+        { libraryId: 'body-scan' },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'open-awareness' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'values-compass' },
+        { libraryId: 'self-compassion' },
       ],
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'intention-setting' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'open-awareness', duration: 15 },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'open-awareness' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'values-compass' },
+        { libraryId: 'self-compassion' },
       ],
     },
   },
@@ -212,45 +213,45 @@ export const TIMELINE_CONFIGS = {
   open: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
-        { libraryId: 'life-graph', duration: 5 },
-        { libraryId: 'mapping-territory', duration: 10 },
+        { libraryId: 'intention-setting' },
+        { libraryId: 'life-graph' },
+        { libraryId: 'mapping-territory' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'body-scan', duration: 10 },
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'body-scan' },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'self-compassion' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
-        { libraryId: 'open-awareness', duration: 15 },
+        { libraryId: 'values-compass' },
+        { libraryId: 'open-awareness' },
       ],
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting', duration: 5 },
+        { libraryId: 'intention-setting' },
       ],
       comeUp: [
-        { libraryId: 'simple-grounding', duration: 5 },
-        { libraryId: 'leaves-on-a-stream', duration: 10 },
-        { libraryId: 'music-listening', duration: 20 },
+        { libraryId: 'simple-grounding' },
+        { libraryId: 'leaves-on-a-stream' },
+        { libraryId: 'music-listening' },
       ],
       peak: [
-        { libraryId: 'felt-sense', duration: 12 },
-        { libraryId: 'shaking-the-tree', duration: 15 },
-        { libraryId: 'lets-dance', duration: 20 },
-        { libraryId: 'self-compassion', duration: 11 },
+        { libraryId: 'felt-sense' },
+        { libraryId: 'shaking-the-tree' },
+        { libraryId: 'lets-dance' },
+        { libraryId: 'self-compassion' },
       ],
       integration: [
-        { libraryId: 'values-compass', duration: 25 },
-        { libraryId: 'open-awareness', duration: 15 },
+        { libraryId: 'values-compass' },
+        { libraryId: 'open-awareness' },
       ],
     },
   },
@@ -260,15 +261,15 @@ export const TIMELINE_CONFIGS = {
   // ════════════════════════════════════════════════════════════
   minimal: {
     comeUp: [
-      { libraryId: 'simple-grounding', duration: 5 },
+      { libraryId: 'simple-grounding' },
     ],
     peak: [
-      { libraryId: 'music-listening', duration: 20 },
-      { libraryId: 'felt-sense', duration: 12 },
-      { libraryId: 'lets-dance', duration: 20 },
+      { libraryId: 'music-listening' },
+      { libraryId: 'felt-sense' },
+      { libraryId: 'lets-dance' },
     ],
     integration: [
-      { libraryId: 'open-awareness', duration: 15 },
+      { libraryId: 'open-awareness' },
     ],
   },
 };

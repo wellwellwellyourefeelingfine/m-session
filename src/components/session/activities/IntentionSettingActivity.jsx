@@ -26,11 +26,12 @@ import {
   generateTimedSequence,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 
 // Shared UI components
 import ModuleLayout from '../../active/capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../../active/capabilities/ModuleProgressBar';
+
 import AsciiMoon from '../../active/capabilities/animations/AsciiMoon';
 import MorphingShapes from '../../active/capabilities/animations/MorphingShapes';
 import LeafDrawV2 from '../../active/capabilities/animations/LeafDrawV2';
@@ -39,7 +40,7 @@ import TranscriptModal, { TranscriptIcon, FADE_MS } from '../../active/capabilit
 // Moon transition step index
 const MOON_STEP = 8;
 
-export default function IntentionSettingActivity({ module, onComplete, onSkip, _onTimerUpdate }) {
+export default function IntentionSettingActivity({ module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const intake = useSessionStore((s) => s.intake);
   const updateIntakeResponse = useSessionStore((s) => s.updateIntakeResponse);
@@ -50,6 +51,9 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
 
   const existingIntention = intake.responses?.holdingQuestion || '';
   const hasExistingIntention = existingIntention.trim().length > 0;
+
+  // ── Progress reporting ──
+  const report = useProgressReporter(onProgressUpdate);
 
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -102,9 +106,6 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
   // ── Reflection edit mode ──
   const [isEditing, setIsEditing] = useState(false);
 
-  // ── Meditation timer (captured locally since ActiveView doesn't render ModuleStatusBar for pre-session) ──
-  const [meditationTimer, setMeditationTimer] = useState(null);
-
   // ── Meditation setup (Short Grounding) ──
   const meditation = getMeditationById('short-grounding');
 
@@ -118,16 +119,10 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
     return [sequence, total];
   }, [meditation]);
 
-  // Capture meditation timer data locally for ModuleProgressBar display
-  const handleMeditationTimerUpdate = useCallback((timerData) => {
-    setMeditationTimer(timerData);
-  }, []);
-
   const advanceFromMeditation = useCallback(() => {
     setIsVisible(false);
     setTimeout(() => {
       setInMeditation(false);
-      setMeditationTimer(null);
       setCurrentStepIndex((prev) => {
         const nextIndex = prev + 1;
         setStepHistory((h) => [...h, nextIndex]);
@@ -144,7 +139,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
     totalDuration: meditationTotalDuration,
     onComplete: advanceFromMeditation,
     onSkip: advanceFromMeditation,
-    onTimerUpdate: handleMeditationTimerUpdate,
+    onProgressUpdate,
   });
 
   // ── Derived values ──
@@ -155,7 +150,13 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
 
   // Progress: exclude moon transition step from count
   const effectiveStep = currentStepIndex > MOON_STEP ? currentStepIndex - 1 : currentStepIndex;
-  const progress = ((effectiveStep + 1) / PROGRESS_STEPS) * 100;
+
+  // Report step-based progress to parent when not in meditation
+  useEffect(() => {
+    if (!inMeditation) {
+      report.step(effectiveStep + 1, PROGRESS_STEPS);
+    }
+  }, [effectiveStep, inMeditation, report]);
 
   // ── Step navigation ──
   const advanceStep = useCallback(() => {
@@ -925,15 +926,6 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, _
 
   return (
     <>
-      <ModuleProgressBar
-        progress={inMeditation && playback.hasStarted && meditationTimer ? meditationTimer.progress : progress}
-        visible={true}
-        showTime={inMeditation && playback.hasStarted && !playback.isComplete && !playback.isLoading}
-        elapsed={meditationTimer?.elapsed}
-        total={meditationTimer?.total}
-        isPaused={meditationTimer?.isPaused}
-      />
-
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         {/* Persistent moon area — title + moon shared across moon transition & intention page */}
         {showPersistentMoon && (

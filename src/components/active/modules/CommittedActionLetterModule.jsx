@@ -6,10 +6,11 @@
  * Flow: Idle → Education → Value → Barrier → Willingness → Commitment → Review → Closing → Completion
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { getModuleById } from '../../../content/modules';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -98,7 +99,7 @@ const SCREENS = [
 
 // ── Main Component ─────────────────────────────────────────
 
-export default function CommittedActionLetterModule({ module, onComplete, onSkip }) {
+export default function CommittedActionLetterModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const [phase, setPhase] = useState('idle');
   const [stepIndex, setStepIndex] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -123,6 +124,17 @@ export default function CommittedActionLetterModule({ module, onComplete, onSkip
   const screen = SCREENS[stepIndex];
   const isLastScreen = stepIndex >= SCREENS.length - 1;
 
+  // ── Progress reporting ──────────────────────────────────
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    if (phase === 'active') {
+      report.step(stepIndex + 1, SCREENS.length);
+    } else {
+      report.idle();
+    }
+  }, [phase, stepIndex, report]);
+
   const getFontClass = () => {
     const size = settings.fontSize === 'small' ? 'text-sm' : settings.fontSize === 'large' ? 'text-lg' : 'text-base';
     const family = settings.fontFamily === 'serif' ? 'font-serif' : settings.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
@@ -131,11 +143,12 @@ export default function CommittedActionLetterModule({ module, onComplete, onSkip
   };
 
   const assembleLetter = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let assembled = '';
-    if (responses.value.trim()) assembled += `What matters most:\n${responses.value.trim()}\n\n`;
-    if (responses.barrier.trim()) assembled += `What gets in the way:\n${responses.barrier.trim()}\n\n`;
-    if (responses.willingness.trim()) assembled += `What I am willing to feel:\n${responses.willingness.trim()}\n\n`;
-    if (responses.commitment.trim()) assembled += `What I will do:\n${responses.commitment.trim()}`;
+    assembled += `What matters most:\n${responses.value.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `What gets in the way:\n${responses.barrier.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `What I am willing to feel:\n${responses.willingness.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `What I will do:\n${responses.commitment.trim() || `[no entry — ${ts}]`}`;
     return assembled;
   }, [responses]);
 

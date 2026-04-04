@@ -19,15 +19,16 @@
  * Flow: Idle → Active (screens in order) → Completion
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { getModuleById } from '../../../content/modules';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 
-export default function JournalingModule({ module, onComplete, onSkip, _onTimerUpdate }) {
+export default function JournalingModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const [phase, setPhase] = useState('idle');
   const [screenIndex, setScreenIndex] = useState(0);
   const [responses, setResponses] = useState({});
@@ -36,6 +37,19 @@ export default function JournalingModule({ module, onComplete, onSkip, _onTimerU
   const [isLeaving, setIsLeaving] = useState(false);
   const [isBodyVisible, setIsBodyVisible] = useState(true);
   const [isHeaderVisible, setIsHeaderVisible] = useState(false);
+
+  const report = useProgressReporter(onProgressUpdate);
+
+  // Report step-based progress whenever phase or screenIndex changes
+  useEffect(() => {
+    if (phase === 'idle') {
+      report.idle();
+    } else if (phase === 'complete') {
+      report.step(screens.length, screens.length);
+    } else if (phase === 'active') {
+      report.step(screenIndex + 1, screens.length);
+    }
+  }, [phase, screenIndex, screens.length, report]);
 
   const libraryModule = getModuleById(module.libraryId);
 
@@ -105,15 +119,16 @@ export default function JournalingModule({ module, onComplete, onSkip, _onTimerU
   };
 
   const saveEntry = useCallback(() => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     const title = module.title?.toUpperCase() || 'JOURNALING';
     let savedContent = `${title}\n`;
 
     screens.forEach((screen) => {
       if (screen.type === 'prompt') {
         savedContent += `\n${screen.prompt}\n`;
-        if (responses[screen.promptIndex]?.trim()) {
-          savedContent += `${responses[screen.promptIndex].trim()}\n`;
-        }
+        savedContent += responses[screen.promptIndex]?.trim()
+          ? `${responses[screen.promptIndex].trim()}\n`
+          : `[no entry — ${timestamp}]\n`;
       }
       if (screen.type === 'selector') {
         savedContent += `\n${screen.prompt}\n`;

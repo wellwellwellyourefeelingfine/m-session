@@ -65,7 +65,7 @@ function OrbIcon({ visible }) {
   );
 }
 
-export default function BreathMeditationModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function BreathMeditationModule({ module, onComplete, onSkip, onProgressUpdate }) {
   // Get library module for metadata
   const libraryModule = getModuleById(module.libraryId);
 
@@ -221,20 +221,23 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onT
 
   // Report timer state to parent for ModuleStatusBar
   useEffect(() => {
-    if (!onTimerUpdate) return;
+    if (!onProgressUpdate) return;
 
     const totalDuration = calculateTotalDuration();
     const elapsed = (breathController.overallProgress / 100) * totalDuration;
 
-    onTimerUpdate({
+    onProgressUpdate({
       progress: breathController.overallProgress,
+      mode: 'timer',
       elapsed,
       total: totalDuration,
       showTimer: breathController.hasStarted && !breathController.isComplete,
       isPaused: !breathController.isRunning && breathController.hasStarted && !breathController.isComplete,
+      currentStep: 0,
+      totalSteps: 0,
     });
   }, [breathController.overallProgress, breathController.hasStarted, breathController.isComplete,
-      breathController.isRunning, calculateTotalDuration, onTimerUpdate]);
+      breathController.isRunning, calculateTotalDuration, onProgressUpdate]);
 
   // Track prompts based on breath controller's progress
   // Uses a ref to track the last shown prompt index to prevent re-triggering

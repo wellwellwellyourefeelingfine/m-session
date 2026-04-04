@@ -11,14 +11,21 @@ src/
 ├── components/
 │   ├── active/                    # Active session (meditation playback)
 │   │   ├── modules/               # 25+ lazy-loaded custom module components
-│   │   │   └── shared/            # Shared module sub-components (cycle/, matrix/)
+│   │   │   ├── shared/            # Shared module sub-components (cycle/, matrix/)
+│   │   │   └── MasterModule/      # Content-driven universal module framework
+│   │   │       ├── MasterModule.jsx         # Main orchestrator
+│   │   │       ├── useMasterModuleState.js  # Central state management
+│   │   │       ├── sectionRenderers/        # Screens, Meditation, Timer, Generate
+│   │   │       ├── blockRenderers/          # Header, Text, Prompt, Selector, Choice, etc.
+│   │   │       ├── generators/              # PNG generator registry
+│   │   │       └── utils/                   # expandScreenToBlocks, evaluateCondition, etc.
 │   │   ├── capabilities/          # Composable UI building blocks
 │   │   │   ├── animations/        # BreathOrb, AsciiMoon, AsciiDiamond, MorphingShapes,
 │   │   │   │                      #   Compass, LeafDraw, RevealOverlay
 │   │   │   ├── hooks/             # useModuleState, useModuleTimer
 │   │   │   ├── ModuleLayout.jsx   # Consistent layout wrapper
 │   │   │   ├── ModuleControlBar.jsx
-│   │   │   ├── ModuleShell.jsx    # Generic capability-based renderer
+│   │   │   ├── ImageViewerModal.jsx  # Shared full-screen image viewer
 │   │   │   └── TranscriptModal.jsx
 │   │   ├── hooks/                 # useBreathController (breath timing engine)
 │   │   ├── moduleRegistry.js      # Module type → component mapping
@@ -99,7 +106,8 @@ src/
 │   │   ├── theDeepDiveReflectionContent.js
 │   │   ├── valuesCompassContent.js
 │   │   ├── musicRecommendations.js
-│   │   └── danceRecommendations.js
+│   │   ├── danceRecommendations.js
+│   │   └── master/                # MasterModule content config files
 │   ├── meditations/               # Meditation content + audio mappings (14 content files)
 │   ├── intake/                    # 4-section questionnaire
 │   └── timeline/
@@ -179,40 +187,356 @@ public/
 - `IntentionSettingActivity` — Guided intention refinement with self-inquiry prompts
 - `LifeGraphActivity` — Lifecycle visualization exercise with PNG export
 
-**2. ModuleShell** (capability-driven, no custom code):
-- Reads module's `capabilities` config
-- Composes: timer, prompts, animation, controls
-- Architecture is in place but currently all modules use custom components
+**2. MasterModule** (content-driven, no custom component code):
 
-### Adding a New Module
+The MasterModule is a universal shared component that renders any module from a content configuration file. It supports the full range of module capabilities — meditation playback, education screens, journaling, interactive selection, timed activities, PNG generation, and conditional branching — all driven by content config alone.
 
-**Option 1: Capability-Based (No Code)**
+All existing custom modules remain as-is. MasterModule is for new modules going forward.
 
-Just add to `content/modules/library.js`:
+### MasterModule Architecture
+
+Three-layer hierarchy:
+
+```
+Section (control bar + lifecycle)
+  └── Screen (one page the user sees)
+       └── Blocks[] (vertical stack of visual components)
+```
+
+**Sections** own the control bar, lifecycle, and slot configuration. **Screens** represent one page the user sees. **Blocks** are atomic visual building blocks that can be freely composed on any screen.
+
+#### Section Types
+
+| Type | Purpose | Key Config |
+|------|---------|------------|
+| `screens` | Step-through screen sequence | `screens[], hideTimer?, rightSlotViewer?` |
+| `meditation` | Audio-synced meditation via `useMeditationPlayback` | `meditationId, animation?, showTranscript?, composerOptions?` |
+| `timer` | Countdown timer for music/dance/rest | `animation?, showAlarm?, recommendations?, allowAddTime?` |
+| `generate` | PNG generation with RevealOverlay | `generatorId, buttonLabel, saveToJournal?, imageName?` |
+
+#### Block Types
+
+| Type | Props | Description |
+|------|-------|-------------|
+| `header` | `title?, animation?, animationProps?, titleClassName?` | Title text + centered animation (default: AsciiMoon) |
+| `text` | `lines[]` | Paragraphs with markup: `§` = spacer, `{term}` = accent, `{#N}` = numbered |
+| `prompt` | `prompt, context?, placeholder?` | Journaling textarea (respects journal font settings) |
+| `selector` | `prompt, key, options[], columns?, multiSelect?, journal?` | Grid selection with optional follow-up textarea |
+| `choice` | `prompt, key, options[{id, label, route?}]` | Selection that optionally routes to another section |
+| `animation` | `animation, header?, lines?` | Standalone animation with optional text |
+| `alarm` | `activityName` | Prompt to set native phone alarm |
+| `review` | `assembleFrom[], editable?, header?, context?` | Assembled prompt response review/editing |
+
+#### Shorthand Screen Types (Backward Compatible)
+
+Screens with a `type` field auto-expand into `[headerBlock, contentBlock]`. This is syntactic sugar — under the hood, every screen is blocks.
 
 ```javascript
+// Shorthand:
+{ type: 'text', header: 'Welcome', lines: ['Hello.'] }
+
+// Equivalent explicit blocks:
+{ blocks: [
+  { type: 'header', title: 'Welcome', animation: 'ascii-moon' },
+  { type: 'text', lines: ['Hello.'] },
+] }
+```
+
+Use explicit `blocks` arrays when you need mixed content on one screen:
+
+```javascript
+{ blocks: [
+  { type: 'header', title: 'Check In', animation: 'leaf' },
+  { type: 'text', lines: ['How are you feeling?'] },
+  { type: 'selector', prompt: 'Pick one', key: 'mood', columns: 2,
+    options: [{ id: 'calm', label: 'Calm' }, { id: 'heavy', label: 'Heavy' }] },
+  { type: 'prompt', prompt: 'Say more?', placeholder: '...' },
+] }
+```
+
+#### Routing & Conditional Flow
+
+The MasterModule has two complementary systems for dynamic module flow:
+
+**Routing** — "leave this section and jump to a different one." Used for branching flows where entire sections are swapped (e.g., Pendulation-style checkpoint → different meditation sections).
+
+**Conditions** — "stay in this section, but show/hide specific screens or blocks based on earlier choices." Used for inline content variation (e.g., tailored text based on a check-in response).
+
+#### Choice Block
+
+The `choice` block type supports both systems:
+
+```javascript
+// Choice WITHOUT route — saves value for conditional rendering
+{ type: 'choice', prompt: 'How are you?', key: 'mood', options: [
+  { id: 'calm', label: 'Calm' },
+  { id: 'heavy', label: 'Heavy' },
+] }
+
+// Choice WITH route — jumps to a different section on Continue
+{ type: 'choice', prompt: 'How was that?', key: 'checkin', options: [
+  { id: 'settled', label: 'Settled', route: 'closing-section' },
+  { id: 'activated', label: 'Still activated', route: 'activation-section' },
+] }
+```
+
+In all cases, the user selects an option and clicks Continue. Without a route, the flow continues to the next screen. With a route, three formats control what happens:
+
+```javascript
+// 1. Skip-ahead (no bookmark) — jump and continue forward from there
+//    Most common. Used for Pendulation-style branching.
+{ id: 'settled', label: 'Settled', route: 'med-d' }
+
+// 2. Loop route with auto-bookmark — jump, then return to the section after this one
+//    Used for detour flows (e.g., a gate where the user can do optional activities and return).
+{ id: 'breathe', label: 'Breathe', route: { to: 'breathing', bookmark: true } }
+
+// 3. Re-route with custom bookmark — jump, then return to a named section
+//    Used when the return point is different from the next sequential section.
+{ id: 'refine', label: 'Refine', route: { to: 'intention-flow', bookmark: 'gate-section' } }
+```
+
+**String** = skip-ahead. After the target section completes, the flow continues forward sequentially. Already-visited sections are automatically skipped.
+
+**Object with `bookmark: true`** = loop route. After the target section completes, the flow returns to the section after the choice (the bookmark).
+
+**Object with `bookmark: 'section-id'`** = re-route with custom return point. After the target completes, the flow returns to the named section.
+
+#### Sequential Advance & Visited Section Skipping
+
+When advancing sequentially (no bookmark to pop), `advanceSection` automatically skips sections that have already been visited. This prevents replaying sections when routing creates non-linear paths.
+
+For example: checkpoint at index 2 routes to index 5 (with bookmark at index 4). After completing index 5, the bookmark returns the user to index 4. After completing index 4, sequential advance checks index 5 — already visited — skips to index 6.
+
+#### Conditional Content
+
+Any block or screen can have a `condition` field. It only renders when the condition passes.
+
+**Simple conditions:**
+
+```javascript
+// Exact match on a choice or selector value
+{ condition: { key: 'mood', equals: 'heavy' } }
+
+// One-of match
+{ condition: { key: 'mood', in: ['heavy', 'numb'] } }
+
+// Has any value (truthy check)
+{ condition: { key: 'mood' } }
+
+// Section was visited
+{ condition: { visited: 'med-b' } }
+
+// Section was NOT visited
+{ condition: { notVisited: 'med-c' } }
+```
+
+**Compound conditions (AND / OR):**
+
+```javascript
+// AND — all must be true
+{ condition: { and: [
+  { key: 'mood', equals: 'heavy' },
+  { key: 'bodyArea', equals: 'chest' },
+] } }
+
+// OR — any must be true
+{ condition: { or: [
+  { key: 'mood', equals: 'heavy' },
+  { visited: 'activation-section' },
+] } }
+
+// Nested — heavy AND (chest OR shoulders)
+{ condition: { and: [
+  { key: 'mood', equals: 'heavy' },
+  { or: [
+    { key: 'bodyArea', equals: 'chest' },
+    { key: 'bodyArea', equals: 'shoulders' },
+  ] },
+] } }
+```
+
+Conditions work on:
+- **Blocks** — individual blocks within a screen are filtered; others on the same screen still render
+- **Screens** — entire screens are skipped during navigation (forward and back)
+- **Review blocks** — only prompts the user actually saw are shown
+- **Journal entries** — only prompts the user saw are included (see Journal Assembly below)
+
+Conditions are evaluated by `evaluateCondition()` in `utils/evaluateCondition.js` against `choiceValues`, `selectorValues`, and `visitedSections`.
+
+#### Section Visit Tracking
+
+`useMasterModuleState` tracks completed sections in a `visitedSections` array, updated each time `advanceSection()` or `routeToSection()` is called. Every block is tagged with its parent `sectionId` during indexing.
+
+Section visits serve three purposes:
+
+1. **Conditional content** — `condition: { visited: 'med-b' }` shows/hides blocks based on which sections the user went through
+2. **Sequential skip** — `advanceSection` skips already-visited sections to prevent replays after non-linear routing
+3. **Journal & review filtering** — prompts from unvisited sections are excluded from journal entries and review screens (the user never saw them)
+
+```javascript
+// Adaptive debrief screens based on path taken:
+{ type: 'text', condition: { visited: 'med-b' },
+  lines: ['Since you went through the activation section...'] }
+{ type: 'text', condition: { notVisited: 'med-b' },
+  lines: ['You skipped the activation section.'] }
+```
+
+#### Journal Assembly
+
+Journal entries are built by `journalAssembler.js` on module completion. Two-layer filtering determines which prompts are included:
+
+1. **Section visited?** — Each block carries a `sectionId`. If the section was never visited (due to routing), all its prompts are excluded.
+2. **Condition passed?** — If a prompt has a `condition` field and it fails, the prompt is excluded.
+
+Prompts that pass both filters are always included in the journal, even if the user left them blank. Empty prompts are saved as `[no entry — 3:45 PM]` with a wall-clock timestamp, supporting users who journal physically and need to cross-reference.
+
+#### Meditation Variations
+
+Meditation sections automatically detect and render variation selectors when the meditation content defines `variations` and `assembleVariation()`. The idle screen shows variation buttons instead of a duration picker. Each variation has a label, description, and fixed duration.
+
+#### PNG Generation
+
+The `generate` section type orchestrates: generate button → RevealOverlay → PNG creation → ImageViewerModal → seamless advance to next section. Generator functions are registered in `generators/registry.js` by ID. The content config references them by `generatorId`.
+
+#### Central State
+
+All user data persists across sections in `useMasterModuleState`:
+
+| State | Shape | Description |
+|-------|-------|-------------|
+| `responses` | `{ promptIndex: text }` | Every prompt answer |
+| `selectorValues` | `{ key: id \| [ids] }` | Every selector pick |
+| `selectorJournals` | `{ key: text }` | Every selector follow-up text |
+| `choiceValues` | `{ key: optionId }` | Every choice selection |
+| `visitedSections` | `string[]` | Completed section IDs (for routing, conditions, journal filtering) |
+| `generatedImages` | `{ generatorId: { blob, url } }` | Generated PNGs |
+
+Each block in the system also carries a `sectionId` tag linking it to its parent section, enabling the two-layer journal filtering described above.
+
+### Adding a New Module with MasterModule
+
+**Step 1: Create the content file** in `src/content/modules/master/myModule.js`:
+
+```javascript
+export const myModuleContent = {
+  accentTerms: { key_concept: 'Key Concept' },
+  idle: { animation: 'ascii-moon' },
+  completion: { title: 'Well done', message: 'Take a moment.' },
+  journal: { saveOnComplete: true, titlePrefix: 'MY MODULE' },
+
+  sections: [
+    {
+      id: 'intro',
+      type: 'screens',
+      screens: [
+        { type: 'text', header: 'Welcome', lines: ['Introduction with {key_concept}.'] },
+        { type: 'prompt', prompt: 'What brings you here?', placeholder: 'Write freely...' },
+      ],
+    },
+    {
+      id: 'meditation',
+      type: 'meditation',
+      meditationId: 'open-awareness',
+      animation: 'morphing-shapes',
+      showTranscript: true,
+    },
+    {
+      id: 'reflection',
+      type: 'screens',
+      screens: [
+        { type: 'prompt', prompt: 'What stayed with you?', placeholder: '...' },
+      ],
+    },
+  ],
+};
+```
+
+**Step 2: Register in `library.js`**:
+
+```javascript
+import { myModuleContent } from './master/myModule';
+
+// In MODULE_TYPES:
+'my-module': { label: 'My Module', intensity: 3 },
+
+// In moduleLibrary:
 {
-  id: 'my-new-module',
-  type: 'meditation',              // Uses ModuleShell
+  id: 'my-module',
+  type: 'my-module',
+  category: 'activity',
   title: 'My Module',
-  defaultDuration: 15,
+  description: 'A guided activity with meditation and journaling.',
+  defaultDuration: 20,
   allowedPhases: ['peak', 'integration'],
+  tags: ['guided'],
+  framework: ['general'],
   content: {
-    instructions: 'Follow the prompts...'
+    instructions: 'Description for the idle screen.',
+    masterModuleContent: myModuleContent,
   },
-  capabilities: {
-    timer: { type: 'countdown', autoComplete: true },
-    prompts: { type: 'sequential', fadeTransition: true },
-    controls: { showBeginButton: true, showSkipButton: true }
-  }
 }
 ```
 
-**Option 2: Custom Component**
+**Step 3: Register in `moduleRegistry.js`**:
+
+```javascript
+// In CUSTOM_MODULES:
+'my-module': MasterModule,
+```
+
+Done. No custom component code needed.
+
+### Complex Example: Branching Meditation (Pendulation-Style)
+
+A module with multiple meditation sections, checkpoint routing, and adaptive debrief:
+
+```javascript
+export const branchingModuleContent = {
+  journal: { saveOnComplete: true, titlePrefix: 'BRANCHING MODULE' },
+
+  sections: [
+    { id: 'med-a', type: 'meditation', meditationId: 'section-a',
+      composerOptions: { skipClosingGong: true } },
+
+    { id: 'checkpoint', type: 'screens', hideTimer: true, screens: [
+      { type: 'choice', prompt: 'How was that?', key: 'checkpoint1', options: [
+        { id: 'settled', label: 'Settled', route: 'med-d' },
+        { id: 'activated', label: 'Still activated', route: 'med-b' },
+        { id: 'frozen', label: 'Heavy or frozen', route: 'med-c' },
+      ] },
+    ] },
+
+    { id: 'med-b', type: 'meditation', meditationId: 'section-b',
+      composerOptions: { skipOpeningGong: true, skipClosingGong: true } },
+
+    { id: 'med-c', type: 'meditation', meditationId: 'section-c',
+      composerOptions: { skipOpeningGong: true, skipClosingGong: true } },
+
+    { id: 'med-d', type: 'meditation', meditationId: 'section-d',
+      composerOptions: { skipOpeningGong: true } },
+
+    { id: 'debrief', type: 'screens', screens: [
+      { type: 'text', lines: ['Core debrief — always shown.'] },
+      { type: 'text', condition: { visited: 'med-b' },
+        lines: ['You went through the activation section...'] },
+      { type: 'text', condition: { visited: 'med-c' },
+        lines: ['You went through the freeze section...'] },
+      { type: 'prompt', prompt: 'What did you notice?' },
+    ] },
+  ],
+};
+```
+
+This produces: opening gong on section A only, no gongs on B/C, closing gong on D only. Checkpoint uses string routes (skip-ahead) so each path continues forward to debrief after the last meditation. Debrief screens adapt based on which sections were visited via `condition: { visited: '...' }`.
+
+### Adding a Custom Component (Fallback)
+
+For modules with highly interactive UIs that can't be expressed via content config (e.g., drag-and-drop, interactive diagrams), create a custom component:
 
 1. Create `components/active/modules/MyModule.jsx`:
 ```javascript
-export default function MyModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function MyModule({ module, onComplete, onSkip, onProgressUpdate }) {
   return (
     <ModuleLayout>
       {/* Your UI */}
@@ -226,6 +550,38 @@ export default function MyModule({ module, onComplete, onSkip, onTimerUpdate }) 
 ```javascript
 import MyModule from './modules/MyModule';
 export const CUSTOM_MODULES = { ...existing, 'my-type': MyModule };
+```
+
+### MasterModule File Structure
+
+```
+src/components/active/modules/MasterModule/
+  MasterModule.jsx              # Main orchestrator
+  useMasterModuleState.js       # Central state (navigation, data, conditions)
+  sectionRenderers/
+    ScreensSection.jsx          # Step-through screens with block rendering
+    MeditationSection.jsx       # Audio-synced meditation (variable duration + variations)
+    TimerSection.jsx            # Countdown timer + optional recommendations
+    GenerateSection.jsx         # PNG generation + RevealOverlay orchestration
+  blockRenderers/
+    HeaderBlock.jsx             # Title + configurable animation
+    TextBlock.jsx               # Paragraphs with markup
+    PromptBlock.jsx             # Journaling textarea
+    SelectorBlock.jsx           # Grid selection
+    ChoiceBlock.jsx             # Routing checkpoint
+    AnimationBlock.jsx          # Standalone animation
+    AlarmBlock.jsx              # Set alarm prompt
+    ReviewBlock.jsx             # Assembled response review
+    MeditationAudioBlock.jsx    # Paused indicator + fading prompt text
+  generators/
+    registry.js                 # Generator ID → async PNG function
+  utils/
+    expandScreenToBlocks.js     # Shorthand → blocks conversion
+    evaluateCondition.js        # Condition evaluation (choice, selector, visited)
+    renderContentLines.jsx      # Shared text markup renderer
+    journalAssembler.js         # Builds journal entry from collected data
+
+src/content/modules/master/     # Content config files for MasterModule-based modules
 ```
 
 ### Adding a Meditation Module (with Audio)
@@ -297,7 +653,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 import DurationPicker from '../../shared/DurationPicker';
 
-export default function MyMeditationModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function MyMeditationModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
   const meditation = getMeditationById('my-meditation');
 
@@ -327,7 +683,7 @@ export default function MyMeditationModule({ module, onComplete, onSkip, onTimer
     totalDuration,
     onComplete,
     onSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   if (!meditation) {
@@ -501,6 +857,90 @@ The follow-up phase uses a single 8-hour phase-level time lock (`followUp.phaseU
 
 ---
 
+## Progress Bar System
+
+A unified `ModuleStatusBar` sits below the header in all Active tab contexts — active session phases, pre-session, preview activity, transitions, follow-up, and closing ritual. It renders a 1px progress line and a flexible status row with left label, center content, and right content slots.
+
+### Architecture
+
+```
+Module (reports progress)
+  → onProgressUpdate callback
+    → ActiveView.handleProgressUpdate() stores state
+      → ModuleStatusBar renders progress line + status row
+        → ModuleProgressBar (internal 1px fill bar)
+```
+
+Every module receives `onProgressUpdate` as a prop via `ModuleRenderer`. Modules report progress using the `useProgressReporter` hook, which provides four methods:
+
+```javascript
+const report = useProgressReporter(onProgressUpdate);
+
+report.step(3, 10);      // Step 3 of 10 → 30% progress (mode: 'step')
+report.timer(45, 120);   // 45s of 120s → 37.5% progress (mode: 'timer')
+report.raw(42.5);        // Pre-computed 42.5% (mode: 'step')
+report.idle();            // 0% progress (mode: 'idle')
+```
+
+### Two Progress Modes
+
+**Timer-based** — for meditations, silence timers, timed activities. The `useMeditationPlayback` and `useSilenceTimer` hooks call `onProgressUpdate` directly with `mode: 'timer'`, providing elapsed/total seconds. The status bar shows `MM:SS / MM:SS` in the center.
+
+**Step-based** — for step-through screens, journaling, transitions, follow-up flows. Modules call `report.step(current, total)` or `report.raw(percentage)`. The status bar shows the progress line only (no timer display).
+
+**Hybrid modules** (e.g., Pendulation, Protector Dialogue Part 1, Shaking the Tree) switch between modes. During step phases they call `report.step()`, during meditation/timer phases the playback hook takes over. The progress bar transitions seamlessly.
+
+### Context Labels
+
+`ModuleStatusBar` receives its label as a prop — it has no internal logic about phases or contexts.
+
+| Context | Left Label | Center | Right |
+|---------|-----------|--------|-------|
+| Active session | `Phase 1 · Come-Up` / `Phase 2 · Peak` / `Phase 3 · Integration` | Module timer | Session elapsed (`H:MM:SS`) |
+| Preview activity | `Pre-Session` | Module timer | Exit button |
+| Substance checklist | `Preparation` | — | `X of Y` step count |
+| Opening ritual | `Opening Ritual` | — | `X of Y` step count |
+| Transitions | `Transition` | Session elapsed | — |
+| Closing ritual | Dynamic step label | Session elapsed | — |
+| Follow-up modules | Dynamic step label | — | — |
+
+### MasterModule Progress
+
+MasterModule uses **cumulative visited-based progress** with screen-level granularity. This handles conditional screens, routing, and out-of-order section traversal.
+
+**Formula:**
+```
+expectedTotal = visitedCount + 1 + unvisitedRemaining
+sectionBase = visitedCount / expectedTotal
+sectionWeight = 1 / expectedTotal
+screenFraction = visibleScreenPosition / totalVisibleScreens
+
+progress = (sectionBase + sectionWeight × screenFraction) × 100
+```
+
+- `visitedCount` = number of completed sections (from `visitedSections` array)
+- `unvisitedRemaining` = sections not yet visited and not the current one
+- `screenFraction` = position within the current `screens` section (reported by `ScreensSection` via `onScreenChange` callback)
+
+**Why cumulative, not index-based:** Routing can visit sections out of array order (e.g., index 2 → 5 → 4 → 6). Using `currentSectionIndex / totalSections` would give "free" credit for skipped sections. The cumulative approach counts only what the user actually completed, and shrinks the denominator when sections become unreachable.
+
+**Section type behavior:**
+- `screens` — progress advances per-screen within the section's weight
+- `meditation` / `timer` — sub-components report their own timer progress directly (MasterModule does not override)
+- `generate` — treated as a single step at the section's base progress
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `src/components/active/ModuleStatusBar.jsx` | Unified status bar: progress line + left/center/right slots |
+| `src/components/active/capabilities/ModuleProgressBar.jsx` | Internal 1px progress line (used only by ModuleStatusBar and IntakeFlow) |
+| `src/hooks/useProgressReporter.js` | Convenience hook: `step()`, `timer()`, `raw()`, `idle()` |
+| `src/components/active/ActiveView.jsx` | Orchestrates: owns `moduleProgressState`, passes `handleProgressUpdate` to `ModuleRenderer`, builds status bar labels |
+| `src/components/active/ModuleRenderer.jsx` | Passes `onProgressUpdate` as a common prop to all module components |
+
+---
+
 ## Timeline Generation
 
 The intake questionnaire captures a **primary focus** and **guidance level**, which together determine the activity timeline generated for the session. This produces 11 distinct configurations.
@@ -642,7 +1082,7 @@ All TTS meditation components delegate playback to this shared hook. It handles:
 5. 10-second skip-back/skip-forward seeking with instant prompt text sync
 6. Media Session API for iOS lock-screen play/pause controls
 7. Store-to-audio sync (bridges booster modal pause/resume to audio element)
-8. Timer reporting to parent via `onTimerUpdate`
+8. Timer reporting to parent via `onProgressUpdate`
 9. Phase derivation (`idle` / `loading` / `active` / `completed`) and primary button state
 
 **Parameters:**
@@ -654,7 +1094,7 @@ useMeditationPlayback({
   totalDuration,      // total duration in seconds
   onComplete,         // callback when user clicks Continue after completion
   onSkip,             // callback when user confirms skip
-  onTimerUpdate,      // optional callback for ModuleStatusBar
+  onProgressUpdate,      // optional callback for ModuleStatusBar
 })
 ```
 
@@ -947,6 +1387,14 @@ A reusable transition screen for smooth flow between sections:
 | Session state | `src/stores/useSessionStore.js` |
 | Module routing | `src/components/active/moduleRegistry.js` |
 | Module definitions | `src/content/modules/library.js` |
+| MasterModule orchestrator | `src/components/active/modules/MasterModule/MasterModule.jsx` |
+| MasterModule state | `src/components/active/modules/MasterModule/useMasterModuleState.js` |
+| MasterModule content files | `src/content/modules/master/` |
+| Block renderers | `src/components/active/modules/MasterModule/blockRenderers/` |
+| Section renderers | `src/components/active/modules/MasterModule/sectionRenderers/` |
+| Condition evaluator | `src/components/active/modules/MasterModule/utils/evaluateCondition.js` |
+| Generator registry | `src/components/active/modules/MasterModule/generators/registry.js` |
+| Image viewer modal | `src/components/active/capabilities/ImageViewerModal.jsx` |
 | Timeline configurations | `src/content/timeline/configurations.js` |
 | Breath engine | `src/components/active/hooks/useBreathController.js` |
 | Orb animation | `src/components/active/capabilities/animations/BreathOrb.jsx` |

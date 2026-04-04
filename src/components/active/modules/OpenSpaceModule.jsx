@@ -34,7 +34,7 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
-export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function OpenSpaceModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
 
   // Derive hasStarted from store (needed before useSyncedDuration call)
@@ -55,7 +55,7 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onTimerUpd
     durationSeconds: totalDurationSeconds,
     onComplete,
     onSkip,
-    onTimerUpdate,
+    onProgressUpdate,
     title: 'Open Space',
   });
 

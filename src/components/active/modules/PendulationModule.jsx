@@ -42,7 +42,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 // Shared UI
 import ModuleLayout from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
-import ModuleProgressBar from '../capabilities/ModuleProgressBar';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
@@ -123,7 +123,7 @@ function MeditationSection({
   moduleInstanceId,
   onSectionComplete,
   onModuleSkip,
-  onTimerUpdate,
+  onProgressUpdate,
 }) {
   const meditation = pendulationMeditation;
   const section = meditation.sections[sectionKey];
@@ -156,7 +156,7 @@ function MeditationSection({
     totalDuration,
     onComplete: onSectionComplete,
     onSkip: onSectionComplete,
-    onTimerUpdate,
+    onProgressUpdate,
     composerOptions,
   });
 
@@ -280,13 +280,15 @@ function MeditationSection({
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function PendulationModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function PendulationModule({ module, onComplete, onSkip, onProgressUpdate }) {
   // ─── Store integration ──────────────────────────────────────────────
 
   const addEntry = useJournalStore((state) => state.addEntry);
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
   const updatePendulationCapture = useSessionStore((s) => s.updatePendulationCapture);
+
+  const report = useProgressReporter(onProgressUpdate);
 
   // ─── Phase state ────────────────────────────────────────────────────
 
@@ -344,13 +346,33 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     return screens;
   }, [sectionsCompleted]);
 
-  // ─── Timer hiding for non-meditation phases ─────────────────────────
+  // ─── Step-based progress for non-meditation phases ─────────────────
 
   useEffect(() => {
-    if (!isMeditationPhase) {
-      onTimerUpdate?.({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
+    if (isMeditationPhase) return; // meditation pushes its own timer progress
+
+    switch (phase) {
+      case 'idle':
+        report.idle();
+        break;
+      case 'intro':
+        report.step(introStep + 1, INTRO_SCREENS.length);
+        break;
+      case 'checkpoint-1':
+      case 'checkpoint-2':
+        report.step(1, 1);
+        break;
+      case 'debrief':
+        report.step(debriefStep + 1, debriefScreens.length);
+        break;
+      case 'closing':
+        report.step(1, 1);
+        break;
+      default:
+        report.idle();
+        break;
     }
-  }, [phase, isMeditationPhase, onTimerUpdate]);
+  }, [phase, isMeditationPhase, introStep, debriefStep, debriefScreens.length, report]);
 
   // ─── idle → intro ──────────────────────────────────────────────────
 
@@ -517,6 +539,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
   // ─── Journal save ─────────────────────────────────────────────────
 
   const saveJournalEntries = useCallback(() => {
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     const journalFields = [
       { field: 'islandOfSafety', label: 'Your Island of Safety' },
       { field: 'pendulationExperience', label: 'The Pendulation' },
@@ -527,10 +550,10 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
     ];
 
     const entries = journalFields
-      .filter(({ field }) => debriefData[field]?.trim())
-      .map(({ field, label }) => `${label}\n${debriefData[field].trim()}`);
-
-    if (entries.length === 0) return;
+      .map(({ field, label }) => {
+        const value = debriefData[field]?.trim();
+        return `${label}\n${value || `[no entry — ${timestamp}]`}`;
+      });
 
     const content = `PENDULATION\n\n${entries.join('\n\n')}`;
 
@@ -634,12 +657,9 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
   if (phase === 'intro') {
     const screen = INTRO_SCREENS[introStep];
     const isLast = introStep === INTRO_SCREENS.length - 1;
-    const progress = ((introStep + 1) / INTRO_SCREENS.length) * 100;
 
     return (
       <>
-        <ModuleProgressBar progress={progress} visible={true} />
-
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
           <div
             className={`pt-2 transition-opacity duration-[400ms] ${
@@ -707,7 +727,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
           moduleInstanceId={module.instanceId}
           onSectionComplete={handleSectionComplete}
           onModuleSkip={handleModuleSkip}
-          onTimerUpdate={onTimerUpdate}
+          onProgressUpdate={onProgressUpdate}
         />
       </div>
     );
@@ -841,13 +861,10 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
   if (phase === 'debrief') {
     const screen = debriefScreens[debriefStep];
-    const progress = ((debriefStep + 1) / debriefScreens.length) * 100;
     const hasTextArea = screen.type === 'journal' || screen.hasJournal;
 
     return (
       <>
-        <ModuleProgressBar progress={progress} visible={true} />
-
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
           <div
             className={`pt-2 transition-opacity duration-[400ms] ${
@@ -1043,8 +1060,6 @@ export default function PendulationModule({ module, onComplete, onSkip, onTimerU
 
     return (
       <>
-        <ModuleProgressBar progress={100} visible={true} />
-
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
           <div
             className={`pt-6 transition-opacity duration-[400ms] ${

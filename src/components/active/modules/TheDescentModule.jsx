@@ -171,7 +171,7 @@ function renderSteps(steps) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function TheDescentModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function TheDescentModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('the-descent');
 
   // Store integration
@@ -263,7 +263,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
     totalDuration,
     onComplete: handleMeditationComplete,
     onSkip: handleMeditationSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // ─── Phase transitions ────────────────────────────────────────────────
@@ -271,9 +271,9 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
   // Hide timer during post-meditation phases
   useEffect(() => {
     if (POST_MED_PHASES.includes(phase)) {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [phase, onTimerUpdate]);
+  }, [phase, onProgressUpdate]);
 
   // Track when we enter meditation phase
   useEffect(() => {
@@ -424,37 +424,31 @@ export default function TheDescentModule({ module, onComplete, onSkip, onTimerUp
   // ─── Journal entry builder ──────────────────────────────────────────────
 
   const buildJournalContent = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     const isCouple = selectedMode === 'couple';
     let content = 'THE DEEP DIVE\n';
 
-    if (quickCapture.trim()) {
-      content += `\nFirst impressions\n${quickCapture.trim()}\n`;
-    }
+    content += `\nFirst impressions\n${quickCapture.trim() || `[no entry — ${ts}]`}\n`;
 
     if (checkInSelection) {
       const option = CHECKIN_OPTIONS.find(o => o.id === checkInSelection);
       content += `\nCheck-in: ${option?.label || checkInSelection}\n`;
     }
 
-    if (journalValues.surfaceReaction.trim()) {
-      const label = isCouple ? 'Our surface patterns' : 'On the surface';
-      content += `\n${label}\n${journalValues.surfaceReaction.trim()}\n`;
-    }
-    if (journalValues.primaryEmotion.trim()) {
-      const label = isCouple ? 'What we heard from each other' : 'Underneath';
-      content += `\n${label}\n${journalValues.primaryEmotion.trim()}\n`;
-    }
-    if (journalValues.unsaidMessage.trim()) {
-      const label = isCouple ? 'What was said' : 'The unsaid';
-      content += `\n${label}\n${journalValues.unsaidMessage.trim()}\n`;
-    }
+    const surfaceLabel = isCouple ? 'Our surface patterns' : 'On the surface';
+    content += `\n${surfaceLabel}\n${journalValues.surfaceReaction.trim() || `[no entry — ${ts}]`}\n`;
+
+    const emotionLabel = isCouple ? 'What we heard from each other' : 'Underneath';
+    content += `\n${emotionLabel}\n${journalValues.primaryEmotion.trim() || `[no entry — ${ts}]`}\n`;
+
+    const unsaidLabel = isCouple ? 'What was said' : 'The unsaid';
+    content += `\n${unsaidLabel}\n${journalValues.unsaidMessage.trim() || `[no entry — ${ts}]`}\n`;
 
     return content.trim();
   }, [selectedMode, quickCapture, checkInSelection, journalValues]);
 
   const saveJournalEntry = useCallback(() => {
     const content = buildJournalContent();
-    if (content.length <= 'THE DEEP DIVE'.length) return;
 
     addEntry({
       content,

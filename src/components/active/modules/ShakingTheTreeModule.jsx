@@ -25,6 +25,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import useSyncedDuration from '../../../hooks/useSyncedDuration';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
   INTRO_SCREENS,
@@ -46,7 +47,6 @@ import {
 // Shared UI components
 import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../capabilities/ModuleControlBar';
-import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import DurationPicker from '../../shared/DurationPicker';
 import AlarmPrompt from '../../shared/AlarmPrompt';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
@@ -344,7 +344,7 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function ShakingTheTreeModule({ module, onComplete, onSkip, onProgressUpdate }) {
   // Session store
   const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
   const startMeditationPlayback = useSessionStore((state) => state.startMeditationPlayback);
@@ -364,6 +364,9 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
 
   // Duration (synced with session store)
   const duration = useSyncedDuration(module, { hasStarted });
+
+  // Progress reporter (parent's ModuleStatusBar)
+  const report = useProgressReporter(onProgressUpdate);
 
   // ── Module phase state machine ──
   const [phase, setPhase] = useState('idle');
@@ -444,25 +447,32 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
     };
   }, [isPlaying, meditationPlayback.startedAt, meditationPlayback.accumulatedTime, totalDurationSeconds, pauseMeditationPlayback]);
 
-  // Report timer state to parent (ModuleStatusBar)
+  // Report timer / step progress to parent (ModuleStatusBar)
   useEffect(() => {
-    if (!onTimerUpdate) return;
+    if (!onProgressUpdate) return;
 
     if (phase === 'active' && hasStarted) {
       const progress = totalDurationSeconds > 0
         ? (elapsedTime / totalDurationSeconds) * 100
         : 0;
-      onTimerUpdate({
+      onProgressUpdate({
         progress,
+        mode: 'timer',
         elapsed: elapsedTime,
         total: totalDurationSeconds,
         showTimer: !isComplete,
         isPaused: !isPlaying,
+        currentStep: 0,
+        totalSteps: 0,
       });
+    } else if (phase === 'intro') {
+      report.step(introStep + 1, INTRO_SCREENS.length);
+    } else if (phase === 'checkin') {
+      report.step(checkinStep + 1, CHECKIN_STEP_COUNT);
     } else {
-      onTimerUpdate({ showTimer: false, progress: 0, elapsed: 0, total: 0, isPaused: false });
+      report.idle();
     }
-  }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onTimerUpdate, phase]);
+  }, [elapsedTime, totalDurationSeconds, hasStarted, isPlaying, isComplete, onProgressUpdate, phase, introStep, checkinStep, report]);
 
   // ── Section boundary calculation ──
   const sectionBoundaries = useMemo(() => {
@@ -670,13 +680,14 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
         })
         .join(', ');
 
+      const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       const content = [
         'SHAKING THE TREE',
         '',
-        sensationLabels ? `Body sensations: ${sensationLabels}` : null,
+        `Body sensations: ${sensationLabels || `[no entry — ${ts}]`}`,
         '',
-        journalText.trim(),
-      ].filter((line) => line !== null).join('\n');
+        journalText.trim() || `[no entry — ${ts}]`,
+      ].join('\n');
 
       addEntry({
         content,
@@ -870,11 +881,6 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       {/* ── Intro Phase ── */}
       {phase === 'intro' && (
         <>
-          <ModuleProgressBar
-            progress={((introStep + 1) / INTRO_SCREENS.length) * 100}
-            visible={true}
-          />
-
           <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
             <div className="pt-2">
               <div className={`transition-opacity duration-[400ms] ${
@@ -1026,11 +1032,6 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onTim
       {/* ── Check-in Phase ── */}
       {phase === 'checkin' && (
         <>
-          <ModuleProgressBar
-            progress={((checkinStep + 1) / CHECKIN_STEP_COUNT) * 100}
-            visible={true}
-          />
-
           <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
             <div className={`transition-opacity duration-[400ms] ${
               isCheckinBodyVisible ? 'opacity-100' : 'opacity-0'

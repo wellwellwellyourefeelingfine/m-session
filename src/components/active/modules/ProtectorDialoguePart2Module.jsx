@@ -10,7 +10,7 @@
  * Creates a structured journal entry on completion.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import {
@@ -23,11 +23,11 @@ import {
 // Shared UI components
 import ModuleLayout from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
-import ModuleProgressBar from '../capabilities/ModuleProgressBar';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 
-export default function ProtectorDialoguePart2Module({ _module, onComplete, onSkip }) {
+export default function ProtectorDialoguePart2Module({ _module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const protectorData = useSessionStore((s) => s.transitionCaptures?.protectorDialogue);
   const updateProtectorCapture = useSessionStore((s) => s.updateProtectorCapture);
@@ -96,7 +96,13 @@ export default function ProtectorDialoguePart2Module({ _module, onComplete, onSk
   const currentStep = PART2_STEPS[currentStepIndex];
   const totalSteps = PART2_STEPS.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
-  const progress = ((currentStepIndex + 1) / totalSteps) * 100;
+
+  // ── Progress reporting ──
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    report.step(currentStepIndex + 1, totalSteps);
+  }, [currentStepIndex, totalSteps, report]);
 
   // ── Step navigation ──
   const advanceStep = useCallback(() => {
@@ -123,28 +129,17 @@ export default function ProtectorDialoguePart2Module({ _module, onComplete, onSk
 
   // ── Module completion ──
   const handleModuleComplete = useCallback(() => {
-    // Build structured journal entry
+    // Build structured journal entry with timestamps for empty fields
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let journalContent = 'PROTECTOR DIALOGUE — PART 2\n\n';
-    let hasContent = false;
 
     journalContent += `Protector: ${protectorLabel}\n\n`;
 
-    if (protectorAge.trim()) {
-      journalContent += `Age of Pattern: ${protectorAge.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (respondingToVersion.trim()) {
-      journalContent += `Version It Responds To: ${respondingToVersion.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (origins.trim()) {
-      journalContent += `Origins:\n${origins.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (fear.trim()) {
-      journalContent += `The Fear Beneath:\n${fear.trim()}\n\n`;
-      hasContent = true;
-    }
+    journalContent += `Age of Pattern: ${protectorAge.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `Version It Responds To: ${respondingToVersion.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `Origins:\n${origins.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `The Fear Beneath:\n${fear.trim() || `[no entry — ${timestamp}]`}\n\n`;
+
     const allExchanges = currentResponse.trim()
       ? [...dialogueExchanges, { question: currentQuestion, response: currentResponse }]
       : dialogueExchanges;
@@ -152,31 +147,18 @@ export default function ProtectorDialoguePart2Module({ _module, onComplete, onSk
       .filter((e) => e.question.trim() || e.response.trim())
       .map((e) => `Me: ${e.question.trim()}\n${protectorLabel}: ${e.response.trim()}`)
       .join('\n\n');
-    if (dialogueText) {
-      journalContent += `Dialogue:\n${dialogueText}\n\n`;
-      hasContent = true;
-    }
-    if (whatItNeeds.trim()) {
-      journalContent += `What It Needs:\n${whatItNeeds.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (whatMightReplace.trim()) {
-      journalContent += `What Might Take Its Place:\n${whatMightReplace.trim()}\n\n`;
-      hasContent = true;
-    }
-    if (intention.trim()) {
-      journalContent += `Intention:\n${intention.trim()}\n`;
-      hasContent = true;
-    }
+    journalContent += `Dialogue:\n${dialogueText || `[no entry — ${timestamp}]`}\n\n`;
 
-    if (hasContent) {
-      addEntry({
-        content: journalContent.trim(),
-        source: 'session',
-        sessionId,
-        moduleTitle: 'Dialogue with a Protector (Part 2)',
-      });
-    }
+    journalContent += `What It Needs:\n${whatItNeeds.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `What Might Take Its Place:\n${whatMightReplace.trim() || `[no entry — ${timestamp}]`}\n\n`;
+    journalContent += `Intention:\n${intention.trim() || `[no entry — ${timestamp}]`}\n`;
+
+    addEntry({
+      content: journalContent.trim(),
+      source: 'session',
+      sessionId,
+      moduleTitle: 'Dialogue with a Protector (Part 2)',
+    });
 
     onComplete();
   }, [
@@ -829,8 +811,6 @@ export default function ProtectorDialoguePart2Module({ _module, onComplete, onSk
 
   return (
     <>
-      <ModuleProgressBar progress={progress} visible={isVisible} showTime={false} />
-
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         <div className={`pt-6 transition-opacity duration-[400ms] ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div key={`${currentStepIndex}-${dialogueSubPhase}`} className="animate-fadeIn">

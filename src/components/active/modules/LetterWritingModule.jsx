@@ -10,6 +10,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
 import { getModuleById } from '../../../content/modules';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar from '../capabilities/ModuleControlBar';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -134,7 +135,7 @@ function renderContentLines(lines) {
 
 // ── Main Component ─────────────────────────────────────────
 
-export default function LetterWritingModule({ module, onComplete, onSkip }) {
+export default function LetterWritingModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const [phase, setPhase] = useState('idle');
   const [stepIndex, setStepIndex] = useState(0);
   const [isLeaving, setIsLeaving] = useState(false);
@@ -169,6 +170,17 @@ export default function LetterWritingModule({ module, onComplete, onSkip }) {
   const screen = SCREENS[stepIndex];
   const isLastScreen = stepIndex >= SCREENS.length - 1;
 
+  // ── Progress reporting ──────────────────────────────────
+  const report = useProgressReporter(onProgressUpdate);
+
+  useEffect(() => {
+    if (phase === 'active') {
+      report.step(stepIndex + 1, SCREENS.length);
+    } else {
+      report.idle();
+    }
+  }, [phase, stepIndex, report]);
+
   // Font classes from journal settings
   const getFontClass = () => {
     const size = settings.fontSize === 'small' ? 'text-sm' : settings.fontSize === 'large' ? 'text-lg' : 'text-base';
@@ -179,11 +191,12 @@ export default function LetterWritingModule({ module, onComplete, onSkip }) {
 
   // Assemble letter for review screen
   const assembleLetter = useCallback(() => {
+    const ts = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let assembled = '';
-    if (recipient.trim()) assembled += `Dear ${recipient.trim()},\n\n`;
-    if (opening.trim()) assembled += `${opening.trim()}\n\n`;
-    if (body.trim()) assembled += `${body.trim()}\n\n`;
-    if (closing.trim()) assembled += `${closing.trim()}`;
+    assembled += `Dear ${recipient.trim() || `[no entry — ${ts}]`},\n\n`;
+    assembled += `${opening.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += `${body.trim() || `[no entry — ${ts}]`}\n\n`;
+    assembled += closing.trim() || `[no entry — ${ts}]`;
     return assembled;
   }, [recipient, opening, body, closing]);
 

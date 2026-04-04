@@ -31,7 +31,7 @@ export function useSilenceTimer({
   durationSeconds,
   onComplete,
   onSkip,
-  onTimerUpdate,
+  onProgressUpdate,
   title = 'Timer',
 }) {
   // User preference: gong sound on/off
@@ -172,20 +172,23 @@ export function useSilenceTimer({
 
   // Report timer state to parent for ModuleStatusBar
   useEffect(() => {
-    if (!onTimerUpdate) return;
+    if (!onProgressUpdate) return;
 
     const progress = durationSeconds > 0
       ? Math.min((elapsedTime / durationSeconds) * 100, 100)
       : 0;
 
-    onTimerUpdate({
+    onProgressUpdate({
       progress,
+      mode: 'timer',
       elapsed: elapsedTime,
       total: durationSeconds,
       showTimer: hasStarted && !isComplete,
       isPaused: !isPlaying,
+      currentStep: 0,
+      totalSteps: 0,
     });
-  }, [elapsedTime, durationSeconds, hasStarted, isPlaying, isComplete, onTimerUpdate]);
+  }, [elapsedTime, durationSeconds, hasStarted, isPlaying, isComplete, onProgressUpdate]);
 
   // Cleanup on unmount
   useEffect(() => {

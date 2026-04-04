@@ -15,7 +15,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleStatusBar from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import { TransitionTextarea } from '../session/transitions/shared';
 
@@ -318,21 +318,19 @@ export default function FollowUpCheckIn() {
 
   return (
     <>
-      <ModuleProgressBar progress={progress} visible={true} showTime={false} />
+      <ModuleStatusBar
+        progress={progress}
+        leftLabel={currentStep.content.label}
+      />
 
-      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}>
-        <div className="flex-shrink-0 pt-2 pb-1">
-          <div className="text-center mb-1">
-            <p className="uppercase tracking-widest text-[10px] text-[var(--color-text-tertiary)]">
-              {currentStep.content.label}
-            </p>
-          </div>
-          {MOON_STEPS.has(currentStep.id) && (
+      <div className="fixed left-0 right-0 flex flex-col overflow-hidden" style={{ top: 'var(--header-plus-status)', bottom: 'var(--tabbar-height)' }}>
+        {MOON_STEPS.has(currentStep.id) && (
+          <div className="flex-shrink-0 pt-2 pb-1">
             <div className="flex justify-center">
               <AsciiMoon />
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex-1 overflow-auto px-6">
           <div

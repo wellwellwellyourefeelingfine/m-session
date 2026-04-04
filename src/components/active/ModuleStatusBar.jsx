@@ -1,32 +1,24 @@
 /**
  * ModuleStatusBar Component
  *
- * A fixed-position status bar that sits below the main header.
- * Provides consistent session/module status across all active tab views.
+ * A unified fixed-position status bar that sits below the main header.
+ * Provides consistent progress + status across ALL active tab views:
+ * active session phases, pre-session, transitions, follow-up, and preview.
  *
  * Layout:
  * ┌─────────────────────────────────────────────────────────────┐
  * │ ══════════════════════════════════ (progress line at top)  │
- * │ Phase 1 · Come-Up     [5:34 / 10:00]     Session: 1:23:45  │
+ * │ Left Label            [Center Content]        Right Content │
  * └─────────────────────────────────────────────────────────────┘
  *
  * Features:
- * - Fixed position below main header (top-16)
+ * - Fixed position below main header
  * - Progress bar at top (filled based on module progress)
- * - Left: Phase number and name
- * - Center: Optional module timer (when module has timed progress)
- * - Right: Total session elapsed time
+ * - Flexible left/center/right content slots
+ * - Context-agnostic: labels and content passed as props by the caller
  */
 
-import { useState, useEffect } from 'react';
-import { useSessionStore } from '../../stores/useSessionStore';
 import ModuleProgressBar from './capabilities/ModuleProgressBar';
-
-const PHASE_CONFIG = {
-  'come-up': { number: 1, name: 'Come-Up' },
-  peak: { number: 2, name: 'Peak' },
-  integration: { number: 3, name: 'Integration' },
-};
 
 /**
  * Format seconds to MM:SS or H:MM:SS
@@ -45,86 +37,44 @@ export function formatTime(seconds) {
 }
 
 /**
- * Format minutes to display (e.g., "1:23" for 83 minutes)
- */
-function formatMinutes(totalMinutes) {
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  if (hours > 0) {
-    return `${hours}:${mins.toString().padStart(2, '0')}:00`;
-  }
-  return `${mins}:00`;
-}
-
-/**
  * @param {object} props
- * @param {string} props.phase - Current phase: 'come-up' | 'peak' | 'integration'
- * @param {number} props.progress - Module progress percentage (0-100), optional
- * @param {number} props.moduleElapsed - Module elapsed time in seconds, optional
- * @param {number} props.moduleTotal - Module total duration in seconds, optional
- * @param {boolean} props.showModuleTimer - Whether to show the module timer
- * @param {boolean} props.isPaused - Whether the module timer is paused
+ * @param {number} props.progress - Module progress percentage (0-100)
+ * @param {boolean} props.isPaused - Whether the module is paused (dims the bar)
+ * @param {string} props.leftLabel - Label for the left side (e.g., "Phase 1 · Come-Up", "Transition")
+ * @param {import('react').ReactNode} [props.centerContent] - Optional center content (timer, elapsed text)
+ * @param {import('react').ReactNode} [props.rightContent] - Optional right content (session elapsed, step count, exit button)
  */
 export default function ModuleStatusBar({
-  phase = 'come-up',
   progress = 0,
-  moduleElapsed,
-  moduleTotal,
-  showModuleTimer = false,
   isPaused = false,
+  leftLabel = '',
+  centerContent = null,
+  rightContent = null,
 }) {
-  const [sessionElapsed, setSessionElapsed] = useState('0:00');
-
-  const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
-
-  // Update session elapsed time every second
-  useEffect(() => {
-    const updateElapsed = () => {
-      const minutes = getElapsedMinutes();
-      setSessionElapsed(formatMinutes(minutes));
-    };
-
-    updateElapsed();
-    const interval = setInterval(updateElapsed, 1000);
-
-    return () => clearInterval(interval);
-  }, [getElapsedMinutes]);
-
-  const phaseConfig = PHASE_CONFIG[phase] || PHASE_CONFIG['come-up'];
-
   return (
     <>
       <ModuleProgressBar progress={progress} isPaused={isPaused} />
       <div className="fixed left-0 right-0 z-30" style={{ top: 'var(--header-height)' }}>
         {/* Status content */}
-        <div className="flex items-center px-4 py-2 border-b border-[var(--color-border)] gap-3">
-        {/* Left: Phase info — basis matches right column for centering */}
-        <div className="flex items-center space-x-2 flex-shrink-0">
-          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
-            Phase {phaseConfig.number}
-          </span>
-          <span className="w-1 h-1 rounded-full bg-[var(--color-border)]" />
-          <span className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
-            {phaseConfig.name}
-          </span>
-        </div>
-
-        {/* Center: Optional module timer */}
-        <div className="flex-1 flex justify-center min-w-0">
-          {showModuleTimer && moduleElapsed !== undefined && moduleTotal !== undefined && (
-            <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
-              ${isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
-              {formatTime(moduleElapsed)} / {formatTime(moduleTotal)}
+        <div className="flex items-center px-4 py-2 gap-3">
+          {/* Left: Label */}
+          <div className="flex items-center flex-shrink-0">
+            <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
+              {leftLabel}
             </span>
-          )}
-        </div>
+          </div>
 
-        {/* Right: Session elapsed time */}
-        <div className="flex-shrink-0">
-          <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
-            {sessionElapsed}
-          </span>
-        </div>
+          {/* Center: Flexible content */}
+          <div className="flex-1 flex justify-center min-w-0">
+            {centerContent}
+          </div>
+
+          {/* Right: Flexible content */}
+          {rightContent && (
+            <div className="flex-shrink-0">
+              {rightContent}
+            </div>
+          )}
         </div>
       </div>
     </>

@@ -16,7 +16,7 @@ import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { calculateBoosterDose } from '../../stores/useSessionStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
-import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import ModuleStatusBar from '../active/ModuleStatusBar';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 
 const DOSAGE_FEEDBACK = {
@@ -512,26 +512,19 @@ export default function SubstanceChecklist() {
 
   return (
     <>
-      {/* Progress bar at top - lines up with header */}
-      <ModuleProgressBar
+      <ModuleStatusBar
         progress={progress}
-        visible={true}
-        showTime={false}
+        leftLabel="Preparation"
+        rightContent={
+          <span className="text-[var(--color-text-tertiary)] text-xs">
+            {step + 1} of {totalSteps}
+          </span>
+        }
       />
 
-      {/* Main content container - positioned below progress bar, above control bar */}
-      <div className="fixed left-0 right-0 overflow-auto" style={{ top: 'var(--header-height)', bottom: 'var(--bottom-chrome)' }}>
+      {/* Main content container - positioned below status bar, above control bar */}
+      <div className="fixed left-0 right-0 overflow-auto" style={{ top: 'var(--header-plus-status)', bottom: 'var(--bottom-chrome)' }}>
         <div className="max-w-md mx-auto px-6 py-6">
-          {/* Header - below progress bar */}
-          <div className="flex justify-between items-center mb-8">
-            <span className="uppercase tracking-wider text-xs text-[var(--color-text-tertiary)]">
-              Preparation
-            </span>
-            <span className="text-[var(--color-text-tertiary)] text-xs">
-              {step + 1} of {totalSteps}
-            </span>
-          </div>
-
           {/* Content with fade animation */}
           <div
             className="transition-opacity duration-300"

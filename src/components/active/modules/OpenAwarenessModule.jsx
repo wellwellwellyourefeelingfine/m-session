@@ -26,7 +26,7 @@ import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 
-export default function OpenAwarenessModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function OpenAwarenessModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('open-awareness');
 
   // Derive hasStarted from store (needed before useSyncedDuration call)
@@ -77,7 +77,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
     totalDuration,
     onComplete,
     onSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // Fade out idle screen before starting composition
@@ -106,9 +106,9 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onTime
   // Hide timer when entering CompletionScreen
   useEffect(() => {
     if (showCompletion) {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [showCompletion, onTimerUpdate]);
+  }, [showCompletion, onProgressUpdate]);
 
   // Fallback if no meditation found
   if (!meditation) {

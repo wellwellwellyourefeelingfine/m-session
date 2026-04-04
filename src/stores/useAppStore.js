@@ -45,6 +45,15 @@ export const useAppStore = create(
           return { dismissedBanners: rest };
         }),
 
+      // Favorite modules — persisted list of library IDs (survives across sessions)
+      favoriteModules: [],
+      toggleFavorite: (libraryId) =>
+        set((state) => ({
+          favoriteModules: state.favoriteModules.includes(libraryId)
+            ? state.favoriteModules.filter((id) => id !== libraryId)
+            : [...state.favoriteModules, libraryId],
+        })),
+
       // Transient: force-show install prompt from menu (not persisted)
       showInstallPrompt: false,
       setShowInstallPrompt: (show) => set({ showInstallPrompt: show }),

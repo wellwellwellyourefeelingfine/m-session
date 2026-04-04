@@ -4,18 +4,96 @@
  * Filters modules based on the target phase
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES, FRAMEWORKS } from '../../content/modules';
-import { CircleXIcon } from '../shared/Icons';
+import { CircleXIcon, StarIcon, SearchIcon } from '../shared/Icons';
 import ModuleDetailModal from './ModuleDetailModal';
+import { useAppStore } from '../../stores/useAppStore';
+
+// Check if query is an exact match for a framework abbreviation, label, or key
+function getExactFrameworkMatch(query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return null;
+  for (const [key, fw] of Object.entries(FRAMEWORKS)) {
+    if (key.toLowerCase() === q) return key;
+    if (fw.abbreviation?.toLowerCase() === q) return key;
+    if (fw.label?.toLowerCase() === q) return key;
+  }
+  return null;
+}
+
+function matchesSingleTerm(module, term) {
+  if (module.title.toLowerCase().includes(term)) return true;
+  if (module.description?.toLowerCase().includes(term)) return true;
+  if (module.tags?.some(tag => tag.toLowerCase().includes(term))) return true;
+  if (module.framework?.some(fKey => {
+    if (fKey.toLowerCase().includes(term)) return true;
+    const fw = FRAMEWORKS[fKey];
+    if (!fw) return false;
+    if (fw.label?.toLowerCase().includes(term)) return true;
+    if (fw.abbreviation?.toLowerCase().includes(term)) return true;
+    return false;
+  })) return true;
+  return false;
+}
+
+function matchesSearch(module, query) {
+  const q = query.toLowerCase().trim();
+  if (!q) return true;
+
+  // If query exactly matches a phase name, show recommended modules for that phase
+  const PHASE_ALIASES = {
+    'phase 1': 'come-up', 'phase one': 'come-up', 'come-up': 'come-up', 'come up': 'come-up', comeup: 'come-up',
+    'phase 2': 'peak', 'phase two': 'peak', peak: 'peak',
+    'phase 3': 'integration', 'phase three': 'integration', integration: 'integration',
+    'pre-session': 'pre-session', 'pre session': 'pre-session', presession: 'pre-session',
+    'follow-up': 'follow-up', 'follow up': 'follow-up', followup: 'follow-up', 'post-session': 'follow-up', 'post session': 'follow-up',
+  };
+  const phaseMatch = PHASE_ALIASES[q];
+  if (phaseMatch) {
+    return module.recommendedPhases?.includes(phaseMatch) ?? false;
+  }
+
+  // If query exactly matches a framework, only show modules with that framework
+  const exactFramework = getExactFrameworkMatch(q);
+  if (exactFramework) {
+    return module.framework?.includes(exactFramework) ?? false;
+  }
+
+  // Multi-word: every word must match somewhere across the module's fields
+  const words = q.split(/\s+/).filter(Boolean);
+  return words.every(word => matchesSingleTerm(module, word));
+}
 
 export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false, externalClosing = false }) {
-  const [filter, setFilter] = useState(phase === 'preview' ? 'all' : 'recommended'); // 'all' | 'recommended' | phase filter
+  const [filter, setFilter] = useState(phase === 'preview' ? 'all' : 'recommended'); // 'all' | 'recommended' | 'favorites'
+  const favoriteModules = useAppStore((s) => s.favoriteModules || []);
   const [closing, setClosing] = useState(false);
   const isClosing = closing || externalClosing;
   const [mounted, setMounted] = useState(false);
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
+
+  // Search
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
+
+  useEffect(() => {
+    if (isSearchOpen && searchInputRef.current) {
+      const timer = setTimeout(() => searchInputRef.current?.focus(), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isSearchOpen]);
+
+  const collapseSearch = useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  }, []);
+
+  const handleSearchBlur = useCallback(() => {
+    if (!searchQuery) setIsSearchOpen(false);
+  }, [searchQuery]);
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -33,13 +111,19 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
     return check.allowed || check.warning; // Include modules with warnings
   });
 
-  // Apply additional filter
-  const filteredModules = availableModules.filter((module) => {
-    if (filter === 'all') return true;
-    if (filter === 'recommended') return module.recommendedPhases?.includes(phase);
-    // Phase-based filter: show modules allowed in the selected phase
-    return module.allowedPhases?.includes(filter);
-  });
+  // Apply search if active, otherwise apply filter
+  const searchedModules = searchQuery
+    ? availableModules.filter(m => matchesSearch(m, searchQuery))
+    : availableModules;
+
+  const filteredModules = searchQuery
+    ? searchedModules
+    : searchedModules.filter((module) => {
+        if (filter === 'all') return true;
+        if (filter === 'recommended') return module.recommendedPhases?.includes(phase);
+        if (filter === 'favorites') return favoriteModules.includes(module.id);
+        return true;
+      });
 
   // Group by category for display, sorted by category order.
   // Pre-session modules shown under "Activity" when browsing non-pre-session phases.
@@ -108,49 +192,69 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
 
           {/* Filter buttons — scrolls edge-to-edge, inner padding for inset */}
           <div className="flex space-x-2 overflow-x-auto pb-1 pl-6" style={{ scrollPaddingInline: '1.5rem' }}>
+            {/* Search pill */}
+            <div
+              className={`flex items-center flex-shrink-0 rounded-full border border-[var(--color-border)] transition-all duration-300 ease-in-out overflow-hidden ${
+                isSearchOpen
+                  ? 'w-48 bg-[var(--color-bg-secondary)]/50 px-3'
+                  : 'w-[34px] cursor-pointer hover:border-[var(--color-text-primary)]'
+              }`}
+              style={{ height: '34px' }}
+              onClick={() => { if (!isSearchOpen) setIsSearchOpen(true); }}
+              role={isSearchOpen ? undefined : 'button'}
+              aria-label={isSearchOpen ? undefined : 'Search activities'}
+            >
+              <div className={`flex items-center justify-center flex-shrink-0 transition-opacity duration-200 ${
+                isSearchOpen ? 'opacity-0 w-0' : 'opacity-100 w-full'
+              }`}>
+                <SearchIcon size={16} className="text-[var(--color-border)]" />
+              </div>
+              {isSearchOpen && (
+                <>
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Escape') collapseSearch(); }}
+                    onBlur={handleSearchBlur}
+                    placeholder="Search..."
+                    className="bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] w-full animate-fadeIn"
+                    autoComplete="off"
+                  />
+                  {searchQuery && (
+                    <button
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => { setSearchQuery(''); searchInputRef.current?.focus(); }}
+                      className="flex-shrink-0 text-[var(--color-text-tertiary)] opacity-50 hover:opacity-100 transition-opacity"
+                      aria-label="Clear search"
+                    >
+                      <CircleXIcon size={20} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
             <FilterButton
-              active={filter === 'all'}
-              onClick={() => setFilter('all')}
+              active={filter === 'all' && !searchQuery}
+              onClick={() => { collapseSearch(); setFilter('all'); }}
               dataTutorial="filter-all"
             >
               All
             </FilterButton>
             <FilterButton
-              active={filter === 'recommended'}
-              onClick={() => setFilter('recommended')}
+              active={filter === 'recommended' && !searchQuery}
+              onClick={() => { collapseSearch(); setFilter('recommended'); }}
               dataTutorial="filter-recommended"
             >
               Recommended
             </FilterButton>
             <FilterButton
-              active={filter === 'come-up'}
-              onClick={() => setFilter('come-up')}
+              active={filter === 'favorites' && !searchQuery}
+              onClick={() => { collapseSearch(); setFilter('favorites'); }}
             >
-              Phase 1
-            </FilterButton>
-            <FilterButton
-              active={filter === 'peak'}
-              onClick={() => setFilter('peak')}
-            >
-              Phase 2
-            </FilterButton>
-            <FilterButton
-              active={filter === 'integration'}
-              onClick={() => setFilter('integration')}
-            >
-              Phase 3
-            </FilterButton>
-            <FilterButton
-              active={filter === 'pre-session'}
-              onClick={() => setFilter('pre-session')}
-            >
-              Pre-Session
-            </FilterButton>
-            <FilterButton
-              active={filter === 'follow-up'}
-              onClick={() => setFilter('follow-up')}
-            >
-              Post-Session
+              Favorites
             </FilterButton>
             <div className="flex-shrink-0 w-4" aria-hidden="true" />
           </div>
@@ -159,9 +263,40 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
         {/* Module list */}
         <div className="flex-1 overflow-y-auto px-6 py-4 bg-[var(--color-bg)]">
           {sortedCategories.length === 0 ? (
-            <p className="text-[var(--color-text-tertiary)] text-center py-8">
-              No modules match this filter
-            </p>
+            <div className="text-center py-8">
+              {searchQuery ? (
+                <div className="max-w-xs mx-auto text-left">
+                  <p className="text-[var(--color-text-secondary)] text-sm mb-4 text-center">
+                    No activities match &ldquo;{searchQuery}&rdquo;
+                  </p>
+                  <p
+                    className="text-lg text-[var(--color-text-tertiary)] mb-2"
+                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                  >
+                    Suggestions
+                  </p>
+                  <ul className="text-[var(--color-text-secondary)] text-sm space-y-1.5 list-disc pl-4">
+                    <li>Search by therapeutic framework (&ldquo;ACT&rdquo; or &ldquo;IFS&rdquo;)</li>
+                    <li>Search by phase (&ldquo;Phase 2&rdquo;, &ldquo;integration&rdquo;, or &ldquo;pre-session&rdquo;)</li>
+                    <li>Search by tags (&ldquo;somatic&rdquo;, &ldquo;guided&rdquo;, &ldquo;journaling&rdquo;, or &ldquo;breathing&rdquo;)</li>
+                  </ul>
+                </div>
+              ) : filter === 'favorites' ? (
+                <div className="max-w-xs mx-auto">
+                  <p
+                    className="text-2xl text-[var(--color-text-tertiary)] mb-4"
+                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                  >
+                    no favorites yet
+                  </p>
+                  <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+                    Save or unsave an activity by clicking the star icon (<StarIcon size={26} className="inline-block text-[var(--color-text-tertiary)] align-middle" style={{ marginTop: '-2px' }} />) in the activity detail card.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[var(--color-text-tertiary)]">No modules match this filter</p>
+              )}
+            </div>
           ) : (
             sortedCategories.map(([category, modules]) => (
               <div key={category} className="mb-6">

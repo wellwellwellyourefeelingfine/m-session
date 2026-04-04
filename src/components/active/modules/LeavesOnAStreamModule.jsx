@@ -121,7 +121,7 @@ function renderReflectionLines(lines) {
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTimerUpdate }) {
+export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('leaves-on-a-stream');
 
   // Journal store
@@ -214,7 +214,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
     totalDuration,
     onComplete: handleMeditationComplete,
     onSkip: handleMeditationSkip,
-    onTimerUpdate,
+    onProgressUpdate,
   });
 
   // ─── Phase transitions ────────────────────────────────────────────────
@@ -222,9 +222,9 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   // Hide timer during reflection/journaling/closing
   useEffect(() => {
     if (phase === 'reflection' || phase === 'journaling' || phase === 'closing') {
-      onTimerUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
+      onProgressUpdate?.({ showTimer: false, progress: 100, elapsed: 0, total: 0, isPaused: false });
     }
-  }, [phase, onTimerUpdate]);
+  }, [phase, onProgressUpdate]);
 
   // Track when we enter meditation phase (playback starts)
   // Gate on !isLoading so the idle block persists during audio composition,
@@ -304,17 +304,14 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onTi
   // ─── Journaling save & complete ───────────────────────────────────────
 
   const saveJournalEntry = useCallback(() => {
-    const hasContent = journalEntry1.trim() || journalEntry2.trim();
-    if (!hasContent) return;
-
+    const timestamp = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     let content = 'LEAVES ON A STREAM\n';
 
-    if (journalEntry1.trim()) {
-      content += `\nWhat showed up?\n${journalEntry1.trim()}\n`;
-    }
-    if (journalEntry2.trim()) {
-      content += `\nWhat was it like to let them pass?\n${journalEntry2.trim()}\n`;
-    }
+    content += `\nWhat showed up?\n`;
+    content += journalEntry1.trim() ? `${journalEntry1.trim()}\n` : `[no entry — ${timestamp}]\n`;
+
+    content += `\nWhat was it like to let them pass?\n`;
+    content += journalEntry2.trim() ? `${journalEntry2.trim()}\n` : `[no entry — ${timestamp}]\n`;
 
     addEntry({
       content: content.trim(),

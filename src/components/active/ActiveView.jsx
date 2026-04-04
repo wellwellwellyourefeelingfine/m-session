@@ -9,7 +9,6 @@ import { useSessionStore, shouldShowBooster } from '../../stores/useSessionStore
 import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar, { formatTime } from './ModuleStatusBar';
-import ModuleProgressBar from './capabilities/ModuleProgressBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
 import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
@@ -27,17 +26,28 @@ import FollowUpRevisit from '../followup/FollowUpRevisit';
 import FollowUpIntegration from '../followup/FollowUpIntegration';
 import FollowUpValuesCompass from '../followup/FollowUpValuesCompass';
 
+const PHASE_CONFIG = {
+  'come-up': { number: 1, name: 'Come-Up' },
+  peak: { number: 2, name: 'Peak' },
+  integration: { number: 3, name: 'Integration' },
+};
+
+
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
   const [followUpNow, setFollowUpNow] = useState(Date.now());
+  const [sessionElapsed, setSessionElapsed] = useState('0:00');
 
-  // Module timer state (passed up from modules via context or prop drilling)
-  const [moduleTimerState, setModuleTimerState] = useState({
+  // Unified module progress state (passed up from modules via onProgressUpdate)
+  const [moduleProgressState, setModuleProgressState] = useState({
     progress: 0,
+    mode: 'idle',
     elapsed: 0,
     total: 0,
     showTimer: false,
     isPaused: false,
+    currentStep: 0,
+    totalSteps: 0,
   });
 
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
@@ -61,7 +71,7 @@ export default function ActiveView() {
   const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
   const expireBooster = useSessionStore((state) => state.expireBooster);
   // Subscribe to modules state to trigger re-renders when modules are added/changed
-   
+
   const _modules = useSessionStore((state) => state.modules);
   const inOpenSpace = _modules.inOpenSpace;
   const currentModule = getCurrentModule();
@@ -84,15 +94,31 @@ export default function ActiveView() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Reset module timer state when module changes
+  // Update session elapsed time every second (during active session)
+  const ingestionTime = substanceChecklist.ingestionTime;
+  useEffect(() => {
+    if (sessionPhase !== 'active' || !ingestionTime) return;
+    const updateElapsed = () => {
+      const elapsedSeconds = Math.floor((Date.now() - ingestionTime) / 1000);
+      setSessionElapsed(formatTime(elapsedSeconds));
+    };
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [sessionPhase, ingestionTime]);
+
+  // Reset module progress state when module changes
   useEffect(() => {
     if (!currentModule) {
-      setModuleTimerState({
+      setModuleProgressState({
         progress: 0,
+        mode: 'idle',
         elapsed: 0,
         total: 0,
         showTimer: false,
         isPaused: false,
+        currentStep: 0,
+        totalSteps: 0,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: only reset on instance change, not full object
@@ -167,21 +193,24 @@ export default function ActiveView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- inOpenSpace aliased from _modules.inOpenSpace which is in deps
   }, [sessionPhase, currentModule, nextModule, startModule, peakCheckIn.isVisible, _modules.inOpenSpace]);
 
-  // Handler to update module timer state (called by modules)
+  // Handler to update module progress state (called by modules via onProgressUpdate)
   // Memoized with useCallback to prevent infinite loops in child useEffects
-  const handleModuleTimerUpdate = useCallback((timerState) => {
-    setModuleTimerState((prev) => {
+  const handleProgressUpdate = useCallback((progressState) => {
+    setModuleProgressState((prev) => {
       // Only update if values actually changed to prevent unnecessary re-renders
       if (
-        prev.progress === timerState.progress &&
-        prev.elapsed === timerState.elapsed &&
-        prev.total === timerState.total &&
-        prev.showTimer === timerState.showTimer &&
-        prev.isPaused === timerState.isPaused
+        prev.progress === progressState.progress &&
+        prev.mode === progressState.mode &&
+        prev.elapsed === progressState.elapsed &&
+        prev.total === progressState.total &&
+        prev.showTimer === progressState.showTimer &&
+        prev.isPaused === progressState.isPaused &&
+        prev.currentStep === progressState.currentStep &&
+        prev.totalSteps === progressState.totalSteps
       ) {
         return prev;
       }
-      return timerState;
+      return progressState;
     });
   }, []);
 
@@ -199,6 +228,25 @@ export default function ActiveView() {
     }
   };
 
+  // Build center content for active session status bar
+  const buildTimerCenterContent = () => {
+    if (moduleProgressState.showTimer && moduleProgressState.mode === 'timer') {
+      return (
+        <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
+          ${moduleProgressState.isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
+          {formatTime(moduleProgressState.elapsed)} / {formatTime(moduleProgressState.total)}
+        </span>
+      );
+    }
+    return null;
+  };
+
+  // Build phase label for active session
+  const buildPhaseLabel = (phase) => {
+    const config = PHASE_CONFIG[phase] || PHASE_CONFIG['come-up'];
+    return `Phase ${config.number} · ${config.name}`;
+  };
+
   const renderContent = () => {
     // Check for active follow-up modules first (rendered in Active tab)
     if (activeFollowUpModule === 'checkIn') return <FollowUpCheckIn />;
@@ -212,35 +260,24 @@ export default function ActiveView() {
       if (preSessionModule) {
         return (
           <div className="relative">
-            {/* Shared progress bar - overlaps header border */}
-            <ModuleProgressBar progress={moduleTimerState.progress} isPaused={moduleTimerState.isPaused} />
-            {/* Pre-Session indicator bar with optional timer */}
-            <div className="fixed left-0 right-0 z-30" style={{ top: 'var(--header-height)' }}>
-              <div className="flex items-center px-4 py-2 gap-3">
-                <span className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] flex-shrink-0">
-                  Pre-Session
-                </span>
-                {/* Center: module timer */}
-                <div className="flex-1 flex justify-center min-w-0">
-                  {moduleTimerState.showTimer && (
-                    <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
-                      ${moduleTimerState.isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
-                      {formatTime(moduleTimerState.elapsed)} / {formatTime(moduleTimerState.total)}
-                    </span>
-                  )}
-                </div>
+            <ModuleStatusBar
+              progress={moduleProgressState.progress}
+              isPaused={moduleProgressState.isPaused}
+              leftLabel="Pre-Session"
+              centerContent={buildTimerCenterContent()}
+              rightContent={
                 <button
                   onClick={() => exitPreSessionModule()}
-                  className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors flex-shrink-0"
+                  className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
                 >
                   Exit
                 </button>
-              </div>
-            </div>
+              }
+            />
             <div className="pt-9">
               <ModuleRenderer
                 module={preSessionModule}
-                onTimerUpdate={handleModuleTimerUpdate}
+                onProgressUpdate={handleProgressUpdate}
                 onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
                 onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
               />
@@ -256,7 +293,7 @@ export default function ActiveView() {
         return <ActiveEmptyState />;
 
       case 'pre-session': {
-        // Intake complete, timeline generated — show Pre-Session Active Page
+        // Intake complete, timeline generated ��� show Pre-Session Active Page
         const setCurrentTab = useAppStore.getState().setCurrentTab;
 
         // Find the first resumable pre-session module (active first, then upcoming)
@@ -324,7 +361,7 @@ export default function ActiveView() {
           return (
             <ModuleRenderer
               module={currentModule}
-              onTimerUpdate={handleModuleTimerUpdate}
+              onProgressUpdate={handleProgressUpdate}
             />
           );
         }
@@ -421,18 +458,23 @@ export default function ActiveView() {
       return <ClosingRitual />;
     }
 
+    const sessionElapsedContent = (
+      <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
+        {sessionElapsed}
+      </span>
+    );
+
     // Come-up phase: modules with check-in
     if (currentPhase === 'come-up') {
       return (
         <div className="relative">
           {/* Fixed status bar below main header */}
           <ModuleStatusBar
-            phase="come-up"
-            progress={moduleTimerState.progress}
-            moduleElapsed={moduleTimerState.elapsed}
-            moduleTotal={moduleTimerState.total}
-            showModuleTimer={moduleTimerState.showTimer}
-            isPaused={moduleTimerState.isPaused}
+            progress={moduleProgressState.progress}
+            isPaused={moduleProgressState.isPaused}
+            leftLabel={buildPhaseLabel('come-up')}
+            centerContent={buildTimerCenterContent()}
+            rightContent={sessionElapsedContent}
           />
 
           {/* Content area with padding for status bar (h-9 = 36px) */}
@@ -440,7 +482,7 @@ export default function ActiveView() {
             {currentModule ? (
               <ModuleRenderer
                 module={currentModule}
-                onTimerUpdate={handleModuleTimerUpdate}
+                onProgressUpdate={handleProgressUpdate}
               />
             ) : (
               <OpenSpace phase="come-up" />
@@ -461,12 +503,11 @@ export default function ActiveView() {
       <div className="relative">
         {/* Fixed status bar below main header */}
         <ModuleStatusBar
-          phase={currentPhase}
-          progress={moduleTimerState.progress}
-          moduleElapsed={moduleTimerState.elapsed}
-          moduleTotal={moduleTimerState.total}
-          showModuleTimer={moduleTimerState.showTimer}
-          isPaused={moduleTimerState.isPaused}
+          progress={moduleProgressState.progress}
+          isPaused={moduleProgressState.isPaused}
+          leftLabel={buildPhaseLabel(currentPhase)}
+          centerContent={buildTimerCenterContent()}
+          rightContent={sessionElapsedContent}
         />
 
         {/* Content area with padding for status bar (h-9 = 36px) */}
@@ -474,7 +515,7 @@ export default function ActiveView() {
           {currentModule ? (
             <ModuleRenderer
               module={currentModule}
-              onTimerUpdate={handleModuleTimerUpdate}
+              onProgressUpdate={handleProgressUpdate}
             />
           ) : (
             <OpenSpace phase={currentPhase} />

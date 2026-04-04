@@ -28,7 +28,7 @@ import { saveImage } from '../../../utils/imageStorage';
 
 import ModuleLayout from '../../active/capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../../active/capabilities/ModuleControlBar';
-import ModuleProgressBar from '../../active/capabilities/ModuleProgressBar';
+import useProgressReporter from '../../../hooks/useProgressReporter';
 import RevealOverlay from '../../active/capabilities/animations/RevealOverlay';
 import LeafDrawV2 from '../../active/capabilities/animations/LeafDrawV2';
 import LifeGraphModal from './LifeGraphModal';
@@ -81,7 +81,7 @@ function RatingDots({ value, onChange }) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
-export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
+export default function LifeGraphActivity({ _module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const milestones = useSessionStore((s) => s.lifeGraph.milestones);
   const addLifeGraphMilestone = useSessionStore((s) => s.addLifeGraphMilestone);
@@ -91,6 +91,9 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
   const completePreSubstanceActivity = useSessionStore((s) => s.completePreSubstanceActivity);
   const sessionId = useSessionStore((s) => s.sessionId);
   const addEntry = useJournalStore((s) => s.addEntry);
+
+  // ── Progress reporting ──
+  const report = useProgressReporter(onProgressUpdate);
 
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -203,6 +206,11 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
   const isLastStep = currentStepIndex === totalSteps - 1;
   const progressSteps = deepenBranch ? totalSteps : BASE_STEP_COUNT;
   const progress = ((currentStepIndex + 1) / progressSteps) * 100;
+
+  // ── Report step progress to parent status bar ──
+  useEffect(() => {
+    report.step(currentStepIndex + 1, progressSteps);
+  }, [currentStepIndex, progressSteps, report]);
 
   // ── Step navigation helpers ──
   const advanceStep = useCallback(() => {
@@ -983,8 +991,6 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip }) {
 
   return (
     <>
-      <ModuleProgressBar progress={progress} visible={true} showTime={false} />
-
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
         <div className={`pt-6 transition-opacity duration-[400ms] ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div key={currentStepIndex} className="animate-fadeIn">

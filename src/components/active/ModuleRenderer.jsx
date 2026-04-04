@@ -6,12 +6,11 @@
  *
  * HOW IT WORKS:
  * 1. Looks up the module type from the library
- * 2. Checks the registry for a custom component
- * 3. Falls back to ModuleShell for capability-driven rendering
+ * 2. Checks the registry for a matching component (custom or MasterModule)
  *
  * ADDING A NEW MODULE TYPE:
- * - If it can use capabilities alone: Add to library.js with capabilities config
- * - If it needs custom logic: Create component and add to moduleRegistry.js
+ * - For content-driven modules: Use MasterModule (add content config + register type)
+ * - For interactive modules: Create custom component and add to moduleRegistry.js
  */
 
 import { Suspense } from 'react';
@@ -19,7 +18,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { getModuleById } from '../../content/modules';
 import { getModuleComponent } from './moduleRegistry';
 
-export default function ModuleRenderer({ module, onTimerUpdate, onComplete: onCompleteOverride, onSkip: onSkipOverride }) {
+export default function ModuleRenderer({ module, onProgressUpdate, onComplete: onCompleteOverride, onSkip: onSkipOverride }) {
   const completeModule = useSessionStore((state) => state.completeModule);
   const skipModule = useSessionStore((state) => state.skipModule);
 
@@ -47,7 +46,7 @@ export default function ModuleRenderer({ module, onTimerUpdate, onComplete: onCo
     module,
     onComplete: handleComplete,
     onSkip: handleSkip,
-    onTimerUpdate, // Pass timer update callback to modules
+    onProgressUpdate, // Pass timer update callback to modules
   };
 
   return (
