@@ -24,7 +24,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 - Customizable timeline editor — reorder, add, remove, and adjust durations
 - Substance checklist with dosage safety gates and testing reminders
 - Pre-session ritual with intention-setting and centering breath
-- 3-phase active session (come-up, peak, integration) with human-driven transitions
+- 3-phase active session (come-up, peak, synthesis) with human-driven transitions
 - 8-step closing ritual capturing self-gratitude, future messages, and commitments
 - Time-locked follow-up modules at 12h, 24h, and 48h post-session
 
@@ -102,17 +102,17 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
    │   └── Take / Skip / Snooze — expires silently at 150 min, hard cutoff at 180 min
    └── Peak phase check-in → IntegrationTransition
 
-8. INTEGRATION TRANSITION (5-9 steps, dynamic)
+8. SYNTHESIS TRANSITION (5-9 steps, dynamic)
    ├── "The Peak Is Softening" — acknowledgment
    ├── Intention check-in — revisit + optional edit
    ├── Focus confirmation — keep or change primary focus
    │   └── (conditional) Focus selector + relationship sub-type
    ├── Tailored activity offer — journaling/compassion/reflection based on focus
    ├── Hydration reminder
-   └── Begin → TransitionBuffer → enter integration phase
+   └── Begin → TransitionBuffer → enter synthesis phase
 
-9. ACTIVE SESSION — INTEGRATION PHASE
-   ├── Integration modules (deep journaling, parts work, letter writing, etc.)
+9. ACTIVE SESSION — SYNTHESIS PHASE
+   ├── Synthesis-phase modules (deep journaling, parts work, letter writing, etc.)
    └── Closing check-in → ClosingRitual
 
 10. CLOSING RITUAL (8 steps)
@@ -154,6 +154,8 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 3. **Phase transitions are human-driven** — the app guides, not dictates
 4. **Audio-text synchronization** — pre-recorded TTS voice guidance with synced visual prompts, audio leading text by 200ms
 5. **Privacy-first** — all data stays on-device with localStorage persistence and optional text export; no accounts, no cloud sync
+
+> **Terminology note:** The within-session Phase 3 is called "Synthesis" in all user-facing content but `integration` in all internal code (to preserve compatibility with persisted user sessions in localStorage). "Integration" in this project refers to the community-standard concept of post-session therapeutic work. See [ARCHITECTURE.md](ARCHITECTURE.md) for the full rationale and developer guidance.
 
 ---
 

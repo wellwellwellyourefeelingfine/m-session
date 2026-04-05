@@ -131,8 +131,8 @@ export const INTEGRATION_TRANSITION_STEPS = [
     id: 'ready',
     content: {
       label: 'Ready',
-      title: 'Enter Integration',
-      body: "The integration phase is about letting things settle.",
+      title: 'Enter Synthesis Phase',
+      body: "The synthesis phase is about letting things settle.",
       bodySecondary: "There may be modules ahead, or you may simply want open space.",
       bodyTertiary: "Follow what feels right.",
       isReady: true,

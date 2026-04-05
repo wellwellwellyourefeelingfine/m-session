@@ -27,7 +27,7 @@ const PHASE_NUMBERS = {
 const PHASE_NAMES = {
   'come-up': 'Come-Up',
   'peak': 'Peak',
-  'integration': 'Integration',
+  'integration': 'Synthesis',
 };
 
 

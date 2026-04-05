@@ -26,7 +26,7 @@ const PHASE_MESSAGES = {
   },
   integration: {
     title: 'Open Space',
-    message: 'You\'ve completed the scheduled activities for the Integration phase. Take a moment to rest and check-in with yourself. When you\'re ready, proceed with one of the following:',
+    message: 'You\'ve completed the scheduled activities for the Synthesis phase. Take a moment to rest and check-in with yourself. When you\'re ready, proceed with one of the following:',
   },
 };
 
@@ -136,13 +136,13 @@ export default function OpenSpace({ phase }) {
               </button>
             )}
 
-            {/* Peak phase: Continue to Integration Phase */}
+            {/* Peak phase: Continue to Synthesis Phase */}
             {phase === 'peak' && (
               <button
                 onClick={handleContinueToIntegration}
                 className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
               >
-                Continue to Integration Phase
+                Continue to Synthesis Phase
               </button>
             )}
 

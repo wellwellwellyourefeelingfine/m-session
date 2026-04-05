@@ -29,7 +29,7 @@ import FollowUpValuesCompass from '../followup/FollowUpValuesCompass';
 const PHASE_CONFIG = {
   'come-up': { number: 1, name: 'Come-Up' },
   peak: { number: 2, name: 'Peak' },
-  integration: { number: 3, name: 'Integration' },
+  integration: { number: 3, name: 'Synthesis' },
 };
 
 

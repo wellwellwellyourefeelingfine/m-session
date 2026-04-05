@@ -9,7 +9,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 const PHASE_NAMES = {
   'come-up': 'Come-Up',
   peak: 'Peak',
-  integration: 'Integration',
+  integration: 'Synthesis',
 };
 
 export default function PhaseHeader({ phase }) {

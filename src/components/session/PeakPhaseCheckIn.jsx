@@ -84,13 +84,13 @@ export default function PeakPhaseCheckIn() {
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
               It's been {minutesSinceBooster} minute{minutesSinceBooster !== 1 ? 's' : ''} since
               you took your booster. You may want to wait and experience the effects before
-              moving into the integration phase.
+              moving into the synthesis phase.
             </p>
           </div>
         )}
 
         <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-          When you're ready, you can continue to the integration phase.
+          When you're ready, you can continue to the synthesis phase.
         </p>
 
         <div className="space-y-3">
@@ -99,7 +99,7 @@ export default function PeakPhaseCheckIn() {
             onClick={handleContinueToIntegration}
             className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
           >
-            Continue to Integration Phase
+            Continue to Synthesis Phase
           </button>
 
           {/* Stay in open space */}

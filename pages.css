@@ -119,11 +119,13 @@
   background: var(--bg-elevated);
 }
 .card-icon {
-  font-family: var(--mono);
-  font-size: 16px;
   color: var(--accent);
   margin-bottom: 16px;
   opacity: 0.7;
+}
+.card-icon svg {
+  width: 26px;
+  height: 26px;
 }
 .card-title {
   font-size: 11px;
@@ -242,6 +244,23 @@
   color: var(--text-secondary);
   line-height: 1.8;
   max-width: 560px;
+}
+.framework-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-accent);
+}
+.framework-link:hover {
+  opacity: 0.8;
+}
+.framework-link svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* ═══════════════════════════════════════════

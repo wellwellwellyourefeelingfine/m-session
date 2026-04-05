@@ -18,10 +18,10 @@ export const openAwarenessMeditation = {
   title: 'Open Awareness',
   subtitle: 'Vipassana-inspired',
   description: 'A guided audio meditation. Rest in awareness itself. No technique, no effort — just noticing. Have your headphones or speakers ready.',
-  baseDuration: 600,   // 10 minutes in seconds
-  minDuration: 600,    // 10 min
+  baseDuration: 900,   // 15 minutes in seconds
+  minDuration: 900,    // 15 min
   maxDuration: 1800,   // 30 min
-  durationSteps: [10, 15, 20, 25, 30],
+  durationSteps: [15, 20, 25, 30],
 
   // Audio configuration
   audio: {

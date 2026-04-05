@@ -137,7 +137,7 @@ export default function IntegrationTransition() {
 
     if (hasIntentionEdit || hasActivityContent) {
       const activity = getActivityForFocus(effectiveFocus);
-      let journalContent = 'INTEGRATION TRANSITION\n\n';
+      let journalContent = 'SYNTHESIS TRANSITION\n\n';
 
       if (hasIntentionEdit) {
         journalContent += `Intention Addition:\n${editedIntention}\n\n`;
@@ -160,7 +160,7 @@ export default function IntegrationTransition() {
       addEntry({
         content: journalContent.trim(),
         source: 'session',
-        moduleTitle: 'Integration Transition',
+        moduleTitle: 'Synthesis Transition',
         tags: hasActivityContent ? [activity.journalTag] : [],
       });
     }
@@ -711,7 +711,7 @@ export default function IntegrationTransition() {
         backConfirmMessage={null}
         showSkip={showSkipButton()}
         onSkip={handleSkip}
-        skipConfirmMessage="Skip the transition and go directly to integration?"
+        skipConfirmMessage="Skip the transition and go directly to the synthesis phase?"
       />
     </div>
   );

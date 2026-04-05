@@ -448,7 +448,7 @@ export default function FAQTool() {
           journaling, music, or simply being present.
         </p>
         <p>
-          <span className="text-[var(--color-text-primary)]">Integration</span> —
+          <span className="text-[var(--color-text-primary)]">Synthesis</span> —
           As effects soften, the focus shifts to reflection and gentle closure.
           Modules here help you begin processing what arose and prepare for
           returning to ordinary consciousness.

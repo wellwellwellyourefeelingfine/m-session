@@ -45,7 +45,7 @@ function matchesSearch(module, query) {
   const PHASE_ALIASES = {
     'phase 1': 'come-up', 'phase one': 'come-up', 'come-up': 'come-up', 'come up': 'come-up', comeup: 'come-up',
     'phase 2': 'peak', 'phase two': 'peak', peak: 'peak',
-    'phase 3': 'integration', 'phase three': 'integration', integration: 'integration',
+    'phase 3': 'integration', 'phase three': 'integration', synthesis: 'integration', 'synthesis phase': 'integration', integration: 'integration',
     'pre-session': 'pre-session', 'pre session': 'pre-session', presession: 'pre-session',
     'follow-up': 'follow-up', 'follow up': 'follow-up', followup: 'follow-up', 'post-session': 'follow-up', 'post session': 'follow-up',
   };
@@ -277,7 +277,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
                   </p>
                   <ul className="text-[var(--color-text-secondary)] text-sm space-y-1.5 list-disc pl-4">
                     <li>Search by therapeutic framework (&ldquo;ACT&rdquo; or &ldquo;IFS&rdquo;)</li>
-                    <li>Search by phase (&ldquo;Phase 2&rdquo;, &ldquo;integration&rdquo;, or &ldquo;pre-session&rdquo;)</li>
+                    <li>Search by phase (&ldquo;Phase 2&rdquo;, &ldquo;synthesis&rdquo;, or &ldquo;pre-session&rdquo;)</li>
                     <li>Search by tags (&ldquo;somatic&rdquo;, &ldquo;guided&rdquo;, &ldquo;journaling&rdquo;, or &ldquo;breathing&rdquo;)</li>
                   </ul>
                 </div>

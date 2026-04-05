@@ -289,7 +289,7 @@ ${centerText(`Exported ${exportDate}`)}
     { key: 'pre-session', label: 'Pre-Session', items: data.preSessionModules || [] },
     { key: 'come-up', label: 'Phase 1 — Come-Up', items: (data.moduleItems || []).filter((m) => m.phase === 'come-up').sort((a, b) => a.order - b.order), timestamps: data.phaseTimestamps?.comeUp },
     { key: 'peak', label: 'Phase 2 — Peak', items: (data.moduleItems || []).filter((m) => m.phase === 'peak').sort((a, b) => a.order - b.order), timestamps: data.phaseTimestamps?.peak },
-    { key: 'integration', label: 'Phase 3 — Integration', items: (data.moduleItems || []).filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order), timestamps: data.phaseTimestamps?.integration },
+    { key: 'integration', label: 'Phase 3 — Synthesis', items: (data.moduleItems || []).filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order), timestamps: data.phaseTimestamps?.integration },
   ];
 
   const hasTimelineData = timelinePhases.some((p) => p.items.length > 0);
@@ -609,7 +609,7 @@ ${centerText(`Exported ${exportDate}`)}
 
   const integration = data.transitionCaptures?.integration;
   if (integration && (integration.editedIntention || integration.tailoredActivityResponse)) {
-    text += `\n\n\n${section('INTEGRATION TRANSITION')}\n`;
+    text += `\n\n\n${section('SYNTHESIS TRANSITION')}\n`;
     if (integration.editedIntention) text += `\n  Intention Addition:  ${integration.editedIntention}`;
     if (integration.newFocus) text += `\n  Focus Changed To:    ${integration.newFocus}`;
     const ar = integration.tailoredActivityResponse;
@@ -623,7 +623,7 @@ ${centerText(`Exported ${exportDate}`)}
 
   // ── Phase 3: Integration ───────────────────────────────
 
-  text += renderPhaseModules('integration', 'PHASE 3 — INTEGRATION');
+  text += renderPhaseModules('integration', 'PHASE 3 — SYNTHESIS');
 
   // ── Closing reflections ────────────────────────────────
 

@@ -611,8 +611,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpda
 
   const handleRevealDone = useCallback(() => {
     setShowRevealOverlay(false);
-    setPhase('reveal-modal');
-  }, []);
+    fadeToPhase('reveal-modal');
+  }, [fadeToPhase]);
 
   const matrixCloseTimerRef = useRef(null);
 
@@ -624,7 +624,8 @@ export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpda
     matrixCloseTimerRef.current = setTimeout(() => {
       setShowMatrix(false);
       setMatrixClosing(false);
-      // Jump to observer-self interstitial and fade it in (no double-fade)
+      // Jump to observer-self interstitial with scroll reset
+      window.scrollTo(0, 0);
       setPhase('observer-self');
       setIsVisible(true);
     }, FADE_MS);
@@ -1089,7 +1090,7 @@ export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpda
       return {
         ...base, phase: 'active',
         primary: { label: 'Continue', onClick: () => fadeToPhase('journal-a') },
-        showBack: true, onBack: () => { setShowMatrix(true); setPhase('reveal-modal'); },
+        showBack: true, onBack: () => { setShowMatrix(true); window.scrollTo(0, 0); setPhase('reveal-modal'); },
       };
     }
     if (phase === 'journal-a') {

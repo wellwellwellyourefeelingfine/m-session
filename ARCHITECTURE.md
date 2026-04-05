@@ -2,6 +2,8 @@
 
 Developer documentation for M-SESSION. For an overview of the project, see [README.md](README.md).
 
+> **Terminology note:** The within-session Phase 3 is called **"Synthesis"** in all user-facing content but **`integration`** in all internal code. See [Architecture Decision #8](#8-phase-3-terminology-synthesis-ui--integration-code) for the full rationale and guidance.
+
 ---
 
 ## Directory Structure
@@ -896,7 +898,7 @@ report.idle();            // 0% progress (mode: 'idle')
 
 | Context | Left Label | Center | Right |
 |---------|-----------|--------|-------|
-| Active session | `Phase 1 · Come-Up` / `Phase 2 · Peak` / `Phase 3 · Integration` | Module timer | Session elapsed (`H:MM:SS`) |
+| Active session | `Phase 1 · Come-Up` / `Phase 2 · Peak` / `Phase 3 · Synthesis` | Module timer | Session elapsed (`H:MM:SS`) |
 | Preview activity | `Pre-Session` | Module timer | Exit button |
 | Substance checklist | `Preparation` | — | `X of Y` step count |
 | Opening ritual | `Opening Ritual` | — | `X of Y` step count |
@@ -1531,6 +1533,24 @@ Journal images stored in IndexedDB are not included in archives. Users should do
 
 7. **Local-only data with export**
    - Why: Privacy-first; no accounts or cloud sync; user owns their data via download
+
+8. **Phase 3 terminology: "Synthesis" (UI) / `integration` (code)**
+
+   In the MDMA therapy community, "integration" universally refers to the post-session therapeutic work — the non-drug sessions, journaling, and reflection that happen in the days and weeks *after* an experience. Our app originally used "Integration" for the third within-session phase (come-up → peak → integration), which created a terminology collision: users familiar with the clinical literature would see "Integration Phase" and think of post-session work, not the in-session wind-down.
+
+   The phase was renamed to **"Synthesis"** in all user-facing content. The term captures what defines this phase: emotional openness from the peak is still present, but cognitive clarity is returning — the meeting of those two things is what makes the therapeutic work possible.
+
+   **Internal code still uses `integration` everywhere.** Zustand persists session state to localStorage, so any user with an existing or archived session has `currentPhase: 'integration'` on their device. Renaming the internal key would break those sessions. The display-only approach avoids this entirely.
+
+   **Practical guidance for developers:**
+
+   | Context | Term to use | Examples |
+   |---------|------------|---------|
+   | User-facing strings (UI text, button labels, status bar, FAQ, export labels, journal headers) | **Synthesis** or **Synthesis Phase** | "Continue to Synthesis Phase", "PHASE 3 — SYNTHESIS", "Enter Synthesis Phase" |
+   | Internal code (state keys, function names, variable names, filenames, component names, phase values in module configs) | **`integration`** | `currentPhase: 'integration'`, `transitionToIntegration()`, `IntegrationTransition.jsx`, `allowedPhases: ['peak', 'integration']` |
+   | Post-session follow-up work (closing ritual encouragement, follow-up modules, FAQ about the general concept) | **Integration** (the community term) | "Integration Takes Time", "Integration Reflection", "What's integration and why does it matter?" |
+
+   **Where the boundary lives:** Every file that maps an internal `'integration'` key to a display string has a lookup object or switch statement (e.g., `PHASE_NAMES`, `PHASE_CONFIG`, `getPhaseName()`). The key stays `'integration'`; the value says `'Synthesis'`. If you add a new place that displays the phase name, follow this same pattern.
 
 ---
 

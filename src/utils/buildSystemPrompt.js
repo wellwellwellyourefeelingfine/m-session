@@ -78,7 +78,7 @@ function getPhaseDescription(phase) {
   const descriptions = {
     'come-up': 'Come-up phase (effects beginning to manifest)',
     peak: 'Peak phase (full effects)',
-    integration: 'Integration phase (effects beginning to subside)',
+    integration: 'Synthesis phase (effects beginning to subside)',
   };
   return descriptions[phase] || phase || 'Not in active session';
 }

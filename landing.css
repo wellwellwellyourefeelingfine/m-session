@@ -229,11 +229,13 @@ html.light .cta::before {
   background: var(--bg-elevated);
 }
 .principle-icon {
-  font-size: 18px;
   margin-bottom: 20px;
   color: var(--accent);
   opacity: 0.8;
-  font-family: var(--mono);
+}
+.principle-icon svg {
+  width: 28px;
+  height: 28px;
 }
 .principle-title {
   font-size: 11px;
@@ -325,8 +327,9 @@ html.light .cta::before {
 }
 .flow-step {
   display: grid;
-  grid-template-columns: 88px 1fr;
-  gap: 36px;
+  grid-template-columns: 44px 32px 1fr;
+  column-gap: 32px;
+  row-gap: 20px;
   padding: 36px 0;
   position: relative;
 }
@@ -341,16 +344,16 @@ html.light .cta::before {
   text-align: center;
   position: relative;
 }
-.flow-num::after {
-  content: "";
-  position: absolute;
-  right: -18px;
-  top: 50%;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  transform: translateY(-50%);
+.flow-icon {
+  color: var(--accent);
+  opacity: 0.8;
+  display: flex;
+  justify-content: center;
+}
+.flow-icon svg {
+  width: 32px;
+  height: 32px;
+  margin-top: 55px;
 }
 .flow-title {
   font-family: var(--serif);
@@ -450,11 +453,13 @@ html.light .cta::before {
   padding: 48px 40px;
 }
 .trust-icon {
-  font-family: var(--mono);
-  font-size: 16px;
   color: var(--accent);
   margin-bottom: 16px;
   opacity: 0.7;
+}
+.trust-icon svg {
+  width: 26px;
+  height: 26px;
 }
 .trust-title {
   font-size: 11px;
@@ -622,18 +627,20 @@ html.light .cta::before {
     margin-top: 48px;
   }
   .flow-step {
-    grid-template-columns: 56px 1fr;
-    gap: 24px;
+    grid-template-columns: 32px 26px 1fr;
+    column-gap: 20px;
+    row-gap: 14px;
     padding: 28px 0;
   }
   .flow-num {
     font-size: 22px;
   }
+  .flow-icon svg {
+    width: 26px;
+    height: 26px;
+  }
   .flow-timeline::before {
     left: 28px;
-  }
-  .flow-num::after {
-    right: -12px;
   }
   .preview-phones {
     gap: 24px;
@@ -710,12 +717,17 @@ html.light .cta::before {
     padding: 24px 20px;
   }
   .flow-step {
-    grid-template-columns: 44px 1fr;
-    gap: 20px;
+    grid-template-columns: 24px 22px 1fr;
+    column-gap: 14px;
+    row-gap: 12px;
     padding: 24px 0;
   }
   .flow-num {
     font-size: 20px;
+  }
+  .flow-icon svg {
+    width: 22px;
+    height: 22px;
   }
   .flow-timeline::before {
     left: 22px;

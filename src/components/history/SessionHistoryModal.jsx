@@ -90,7 +90,7 @@ function countActivitiesByPhase(modules) {
     }
   }
   if (Object.keys(counts).length === 0) return null;
-  const labels = { 'come-up': 'Come-up', 'peak': 'Peak', 'integration': 'Integration' };
+  const labels = { 'come-up': 'Come-up', 'peak': 'Peak', 'integration': 'Synthesis' };
   return Object.entries(counts)
     .map(([phase, count]) => `${labels[phase] || phase}: ${count}`)
     .join(' · ');
@@ -102,7 +102,7 @@ function countActivitiesByPhase(modules) {
 function getProgressLabel(sessionPhase, currentPhase) {
   if (sessionPhase === 'completed') return 'Completed';
   if (sessionPhase === 'active' || sessionPhase === 'paused') {
-    const phaseLabels = { 'come-up': 'come-up phase', 'peak': 'peak phase', 'integration': 'integration phase' };
+    const phaseLabels = { 'come-up': 'come-up phase', 'peak': 'peak phase', 'integration': 'synthesis phase' };
     const label = phaseLabels[currentPhase] || currentPhase;
     return `In progress — ${label}`;
   }

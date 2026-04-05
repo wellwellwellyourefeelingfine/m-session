@@ -70,7 +70,7 @@ export default function SessionTimeline() {
       case 'peak':
         return 'Peak';
       case 'integration':
-        return 'Integration';
+        return 'Synthesis';
       default:
         return phase;
     }
@@ -180,7 +180,7 @@ export default function SessionTimeline() {
           <span className="text-[var(--color-text-tertiary)]">→</span>
           <PhaseIndicator label="Peak" active={currentPhase === 'peak'} completed={currentPhase === 'integration'} />
           <span className="text-[var(--color-text-tertiary)]">→</span>
-          <PhaseIndicator label="Integration" active={currentPhase === 'integration'} />
+          <PhaseIndicator label="Synthesis" active={currentPhase === 'integration'} />
         </div>
 
         {/* Current module highlight */}

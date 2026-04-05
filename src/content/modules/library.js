@@ -357,12 +357,12 @@ export const moduleLibrary = [
     title: 'Open Awareness',
     description: 'Rest in awareness itself. No technique, no effort — just noticing.',
     defaultDuration: 15,
-    minDuration: 10,
+    minDuration: 15,
     maxDuration: 30,
     allowedPhases: ['pre-session', 'peak', 'integration'],
     recommendedPhases: ['peak'],
     hasVariableDuration: true,
-    durationSteps: [10, 15, 20, 25, 30],
+    durationSteps: [15, 20, 25, 30],
     meditationId: 'open-awareness',
     // Uses custom OpenAwarenessModule with audio-text sync
     capabilities: {

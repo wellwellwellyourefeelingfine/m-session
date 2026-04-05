@@ -55,7 +55,7 @@ const TUTORIAL_STEPS = [
     target: '[data-tutorial="phase-integration"]',
     position: 'above',
     spotlightAdjust: { top: -6 },
-    title: 'Phase 3 — Integration',
+    title: 'Phase 3 — Synthesis',
     description:
       'As things wind down, these activities help you process what came up and bring the session to a close.',
   },

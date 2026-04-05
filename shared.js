@@ -6,6 +6,22 @@
 // Internal namespace for cross-module communication
 var __ms = {};
 
+// SVG icon sprite — fetch once, inject into page
+(function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/site-icons.svg', true);
+  xhr.onload = function () {
+    if (xhr.status >= 200 && xhr.status < 300) {
+      var div = document.createElement('div');
+      div.setAttribute('aria-hidden', 'true');
+      div.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+      div.innerHTML = xhr.responseText;
+      document.body.insertBefore(div, document.body.firstChild);
+    }
+  };
+  xhr.send();
+})();
+
 // Theme persistence — apply before render to prevent flash
 (function () {
   var html = document.documentElement;
@@ -79,8 +95,8 @@ var __ms = {};
     toggle();
     setTimeout(function () {
       toggle();
-      setTimeout(cycle, 3000);
-    }, 2500);
+      setTimeout(cycle, 1600);
+    }, 5000);
   }
   setTimeout(cycle, 2500);
 })();
@@ -291,8 +307,14 @@ var __ms = {};
         // Update URL (skip for back/forward)
         if (!isPop) history.pushState(null, '', href);
 
-        // Scroll to top
-        window.scrollTo(0, 0);
+        // Scroll to hash target or top
+        var hash = href.split('#')[1];
+        var hashEl = hash && document.getElementById(hash);
+        if (hashEl) {
+          hashEl.scrollIntoView();
+        } else {
+          window.scrollTo(0, 0);
+        }
 
         // Re-trigger enter animation
         body.classList.remove('page-leaving');

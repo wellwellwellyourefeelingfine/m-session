@@ -1,18 +1,32 @@
-<!DOCTYPE html>
-<html lang="en" class="light" style="background:#f2f0eb">
+<!doctype html>
+<html lang="en" class="light" style="background: #f2f0eb">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>if(localStorage.getItem('m-session-theme')==='dark'){document.documentElement.style.background='#0a0a0c';document.documentElement.classList.remove('light')}</script>
+    <script>
+      if (localStorage.getItem("m-session-theme") === "dark") {
+        document.documentElement.style.background = "#0a0a0c";
+        document.documentElement.classList.remove("light");
+      }
+    </script>
     <title>About — m-session</title>
-    <meta name="description" content="The story, philosophy, and therapeutic foundations behind m-session. A free, open-source guided companion for MDMA sessions focused on personal growth." />
+    <meta
+      name="description"
+      content="The story, philosophy, and therapeutic foundations behind m-session. A free, open-source guided companion for MDMA sessions focused on personal growth."
+    />
     <link rel="canonical" href="https://m-session.com/about" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://m-session.com/about" />
     <meta property="og:title" content="About — m-session" />
-    <meta property="og:description" content="The story, philosophy, and therapeutic foundations behind m-session. Free, open-source, completely private." />
+    <meta
+      property="og:description"
+      content="The story, philosophy, and therapeutic foundations behind m-session. Free, open-source, completely private."
+    />
     <meta property="og:image" content="https://m-session.com/og-image.png" />
-    <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
+    <meta
+      property="og:image:alt"
+      content="m-session — Guided support for intentional MDMA experiences"
+    />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="m-session" />
@@ -20,72 +34,128 @@
     <meta name="robots" content="index, follow" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="About — m-session" />
-    <meta name="twitter:description" content="The story, philosophy, and therapeutic foundations behind m-session." />
+    <meta
+      name="twitter:description"
+      content="The story, philosophy, and therapeutic foundations behind m-session."
+    />
     <meta name="twitter:image" content="https://m-session.com/og-image.png" />
 
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-light-32x32.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-light-16x16.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-dark-32x32.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-dark-16x16.png"
+      media="(prefers-color-scheme: dark)"
+    />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="/shared.css" />
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
 
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "AboutPage",
-      "name": "About m-session",
-      "url": "https://m-session.com/about",
-      "description": "The story, philosophy, and therapeutic foundations behind m-session. A free, open-source guided companion for MDMA sessions.",
-      "mainEntity": {
-        "@type": "WebApplication",
-        "name": "m-session",
-        "url": "https://m-session.com",
-        "applicationCategory": "HealthApplication",
-        "operatingSystem": "Any",
-        "offers": {
-          "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "USD"
-        },
-        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
-        "author": {
-          "@type": "Person",
-          "name": "dasloops"
+      {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "About m-session",
+        "url": "https://m-session.com/about",
+        "description": "The story, philosophy, and therapeutic foundations behind m-session. A free, open-source guided companion for MDMA sessions.",
+        "mainEntity": {
+          "@type": "WebApplication",
+          "name": "m-session",
+          "url": "https://m-session.com",
+          "applicationCategory": "HealthApplication",
+          "operatingSystem": "Any",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          },
+          "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+          "author": {
+            "@type": "Person",
+            "name": "dasloops"
+          }
         }
       }
-    }
     </script>
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://m-session.com/" },
-        { "@type": "ListItem", "position": 2, "name": "About" }
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://m-session.com/"
+          },
+          { "@type": "ListItem", "position": 2, "name": "About" }
+        ]
+      }
     </script>
   </head>
   <body>
     <header>
       <div class="container">
         <a href="/" class="logo" id="logo">
-          <span class="logo-m">M</span><span class="logo-collapse" id="logo-dma">DMA</span><span class="logo-hyphen" id="logo-hyphen">-</span><span class="logo-session">SESSION</span>
+          <span class="logo-m">M</span
+          ><span class="logo-collapse" id="logo-dma">DMA</span
+          ><span class="logo-hyphen" id="logo-hyphen">-</span
+          ><span class="logo-session">SESSION</span>
         </a>
         <div class="header-nav">
-          <a href="/app" class="btn btn-primary" style="padding: 8px 22px" target="_blank" rel="noopener">Launch App &rarr;</a>
-          <div class="theme-toggle" id="theme-toggle" role="button" aria-label="Toggle light and dark mode" tabindex="0">
+          <a
+            href="/app"
+            class="btn btn-primary"
+            style="padding: 8px 22px"
+            target="_blank"
+            rel="noopener"
+            >Launch App &rarr;</a
+          >
+          <div
+            class="theme-toggle"
+            id="theme-toggle"
+            role="button"
+            aria-label="Toggle light and dark mode"
+            tabindex="0"
+          >
             <div class="theme-toggle-thumb"></div>
           </div>
-          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+          <button
+            class="menu-toggle"
+            id="menu-toggle"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+          >
             <span class="menu-toggle-line"></span>
             <span class="menu-toggle-line"></span>
             <span class="menu-toggle-line"></span>
@@ -101,11 +171,20 @@
           <a href="/" class="menu-link" data-page="home">Home</a>
           <a href="/about" class="menu-link" data-page="about">About</a>
           <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
-          <a href="/contribute" class="menu-link" data-page="contribute">Contribute</a>
+          <a href="/contribute" class="menu-link" data-page="contribute"
+            >Contribute</a
+          >
           <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
         </div>
         <div class="menu-overlay-footer">
-          <a href="/app" class="btn btn-primary" style="padding: 12px 28px" target="_blank" rel="noopener">Launch App &rarr;</a>
+          <a
+            href="/app"
+            class="btn btn-primary"
+            style="padding: 12px 28px"
+            target="_blank"
+            rel="noopener"
+            >Launch App &rarr;</a
+          >
         </div>
       </div>
     </nav>
@@ -114,96 +193,290 @@
       <!-- Hero -->
       <section class="page-hero">
         <div class="container">
+          <div style="display: flex; justify-content: center; margin-bottom: 32px">
+            <svg id="leaf-draw-svg" viewBox="55 2 130 248" width="79" height="150" style="overflow: visible; color: var(--accent); opacity: 0.7"></svg>
+          </div>
           <div class="section-label rv visible">About</div>
-          <h1 class="section-title rv visible rv-d1">The story behind m-session</h1>
+          <h1 class="section-title rv visible rv-d1">The case for m-session</h1>
           <div class="prose rv visible rv-d2" style="margin-top: 16px">
             <p>
-              MDMA has a way of getting people unstuck. Not permanently, not magically, but enough to see clearly for a while, and sometimes that&rsquo;s all it takes.
+              MDMA has been used as a therapeutic tool since the 1970s, but the
+              infrastructure around it has always been polarized. On one end,
+              clinical settings with trained facilitators, expensive and largely
+              reserved for severe psychiatric diagnoses. On the other,
+              recreational use with no structure or therapeutic intention. In
+              between is a large and underserved middle ground: people who want
+              to work with MDMA intentionally, whether solo, with a partner, or
+              with a sitter, but who don&rsquo;t have access to a clinical
+              program and aren&rsquo;t looking for a party. They might be
+              working through something specific, or they might simply want to
+              understand themselves more honestly. MDMA doesn&rsquo;t require a
+              diagnosis to be valuable. A private app on your own phone, used on
+              your own terms, opens that door to anyone. For some, it might even
+              be the first step toward seeking more structured professional
+              help.
             </p>
             <p>
-              Most people go into a session alone, with no structure, and come out the other side unsure what to do with what they found. m-session exists to help with that. It&rsquo;s not a replacement for an in-person therapist or guide, and it works just as well alongside one. But for people who want to navigate this process entirely on their own terms, there hasn&rsquo;t been much built for them. This is an attempt to change that.
+              The app draws on established therapeutic frameworks: Acceptance
+              and Commitment Therapy (ACT), Coherence Therapy, Internal Family
+              Systems (IFS), Emotionally Focused Therapy (EFT), Focusing, and
+              others. None of this would exist without the clinicians who
+              recognized MDMA&rsquo;s therapeutic potential, the researchers who
+              spent decades fighting to re-legitimize its use, and the broader
+              traditions of somatic and contemplative practice that these
+              frameworks grew out of. m-session is an attempt to make this work
+              more accessible.
             </p>
             <p>
-              The app is built around the full arc of a session, including the days that follow, when insights are still fresh and the work of integration can actually begin. The modules draw on real therapeutic frameworks, and the approach throughout is non-directive: the app tries to support your process rather than steer it.
-            </p>
-            <p>
-              Everything runs locally on your device. No accounts, no data collection. The module library is still growing, informed by community feedback and the input of practicing MDMA therapists and guides.
+              The project is free and open source, and the module library
+              continues to grow. The long-term vision is something closer to an
+              open repository: a growing collection of practices, knowledge, and
+              guided experiences around MDMA therapy, shaped by the
+              contributions of therapists, researchers, developers, and
+              practitioners. The hope is that many more talented people will
+              come to the table and help make it the best tool it can be.
             </p>
           </div>
         </div>
       </section>
 
       <!-- Who Built This -->
-      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
-          <div class="prose rv">
-            <h2>Who built this</h2>
+          <div class="section-label rv">Origin</div>
+          <h2 class="section-title rv rv-d1">Who built this</h2>
+          <div class="prose rv rv-d2">
             <p>
-              I built m-session because I believe people have the power to change themselves, and that psychedelics are one of the most powerful tools available to help with that. MDMA in particular has a way of cutting through the noise and helping people feel connected again, sometimes for the first time in years.
+              I built m-session after a solo MDMA session opened things up for
+              me. It had been years since I had touched psychedelics, and the
+              distance made the contrast sharp. I could feel how much had
+              quietly calcified: assumptions about myself, my relationships,
+              what I thought I already understood. MDMA quieted the filters that
+              normally make it so hard to see life for what it is, with
+              acceptance and appreciation. It also made me realize how much I
+              was leaving to chance.
             </p>
             <p>
-              After taking stock of my own background and experience, I felt this was something I could actually build well. My hope is that m-session grows into a true community project, with many active contributors, and that this tool becomes genuinely useful for anyone on their MDMA healing journey.
+              During that session, I found myself wishing for more structure. I
+              was writing in a notebook, which is always valuable, but the
+              process felt scattered. Random thoughts, half-formed reflections,
+              no sense of arc or progression. I wanted a timeline at the very
+              least, something that could keep track of how far into the
+              experience I was and suggest what might be worth trying next. When
+              I looked for something like that, it didn&rsquo;t exist. I had
+              come to value certain meditation apps in my daily life, tools that
+              were intelligent and well-designed and treated the user as an
+              adult. I wanted something like that for MDMA.
             </p>
             <p>
-              If you&rsquo;re reading this and feel like you can help in any way, please do. You can <a href="/contribute">test the app and send feedback</a>, contribute code, or support us financially. Since the project is still early, probably the most useful thing you can do is just spread the word.
+              I have over seven years of experience working in psychology, my
+              own long history with these substances, and a background in the
+              creative field. m-session grew out of that intersection, working
+              in collaboration with AI (Claude Opus 4.5) on research, design,
+              and coding. All therapeutic content is reviewed and validated
+              against primary sources. My hope is that m-session grows into a
+              true community project, with many contributors, and that it
+              becomes genuinely useful for anyone who wants to bring intention
+              and structure to their MDMA practice.
             </p>
             <p>
-              Good luck, I love you.
+              If you&rsquo;re reading this and feel like you can help in any
+              way, please do. You can
+              <a href="/contribute">test the app and send feedback</a>,
+              contribute code, or support us financially. Since the project is
+              still early, probably the most useful thing you can do is just
+              spread the word.
             </p>
-            <p>
-              &mdash; dasloops
-            </p>
+            <p>Good luck, I love you.</p>
+            <p>- dasloops</p>
           </div>
         </div>
       </section>
 
       <!-- Design Philosophy -->
-      <section>
+      <section id="ux">
         <div class="container">
           <div class="section-label rv">Philosophy</div>
-          <h2 class="section-title rv rv-d1">Design principles</h2>
+          <h2 class="section-title rv rv-d1">Altered-state UX</h2>
+          <div class="prose rv rv-d2" style="margin-bottom: 48px">
+            <p>
+              Most apps are designed to hold your attention. This one is
+              designed to let go of it. The central design challenge of
+              m-session is that the person using it is in an altered state of
+              consciousness, possibly at the most emotionally open and
+              vulnerable point in their session. Every decision follows from
+              that constraint.
+            </p>
+            <p>
+              The visual language is deliberately flat. There are no gradients,
+              no shadows, no depth cues. Where animation exists, it is minimal
+              and monochromatic, rendered in the single accent color that runs
+              through the chosen theme. The interface is meant to feel like an
+              open notebook: a calm, stable surface you can engage with or set
+              down without consequence. Typography is kept to two fonts
+              throughout, a monospace for body text and a serif for headings,
+              and text is minimal per screen. If something can&rsquo;t be read
+              comfortably in a few seconds by someone with dilated pupils, it
+              gets broken up or cut.
+            </p>
+            <p>
+              Each mode, light and dark, is built around a single accent color:
+              orange in light, purple in dark. The user can also customize their
+              own accent color to suit their preference. The accent is used
+              sparingly to guide the eye toward interactive elements and
+              important cues without creating visual noise. The palette is
+              otherwise muted and neutral. During an MDMA session, pupils dilate
+              significantly and light sensitivity becomes a real consideration.
+              Both modes are designed as complete, intentional experiences.
+            </p>
+            <p>
+              Audio is treated as a primary modality. The app&rsquo;s guided
+              meditations use a high-quality AI voice generated through
+              ElevenLabs and fine-tuned for meditation, with synchronized text
+              display so the user can close their eyes, lie back, and be guided
+              without needing to look at a screen. Many of these are
+              duration-adjustable: extending the length doesn&rsquo;t add more
+              content, it intelligently increases the silence between voice
+              prompts, giving the user more time to settle into each step and do
+              the work being asked of them at their own pace.
+            </p>
+            <p>
+              The user can close the app mid-session and reopen it hours later
+              to find everything exactly where they left it. State is saved
+              continuously and silently. The app should feel as reliable and
+              undemanding as a physical object, something you can pick up, use,
+              and put down without thinking about whether it will remember where
+              you were.
+            </p>
+            <p>
+              The app is also fully compatible with using a physical journal.
+              Every journal prompt can be progressed through without typing
+              anything into the app. If the user chooses to work this way, the
+              app still saves timestamps for each prompt, so they can
+              cross-reference their notebook entries during the integration
+              period and maintain a clear record of when each reflection
+              occurred.
+            </p>
+            <p>
+              Screens are sequenced to minimize decision-making. Journal prompts
+              are open-ended rather than prescriptive. Choice selections never
+              gate progression. If a screen offers options, skipping is always
+              one of them. The underlying principle is that the person in the
+              session knows what they need better than the app does, especially
+              in an altered state where inner signals are amplified and the last
+              thing you want is an interface arguing with your instincts.
+            </p>
+            <p>
+              The app is mobile-first, works fully offline, and requires no
+              account or signup. It&rsquo;s built as a Progressive Web App (PWA)
+              rather than a native app, in part because an app like this has
+              little chance of approval in the current app store regulatory
+              environment. These aren&rsquo;t just privacy features.
+              They&rsquo;re UX decisions rooted in the context of use. The goal
+              is for the app to feel like a seamless, ambient guide during a
+              session, present when you reach for it, invisible when you
+              don&rsquo;t. The user should be grounded in their space, not in
+              their phone, and free to focus entirely on the work in front of
+              them.
+            </p>
+          </div>
 
           <div class="card-grid card-grid-2 rv rv-d2">
             <div class="card">
-              <div class="card-icon">&gt;_</div>
+              <div class="card-icon">
+                <svg><use href="#icon-compass"></use></svg>
+              </div>
               <div class="card-title">Non-directive</div>
               <div class="card-body">
-                Structure, not instructions. The app trusts your inner wisdom and follows your pace rather than imposing a rigid protocol.
+                Structure, not instructions. Every screen can be skipped.
+                Choice selections never gate progression. The app follows your
+                pace and trusts that you know what you need.
               </div>
             </div>
             <div class="card">
-              <div class="card-icon">{ }</div>
-              <div class="card-title">Research-grounded</div>
+              <div class="card-icon">
+                <svg><use href="#icon-waves"></use></svg>
+              </div>
+              <div class="card-title">Audio-first</div>
               <div class="card-body">
-                Built on established therapeutic frameworks &mdash; IFS, EFT, ACT, Coherence Therapy, Focusing, and more &mdash; adapted for self-guided use.
+                Guided meditations are a primary modality, designed for
+                eyes-closed use. Many are duration-adjustable: extending the
+                length adds more silence between prompts, giving you time to
+                settle into each step.
               </div>
             </div>
             <div class="card">
-              <div class="card-icon">&lt;/&gt;</div>
+              <div class="card-icon">
+                <svg><use href="#icon-heart-handshake"></use></svg>
+              </div>
               <div class="card-title">Harm reduction</div>
               <div class="card-body">
-                Not promoting, not condemning. If people are going to explore, they deserve accurate information and safer practices.
+                Dosage guidance, medication interaction checks, and substance
+                testing reminders are built into the session flow. The app
+                treats safer practices as foundational, not optional.
               </div>
             </div>
             <div class="card">
-              <div class="card-icon">[*]</div>
-              <div class="card-title">Privacy-first</div>
+              <div class="card-icon">
+                <svg><use href="#icon-notebook-pen"></use></svg>
+              </div>
+              <div class="card-title">Physical journal compatible</div>
               <div class="card-body">
-                No accounts, no analytics, no data collection. Your experience stays on your device. Open source and auditable.
+                Every journal prompt can be progressed through without typing
+                into the app. Timestamps are saved for each prompt so you can
+                cross-reference your notebook entries during integration.
               </div>
             </div>
             <div class="card">
-              <div class="card-icon">//0</div>
+              <div class="card-icon">
+                <svg><use href="#icon-wheel"></use></svg>
+              </div>
               <div class="card-title">Accessible</div>
               <div class="card-body">
-                Free forever. No paywalls, no premium tiers, no subscriptions. Works offline as an installable PWA.
+                No paywalls, no accounts, no subscriptions. Built as an
+                installable Progressive Web App that works fully offline. Close
+                it mid-session and reopen hours later to find everything
+                exactly where you left it.
               </div>
             </div>
             <div class="card">
-              <div class="card-icon">~/</div>
+              <div class="card-icon">
+                <svg><use href="#icon-snail"></use></svg>
+              </div>
               <div class="card-title">Altered-state aware</div>
               <div class="card-body">
-                Designed for minimal cognitive load. Nothing jarring. Nothing demanding. Content meets you where you are.
+                Pupils dilate during MDMA use, making light sensitivity real.
+                Light and dark modes are intentional, built around a single
+                accent color per theme that guides the eye without overwhelming
+                it. Flat, minimal, easy to set down.
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-icon">
+                <svg><use href="#icon-lock"></use></svg>
+              </div>
+              <div class="card-title">Privacy-first</div>
+              <div class="card-body">
+                No analytics, no data collection, no network requests.
+                Everything runs locally on your device. The codebase is open
+                source and fully auditable.
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-icon">
+                <svg><use href="#icon-sparkle"></use></svg>
+              </div>
+              <div class="card-title">Personalized timeline</div>
+              <div class="card-body">
+                The intake questionnaire builds a session timeline based on
+                your focus and guidance level. Eleven configurations across
+                five focus areas. Completely customizable from there.
               </div>
             </div>
           </div>
@@ -211,69 +484,111 @@
       </section>
 
       <!-- Therapeutic Foundations -->
-      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
           <div class="section-label rv">Foundations</div>
           <h2 class="section-title rv rv-d1">Therapeutic frameworks</h2>
           <p class="section-body rv rv-d2">
-            Every guided activity is rooted in an established therapeutic approach, adapted for self-guided use in altered states.
+            Every guided activity is rooted in an established therapeutic
+            approach, adapted for self-guided use in altered states.
           </p>
 
           <div class="framework-list rv rv-d3">
             <div class="framework-item">
-              <div class="framework-tag">IFS</div>
-              <div class="framework-name">Internal Family Systems</div>
+              <div class="framework-tag">ACT</div>
+              <div class="framework-name">
+                Acceptance and Commitment Therapy
+              </div>
               <div class="framework-desc">
-                Developed by Richard Schwartz. Explores the multiplicity of self &mdash; meeting protector parts with curiosity rather than judgment. Used in the Protector Dialogue modules (guided meditation + journaling).
+                Developed by Steven Hayes. Values-driven action and
+                psychological flexibility. Used in the Values Compass (ACT
+                Matrix), Leaves on a Stream (cognitive defusion), and Synthesis
+                Phase exercises.
+                <a href="https://stevenchayes.com/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">EFT</div>
               <div class="framework-name">Emotionally Focused Therapy</div>
               <div class="framework-desc">
-                Developed by Sue Johnson. Maps the emotional cycles that drive disconnection in relationships &mdash; identifying the pursue-withdraw patterns underneath conflict. Used in The Deep Dive and The Cycle modules (guided meditation + relationship mapping + journaling).
+                Developed by Sue Johnson. Maps the emotional cycles that drive
+                disconnection in relationships, identifying the
+                pursue-withdraw patterns underneath conflict. Used in The Deep
+                Dive and The Cycle modules (guided meditation + relationship
+                mapping + journaling).
+                <a href="https://iceeft.com/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
-              <div class="framework-tag">ACT</div>
-              <div class="framework-name">Acceptance and Commitment Therapy</div>
+              <div class="framework-tag">IFS</div>
+              <div class="framework-name">Internal Family Systems</div>
               <div class="framework-desc">
-                Developed by Steven Hayes. Values-driven action and psychological flexibility. Used in the Values Compass (ACT Matrix), Leaves on a Stream (cognitive defusion), and integration exercises.
+                Developed by Richard Schwartz. Explores the multiplicity of
+                self by meeting protector parts with curiosity rather than
+                judgment. Used in the Protector Dialogue modules (guided
+                meditation + journaling).
+                <a href="https://ifs-institute.com/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">Acceptance Theory</div>
               <div class="framework-name">Radical Acceptance</div>
               <div class="framework-desc">
-                Rooted in the work of Marsha Linehan and broader contemplative traditions. The practice of fully acknowledging reality as it is &mdash; without resistance, judgment, or the need to change it &mdash; as the foundation for genuine transformation. Woven throughout the app&rsquo;s approach to difficult emotions.
+                Rooted in the work of Marsha Linehan and broader contemplative
+                traditions. The practice of fully acknowledging reality as it
+                is, without resistance, judgment, or the need to change it, as
+                the foundation for genuine transformation. Woven
+                throughout the app&rsquo;s approach to difficult emotions.
+                <a href="https://www.linehaninstitute.org/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">Coherence Therapy</div>
               <div class="framework-name">Memory Reconsolidation</div>
               <div class="framework-desc">
-                Developed by Bruce Ecker and Laurel Hulley. Accessing and transforming emotional schemas through felt experience. Used in the Stay With It module &mdash; meditation, check-in, psychoeducation, and journaling.
+                Developed by Bruce Ecker and Laurel Hulley. Accessing and
+                transforming emotional schemas through felt experience. Used in
+                the Stay With It module: meditation, check-in,
+                psychoeducation, and journaling.
+                <a href="https://coherencetherapy.org/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">Focusing</div>
               <div class="framework-name">Gendlin Method</div>
               <div class="framework-desc">
-                Developed by Eugene Gendlin. Turning attention inward to the body&rsquo;s felt sense &mdash; the place where meaning hasn&rsquo;t yet formed into words. Used in the Felt Sense module.
+                Developed by Eugene Gendlin. Turning attention inward to the
+                body&rsquo;s felt sense, the place where meaning
+                hasn&rsquo;t yet formed into words. Used in the Felt Sense
+                module.
+                <a href="https://focusing.org/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">Self-Compassion</div>
               <div class="framework-name">Kristin Neff&rsquo;s Framework</div>
               <div class="framework-desc">
-                Three components: mindfulness, common humanity, and self-kindness. Three audio-guided variations available as a meditation module throughout the session.
+                Three components: mindfulness, common humanity, and
+                self-kindness. Three audio-guided variations available as a
+                meditation module throughout the session.
+                <a href="https://self-compassion.org/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
             <div class="framework-item">
               <div class="framework-tag">Somatic</div>
               <div class="framework-name">Body-Centered Practices</div>
               <div class="framework-desc">
-                Body scan, breathwork, grounding exercises. Multiple audio-guided meditations designed for different phases of the experience, from come-up grounding to integration re-centering.
+                Body scan, breathwork, grounding exercises. Multiple
+                audio-guided meditations designed for different phases of the
+                experience, from come-up grounding to Synthesis Phase
+                re-centering.
+                <a href="https://www.somaticexperiencing.com/" target="_blank" rel="noopener" class="framework-link">Learn more <svg><use href="#icon-external"></use></svg></a>
               </div>
             </div>
           </div>
@@ -286,25 +601,55 @@
           <div class="prose rv">
             <h2>Open by design</h2>
             <p>
-              m-session is open source under the <strong>AGPL-3.0 license</strong>. Every line of code is available for inspection on <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub</a>.
+              m-session is open source under the
+              <strong>AGPL-3.0 license</strong>. Every line of code is available
+              for inspection on
+              <a
+                href="https://github.com/wellwellwellyourefeelingfine/m-session"
+                target="_blank"
+                rel="noopener"
+                >GitHub</a
+              >.
             </p>
             <p>
-              For a tool used in vulnerable moments, trust isn&rsquo;t optional. Open source means you don&rsquo;t have to take our word for it &mdash; you can verify that there are no hidden network requests, no analytics scripts, no data collection of any kind.
+              For a tool used in vulnerable moments, trust isn&rsquo;t optional.
+              Open source means you don&rsquo;t have to take our word for it
+              &mdash; you can verify that there are no hidden network requests,
+              no analytics scripts, no data collection of any kind.
             </p>
             <p>
-              Open source also means the community can contribute. If you see something that could be better &mdash; a module that needs refining, an accessibility improvement, a new therapeutic exercise &mdash; you can help make it happen.
+              Open source also means the community can contribute. If you see
+              something that could be better &mdash; a module that needs
+              refining, an accessibility improvement, a new therapeutic exercise
+              &mdash; you can help make it happen.
             </p>
           </div>
         </div>
       </section>
 
       <!-- Contact -->
-      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
           <div class="prose rv">
             <h2>Contact</h2>
             <p>
-              If you have questions, feedback, or want to get involved, you can open an issue on the <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub repository</a>, submit feedback through our <a href="https://tally.so/r/BzG9qN" target="_blank" rel="noopener">feedback form</a>, or reach out directly at dasloops@protonmail.com.
+              If you have questions, feedback, or want to get involved, you can
+              open an issue on the
+              <a
+                href="https://github.com/wellwellwellyourefeelingfine/m-session"
+                target="_blank"
+                rel="noopener"
+                >GitHub repository</a
+              >, submit feedback through our
+              <a href="https://tally.so/r/BzG9qN" target="_blank" rel="noopener"
+                >feedback form</a
+              >, or reach out directly at dasloops@protonmail.com.
             </p>
           </div>
         </div>
@@ -316,10 +661,17 @@
           <div class="section-label">Ready to begin</div>
           <h2 class="section-title">Your session, your way</h2>
           <p class="section-body">
-            Whether you&rsquo;re exploring for the first time or returning with deeper intention.
+            Whether you&rsquo;re exploring for the first time or returning with
+            deeper intention.
           </p>
           <div class="page-cta-actions">
-            <a href="/app" class="btn btn-primary" target="_blank" rel="noopener">Launch App &rarr;</a>
+            <a
+              href="/app"
+              class="btn btn-primary"
+              target="_blank"
+              rel="noopener"
+              >Launch App &rarr;</a
+            >
             <a href="/contribute" class="btn btn-outline">Get Involved</a>
           </div>
         </div>
@@ -334,12 +686,18 @@
           <a href="/faq">FAQ &amp; Safety</a>
           <a href="/contribute">Contribute</a>
           <a href="/privacy">Privacy</a>
-          <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub</a>
+          <a
+            href="https://github.com/wellwellwellyourefeelingfine/m-session"
+            target="_blank"
+            rel="noopener"
+            >GitHub</a
+          >
           <a href="/app" target="_blank" rel="noopener">Launch App</a>
         </nav>
       </div>
     </footer>
 
     <script src="/shared.js"></script>
+    <script src="/leaf-animation.js"></script>
   </body>
 </html>

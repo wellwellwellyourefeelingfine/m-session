@@ -63,16 +63,14 @@ export default function IOSInstallPrompt() {
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/30 transition-opacity duration-300 ${
+      className={`fixed bottom-0 left-0 right-0 z-30 flex justify-center pointer-events-none transition-opacity duration-300 ${
         hiding ? 'opacity-0' : 'opacity-100 animate-fadeIn'
       }`}
-      onClick={handleDismiss}
     >
       <div
-        className={`w-full max-w-md bg-[var(--color-bg)] border-t border-[var(--color-border)] p-6 pb-8 rounded-t-2xl shadow-xl transition-transform duration-300 ${
+        className={`w-full max-w-md bg-[var(--color-bg)] border-t border-[var(--color-border)] p-6 pb-8 rounded-t-2xl shadow-xl pointer-events-auto transition-transform duration-300 ${
           hiding ? 'translate-y-full' : 'animate-slideUp'
         }`}
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-[var(--color-text-primary)] text-xs uppercase tracking-wider font-medium">
