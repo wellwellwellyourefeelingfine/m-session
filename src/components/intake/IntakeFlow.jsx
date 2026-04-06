@@ -21,6 +21,7 @@ import MultiSelect from './questions/MultiSelect';
 import TextInput from './questions/TextInput';
 import TimePicker from './questions/TimePicker';
 import DosageCalculator from './questions/DosageCalculator';
+import ContactInput from './questions/ContactInput';
 
 // Flatten all questions into a single array with section info
 const allQuestions = [
@@ -150,12 +151,15 @@ export default function IntakeFlow({ onComplete }) {
     }, 100);
   };
 
-  // Check if a question should be skipped based on its skipWhen condition
+  // Check if a question should be skipped based on its skipWhen or showWhen condition
   // Read fresh state from store to avoid stale closure issues during auto-advance
   const shouldSkipQuestion = (question) => {
+    const currentResponses = useSessionStore.getState().intake.responses;
+    // showWhen: function-based — skip if the function returns false
+    if (question?.showWhen && !question.showWhen(currentResponses)) return true;
+    // skipWhen: object-based — skip if field matches value
     if (!question?.skipWhen) return false;
     const { field, value } = question.skipWhen;
-    const currentResponses = useSessionStore.getState().intake.responses;
     return currentResponses[field] === value;
   };
 
@@ -242,6 +246,8 @@ export default function IntakeFlow({ onComplete }) {
         return <TimePicker {...commonProps} />;
       case 'dosage-calculator':
         return <DosageCalculator {...commonProps} onContinue={goToNextQuestion} />;
+      case 'contact-input':
+        return <ContactInput {...commonProps} onContinue={goToNextQuestion} />;
       default:
         return null;
     }

@@ -172,6 +172,29 @@ export default function ActiveView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- specific properties listed, full objects too broad
   }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, comeUpCheckIn, showBoosterModal, expireBooster]);
 
+  // Activate come-up check-in 10 minutes after session starts (if not already visible)
+  const comeUpStartedAt = timeline.phases?.comeUp?.startedAt;
+  useEffect(() => {
+    if (sessionPhase !== 'active' || currentPhase !== 'come-up') return;
+    if (comeUpCheckIn.isVisible || !comeUpStartedAt) return;
+
+    const remaining = comeUpStartedAt + 10 * 60 * 1000 - Date.now();
+
+    const activate = () => {
+      const { modules, comeUpCheckIn: c } = useSessionStore.getState();
+      if (!modules.currentModuleInstanceId && !c.isVisible) {
+        useSessionStore.setState({
+          comeUpCheckIn: { ...c, isVisible: true, isMinimized: true },
+        });
+      }
+    };
+
+    if (remaining <= 0) { activate(); return; }
+
+    const timer = setTimeout(activate, remaining);
+    return () => clearTimeout(timer);
+  }, [sessionPhase, currentPhase, comeUpCheckIn.isVisible, comeUpStartedAt, currentModule]);
+
   // Auto-start next module when appropriate
   useEffect(() => {
     // Don't auto-start if:

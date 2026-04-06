@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 22;
+export const SESSION_STORE_VERSION = 23;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -123,6 +123,7 @@ export const useSessionStore = create(
           safeSpace: null,
           hasWaterSnacks: null,
           emergencyContact: null,
+          emergencyContactDetails: { name: '', phone: '' },
           medications: { taking: false, details: '' },
           heartConditions: null,
           psychiatricHistory: null,
@@ -227,9 +228,7 @@ export const useSessionStore = create(
         responses: [],                // History of responses with timestamps
         currentResponse: null,        // 'waiting' | 'starting' | 'fully-arrived'
         introCompleted: true,         // No longer used for intro gating (PreSessionIntro handles pre-session)
-        waitingForCheckIn: false,     // Is a module waiting for check-in before starting
         hasIndicatedFullyArrived: false, // User said fully-arrived but chose to remain in come-up
-        showEndOfPhaseChoice: false,  // Show the end-of-phase choice page
       },
 
       // ============================================
@@ -827,6 +826,153 @@ export const useSessionStore = create(
         return { success: true, module: newModule };
       },
 
+      /**
+       * Insert a module at the active position during a live session.
+       * Creates a new module instance, places it at the current phase's active position,
+       * pushes the current module and all subsequent modules down, and navigates to active tab.
+       * Reusable by any feature that needs to inject a module mid-session.
+       *
+       * @param {string} libraryId - Module library ID from library.js
+       * @returns {{ success: boolean, instanceId?: string, error?: string }}
+       */
+      insertAtActive: (libraryId) => {
+        const state = get();
+        const currentPhase = state.timeline.currentPhase;
+        if (!currentPhase) return { success: false, error: 'No active phase' };
+
+        const libraryModule = getModuleById(libraryId);
+        if (!libraryModule) return { success: false, error: 'Module not found' };
+
+        // Handle linked parent modules (e.g., protector-dialogue creates P1 + P2)
+        if (libraryModule.isLinkedParent && libraryModule.linkedParts) {
+          const part1Lib = getModuleById(libraryModule.linkedParts[0].id);
+          const part2Lib = getModuleById(libraryModule.linkedParts[1].id);
+          if (!part1Lib || !part2Lib) return { success: false, error: 'Linked module parts not found' };
+
+          const linkedGroupId = generateId();
+          const currentModuleId = state.modules.currentModuleInstanceId;
+
+          // Part 1 inserts at order 0 in current phase; Part 2 at start of integration
+          const part2Phase = (currentPhase === 'integration') ? 'integration' : 'integration';
+
+          // Shift all modules in current phase: increment order by 1
+          let updatedItems = state.modules.items.map(m => {
+            if (m.phase === currentPhase) {
+              const updates = { ...m, order: m.order + 1 };
+              if (m.instanceId === currentModuleId && m.status === 'active') {
+                updates.status = 'upcoming';
+                updates.startedAt = null;
+              }
+              return updates;
+            }
+            return m;
+          });
+
+          // Shift integration modules for Part 2 (if different phase)
+          if (part2Phase !== currentPhase) {
+            updatedItems = updatedItems.map(m => {
+              if (m.phase === part2Phase && m.order >= 0) {
+                return { ...m, order: m.order + 1 };
+              }
+              return m;
+            });
+          }
+
+          const newPart1 = {
+            instanceId: generateId(),
+            libraryId: part1Lib.id,
+            phase: currentPhase,
+            title: libraryModule.linkedParts[0].title,
+            duration: part1Lib.defaultDuration,
+            status: 'upcoming',
+            order: 0,
+            content: part1Lib.content,
+            linkedGroupId,
+            linkedRole: 'part1',
+            startedAt: null,
+            completedAt: null,
+          };
+
+          const newPart2 = {
+            instanceId: generateId(),
+            libraryId: part2Lib.id,
+            phase: part2Phase,
+            title: libraryModule.linkedParts[1].title,
+            duration: part2Lib.defaultDuration,
+            status: 'upcoming',
+            order: 0,
+            content: part2Lib.content,
+            linkedGroupId,
+            linkedRole: 'part2',
+            startedAt: null,
+            completedAt: null,
+          };
+
+          set({
+            modules: {
+              ...state.modules,
+              items: [...updatedItems, newPart1, newPart2],
+              currentModuleInstanceId: null,
+              inOpenSpace: false,
+            },
+          });
+
+          if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id);
+          if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id);
+
+          useAppStore.getState().setCurrentTab('active');
+          return { success: true, instanceId: newPart1.instanceId };
+        }
+
+        // Standard (non-linked) module
+        const currentModuleId = state.modules.currentModuleInstanceId;
+
+        // Shift all modules in the current phase: increment their order by 1
+        const updatedItems = state.modules.items.map((m) => {
+          if (m.phase === currentPhase) {
+            const updates = { ...m, order: m.order + 1 };
+            // If this was the active module, reset it to upcoming
+            if (m.instanceId === currentModuleId && m.status === 'active') {
+              updates.status = 'upcoming';
+              updates.startedAt = null;
+            }
+            return updates;
+          }
+          return m;
+        });
+
+        const newInstanceId = generateId();
+        const newModule = {
+          instanceId: newInstanceId,
+          libraryId,
+          phase: currentPhase,
+          title: libraryModule.title,
+          duration: libraryModule.defaultDuration,
+          status: 'upcoming',
+          order: 0,
+          content: libraryModule.content || {},
+          startedAt: null,
+          completedAt: null,
+        };
+
+        set({
+          modules: {
+            ...state.modules,
+            items: [...updatedItems, newModule],
+            currentModuleInstanceId: null,
+            inOpenSpace: false,
+          },
+        });
+
+        // Navigate to active tab
+        useAppStore.getState().setCurrentTab('active');
+
+        // Precache audio (non-blocking)
+        precacheAudioForModule(libraryId);
+
+        return { success: true, instanceId: newInstanceId };
+      },
+
       removeModule: (instanceId) => {
         const state = get();
         const moduleToRemove = state.modules.items.find((m) => m.instanceId === instanceId);
@@ -1392,10 +1538,10 @@ export const useSessionStore = create(
           },
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
-            isVisible: true,
-            isMinimized: true, // Start minimized; expands after first module completes
+            isVisible: false, // Hidden until first module completes or 10 min elapsed
+            isMinimized: true,
             introCompleted: true,
-            promptCount: 0, // Don't count initial minimized state as a prompt
+            promptCount: 0,
             lastPromptAt: now,
           },
         });
@@ -1404,19 +1550,6 @@ export const useSessionStore = create(
       // ============================================
       // COME-UP CHECK-IN ACTIONS
       // ============================================
-
-      showCheckInModal: () => {
-        const state = get();
-        set({
-          comeUpCheckIn: {
-            ...state.comeUpCheckIn,
-            isVisible: true,
-            isMinimized: false,
-            promptCount: state.comeUpCheckIn.promptCount + 1,
-            lastPromptAt: Date.now(),
-          },
-        });
-      },
 
       minimizeCheckIn: () => {
         set({
@@ -1460,32 +1593,11 @@ export const useSessionStore = create(
           },
         };
 
-        // If fully arrived, show end-of-phase choice instead of immediately transitioning
         if (response === 'fully-arrived') {
           updates.comeUpCheckIn.hasIndicatedFullyArrived = true;
-          updates.comeUpCheckIn.showEndOfPhaseChoice = true;
         }
 
         set(updates);
-      },
-
-      setWaitingForCheckIn: (waiting) => {
-        set({
-          comeUpCheckIn: {
-            ...get().comeUpCheckIn,
-            waitingForCheckIn: waiting,
-          },
-        });
-      },
-
-      dismissEndOfPhaseChoice: () => {
-        set({
-          comeUpCheckIn: {
-            ...get().comeUpCheckIn,
-            showEndOfPhaseChoice: false,
-            isMinimized: true,
-          },
-        });
       },
 
       // ============================================
@@ -2184,7 +2296,7 @@ export const useSessionStore = create(
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module || module.isBoosterModule) return;
 
-        set({
+        const updates = {
           modules: {
             ...state.modules,
             currentModuleInstanceId: instanceId,
@@ -2195,7 +2307,9 @@ export const useSessionStore = create(
                 : m
             ),
           },
-        });
+        };
+
+        set(updates);
       },
 
       completeModule: (instanceId) => {
@@ -2242,7 +2356,8 @@ export const useSessionStore = create(
               },
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
-                showEndOfPhaseChoice: true,
+                isVisible: true,
+
                 isMinimized: false,
               },
             });
@@ -2258,6 +2373,7 @@ export const useSessionStore = create(
               },
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
+                isVisible: true,
                 isMinimized: false,
                 promptCount: state.comeUpCheckIn.promptCount + 1,
                 lastPromptAt: now,
@@ -2340,7 +2456,8 @@ export const useSessionStore = create(
               },
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
-                showEndOfPhaseChoice: true,
+                isVisible: true,
+
                 isMinimized: false,
               },
             });
@@ -2356,6 +2473,7 @@ export const useSessionStore = create(
               },
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
+                isVisible: true,
                 isMinimized: false,
                 promptCount: state.comeUpCheckIn.promptCount + 1,
                 lastPromptAt: now,
@@ -2553,7 +2671,7 @@ export const useSessionStore = create(
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
             currentResponse: null,
-            waitingForCheckIn: false,
+
           },
           peakCheckIn: { isVisible: false },
           closingCheckIn: { isVisible: false },
@@ -2597,6 +2715,7 @@ export const useSessionStore = create(
               safeSpace: null,
               hasWaterSnacks: null,
               emergencyContact: null,
+              emergencyContactDetails: { name: '', phone: '' },
               medications: { taking: false, details: '' },
               heartConditions: null,
               psychiatricHistory: null,
@@ -2664,9 +2783,8 @@ export const useSessionStore = create(
             responses: [],
             currentResponse: null,
             introCompleted: false,
-            waitingForCheckIn: false,
+
             hasIndicatedFullyArrived: false,
-            showEndOfPhaseChoice: false,
           },
           peakCheckIn: {
             isVisible: false,
@@ -2847,7 +2965,6 @@ export const useSessionStore = create(
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
             currentResponse: null,      // Transient UI selection — safe to reset
-            waitingForCheckIn: false,    // Transient flag — safe to reset
           },
           peakCheckIn: { isVisible: false },
           closingCheckIn: { isVisible: false },
@@ -3346,6 +3463,19 @@ export function migrateSessionState(persistedState, version) {
               bodySensations: [],
               responseKey: null,
               completedAt: null,
+            };
+          }
+        }
+
+        // Version 22 -> 23: Add emergencyContactDetails to intake responses
+        if (version < 23) {
+          if (!state.intake?.responses?.emergencyContactDetails) {
+            state.intake = {
+              ...state.intake,
+              responses: {
+                ...state.intake?.responses,
+                emergencyContactDetails: { name: '', phone: '' },
+              },
             };
           }
         }

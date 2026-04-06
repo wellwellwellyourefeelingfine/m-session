@@ -25,6 +25,12 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { calculateBoosterDose } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
+
+const MODAL_HEIGHT_SHORT = '45vh';
+const MODAL_HEIGHT_TALL = '85vh';
+const TALL_STEPS = new Set([1, 2, 3, 4, '4b', 5, '5b']);
+const getModalHeight = (step) => TALL_STEPS.has(step) ? MODAL_HEIGHT_TALL : MODAL_HEIGHT_SHORT;
 
 export default function BoosterConsiderationModal() {
   const [isVisible, setIsVisible] = useState(true);
@@ -68,6 +74,7 @@ export default function BoosterConsiderationModal() {
     if (initialMinutes >= 150) return 'window-expired';
     return 0;
   });
+  const [modalHeight, setModalHeight] = useState(() => getModalHeight(step));
 
   // Reset step only when auto-prompted after snooze timer expires
   // (showBoosterModal sets status to 'prompted' — manual tap via maximizeBooster does not)
@@ -76,7 +83,9 @@ export default function BoosterConsiderationModal() {
   useEffect(() => {
     if (booster.status === 'prompted' && booster.isModalVisible && !booster.isMinimized) {
       const mins = getElapsedMinutes();
-      setStep(mins >= 150 ? 'window-expired' : 0);
+      const newStep = mins >= 150 ? 'window-expired' : 0;
+      setStep(newStep);
+      setModalHeight(getModalHeight(newStep));
     }
   }, [booster.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -172,6 +181,8 @@ export default function BoosterConsiderationModal() {
   };
 
   const goToStep = (newStep) => {
+    const targetHeight = getModalHeight(newStep);
+    if (targetHeight !== modalHeight) setModalHeight(targetHeight);
     fadeTransition(() => setStep(newStep));
   };
 
@@ -328,13 +339,10 @@ export default function BoosterConsiderationModal() {
   // Step 0: Arrival
   const renderArrival = () => (
     <div className="space-y-6">
-      <p className="text-[var(--color-text-primary)] leading-relaxed">
-        You've been in your session for about {liveMinutes} minutes.
+      <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+        You've been in your session for about {liveMinutes} minutes. This is the window where some people choose to take a supplemental dose to extend the experience.
       </p>
-      <p className="text-[var(--color-text-primary)] leading-relaxed">
-        This is the window where some people choose to take a supplemental dose to extend the experience.
-      </p>
-      <p className="text-[var(--color-text-secondary)] leading-relaxed">
+      <p className="text-[var(--color-text-secondary)] leading-relaxed text-center">
         Let's check in with how you're feeling.
       </p>
       <button
@@ -365,7 +373,7 @@ export default function BoosterConsiderationModal() {
             onClick={() => handleExperienceSelect(option.value)}
             className="w-full py-4 px-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left"
           >
-            <p className="text-[var(--color-text-primary)]">{option.label}</p>
+            <p className="text-[var(--color-text-primary)] text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>{option.label}</p>
             <p className="text-[var(--color-text-tertiary)] text-sm">{option.desc}</p>
           </button>
         ))}
@@ -392,7 +400,7 @@ export default function BoosterConsiderationModal() {
             onClick={() => handlePhysicalSelect(option.value)}
             className="w-full py-4 px-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left"
           >
-            <p className="text-[var(--color-text-primary)]">{option.label}</p>
+            <p className="text-[var(--color-text-primary)] text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>{option.label}</p>
             <p className="text-[var(--color-text-tertiary)] text-sm">{option.desc}</p>
           </button>
         ))}
@@ -418,7 +426,7 @@ export default function BoosterConsiderationModal() {
             onClick={() => handleTrajectorySelect(option.value)}
             className="w-full py-4 px-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left"
           >
-            <p className="text-[var(--color-text-primary)]">{option.label}</p>
+            <p className="text-[var(--color-text-primary)] text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>{option.label}</p>
             <p className="text-[var(--color-text-tertiary)] text-sm">{option.desc}</p>
           </button>
         ))}
@@ -690,18 +698,26 @@ export default function BoosterConsiderationModal() {
         Take it with a sip of water, then settle back in.
       </p>
 
-      <button
-        onClick={handleTakeConfirm}
-        className="w-full py-4 border border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
-      >
-        I've Taken My Booster
-      </button>
-      <button
-        onClick={handleSkipDecision}
-        className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs"
-      >
-        I decided not to take it
-      </button>
+      <div className="w-full space-y-2">
+        <button
+          onClick={handleTakeConfirm}
+          className="w-full py-4 border border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+        >
+          I've Taken My Booster
+        </button>
+        <button
+          onClick={handleEditDose}
+          className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-[var(--color-text-primary)] uppercase tracking-wider text-xs"
+        >
+          Change My Dose
+        </button>
+        <button
+          onClick={handleSkipDecision}
+          className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs"
+        >
+          I decided not to take it
+        </button>
+      </div>
     </div>
   );
 
@@ -945,18 +961,21 @@ export default function BoosterConsiderationModal() {
     return (
       <button
         onClick={maximizeBooster}
-        className="fixed left-0 right-0 bg-[var(--accent-bg)] border-t border-b border-[var(--accent)] py-3 px-4 flex items-center justify-between z-40"
+        className="fixed left-0 right-0 w-full bg-[var(--accent-bg)] border-t border-b border-[var(--accent)] py-3 px-4 flex items-center justify-between z-40 animate-slideUpSmall"
         style={{ bottom: 'var(--bottom-chrome)' }}
       >
-        <span
-          className="text-[var(--color-text-primary)] text-sm"
-          style={{ fontFamily: 'DM Serif Text, serif', fontStyle: 'italic' }}
-        >
-          Booster Check-In
-        </span>
-        <span className="text-[var(--color-text-tertiary)] text-xs">
-          Tap to open
-        </span>
+        <div className="flex items-center space-x-3">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="12" height="12" stroke="var(--accent)" strokeWidth="1.5" rx="1" />
+          </svg>
+          <span
+            className="text-[var(--color-text-primary)] text-base"
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+          >
+            Booster Check-In
+          </span>
+        </div>
+        <CirclePlusIcon size={20} className="text-[var(--color-text-tertiary)]" />
       </button>
     );
   }
@@ -967,29 +986,29 @@ export default function BoosterConsiderationModal() {
       onClick={handleMinimizeOrSnooze}
     >
       <div
-        className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 max-h-[85vh] overflow-y-auto ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}
+        className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl flex flex-col overflow-hidden ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}
+        style={{ height: modalHeight, transition: 'height 300ms ease-out' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex justify-between items-start mb-6">
+        {/* Header — sticky */}
+        <div className="flex justify-between items-start px-6 pt-4 pb-3 border-b border-[var(--color-border)]">
           <div>
-            <h3 className="mb-1 text-[var(--color-text-primary)]">Booster Check-In</h3>
+            <h3 className="mb-1 text-2xl text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Booster Check-In</h3>
             <p className="text-[var(--color-text-tertiary)] text-sm">
               {liveMinutes} minutes since ingestion
             </p>
           </div>
           <button
             onClick={handleMinimizeOrSnooze}
-            className="p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-            title="Minimize"
+            className="p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            —
+            <CircleSkipIcon size={22} />
           </button>
         </div>
 
-        {/* Content with fade animation */}
+        {/* Content — scrollable */}
         <div
-          className="transition-opacity duration-300"
+          className="overflow-y-auto p-6 pb-8 transition-opacity duration-300"
           style={{ opacity: isVisible ? 1 : 0 }}
         >
           {renderStep()}

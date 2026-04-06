@@ -432,6 +432,15 @@
   animation: orb-glow 3s ease-in-out infinite;
 }
 
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.30; }
+  50% { opacity: 0.80; }
+}
+
+.animate-halo-pulse {
+  animation: halo-pulse 6s ease-in-out infinite;
+}
+
 /* Breathing circle pulse */
 @keyframes breathe-pulse {
   0%, 100% {
@@ -637,4 +646,27 @@
   45%  { transform: translate(-50%, -50%) rotate(180deg); }
   55%  { transform: translate(-50%, -50%) rotate(180deg); }
   100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Helper Modal — slides from top via CSS transition on transform */
+.helper-modal-container {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  width: 100%;
+  max-width: 800px;
+  /* Default: hidden far above viewport until JS computes --helper-closed-y */
+  --helper-closed-y: -200%;
+  transform: translateX(-50%) translateY(var(--helper-closed-y));
+  will-change: transform;
+}
+/* Transition is only enabled after JS has computed the closed position */
+.helper-modal-container.ready {
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+.helper-modal-container.closed {
+  transform: translateX(-50%) translateY(var(--helper-closed-y));
+}
+.helper-modal-container.open {
+  transform: translateX(-50%) translateY(0);
 }

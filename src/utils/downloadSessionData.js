@@ -722,6 +722,7 @@ ${centerText(`Exported ${exportDate}`)}
       physicalPreparation: 'Physical Preparation',
       lastMDMAUse: 'Last MDMA Use',
       emergencyContact: 'Emergency Contact',
+      emergencyContactDetails: 'Emergency Contact Details',
       contraindicatedMedications: 'Contraindicated Medications',
       heartConditions: 'Heart Conditions',
       psychiatricHistory: 'Psychiatric History',
@@ -735,6 +736,9 @@ ${centerText(`Exported ${exportDate}`)}
       const label = fieldLabels[key] || key;
       if (Array.isArray(value)) {
         text += `\n  ${label}:  ${value.join(', ')}`;
+      } else if (key === 'emergencyContactDetails' && typeof value === 'object') {
+        const parts = [value.name, value.phone].filter(Boolean);
+        if (parts.length > 0) text += `\n  ${label}:  ${parts.join(' — ')}`;
       } else if (optionLabels[key]?.[value]) {
         text += `\n  ${label}:  ${optionLabels[key][value]}`;
       } else {

@@ -26,4 +26,5 @@ dist-ssr
 .claude/worktrees/
 
 # Temporary docs
-Pendulation-Module-temporary-docs/
+Technical-Spec-Docs-Temporary/
+

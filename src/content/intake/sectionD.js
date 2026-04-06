@@ -97,6 +97,20 @@ export const sectionDQuestions = [
     ],
   },
   {
+    field: 'emergencyContactDetails',
+    type: 'contact-input',
+    label: 'Who should we contact if you need help?',
+    showWhen: (responses) => responses.emergencyContact === 'yes',
+    contentBlocks: [
+      { type: 'spacer' },
+      { type: 'text', text: 'This is optional. If you skip this, the Helper tab will still suggest calling your emergency contact, and you can decide who to call in the moment.', color: 'grey' },
+    ],
+    inputs: [
+      { field: 'name', placeholder: 'Name', required: false },
+      { field: 'phone', placeholder: 'Phone number', required: false, inputMode: 'tel' },
+    ],
+  },
+  {
     field: 'contraindicatedMedications',
     type: 'single-select',
     label: 'Do you currently take any of the following medications?',
