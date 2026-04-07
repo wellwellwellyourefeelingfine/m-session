@@ -10,6 +10,7 @@ import AIAssistantTab from '../ai/AIAssistantTab';
 import AIAssistantModal from '../ai/AIAssistantModal';
 import SessionMenu from './SessionMenu';
 import AnimatedTextLogo from './AnimatedTextLogo';
+import HelperButton from '../helper/HelperButton';
 
 export default function Header() {
   const darkMode = useAppStore((state) => state.darkMode);
@@ -68,6 +69,9 @@ export default function Header() {
           ) : (
             <div className="flex-1" />
           )}
+
+          {/* Helper Modal trigger (heart icon) */}
+          <HelperButton />
 
           {/* Session Menu (hamburger) */}
           <SessionMenu />

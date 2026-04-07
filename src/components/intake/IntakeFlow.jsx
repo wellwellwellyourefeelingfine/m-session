@@ -58,11 +58,6 @@ const HEALTH_WARNINGS = {
     message: 'Using MDMA less than a month after your last use significantly increases health risks and greatly reduces the therapeutic benefit. Serotonin levels need time to replenish. We strongly recommend waiting at least 3 months between uses.',
     continueLabel: 'I understand the risks',
   },
-  noEmergencyContact: {
-    title: 'We Strongly Recommend Telling Someone',
-    message: 'A trusted sitter adds a layer of safety, especially for first-time experiences or higher doses. If that isn\u2019t possible, let someone know you\u2019re having a session \u2014 even without sharing details. Keep your phone accessible and know who you\u2019d call if you needed support.',
-    continueLabel: 'I understand',
-  },
 };
 
 export default function IntakeFlow({ onComplete }) {
@@ -128,10 +123,6 @@ export default function IntakeFlow({ onComplete }) {
     }
     if (currentQuestion.field === 'lastMDMAUse' && value === 'less-than-1-month') {
       setActiveWarning('lastMDMAUseVeryRecent');
-      return;
-    }
-    if (currentQuestion.field === 'emergencyContact' && value === 'no-fine') {
-      setActiveWarning('noEmergencyContact');
       return;
     }
 
@@ -246,8 +237,18 @@ export default function IntakeFlow({ onComplete }) {
         return <TimePicker {...commonProps} />;
       case 'dosage-calculator':
         return <DosageCalculator {...commonProps} onContinue={goToNextQuestion} />;
-      case 'contact-input':
-        return <ContactInput {...commonProps} onContinue={goToNextQuestion} />;
+      case 'contact-input': {
+        const dynamicNote = currentQuestion.dynamicNote
+          ? currentQuestion.dynamicNote(intake.responses)
+          : null;
+        return (
+          <ContactInput
+            {...commonProps}
+            onContinue={goToNextQuestion}
+            dynamicNote={dynamicNote}
+          />
+        );
+      }
       default:
         return null;
     }
@@ -444,7 +445,7 @@ export default function IntakeFlow({ onComplete }) {
           {/* Navigation - only show for non-single-select or when showing continue button */}
           <div className="mt-12 space-y-4">
             {/* Continue button for multi-select, text, and time inputs */}
-            {currentQuestion?.type !== 'single-select' && (
+            {currentQuestion?.type !== 'single-select' && currentQuestion?.type !== 'contact-input' && (
               <button
                 type="button"
                 onClick={goToNextQuestion}

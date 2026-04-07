@@ -513,7 +513,6 @@ export const useSessionStore = create(
         // Check for safety warnings
         const showSafetyWarnings =
           responses.safeSpace === 'no' ||
-          responses.emergencyContact === 'no-fine' ||
           responses.heartConditions === 'yes' ||
           responses.psychiatricHistory === 'yes';
 
@@ -1411,6 +1410,9 @@ export const useSessionStore = create(
         }
       },
 
+      // Silent snooze: closing the modal without an explicit decision.
+      // Keeps the minimized bar visible so the user can re-open if they want.
+      // Re-prompts automatically after 10 minutes.
       snoozeBooster: () => {
         const state = get();
         const newSnoozeCount = state.booster.snoozeCount + 1;
@@ -1427,6 +1429,28 @@ export const useSessionStore = create(
           },
         });
         // Resume module timer
+        if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
+          get().resumeMeditationPlayback();
+        }
+      },
+
+      // Active snooze: user explicitly clicked "Ask me again in 10 minutes".
+      // Hides the bar entirely; the modal will fade back in after 10 minutes.
+      snoozeBoosterActive: () => {
+        const state = get();
+        const newSnoozeCount = state.booster.snoozeCount + 1;
+        const nextPromptAt = Date.now() + 10 * 60 * 1000;
+
+        set({
+          booster: {
+            ...state.booster,
+            status: 'snoozed',
+            snoozeCount: newSnoozeCount,
+            nextPromptAt,
+            isModalVisible: false,
+            isMinimized: false,
+          },
+        });
         if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
           get().resumeMeditationPlayback();
         }

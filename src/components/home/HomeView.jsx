@@ -413,7 +413,6 @@ export default function HomeView() {
           phase="preview"
           onSelect={handlePreviewSelect}
           onClose={() => setPreviewDrawerOpen(false)}
-          hideWarnings
           externalClosing={previewDrawerClosing}
         />
       )}

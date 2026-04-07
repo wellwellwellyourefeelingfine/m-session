@@ -19,7 +19,7 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
 
   const handleCloseAnimated = () => {
     setClosing(true);
-    setTimeout(onClose, 300);
+    setTimeout(onClose, 350);
   };
 
   const followUp = useSessionStore((state) => state.followUp);

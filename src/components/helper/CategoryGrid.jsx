@@ -2,8 +2,7 @@
  * CategoryGrid
  * 2-column grid of category cards with circular icon escutcheons.
  * Each card has a circle overlapping the top-left corner containing the icon,
- * with serif title and description below.
- * Cards start hidden (opacity 0) and stagger-fade in when `stagger` becomes true.
+ * with a serif title and description below.
  */
 
 import * as Icons from '../shared/Icons';
@@ -11,24 +10,26 @@ import * as Icons from '../shared/Icons';
 const CIRCLE_SIZE = 40;
 const CIRCLE_OFFSET = -10; // how far the circle overhangs the card edges
 
-export default function CategoryGrid({ categories, onSelect, stagger = false }) {
+export default function CategoryGrid({ categories, onSelect }) {
   return (
-    <div className="grid grid-cols-2 gap-3" style={{ paddingTop: -CIRCLE_OFFSET, paddingLeft: -CIRCLE_OFFSET }}>
-      {categories.map((cat, index) => {
+    <div
+      className="grid grid-cols-2 gap-x-5 gap-y-5"
+      style={{
+        paddingTop: -CIRCLE_OFFSET,
+        paddingLeft: -CIRCLE_OFFSET,
+      }}
+    >
+      {categories.map((cat) => {
         const IconComponent = Icons[cat.icon];
         return (
           <button
             key={cat.id}
             type="button"
             onClick={() => onSelect(cat)}
-            className="relative text-left border transition-colors overflow-visible"
+            className="relative text-left border transition-colors overflow-visible flex flex-col items-start rounded-md"
             style={{
               borderColor: 'var(--color-border)',
-              padding: `8px 12px 12px 12px`,
-              opacity: 0,
-              animation: stagger
-                ? `fadeIn 150ms var(--ease-out) ${index * 60}ms forwards`
-                : undefined,
+              padding: `6px 12px 8px 12px`,
             }}
           >
             {/* Circular escutcheon — overlaps top-left corner of card */}
@@ -45,17 +46,18 @@ export default function CategoryGrid({ categories, onSelect, stagger = false }) 
                 zIndex: 1,
               }}
             >
-              {IconComponent && <IconComponent size={20} className="text-[var(--accent)]" />}
+              {IconComponent && <IconComponent size={26} strokeWidth={2.5} className="text-[var(--accent)]" />}
             </div>
-            {/* Title — serif, indented past the icon circle, naturally wrapping */}
+            {/* Title — serif, flush with the top of the card, with a small left margin
+                so it sits just to the right of the icon circle (not behind it) */}
             <p
-              className="text-[15px]"
+              className="text-[15px] m-0"
               style={{
                 fontFamily: "'DM Serif Text', serif",
                 textTransform: 'none',
                 lineHeight: 1.2,
                 color: 'var(--color-text-primary)',
-                paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 4,
+                paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 5,
               }}
             >
               {cat.label}

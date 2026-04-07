@@ -65,12 +65,11 @@ function matchesSearch(module, query) {
   return words.every(word => matchesSingleTerm(module, word));
 }
 
-export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarnings = false, externalClosing = false }) {
+export default function ModuleLibraryDrawer({ phase, onSelect, onClose, externalClosing = false }) {
   const [filter, setFilter] = useState(phase === 'preview' ? 'all' : 'recommended'); // 'all' | 'recommended' | 'favorites'
   const favoriteModules = useAppStore((s) => s.favoriteModules || []);
-  const [closing, setClosing] = useState(false);
-  const isClosing = closing || externalClosing;
-  const [mounted, setMounted] = useState(false);
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+  const isClosing = isAnimatingOut || externalClosing;
   const [selectedModule, setSelectedModule] = useState(null);
   const [selectedDuration, setSelectedDuration] = useState(null);
 
@@ -95,20 +94,18 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
     if (!searchQuery) setIsSearchOpen(false);
   }, [searchQuery]);
 
-  useEffect(() => {
-    requestAnimationFrame(() => setMounted(true));
-  }, []);
-
   const handleClose = useCallback(() => {
-    setClosing(true);
-    setTimeout(onClose, 300);
+    setIsAnimatingOut(true);
+    setTimeout(onClose, 350);
   }, [onClose]);
 
   // Get modules that can be added to this phase
   const availableModules = moduleLibrary.filter((module) => {
     if (module.hidden) return false; // Hide linked parts (shown via parent entry)
-    const check = canAddModuleToPhase(module.id, phase);
-    return check.allowed || check.warning; // Include modules with warnings
+    // Search-only modules (e.g. dev test modules) only surface when the user
+    // explicitly searches for them — never in All / Recommended / Favorites.
+    if (module.searchOnly && !searchQuery) return false;
+    return canAddModuleToPhase(module.id, phase).allowed;
   });
 
   // Apply search if active, otherwise apply filter
@@ -150,8 +147,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
 
   const handleAddFromDetail = () => {
     if (!selectedModule) return;
-    const check = canAddModuleToPhase(selectedModule.id, phase);
-    onSelect(selectedModule.id, check.warning, selectedDuration);
+    onSelect(selectedModule.id, selectedDuration);
     // Don't clear selectedModule here — let the detail modal's onClose do it after animation
   };
 
@@ -163,7 +159,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
     <div className="fixed inset-0 z-50">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/30 transition-opacity duration-300 ${isClosing ? 'opacity-0' : mounted ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/25 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
         onClick={handleClose}
       />
 
@@ -304,65 +300,48 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, hideWarn
                   {MODULE_CATEGORIES[category]?.label || category}
                 </h4>
                 <div className="space-y-2">
-                  {modules.map((module) => {
-                    const check = canAddModuleToPhase(module.id, phase);
-                    const hasWarning = !hideWarnings && check.warning;
-
-                    return (
-                      <button
-                        key={module.id}
-                        onClick={() => handleSelect(module)}
-                        className="w-full text-left px-4 pt-3 pb-1.5 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-2 min-w-0">
-                            <p className="text-[var(--color-text-primary)] text-lg leading-none" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-                              {module.title}
-                            </p>
-                            {hasWarning && (
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                className="flex-shrink-0 -mt-4"
-                              >
-                                <circle cx="12" cy="12" r="10" stroke="var(--accent)" strokeWidth="2" fill="none" />
-                                <line x1="5.5" y1="5.5" x2="18.5" y2="18.5" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
-                              </svg>
-                            )}
-                          </div>
-                          <span className="text-[var(--color-text-tertiary)] text-xs flex-shrink-0 ml-3">
-                            {formatDuration(module.defaultDuration)}
-                          </span>
+                  {modules.map((module) => (
+                    <button
+                      key={module.id}
+                      onClick={() => handleSelect(module)}
+                      className="w-full text-left px-4 pt-3 pb-1.5 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <p className="text-[var(--color-text-primary)] text-lg leading-none" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                            {module.title}
+                          </p>
                         </div>
-                        <p className="text-[var(--color-text-secondary)] text-sm -mt-px">
-                          {module.description}
-                        </p>
-                        {(module.framework?.length > 0 || module.intensity != null) && (
-                          <div className="flex items-center justify-between mt-0.5 mb-0.5">
-                            {module.framework?.length > 0 ? (
-                              <span className="text-[var(--color-text-tertiary)] text-[9px] uppercase tracking-wider leading-none">
-                                {module.framework.map((f) => FRAMEWORKS[f]?.abbreviation || FRAMEWORKS[f]?.label || f).join(', ')}
-                              </span>
-                            ) : <span />}
-                            {module.intensity != null && (
-                              <span className="flex items-center space-x-0.5">
-                                {[1, 2, 3, 4, 5].map((i) => (
-                                  <span
-                                    key={i}
-                                    className={`w-1.5 h-1.5 rounded-full ${
-                                      i <= module.intensity ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
-                                    }`}
-                                  />
-                                ))}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                        <span className="text-[var(--color-text-tertiary)] text-xs flex-shrink-0 ml-3">
+                          {formatDuration(module.defaultDuration)}
+                        </span>
+                      </div>
+                      <p className="text-[var(--color-text-secondary)] text-sm -mt-px">
+                        {module.description}
+                      </p>
+                      {(module.framework?.length > 0 || module.intensity != null) && (
+                        <div className="flex items-center justify-between mt-0.5 mb-0.5">
+                          {module.framework?.length > 0 ? (
+                            <span className="text-[var(--color-text-tertiary)] text-[9px] uppercase tracking-wider leading-none">
+                              {module.framework.map((f) => FRAMEWORKS[f]?.abbreviation || FRAMEWORKS[f]?.label || f).join(', ')}
+                            </span>
+                          ) : <span />}
+                          {module.intensity != null && (
+                            <span className="flex items-center space-x-0.5">
+                              {[1, 2, 3, 4, 5].map((i) => (
+                                <span
+                                  key={i}
+                                  className={`w-1.5 h-1.5 rounded-full ${
+                                    i <= module.intensity ? 'bg-[var(--accent)]' : 'bg-[var(--color-border)]'
+                                  }`}
+                                />
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </button>
+                  ))}
                 </div>
               </div>
             ))

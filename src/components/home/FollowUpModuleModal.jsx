@@ -16,7 +16,7 @@ export default function FollowUpModuleModal({ moduleId, onClose }) {
 
   const handleClose = () => {
     setClosing(true);
-    setTimeout(onClose, 300);
+    setTimeout(onClose, 350);
   };
 
   const module = FOLLOW_UP_MODULES[moduleId];

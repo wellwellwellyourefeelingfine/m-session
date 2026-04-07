@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { getModuleById, CATEGORY_ICONS, MODULE_ICONS, FRAMEWORKS } from '../../content/modules';
-import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon, CirclePlusIcon, CircleSkipIcon, StarIcon } from '../shared/Icons';
+import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon, CirclePlusIcon, CircleSkipIcon, StarIcon, FireIcon } from '../shared/Icons';
 import { useAppStore } from '../../stores/useAppStore';
 
 const ICON_MAP = {
@@ -21,6 +21,7 @@ const ICON_MAP = {
   'heart-handshake': HeartHandshakeIcon,
   snail: SnailIcon,
   clock: ClockIcon,
+  fire: FireIcon,
 };
 
 function getModuleIcon(libraryId, category) {
@@ -47,10 +48,13 @@ export default function ModuleDetailModal({
   onClose,
   module,
   onDurationChange,
-  mode = 'info',  // 'info' (timeline card click) or 'add' (library selection)
+  mode = 'info',  // 'info' (timeline card click), 'add' (library selection), or 'booster'
   onAdd,          // callback for 'add' mode
+  isBoosterReopenAvailable = false, // booster mode only — show "Go to Booster" button
+  onGoToBooster,  // booster mode only — handler for "Go to Booster" button
 }) {
   const libraryModule = getModuleById(module?.libraryId);
+  const isBoosterMode = mode === 'booster' || module?.isBoosterModule;
 
   // Check if this module supports variable duration
   // Only show stepper when explicitly enabled — modules without hasVariableDuration are fixed
@@ -197,48 +201,62 @@ export default function ModuleDetailModal({
         </button>
 
         {/* Header */}
-        <div className="px-6 pt-4 pr-14">
-          <div className="flex items-center gap-3">
+        {isBoosterMode ? (
+          <div className="px-6 pt-4 pr-14">
             <h3
               className="font-serif text-2xl"
               style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1.1 }}
             >
-              {module.title}
+              Booster Check-In
             </h3>
-            {module.libraryId && (
-              <button
-                onClick={handleStarClick}
-                className="flex-shrink-0"
-                aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
-              >
-                <span
-                  className={starAnimating === 'adding' ? 'animate-star-add' : starAnimating === 'removing' ? 'animate-star-remove' : ''}
-                  onAnimationEnd={() => setStarAnimating(null)}
-                  style={{ display: 'inline-flex', transform: 'translateY(-4px)' }}
-                >
-                  <StarIcon
-                    size={26}
-                    filled={isFavorited}
-                    className={isFavorited ? 'text-[var(--accent)]' : 'text-[var(--color-text-tertiary)] opacity-50'}
-                  />
-                </span>
-              </button>
-            )}
+            <div className="mt-2 mb-1">
+              <FireIcon size={40} className="text-[var(--accent)]" />
+            </div>
           </div>
-          {(() => {
-            const Icon = getModuleIcon(module.libraryId, libraryModule?.category);
-            return (
-              <div className="mt-2 mb-1">
-                <Icon size={40} className="text-[var(--accent)]" />
-              </div>
-            );
-          })()}
-        </div>
+        ) : (
+          <div className="px-6 pt-4 pr-14">
+            <div className="flex items-center gap-3">
+              <h3
+                className="font-serif text-2xl"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1.1 }}
+              >
+                {module.title}
+              </h3>
+              {module.libraryId && (
+                <button
+                  onClick={handleStarClick}
+                  className="flex-shrink-0"
+                  aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <span
+                    className={starAnimating === 'adding' ? 'animate-star-add' : starAnimating === 'removing' ? 'animate-star-remove' : ''}
+                    onAnimationEnd={() => setStarAnimating(null)}
+                    style={{ display: 'inline-flex', transform: 'translateY(-4px)' }}
+                  >
+                    <StarIcon
+                      size={26}
+                      filled={isFavorited}
+                      className={isFavorited ? 'text-[var(--accent)]' : 'text-[var(--color-text-tertiary)] opacity-50'}
+                    />
+                  </span>
+                </button>
+              )}
+            </div>
+            {(() => {
+              const Icon = getModuleIcon(module.libraryId, libraryModule?.category);
+              return (
+                <div className="mt-2 mb-1">
+                  <Icon size={40} className="text-[var(--accent)]" />
+                </div>
+              );
+            })()}
+          </div>
+        )}
 
         {/* Body */}
-        <div className="px-6 pt-1 pb-0 space-y-3">
-          {/* Description */}
-          {libraryModule?.description && (
+        {isBoosterMode ? (
+          <div className="px-6 pt-1 pb-0 space-y-3">
+            {/* Activity Summary */}
             <div>
               <p
                 className="text-lg text-[var(--color-text-tertiary)] mb-1"
@@ -247,13 +265,11 @@ export default function ModuleDetailModal({
                 Activity Summary:
               </p>
               <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
-                {libraryModule.description}
+                A guided check-in to help you decide whether a supplemental dose is right for you at this point in your session.
               </p>
             </div>
-          )}
 
-          {/* More info — collapsible instructions */}
-          {libraryModule?.content?.instructions && (
+            {/* More info — collapsible educational content */}
             <div>
               <button
                 onClick={handleToggleInfo}
@@ -277,29 +293,146 @@ export default function ModuleDetailModal({
               <div
                 className="overflow-hidden"
                 style={{
-                  maxHeight: infoHeightCollapsed ? 0 : '500px',
+                  maxHeight: infoHeightCollapsed ? 0 : '1200px',
                   transition: infoHeightCollapsed
                     ? 'max-height 250ms ease-in-out'
                     : 'max-height 350ms ease-in-out',
                 }}
               >
                 <div
+                  className="space-y-3"
                   style={{
                     opacity: infoContentVisible ? 1 : 0,
                     transition: 'opacity 200ms ease-in-out',
                   }}
                 >
-                  <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
-                    {libraryModule.content.instructions}
-                  </p>
+                  <div>
+                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">How it works</p>
+                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                      The booster check-in is automatically placed in the peak phase and will prompt you around the 90-minute mark after ingestion, or 30 minutes after you report feeling fully arrived — whichever comes first.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Timing window</p>
+                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                      Opens as early as 60 minutes and closes at 150 minutes after ingestion. After 180 minutes the booster will not appear.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Dosage</p>
+                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                      The recommended booster is approximately half your initial dose, in the range of 30–75mg. Most harm reduction guidance suggests keeping total session dosage under 200mg.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Good to know</p>
+                    <ul className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed space-y-1 list-disc pl-4">
+                      <li>A booster extends the peak phase by approximately 1–2 hours.</li>
+                      <li>It is entirely optional — many meaningful sessions happen with a single dose.</li>
+                      <li>Not recommended for first-time experiences.</li>
+                      <li>Weigh out your booster dose at the same time as your initial dose.</li>
+                      <li>You can always skip the booster or snooze the check-in to decide later.</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="px-6 pt-1 pb-0 space-y-3">
+            {/* Description */}
+            {libraryModule?.description && (
+              <div>
+                <p
+                  className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  Activity Summary:
+                </p>
+                <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                  {libraryModule.description}
+                </p>
+              </div>
+            )}
 
-        {/* Duration Section */}
-        <div className="px-6 py-2">
+            {/* More info — collapsible instructions */}
+            {libraryModule?.content?.instructions && (
+              <div>
+                <button
+                  onClick={handleToggleInfo}
+                  className="flex items-center gap-1.5 mb-1 cursor-pointer"
+                  aria-expanded={!isInfoCollapsed}
+                >
+                  <span
+                    className="text-lg text-[var(--color-text-tertiary)]"
+                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                  >
+                    More Info:
+                  </span>
+                  <span className="text-[var(--color-text-tertiary)] flex items-center">
+                    {isInfoCollapsed
+                      ? <CirclePlusIcon size={16} className="text-current" />
+                      : <CircleSkipIcon size={16} className="text-current" />
+                    }
+                  </span>
+                </button>
+
+                <div
+                  className="overflow-hidden"
+                  style={{
+                    maxHeight: infoHeightCollapsed ? 0 : '500px',
+                    transition: infoHeightCollapsed
+                      ? 'max-height 250ms ease-in-out'
+                      : 'max-height 350ms ease-in-out',
+                  }}
+                >
+                  <div
+                    style={{
+                      opacity: infoContentVisible ? 1 : 0,
+                      transition: 'opacity 200ms ease-in-out',
+                    }}
+                  >
+                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                      {libraryModule.content.instructions}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Duration Section — booster mode reuses the same centered Duration block, with a Window sub-section beneath */}
+        {isBoosterMode ? (
+          <>
+            <div className="px-6 py-2">
+              <p
+                className="text-lg text-[var(--color-text-tertiary)] mb-2 text-center"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                Duration
+              </p>
+              <p
+                className="text-2xl text-center"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                5 - 10 min
+              </p>
+            </div>
+            <div className="px-6 pb-2">
+              <p
+                className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                Window:
+              </p>
+              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                The booster check-in pops up between 60 and 150 minutes after ingestion — the window in which a supplemental dose can still meaningfully extend your peak.
+              </p>
+            </div>
+          </>
+        ) : (
+        <div className="px-6 pt-2 pb-0">
           <p
             className="text-lg text-[var(--color-text-tertiary)] mb-2 text-center"
             style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
@@ -352,6 +485,7 @@ export default function ModuleDetailModal({
             </p>
           )}
         </div>
+        )}
 
         {/* Add to Timeline button — placed after duration, before metadata */}
         {mode === 'add' && (
@@ -365,9 +499,9 @@ export default function ModuleDetailModal({
           </div>
         )}
 
-        {/* Intensity + Tags */}
-        {(libraryModule?.intensity != null || libraryModule?.tags?.length > 0) && (
-          <div className="px-6 py-3">
+        {/* Intensity + Tags — never shown in booster mode */}
+        {!isBoosterMode && (libraryModule?.intensity != null || libraryModule?.tags?.length > 0) && (
+          <div className="px-6 pt-1.5 pb-2">
             {/* Intensity */}
             {libraryModule?.intensity != null && (
               <div className="flex items-baseline gap-2 -mb-2">
@@ -427,9 +561,26 @@ export default function ModuleDetailModal({
           </div>
         )}
 
-        {/* Footer — only shown in info mode (add mode button is above intensity) */}
-        {mode === 'info' && (
-          <div className="px-6 py-4">
+        {/* Footer — booster mode has its own (Go to Booster + Close); info mode has Close only */}
+        {isBoosterMode ? (
+          <div className="px-6 py-4 space-y-2">
+            {isBoosterReopenAvailable && (
+              <button
+                onClick={() => { onGoToBooster?.(); handleClose(); }}
+                className="w-full py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              >
+                Go to Booster
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+            >
+              Close
+            </button>
+          </div>
+        ) : mode === 'info' && (
+          <div className="px-6 pt-2 pb-4">
             <button
               onClick={handleClose}
               className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"

@@ -25,7 +25,6 @@ import { lifestyleReflectionContent } from './journaling/lifestyleReflectionCont
 import { spiritMeaningContent } from './journaling/spiritMeaningContent';
 import { bodySomaticContent } from './journaling/bodySomaticContent';
 import { natureConnectionContent } from './journaling/natureConnectionContent';
-import { testModuleContent } from './master/testModule';
 import { routingTestModuleContent } from './master/routingTestModule';
 
 // Display order and labels for module categories in the Add Activity drawer
@@ -67,6 +66,7 @@ export const MODULE_ICONS = {
   'relationships-reflection': 'heart-handshake',
   'inner-child-letter': 'heart-handshake',
   'feeling-dialogue': 'heart-handshake',
+  'booster-consideration': 'fire',
 };
 
 // Therapeutic frameworks referenced by modules via the `framework` field
@@ -144,8 +144,7 @@ export const MODULE_TYPES = {
   'nature-connection': { label: 'Nature & Connection', intensity: 1 },
   // Follow-up phase modules (time-locked, available 8-24h after session)
   'follow-up': { label: 'Follow-Up', intensity: 1 },
-  // MasterModule test module
-  'test-master-module': { label: 'Test Master Module', intensity: 2 },
+  // MasterModule routing/continuation test (search-only)
   'routing-test-module': { label: 'Routing & Continuation Test', intensity: 1 },
 };
 
@@ -360,7 +359,7 @@ export const moduleLibrary = [
     minDuration: 15,
     maxDuration: 30,
     allowedPhases: ['pre-session', 'peak', 'integration'],
-    recommendedPhases: ['peak'],
+    recommendedPhases: ['come-up', 'peak'],
     hasVariableDuration: true,
     durationSteps: [15, 20, 25, 30],
     meditationId: 'open-awareness',
@@ -435,7 +434,7 @@ export const moduleLibrary = [
     minDuration: 10,
     maxDuration: 20,
     allowedPhases: ['pre-session', 'come-up', 'peak', 'integration'],
-    recommendedPhases: ['peak'],
+    recommendedPhases: ['pre-session', 'come-up', 'peak'],
     hasVariableDuration: true,
     durationSteps: [10, 15, 20],
     meditationId: 'leaves-on-a-stream',
@@ -1035,28 +1034,6 @@ export const moduleLibrary = [
   },
 
   // === MASTER MODULE TEST ===
-  {
-    id: 'test-master-module',
-    type: 'test-master-module',
-    category: 'activity',
-    title: 'Test Master Module',
-    description: 'A comprehensive test of the MasterModule system. Exercises every screen type (text, prompt, selector, choice, animation, alarm) and every section type (screens, meditation, timer).',
-    defaultDuration: 15,
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['peak'],
-    hasVariableDuration: false,
-    capabilities: {
-      controls: { showBeginButton: true, showSkipButton: true, skipConfirmation: true },
-      layout: { centered: true, maxWidth: 'sm' },
-    },
-    tags: ['test', 'master-module'],
-    framework: ['general'],
-    content: {
-      instructions: 'A comprehensive test of the MasterModule system. Exercises every screen type and section type.',
-      masterModuleContent: testModuleContent,
-    },
-  },
-
   // === ROUTING & CONTINUATION TEST ===
   {
     id: 'routing-test-module',
@@ -1066,9 +1043,10 @@ export const moduleLibrary = [
     description: 'Tests skip-ahead routing, custom bookmarks, visited-section skipping, and section visit conditions.',
     defaultDuration: 5,
     allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['peak'],
+    recommendedPhases: [],
+    searchOnly: true,
     hasVariableDuration: false,
-    tags: ['test', 'routing'],
+    tags: ['test', 'routing', 'master', 'master-module'],
     framework: ['general'],
     content: {
       instructions: 'Tests the routing and bookmark system. Expected flow: 0 → 1 → 2 → 5 → 4 → 6.',
@@ -1100,6 +1078,7 @@ export const moduleLibrary = [
     title: 'Check-In',
     description: 'A brief check-in on how you are feeling since your session.',
     defaultDuration: 5,
+    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1116,6 +1095,7 @@ export const moduleLibrary = [
     title: 'Revisit',
     description: 'Read back what you wrote during your session.',
     defaultDuration: 10,
+    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1132,6 +1112,7 @@ export const moduleLibrary = [
     title: 'Values Compass Revisited',
     description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
     defaultDuration: 15,
+    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1148,6 +1129,7 @@ export const moduleLibrary = [
     title: 'Integration Reflection',
     description: 'Deeper reflection on how insights are integrating into your life.',
     defaultDuration: 10,
+    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1164,6 +1146,7 @@ export const moduleLibrary = [
     title: 'Follow-Up Journaling',
     description: 'Open journaling space to continue processing your experience.',
     defaultDuration: 15,
+    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
     allowedPhases: ['follow-up'],
     recommendedPhases: ['follow-up'],
     isFollowUpModule: true,
@@ -1216,7 +1199,11 @@ export function getRecommendedModulesForPhase(phase) {
 
 /**
  * Check if a module can be added to a phase
- * Returns { allowed: boolean, warning?: string, error?: string }
+ * Returns { allowed: boolean, error?: string }
+ *
+ * Agnostic gating: the only hard block is follow-up modules outside the
+ * follow-up phase. Recommendations are expressed via `recommendedPhases`
+ * and surfaced through the Recommended filter, not through gating.
  */
 export function canAddModuleToPhase(moduleId, phase) {
   const module = getModuleById(moduleId);
@@ -1224,7 +1211,7 @@ export function canAddModuleToPhase(moduleId, phase) {
     return { allowed: false, error: 'Module not found' };
   }
 
-  // Preview mode: allow all modules
+  // Preview = unrestricted sandbox
   if (phase === 'preview') {
     return { allowed: true };
   }
@@ -1233,39 +1220,9 @@ export function canAddModuleToPhase(moduleId, phase) {
     return { allowed: false, error: 'Invalid phase' };
   }
 
-  // Pre-session: only pre-session modules
-  if (phase === 'pre-session') {
-    if (!module.allowedPhases.includes('pre-session')) {
-      return { allowed: false, error: `"${module.title}" is not available for pre-session.` };
-    }
-    return { allowed: true };
-  }
-
-  // Come-up (Phase 1): only modules that explicitly allow come-up
-  if (phase === 'come-up') {
-    if (!module.allowedPhases.includes('come-up')) {
-      return { allowed: false, error: `"${module.title}" is not available during the come-up phase.` };
-    }
-    return { allowed: true };
-  }
-
-  // Peak & Integration (Phase 2 & 3): all modules except follow-up and pre-session only
-  if (phase === 'peak' || phase === 'integration') {
-    if (module.isFollowUpModule) {
-      return { allowed: false, error: `"${module.title}" is only available during follow-up.` };
-    }
-    if (module.allowedPhases.length === 1 && module.allowedPhases[0] === 'pre-session') {
-      return { allowed: false, error: `"${module.title}" is a pre-session activity.` };
-    }
-    return { allowed: true };
-  }
-
-  // Follow-up: all modules except pre-session only
-  if (phase === 'follow-up') {
-    if (module.allowedPhases.length === 1 && module.allowedPhases[0] === 'pre-session') {
-      return { allowed: false, error: `"${module.title}" is a pre-session activity.` };
-    }
-    return { allowed: true };
+  // HARD GATE: follow-up modules are time-locked to the follow-up phase
+  if (module.isFollowUpModule && phase !== 'follow-up') {
+    return { allowed: false, error: `"${module.title}" is only available during follow-up.` };
   }
 
   return { allowed: true };

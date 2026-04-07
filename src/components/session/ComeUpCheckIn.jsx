@@ -162,7 +162,7 @@ export default function ComeUpCheckIn() {
       setSelectedResponse(null);
       setIsContentFading(false);
       if (modalCardRef.current) modalCardRef.current.style.height = '';
-    }, 300);
+    }, 350);
   };
 
   const handleSelect = (value) => {

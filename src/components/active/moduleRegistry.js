@@ -128,7 +128,6 @@ export const CUSTOM_MODULES = {
   'shaking-the-tree': ShakingTheTreeModule,
 
   // MasterModule — content-driven universal module framework
-  'test-master-module': MasterModule,
   'routing-test-module': MasterModule,
 };
 
@@ -192,7 +191,6 @@ export const MODULE_CATEGORIES = {
     'the-cycle',
     'pendulation',
     'shaking-the-tree',
-    'test-master-module',
     'routing-test-module',
   ],
   open: [

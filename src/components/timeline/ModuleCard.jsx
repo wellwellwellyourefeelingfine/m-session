@@ -6,14 +6,12 @@
  * Layout: Title top-left, description below, duration on right
  */
 
-import { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import { getModuleById, CATEGORY_ICONS, MODULE_ICONS } from '../../content/modules';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import DurationPicker from '../shared/DurationPicker';
 import ModuleDetailModal from './ModuleDetailModal';
-import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
-import { SparkleIcon, CircleCheckIcon, CircleSkipIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon } from '../shared/Icons';
+import { SparkleIcon, CircleCheckIcon, CircleSkipIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, FireIcon } from '../shared/Icons';
 
 // Resolve icon string keys to components
 const ICON_MAP = {
@@ -27,6 +25,7 @@ const ICON_MAP = {
   'heart-handshake': HeartHandshakeIcon,
   snail: SnailIcon,
   clock: ClockIcon,
+  fire: FireIcon,
 };
 
 function getModuleIcon(libraryId, category) {
@@ -53,8 +52,6 @@ export default function ModuleCard({
 }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showBoosterInfo, setShowBoosterInfo] = useState(false);
-  const [isBoosterInfoClosing, setIsBoosterInfoClosing] = useState(false);
   const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
 
   const libraryModule = getModuleById(module.libraryId);
@@ -131,35 +128,13 @@ export default function ModuleCard({
       onClick();
       return;
     }
-    if (isBooster) {
-      setShowBoosterInfo(true);
-      return;
-    }
     setShowDetailModal(true);
-  };
-
-  const handleCloseBoosterInfo = () => {
-    setIsBoosterInfoClosing(true);
-    setTimeout(() => {
-      setIsBoosterInfoClosing(false);
-      setShowBoosterInfo(false);
-    }, 200);
   };
 
   const handleGoToBooster = () => {
     reopenBoosterModal();
-    handleCloseBoosterInfo();
+    setShowDetailModal(false);
   };
-
-  // Handle escape key for booster info modal
-  useEffect(() => {
-    if (!showBoosterInfo) return;
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') handleCloseBoosterInfo();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [showBoosterInfo]);
 
   return (
     <div
@@ -167,25 +142,21 @@ export default function ModuleCard({
       onClick={handleCardClick}
       data-tutorial={dataTutorial}
     >
-      <div className={`${isBooster ? 'pl-6 pr-2 pt-2 pb-1' : isGrayedOut ? 'pl-3 pr-4 py-1.5' : 'pl-3 pr-4 pt-3 pb-0.5'}`}>
+      <div className={`${isBooster ? 'pl-3 pr-4 pt-3 pb-0.5' : isGrayedOut ? 'pl-3 pr-4 py-1.5' : 'pl-3 pr-4 pt-3 pb-0.5'}`}>
         {isBooster ? (
-          // Booster module - left-aligned layout matching other modules
-          <div className="w-full">
+          // Booster module - mirrors the regular module layout
+          <>
+            {/* Top row: Title + Duration + Remove button */}
             <div className="flex items-start justify-between">
-              <p
-                className={`text-[1.05rem] normal-case ${isGrayedOut ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]'}`}
-                style={{ fontFamily: 'DM Serif Text, serif', fontStyle: 'italic', lineHeight: 1 }}
-              >
-                {booster.status === 'taken' && booster.boosterTakenAt
-                  ? `Booster of ${boosterDoseMg}mg taken at ${formatTimestamp(booster.boosterTakenAt)}`
-                  : module.title}
-              </p>
-              <div className="flex items-start space-x-1 flex-shrink-0 ml-2">
-                {!(booster.status === 'taken' && booster.boosterTakenAt) && (
-                  <span className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1.2 }}>
-                    ~5m
-                  </span>
-                )}
+              <div className="flex items-start flex-1 min-w-0">
+                <p className={`${getTextClass()} flex-1 min-w-0 text-[18px]`} style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
+                  Booster Dose
+                </p>
+              </div>
+              <div className="flex items-start space-x-1 flex-shrink-0">
+                <span className="text-[var(--color-text-tertiary)] text-sm">
+                  ~5m
+                </span>
                 {canRemove && isEditMode && (
                   <button
                     onClick={(e) => {
@@ -202,12 +173,17 @@ export default function ModuleCard({
                 )}
               </div>
             </div>
-            {!(booster.status === 'taken' && booster.boosterTakenAt) && (
-              <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1.2, marginTop: '4px' }}>
-                Optional re-dose of about half initial dose to extend peak phase
+
+            {/* Description row: FireIcon + description text */}
+            <div className="flex items-start gap-3.5 -mt-0.5">
+              <FireIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
+              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider line-clamp-3 min-w-0">
+                {booster.status === 'taken' && booster.boosterTakenAt
+                  ? <>Booster of {boosterDoseMg}mg<br />taken at {formatTimestamp(booster.boosterTakenAt)}</>
+                  : 'Optional supplemental dose at the peak to extend your session.'}
               </p>
-            )}
-          </div>
+            </div>
+          </>
         ) : (
           // Regular module - new layout
           <>
@@ -309,111 +285,10 @@ export default function ModuleCard({
             updateModuleDuration(module.instanceId, newDuration);
           }}
           isActiveSession={isActiveSession}
+          mode={isBooster ? 'booster' : 'info'}
+          isBoosterReopenAvailable={isBooster && isBoosterReopenAvailable}
+          onGoToBooster={isBooster ? handleGoToBooster : undefined}
         />
-      )}
-
-      {/* Booster Info Modal */}
-      {showBoosterInfo && createPortal(
-        <div
-          className={`fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/30 ${isBoosterInfoClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
-          onClick={handleCloseBoosterInfo}
-        >
-          <div
-            className={`bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm shadow-lg max-h-[85vh] overflow-y-auto ${isBoosterInfoClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-start">
-              <div className="flex-1 min-w-0 pr-4">
-                <h3
-                  className="font-serif text-xl"
-                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-                >
-                  Booster Check-In
-                </h3>
-                <p className="text-[var(--color-text-tertiary)] text-sm mt-1">
-                  Optional • Peak Phase
-                </p>
-              </div>
-              <button
-                onClick={handleCloseBoosterInfo}
-                className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] p-1 text-xl leading-none"
-              >
-                ×
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-4 space-y-4">
-              <p className="text-[var(--color-text-secondary)]">
-                A guided check-in to help you decide whether a supplemental dose is right for you at this point in your session.
-              </p>
-
-              <div className="flex justify-center py-1">
-                <AsciiDiamond />
-              </div>
-
-              <div>
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-2">
-                  How it works
-                </p>
-                <p className="text-[var(--color-text-secondary)] text-sm">
-                  The booster check-in is automatically placed in the peak phase and will prompt you around the 90-minute mark after ingestion, or 30 minutes after you report feeling fully arrived — whichever comes first. You'll walk through a brief check-in about your experience, body, and trajectory before deciding.
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-2">
-                  Timing window
-                </p>
-                <p className="text-[var(--color-text-secondary)] text-sm">
-                  The booster window opens as early as 60 minutes and closes at 150 minutes after ingestion. Taking a booster after this window mostly extends the comedown without meaningfully extending the peak.
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-2">
-                  Dosage
-                </p>
-                <p className="text-[var(--color-text-secondary)] text-sm">
-                  The recommended booster is approximately half your initial dose, in the range of 30–75mg. You can adjust this during the check-in. Most harm reduction guidance suggests keeping total session dosage under 200mg.
-                </p>
-              </div>
-
-              <div>
-                <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-2">
-                  Good to know
-                </p>
-                <ul className="text-[var(--color-text-secondary)] text-sm space-y-2">
-                  <li>A booster extends the peak phase by approximately 1–2 hours.</li>
-                  <li>It is entirely optional — many meaningful sessions happen with a single dose.</li>
-                  <li>Not recommended for first-time experiences, where a single dose allows you to understand your individual response.</li>
-                  <li>Weigh out your booster dose at the same time as your initial dose. It can be difficult to measure accurately under the effects of the initial dose, which may cloud judgment.</li>
-                  <li>You can always skip the booster or snooze the check-in to decide later.</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="px-6 py-4 border-t border-[var(--color-border)] space-y-2">
-              {isBoosterReopenAvailable && (
-                <button
-                  onClick={handleGoToBooster}
-                  className="w-full py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
-                >
-                  Go to Booster
-                </button>
-              )}
-              <button
-                onClick={handleCloseBoosterInfo}
-                className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
       )}
     </div>
   );

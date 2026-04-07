@@ -83,31 +83,23 @@ export const sectionDQuestions = [
     ],
   },
   {
-    field: 'emergencyContact',
-    type: 'single-select',
-    label: 'Does someone know you are having this experience?',
-    contentBlocks: [
-      { type: 'spacer' },
-      { type: 'text', text: 'An in-person sitter is ideal. If that isn\'t possible, let someone trusted know at least a day beforehand.', color: 'grey' },
-    ],
-    options: [
-      { value: 'yes', label: 'Yes' },
-      { value: 'no-okay', label: 'No, but I am comfortable' },
-      { value: 'no-fine', label: 'No, I\u2019ll be fine' },
-    ],
-  },
-  {
     field: 'emergencyContactDetails',
     type: 'contact-input',
-    label: 'Who should we contact if you need help?',
-    showWhen: (responses) => responses.emergencyContact === 'yes',
+    label: 'Who can we contact if you need help?',
+    required: false,
     contentBlocks: [
       { type: 'spacer' },
-      { type: 'text', text: 'This is optional. If you skip this, the Helper tab will still suggest calling your emergency contact, and you can decide who to call in the moment.', color: 'grey' },
+      { type: 'text', text: 'It\u2019s best practice to have an emergency contact: someone you\u2019ve reached out to before your session to let them know what you\u2019re planning. This can be as simple as a text letting them know you\u2019d like them to be available during this time.' },
+      { type: 'spacer' },
+      { type: 'text', text: 'Both fields are optional. You can also add or update these details later from within the app.', color: 'grey' },
     ],
+    dynamicNote: (responses) =>
+      responses.sessionMode === 'with-sitter'
+        ? 'You\u2019ve indicated you\u2019re using this app with a sitter, but if you\u2019d still like to add or update emergency details below, you can.'
+        : null,
     inputs: [
-      { field: 'name', placeholder: 'Name', required: false },
-      { field: 'phone', placeholder: 'Phone number', required: false, inputMode: 'tel' },
+      { field: 'name', placeholder: 'Emergency Name', required: false },
+      { field: 'phone', placeholder: 'Emergency Number', required: false, inputMode: 'tel' },
     ],
   },
   {

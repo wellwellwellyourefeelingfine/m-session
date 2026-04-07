@@ -82,7 +82,7 @@ export default function OpenSpace({ phase }) {
   };
 
   // Handle module selection from library
-  const handleModuleSelect = (libraryId, _warning) => {
+  const handleModuleSelect = (libraryId) => {
     // Add the module to the current phase
     const result = addModule(libraryId, phase);
     if (result.success) {

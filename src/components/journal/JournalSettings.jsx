@@ -38,7 +38,7 @@ export default function JournalSettings({ onClose }) {
     setIsClosing(true);
     setTimeout(() => {
       onClose();
-    }, 300); // Match animation duration
+    }, 350); // Match animation duration
   };
 
   // Handle backdrop click to close

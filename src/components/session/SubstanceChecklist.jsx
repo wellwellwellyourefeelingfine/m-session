@@ -67,6 +67,7 @@ export default function SubstanceChecklist() {
   const [step, setStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const [showDosageWarning, setShowDosageWarning] = useState(null); // 'heavy' | 'dangerous' | null
+  const [editingContact, setEditingContact] = useState(false);
 
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const updateSubstanceChecklist = useSessionStore((state) => state.updateSubstanceChecklist);
@@ -75,6 +76,18 @@ export default function SubstanceChecklist() {
   const updateBoosterPrepared = useSessionStore((state) => state.updateBoosterPrepared);
 
   const updateIntakeResponse = useSessionStore((state) => state.updateIntakeResponse);
+  const emergencyContactDetails = useSessionStore(
+    (state) => state.intake?.responses?.emergencyContactDetails
+  ) || { name: '', phone: '' };
+  const sessionMode = useSessionStore((state) => state.intake?.responses?.sessionMode);
+  const isSitterSession = sessionMode === 'with-sitter';
+
+  const handleContactFieldChange = (field, value) => {
+    updateIntakeResponse('D', 'emergencyContactDetails', {
+      ...emergencyContactDetails,
+      [field]: value,
+    });
+  };
 
   const showBoosterStep = booster.considerBooster;
   const totalSteps = showBoosterStep ? 7 : 6;
@@ -350,8 +363,13 @@ export default function SubstanceChecklist() {
           </div>
         );
 
-      // Step 4: Trusted Contact & Session Helper
-      case 4:
+      // Step 4: Trusted Contact & Support
+      case 4: {
+        const hasSavedContact = Boolean(
+          emergencyContactDetails.name || emergencyContactDetails.phone
+        );
+        const showInputs = editingContact || !hasSavedContact;
+
         return (
           <div className="space-y-6 flex flex-col items-center text-center">
             <h2 className="text-sm">Trusted Contact & Support</h2>
@@ -360,17 +378,89 @@ export default function SubstanceChecklist() {
               <AsciiDiamond />
             </div>
 
-            <div className="space-y-6">
-              <p className="text-[var(--color-text-primary)]">
-                If you haven't already, let someone you trust know your plan. A simple text is enough.
+            {isSitterSession && (
+              <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                You&apos;ve indicated you&apos;re using this app with a sitter, but if you&apos;d still like to add or update emergency details below, you can.
               </p>
+            )}
 
-              <p className="text-[var(--color-text-primary)]">
-                During the session, stay in your prepared space. If things get difficult and you feel the urge to leave, contact this person first.
-              </p>
-            </div>
+            {showInputs ? (
+              <>
+                <p className="text-[var(--color-text-primary)]">
+                  Save the details of someone you trust so you can quickly reach them if needed during the session.
+                </p>
+
+                <div className="w-full space-y-3 text-left">
+                  <input
+                    type="text"
+                    placeholder="Emergency Name"
+                    value={emergencyContactDetails.name || ''}
+                    onChange={(e) => handleContactFieldChange('name', e.target.value)}
+                    className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    placeholder="Emergency Number"
+                    value={emergencyContactDetails.phone || ''}
+                    onChange={(e) => handleContactFieldChange('phone', e.target.value)}
+                    className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
+                    style={{
+                      borderColor: 'var(--border)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                </div>
+
+                <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+                  Optional &mdash; you can leave this blank and continue.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[var(--color-text-primary)]">
+                  If things get difficult, this is who you said you&apos;d reach out to.
+                </p>
+
+                <div
+                  className="w-full border p-4 space-y-2 text-left"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  <p
+                    className="text-[9px] uppercase tracking-wider"
+                    style={{ color: 'var(--color-text-tertiary)' }}
+                  >
+                    Emergency Contact
+                  </p>
+                  {emergencyContactDetails.name && (
+                    <p className="text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                      {emergencyContactDetails.name}
+                    </p>
+                  )}
+                  {emergencyContactDetails.phone && (
+                    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      {emergencyContactDetails.phone}
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setEditingContact(true)}
+                  className="text-xs underline"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                >
+                  Edit details
+                </button>
+              </>
+            )}
           </div>
         );
+      }
 
       // Step 5: Emotional State
       case 5:

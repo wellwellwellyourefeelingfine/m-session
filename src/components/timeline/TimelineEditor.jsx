@@ -252,17 +252,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     setDrawerOpen(true);
   };
 
-  const handleModuleSelect = (libraryId, warning, customDuration) => {
-    if (warning) {
-      setWarningModal({
-        libraryId,
-        phase: activePhase,
-        message: warning,
-        customDuration,
-      });
-      return;
-    }
-
+  const handleModuleSelect = (libraryId, customDuration) => {
     // For come-up phase, check if adding this module would exceed 60 minutes
     if (activePhase === 'come-up') {
       const currentDuration = getPhaseDuration('come-up');

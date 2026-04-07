@@ -1,19 +1,13 @@
 /**
  * AcknowledgeClose
- * Shows category-specific acknowledgment text for rating 0.
- * Auto-closes after ~2s or on tap.
+ * Pure display component for the category-specific acknowledgment text (rating 0).
+ * No auto-close, no tap-to-close — the user retains control via the modal's
+ * close and back buttons.
  */
 
-import { useEffect } from 'react';
-
-export default function AcknowledgeClose({ text, onClose }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 2000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
+export default function AcknowledgeClose({ text }) {
   return (
-    <div className="animate-fadeIn cursor-pointer" onClick={onClose}>
+    <div className="animate-fadeIn">
       <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
         {text}
       </p>

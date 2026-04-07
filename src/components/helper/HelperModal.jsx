@@ -1,26 +1,37 @@
 /**
  * HelperModal
- * Root component for the "What's Happening?" support overlay.
- * Always rendered when session phase is valid; positioned off-screen via translateY when closed.
- * Manages the full multi-step flow: categories → rating → activity/emergency/acknowledge.
+ * Top-anchored sheet modal for the "What's Happening?" support overlay.
+ *
+ * Mounted conditionally by the parent (AppShell) only when useHelperStore.isOpen
+ * is true — exactly the same pattern as ModuleLibraryDrawer and BoosterModal.
+ * Each open is a fresh mount with fresh state, so there are no leftover-state bugs.
+ *
+ * Layout (mirrors ModuleLibraryDrawer, just inverted to anchor at the top):
+ *   <fixed inset-0 wrapper>          ← non-animating, just positions children
+ *     <backdrop>                     ← fades in/out independently (animate-fadeIn / animate-fadeOut)
+ *     <panel>                        ← slides in/out independently (animate-slideDownIn / animate-slideUpOut)
+ *   </>
+ *
+ * The backdrop and panel are SIBLINGS so the backdrop's opacity transition doesn't
+ * affect the panel's visual opacity.
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
+import { useHelperStore } from '../../stores/useHelperStore';
 import { helperCategories, getRouteForRating } from '../../content/helper/categories';
 import { formatHelperModalLog } from '../../content/helper/formatLog';
-import HelperModalShape from './HelperModalShape';
-import { TAB_DEPTH, CORNER_RADIUS } from './buildModalPath';
 import HelperTopBar from './HelperTopBar';
 import PreSessionContent from './PreSessionContent';
 import CategoryGrid from './CategoryGrid';
+import CategoryHeader from './CategoryHeader';
 import RatingScale from './RatingScale';
 import ActivitySuggestions from './ActivitySuggestions';
 import EmergencyFlow from './EmergencyFlow';
 import AcknowledgeClose from './AcknowledgeClose';
 
-const VALID_PHASES = ['pre-session', 'active', 'completed'];
+const CLOSE_ANIMATION_MS = 350;
 
 export default function HelperModal() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
@@ -28,64 +39,38 @@ export default function HelperModal() {
   const sessionId = useSessionStore((state) => state.sessionId);
   const insertAtActive = useSessionStore((state) => state.insertAtActive);
 
-  const [isOpen, setIsOpen] = useState(false);
+  const closeHelper = useHelperStore((state) => state.closeHelper);
+
+  const [isClosing, setIsClosing] = useState(false);
   const [currentStep, setCurrentStep] = useState('initial');
   const [stepHistory, setStepHistory] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedRating, setSelectedRating] = useState(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
   const [journalEntryId, setJournalEntryId] = useState(null);
-  const [isReady, setIsReady] = useState(false);
-  const [showTopBar, setShowTopBar] = useState(false);
-  const [staggerCards, setStaggerCards] = useState(false);
+  // displayedRating drives the result content shown beneath the rating scale.
+  // It cross-fades when selectedRating changes (for inline result transitions).
+  const [displayedRating, setDisplayedRating] = useState(null);
+  const [isResultVisible, setIsResultVisible] = useState(true);
 
-  const modalRef = useRef(null);
-  const contentRef = useRef(null);
+  // Close handler — mirrors ModuleLibraryDrawer's handleClose pattern.
+  // Triggers exit animation, waits for it to complete, then unmounts via the store.
+  const handleClose = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    setTimeout(closeHelper, CLOSE_ANIMATION_MS);
+  }, [closeHelper, isClosing]);
 
-  // Determine if the helper should be shown at all
-  const isValidPhase = VALID_PHASES.includes(sessionPhase);
-
-  // Compute closed translateY on mount and resize
+  // Escape key closes modal
   useEffect(() => {
-    if (!modalRef.current || !isValidPhase) return;
-
-    const computeClosedY = () => {
-      const modal = modalRef.current;
-      if (!modal) return;
-      const modalHeight = modal.offsetHeight;
-      const headerHeight = parseFloat(
-        getComputedStyle(document.documentElement).getPropertyValue('--header-height')
-      ) || 64;
-      // Logo baseline is 8px above the header bottom edge.
-      // The tab bottom should align with this baseline.
-      // The shape div has marginTop: -CORNER_RADIUS, so offsetHeight already
-      // accounts for the overlap. But the shape's visible tab extends TAB_DEPTH
-      // below the main line. We want:
-      //   modal top + modalHeight + closedY = logoBaseline
-      //   closedY = logoBaseline - modalHeight
-      // Then subtract CORNER_RADIUS to compensate for the negative margin overlap
-      // that offsetHeight doesn't fully capture at the seam.
-      const logoBaseline = headerHeight - 8;
-      const closedY = logoBaseline - modalHeight - CORNER_RADIUS - 9;
-      modal.style.setProperty('--helper-closed-y', `${closedY}px`);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') handleClose();
     };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleClose]);
 
-    computeClosedY();
-    // Enable transitions only after the first position is computed,
-    // so the modal doesn't visibly slide from its default position.
-    requestAnimationFrame(() => setIsReady(true));
-
-    const observer = new ResizeObserver(computeClosedY);
-    observer.observe(modalRef.current);
-
-    window.addEventListener('resize', computeClosedY);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener('resize', computeClosedY);
-    };
-  }, [isValidPhase]);
-
-  // Fade transition helper
+  // Fade transition helper for step navigation (back/forward between pages inside the modal)
   const fadeTransition = useCallback((callback) => {
     setIsContentVisible(false);
     setTimeout(() => {
@@ -93,32 +78,6 @@ export default function HelperModal() {
       setIsContentVisible(true);
     }, 200);
   }, []);
-
-  const resetState = useCallback(() => {
-    setCurrentStep('initial');
-    setStepHistory([]);
-    setSelectedCategory(null);
-    setSelectedRating(null);
-    setIsContentVisible(true);
-    setJournalEntryId(null);
-    setShowTopBar(false);
-    setStaggerCards(false);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setIsOpen(false);
-    setShowTopBar(false);
-    setStaggerCards(false);
-    // Reset remaining state after close animation completes
-    setTimeout(resetState, 300);
-  }, [resetState]);
-
-  // Auto-close if phase becomes invalid while open
-  useEffect(() => {
-    if (isOpen && !isValidPhase) {
-      handleClose();
-    }
-  }, [sessionPhase, isValidPhase, isOpen, handleClose]);
 
   // Navigation helpers
   const pushStep = useCallback((nextStep) => {
@@ -138,30 +97,10 @@ export default function HelperModal() {
       if (currentStep === 'category') {
         setSelectedCategory(null);
         setSelectedRating(null);
+        setDisplayedRating(null);
       }
     });
   }, [stepHistory, currentStep, fadeTransition]);
-
-  const handleToggle = useCallback(() => {
-    if (isOpen) {
-      handleClose();
-    } else {
-      setIsOpen(true);
-      // Open sequence: slide down (300ms CSS transition), then top bar fades in, then cards stagger
-      setTimeout(() => setShowTopBar(true), 300);
-      setTimeout(() => setStaggerCards(true), 450);
-    }
-  }, [isOpen, handleClose]);
-
-  // Escape key closes modal
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') handleClose();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, handleClose]);
 
   // Category selection handler
   const handleCategorySelect = useCallback((category) => {
@@ -170,7 +109,6 @@ export default function HelperModal() {
     // Create journal entry on category selection
     const entry = useJournalStore.getState().addEntry({
       content: formatHelperModalLog({
-        categoryId: category.id,
         categoryLabel: category.label,
         rating: null,
         route: null,
@@ -192,6 +130,7 @@ export default function HelperModal() {
   }, [sessionId, pushStep]);
 
   // Rating selection handler
+  // Stays on the category page and cross-fades the result content beneath the rating scale.
   const handleRatingSelect = useCallback((rating) => {
     setSelectedRating(rating);
 
@@ -201,7 +140,6 @@ export default function HelperModal() {
     if (journalEntryId) {
       const store = useJournalStore.getState();
       store.updateEntry(journalEntryId, formatHelperModalLog({
-        categoryId: selectedCategory.id,
         categoryLabel: selectedCategory.label,
         rating,
         route,
@@ -210,11 +148,18 @@ export default function HelperModal() {
       }));
     }
 
-    // Route after 400ms delay (as specified)
-    setTimeout(() => {
-      pushStep(route);
-    }, 400);
-  }, [selectedCategory, journalEntryId, pushStep]);
+    // Cross-fade the inline result content. If something is already showing, fade it out first.
+    if (displayedRating !== null && displayedRating !== rating) {
+      setIsResultVisible(false);
+      setTimeout(() => {
+        setDisplayedRating(rating);
+        setIsResultVisible(true);
+      }, 200);
+    } else {
+      setDisplayedRating(rating);
+      setIsResultVisible(true);
+    }
+  }, [selectedCategory, journalEntryId, displayedRating]);
 
   // Activity selection handler
   const handleActivitySelect = useCallback((activity) => {
@@ -223,7 +168,6 @@ export default function HelperModal() {
       const store = useJournalStore.getState();
       const route = selectedRating !== null ? getRouteForRating(selectedCategory, selectedRating) : selectedCategory.skipScaleTo;
       store.updateEntry(journalEntryId, formatHelperModalLog({
-        categoryId: selectedCategory.id,
         categoryLabel: selectedCategory.label,
         rating: selectedRating,
         route,
@@ -237,36 +181,71 @@ export default function HelperModal() {
     handleClose();
   }, [selectedCategory, selectedRating, journalEntryId, insertAtActive, handleClose]);
 
-  // "I need more help" escalation
+  // "I need more help" escalation — triggers the emergency rating inline
+  // by selecting rating 10, which cross-fades the emergency content into the result slot.
   const handleNeedMoreHelp = useCallback(() => {
-    pushStep('emergency');
-  }, [pushStep]);
-
-  // Emergency grounding fallback
-  const handleGroundingFallback = useCallback(() => {
-    // Route to gentle-activity suggestions for current category
-    pushStep('gentle-activity');
-  }, [pushStep]);
-
-  if (!isValidPhase) return null;
+    handleRatingSelect(10);
+  }, [handleRatingSelect]);
 
   // Determine which categories to show
   const phaseKey = sessionPhase === 'completed' ? 'follow-up' : 'active';
   const activeCategories = helperCategories.filter((c) => c.phase === phaseKey);
 
-  // Determine current activity suggestions
-  const getActivities = () => {
+  // Modal height: expands when the user has picked a rating (so result content has room).
+  const isExpanded = currentStep === 'category' && selectedRating !== null;
+  const modalHeightCss = isExpanded
+    ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
+    : `min(75vh, calc(100vh - var(--tabbar-height) - 12px))`;
+
+  // Determine what result content to show beneath the rating scale based on the current rating.
+  const getResultRoute = (rating) => {
+    if (rating === null || !selectedCategory) return null;
+    return getRouteForRating(selectedCategory, rating);
+  };
+
+  const getActivitiesForRoute = (route) => {
     if (!selectedCategory) return [];
-    if (currentStep === 'max-activity') return selectedCategory.maxActivitySuggestions;
-    if (currentStep === 'gentle-activity') return selectedCategory.gentleActivitySuggestions;
+    if (route === 'max-activity') return selectedCategory.maxActivitySuggestions;
+    if (route === 'gentle-activity') return selectedCategory.gentleActivitySuggestions;
     return [];
   };
 
-  const getActivityIntro = () => {
+  const getActivityIntroForRoute = (route) => {
     if (!selectedCategory) return '';
-    if (currentStep === 'max-activity') return selectedCategory.maxActivityIntro;
-    if (currentStep === 'gentle-activity') return selectedCategory.gentleActivityIntro;
+    if (route === 'max-activity') return selectedCategory.maxActivityIntro;
+    if (route === 'gentle-activity') return selectedCategory.gentleActivityIntro;
     return '';
+  };
+
+  // Render the inline result block beneath the rating scale.
+  const renderInlineResult = () => {
+    const route = getResultRoute(displayedRating);
+    if (!route) return null;
+
+    if (route === 'acknowledge-close') {
+      return (
+        <AcknowledgeClose text={selectedCategory?.acknowledgeText} />
+      );
+    }
+
+    if (route === 'max-activity' || route === 'gentle-activity') {
+      return (
+        <ActivitySuggestions
+          introText={getActivityIntroForRoute(route)}
+          activities={getActivitiesForRoute(route)}
+          onSelectActivity={handleActivitySelect}
+          onNeedMoreHelp={handleNeedMoreHelp}
+        />
+      );
+    }
+
+    if (route === 'emergency') {
+      return (
+        <EmergencyFlow emergencyContact={emergencyContactDetails} />
+      );
+    }
+
+    return null;
   };
 
   // Render content based on current step
@@ -282,16 +261,18 @@ export default function HelperModal() {
           <CategoryGrid
             categories={activeCategories}
             onSelect={handleCategorySelect}
-            stagger={staggerCards}
           />
         );
 
       case 'category':
+      case 'max-activity':
+      case 'gentle-activity':
+      case 'acknowledge-close':
         return (
           <div className="space-y-5">
-            <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
-              {selectedCategory?.subheader}
-            </p>
+            <div style={{ marginTop: '1px' }}>
+              <CategoryHeader category={selectedCategory} />
+            </div>
             {selectedCategory?.prompt && (
               <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
                 {selectedCategory.prompt}
@@ -301,42 +282,14 @@ export default function HelperModal() {
               value={selectedRating}
               onChange={handleRatingSelect}
             />
+            {/* Inline result content beneath the rating scale, cross-fading on rating change */}
+            <div
+              className="transition-opacity duration-200"
+              style={{ opacity: isResultVisible ? 1 : 0 }}
+            >
+              {renderInlineResult()}
+            </div>
           </div>
-        );
-
-      case 'acknowledge-close':
-        return (
-          <div className="space-y-5">
-            <RatingScale value={selectedRating} onChange={() => {}} />
-            <AcknowledgeClose
-              text={selectedCategory?.acknowledgeText}
-              onClose={handleClose}
-            />
-          </div>
-        );
-
-      case 'max-activity':
-      case 'gentle-activity':
-        return (
-          <div className="space-y-5">
-            {selectedRating !== null && (
-              <RatingScale value={selectedRating} onChange={() => {}} />
-            )}
-            <ActivitySuggestions
-              introText={getActivityIntro()}
-              activities={getActivities()}
-              onSelectActivity={handleActivitySelect}
-              onNeedMoreHelp={handleNeedMoreHelp}
-            />
-          </div>
-        );
-
-      case 'emergency':
-        return (
-          <EmergencyFlow
-            emergencyContact={emergencyContactDetails}
-            onGroundingFallback={handleGroundingFallback}
-          />
         );
 
       default:
@@ -345,65 +298,45 @@ export default function HelperModal() {
   };
 
   return (
-    <>
-      {/* Backdrop overlay — only when open */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 animate-fadeIn"
-          style={{ zIndex: 55 }}
-          onClick={handleClose}
-        />
-      )}
-
-      {/* Modal container — always rendered, positioned via translateY */}
+    <div
+      className="fixed inset-0 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Support menu"
+    >
+      {/* Backdrop — sibling of the panel so its opacity transition doesn't affect the panel */}
       <div
-        ref={modalRef}
-        className={`helper-modal-container ${isReady ? 'ready' : ''} ${isOpen ? 'open' : 'closed'}`}
-        style={{ zIndex: 60 }}
-        role="dialog"
-        aria-modal={isOpen}
-        aria-label="Support menu"
-      >
-        {/* Modal body — fills from top to manila envelope line */}
-        <div
-          className="flex flex-col"
-          style={{
-            height: `calc(100vh - var(--tabbar-height) - 12px)`,
-            backgroundColor: 'var(--bg-primary)',
-          }}
-        >
-          {/* Top bar — fades in after slide completes */}
-          <div
-            className="transition-opacity duration-200"
-            style={{ opacity: showTopBar ? 1 : 0 }}
-          >
-            <HelperTopBar
-              canGoBack={stepHistory.length > 0}
-              onBack={handleBack}
-              onClose={handleClose}
-            />
-          </div>
+        className={`absolute inset-0 bg-black/25 ${isClosing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        onClick={handleClose}
+      />
 
-          {/* Scrollable content area */}
-          <div
-            ref={contentRef}
-            className="flex-1 overflow-y-auto px-5 pb-4"
-          >
-            <div
-              className="transition-opacity duration-200"
-              style={{ opacity: isContentVisible ? 1 : 0 }}
-            >
-              {renderContent()}
-            </div>
-          </div>
+      {/* Panel — slides down from above, fully opaque the entire time */}
+      <div
+        className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] bg-[var(--bg-primary)] rounded-b-2xl flex flex-col overflow-hidden ${isClosing ? 'animate-slideUpOut' : 'animate-slideDownIn'}`}
+        style={{
+          height: modalHeightCss,
+          transition: 'height 350ms cubic-bezier(0.65, 0, 0.35, 1)',
+        }}
+      >
+        {/* Top bar — back button, header, close button */}
+        <div style={{ marginBottom: '-2px' }}>
+          <HelperTopBar
+            canGoBack={stepHistory.length > 0}
+            onBack={handleBack}
+            onClose={handleClose}
+          />
         </div>
 
-        {/* Manila envelope bottom edge with tab */}
-        <HelperModalShape
-          onClick={handleToggle}
-          isOpen={isOpen}
-        />
+        {/* Scrollable content area — inner fade for step navigation cross-fades */}
+        <div className="flex-1 overflow-y-auto px-5 pt-2 pb-6">
+          <div
+            className="transition-opacity duration-200"
+            style={{ opacity: isContentVisible ? 1 : 0 }}
+          >
+            {renderContent()}
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
