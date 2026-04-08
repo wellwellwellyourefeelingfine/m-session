@@ -1496,7 +1496,7 @@ Keyframe animations defined in `index.css`:
 | `slideDownOut` | Bottom-sheet modal exit (`translateY(0) → 100%`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
 | `slideDownIn` | Top-anchored modal entrance — used by HelperModal (`translateY(-100%) → 0`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
 | `slideUpOut` | Top-anchored modal exit (`translateY(0) → -100%`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
-| `slideDown` | Small popover drop-in (`translateY(-20px) → 0`) — used by AISettingsPanel, EmergencyContactPopup | `0.3s ease-out` |
+| `slideDown` | Small popover drop-in (`translateY(-20px) → 0`) — used by AISettingsPanel | `0.3s ease-out` |
 | `slideUpSmall` | Minimized check-in/booster status bar (small 20px nudge with opacity fade) | `0.3s ease-out` |
 | `slideInFromRight` / `slideOutToRight` / `slideInFromLeft` / `slideOutToLeft` | Horizontal slides for journal navigation and AI sidebar | `0.3s ease-out forwards` |
 | `breath-idle`, `orb-glow` | BreathOrb visualization | varies |

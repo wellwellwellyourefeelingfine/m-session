@@ -82,7 +82,7 @@ export default function ModuleCard({
     ? (booster.status === 'skipped' || booster.status === 'expired')
     : module.status === 'skipped');
   const isGrayedOut = isCompleted || isSkipped;
-  const plannedDosageMg = useSessionStore((state) => state.substanceChecklist.plannedDosageMg);
+  const plannedDosageMg = useSessionStore((state) => state.sessionProfile.plannedDosageMg);
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const reopenBoosterModal = useSessionStore((state) => state.reopenBoosterModal);

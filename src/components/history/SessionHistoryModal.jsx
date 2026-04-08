@@ -434,7 +434,9 @@ function SessionDetail({ sessionState, metadata }) {
     metadata?.sessionPhase,
     sessionState.timeline?.currentPhase
   );
-  const intention = sessionState.intake?.responses?.holdingQuestion;
+  // Dual-fallback: v24 archives have sessionProfile; v23 archives still have
+  // intake.responses until they're loaded and re-archived. Either shape works.
+  const intention = sessionState.sessionProfile?.holdingQuestion ?? sessionState.intake?.responses?.holdingQuestion;
 
   const rows = [];
 

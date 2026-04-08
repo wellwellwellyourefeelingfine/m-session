@@ -108,7 +108,7 @@ export function buildSystemPrompt(sessionState, journalState, contextSettings = 
   const substanceChecklist = sessionState?.substanceChecklist || {};
   const modules = sessionState?.modules || {};
   const comeUpCheckIn = sessionState?.comeUpCheckIn || {};
-  const intake = sessionState?.intake || {};
+  const sessionProfile = sessionState?.sessionProfile || {};
 
   // Calculate time since ingestion
   let minutesSinceIngestion = null;
@@ -130,8 +130,8 @@ export function buildSystemPrompt(sessionState, journalState, contextSettings = 
 
   // Build context sections
   const currentPhase = timeline.currentPhase;
-  const dosage = substanceChecklist.plannedDosageMg;
-  const dosageFeedback = substanceChecklist.dosageFeedback;
+  const dosage = sessionProfile.plannedDosageMg;
+  const dosageFeedback = sessionProfile.dosageFeedback;
   const checkInResponses = comeUpCheckIn.responses || [];
 
   // Session status section
@@ -182,14 +182,14 @@ export function buildSystemPrompt(sessionState, journalState, contextSettings = 
 
   if (ctx.includeIntention) {
     const intentionParts = [];
-    if (intake.responses?.primaryFocus) {
-      intentionParts.push(`Primary focus: ${intake.responses.primaryFocus}`);
+    if (sessionProfile?.primaryFocus) {
+      intentionParts.push(`Primary focus: ${sessionProfile.primaryFocus}`);
     }
-    if (intake.responses?.holdingQuestion) {
-      intentionParts.push(`Holding question: "${intake.responses.holdingQuestion}"`);
+    if (sessionProfile?.holdingQuestion) {
+      intentionParts.push(`Holding question: "${sessionProfile.holdingQuestion}"`);
     }
-    if (intake.responses?.emotionalState) {
-      intentionParts.push(`Starting emotional state: ${intake.responses.emotionalState}`);
+    if (sessionProfile?.emotionalState) {
+      intentionParts.push(`Starting emotional state: ${sessionProfile.emotionalState}`);
     }
     if (intentionParts.length > 0) {
       optionalSections.push(`## User's Intention (from intake)\n${intentionParts.join('\n')}`);

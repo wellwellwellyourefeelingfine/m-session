@@ -46,13 +46,13 @@ export default function FollowUpIntegration() {
   const completeFollowUpModule = useSessionStore((state) => state.completeFollowUpModule);
   const exitFollowUpModule = useSessionStore((state) => state.exitFollowUpModule);
   const followUp = useSessionStore((state) => state.followUp);
-  const intake = useSessionStore((state) => state.intake);
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const transitionCaptures = useSessionStore((state) => state.transitionCaptures);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
   const addEntry = useJournalStore((state) => state.addEntry);
 
   const commitment = transitionCaptures?.closing?.commitment || '';
-  const intention = intake?.responses?.holdingQuestion || '';
+  const intention = sessionProfile?.holdingQuestion || '';
 
   // Check if prior modules were completed (for contextual intro)
   const checkInCompleted = followUp?.modules?.checkIn?.status === 'completed';

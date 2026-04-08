@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 23;
+export const SESSION_STORE_VERSION = 25;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -94,54 +94,82 @@ export const useSessionStore = create(
       sessionId: null,
 
       // ============================================
+      // SESSION PROFILE
+      // ============================================
+      // Single source of truth for every piece of user-entered data captured
+      // during this session — regardless of which screen captured it. Replaces
+      // the old intake.responses + substanceChecklist (user fields) +
+      // preSubstanceActivity (intention artifacts) split. See
+      // Technical-Spec-Docs-Temporary/Session-Profile-Spec-V1.md (and the V2
+      // spec in ~/.claude/plans) for the full design.
+      //
+      // Lifecycle: born when a session starts, lives forever inside the session
+      // (preserved across archive/restore), and is only destroyed when the
+      // parent session is explicitly deleted via deleteSession().
+      sessionProfile: {
+        // Identity & context (Section A)
+        experienceLevel: null,         // RESERVED — not currently read
+        sessionMode: null,             // 'solo' | 'with-partner' | 'with-sitter' | 'group'
+        hasPreparation: null,          // RESERVED
+
+        // Intention & focus (Section B)
+        primaryFocus: null,            // 'self-understanding' | 'healing' | 'relationship' | 'creativity' | 'open'
+        relationshipType: null,
+        holdingQuestion: '',           // The user's intention text
+        emotionalState: null,          // Set by SubstanceChecklist Step 5
+
+        // Session preferences (Section C)
+        guidanceLevel: null,           // 'full' | 'moderate' | 'minimal'
+        activityPreferences: [],       // RESERVED
+        considerBooster: null,         // 'yes' | 'no' | 'decide-later'
+        promptFormat: null,            // RESERVED
+        sessionDuration: null,         // '3-4h' | '4-6h' | '6+h'
+        startTime: null,               // Optional scheduled timestamp
+
+        // Safety & practicality (Section D)
+        safeSpace: null,
+        hasWaterSnacks: null,
+        emergencyContact: null,        // RESERVED
+        emergencyContactDetails: { name: '', phone: '', notes: '' },
+        medications: { taking: false, details: '' },
+        heartConditions: null,
+        psychiatricHistory: null,
+        contraindicatedMedications: null,  // RESERVED
+
+        // Substance plan (from SubstanceChecklist screens 0-2)
+        hasMDMA: null,                 // RESERVED
+        hasTested: null,               // RESERVED
+        physicalPreparation: null,     // RESERVED
+        lastMDMAUse: null,             // RESERVED
+        hasSubstance: null,            // SubstanceChecklist Step 0
+        hasTestedSubstance: null,      // SubstanceChecklist Step 1
+        hasPreparedDosage: null,       // SubstanceChecklist Step 2 confirmation
+        plannedDosageMg: null,         // SubstanceChecklist Step 2 input
+        dosageFeedback: null,          // Derived from plannedDosageMg ('light'|'moderate'|'strong'|'heavy')
+
+        // Intention artifacts (from PreSessionIntro intention sub-flow)
+        touchstone: '',                // The word/phrase the user captured
+        intentionJournalEntryId: null, // Pointer to the persisted intention journal entry
+        focusJournalEntryId: null,     // Pointer to the persisted session focus entry
+      },
+
+      // ============================================
       // INTAKE QUESTIONNAIRE STATE
       // ============================================
+      // Navigation + completion flags only. User answers live in sessionProfile.
       intake: {
         currentSection: 'A',
         currentQuestionIndex: 0,    // Track which question user is on
-        responses: {
-          // Section A: Experience & Context
-          experienceLevel: null,
-          sessionMode: null,
-          hasPreparation: null,
-
-          // Section B: Intention & Focus
-          primaryFocus: null,
-          relationshipType: null,
-          holdingQuestion: '',
-          emotionalState: null,
-
-          // Section C: Session Preferences
-          guidanceLevel: null,
-          activityPreferences: [],
-          considerBooster: null,
-          promptFormat: null,
-          sessionDuration: null,
-          startTime: null,
-
-          // Section D: Safety & Practicality
-          safeSpace: null,
-          hasWaterSnacks: null,
-          emergencyContact: null,
-          emergencyContactDetails: { name: '', phone: '' },
-          medications: { taking: false, details: '' },
-          heartConditions: null,
-          psychiatricHistory: null,
-        },
         isComplete: false,
-        showSafetyWarnings: false,
-        showMedicationWarning: false,
+        showSafetyWarnings: false,  // Derived flag, set by completeIntake()
+        showMedicationWarning: false, // Derived flag, set by completeIntake()
       },
 
       // ============================================
       // SUBSTANCE CHECKLIST (Pre-Session)
       // ============================================
+      // Ingestion event runtime state only. User answers live in sessionProfile.
       substanceChecklist: {
-        hasSubstance: null,          // boolean
-        hasTestedSubstance: null,    // boolean
-        hasPreparedDosage: null,     // boolean
-        plannedDosageMg: null,       // number in mg
-        dosageFeedback: null,        // 'light' | 'moderate' | 'strong' | 'heavy'
         hasTakenSubstance: false,    // boolean
         ingestionTime: null,         // Date - when user took substance
         ingestionTimeConfirmed: false,
@@ -150,18 +178,14 @@ export const useSessionStore = create(
       // ============================================
       // PRE-SUBSTANCE ACTIVITY STATE
       // ============================================
+      // Navigation + completion tracking only. Intention artifacts (touchstone,
+      // journal entry IDs) live in sessionProfile.
       preSubstanceActivity: {
         // Sub-phase navigation within substance-checklist
         // 'part1' | 'pre-session-intro'
         substanceChecklistSubPhase: 'part1',
         // Track which activities have been completed
         completedActivities: [],    // ['intention', 'centering-breath']
-        // Touchstone: word/phrase captured during intention review
-        touchstone: '',             // Available throughout session
-        // Journal entry ID for the persistent intention entry
-        intentionJournalEntryId: null,
-        // Journal entry ID for the session focus entry (separate)
-        focusJournalEntryId: null,
       },
 
       // ============================================
@@ -481,15 +505,30 @@ export const useSessionStore = create(
         });
       },
 
-      updateIntakeResponse: (_section, field, value) => {
+      // Universal user-data writer. Replaces updateIntakeResponse,
+      // updateSubstanceChecklist (for the moved fields), setTouchstone,
+      // setIntentionJournalEntryId, and setFocusJournalEntryId. Auto-derives
+      // dosageFeedback whenever plannedDosageMg is written, mirroring the
+      // logic that previously lived in updateSubstanceChecklist.
+      updateSessionProfile: (field, value) => {
         const state = get();
+        const updates = { [field]: value };
+
+        // Auto-derive dosageFeedback when planned dose is written
+        if (field === 'plannedDosageMg' && value !== null) {
+          const mg = Number(value);
+          let feedback = null;
+          if (mg > 0 && mg <= 75) feedback = 'light';
+          else if (mg <= 125) feedback = 'moderate';
+          else if (mg <= 150) feedback = 'strong';
+          else if (mg > 150) feedback = 'heavy';
+          updates.dosageFeedback = feedback;
+        }
+
         set({
-          intake: {
-            ...state.intake,
-            responses: {
-              ...state.intake.responses,
-              [field]: value,
-            },
+          sessionProfile: {
+            ...state.sessionProfile,
+            ...updates,
           },
         });
       },
@@ -508,24 +547,24 @@ export const useSessionStore = create(
 
       completeIntake: () => {
         const state = get();
-        const responses = state.intake.responses;
+        const profile = state.sessionProfile;
 
         // Check for safety warnings
         const showSafetyWarnings =
-          responses.safeSpace === 'no' ||
-          responses.heartConditions === 'yes' ||
-          responses.psychiatricHistory === 'yes';
+          profile.safeSpace === 'no' ||
+          profile.heartConditions === 'yes' ||
+          profile.psychiatricHistory === 'yes';
 
-        const showMedicationWarning = responses.medications?.taking;
+        const showMedicationWarning = profile.medications?.taking;
 
         // Calculate target duration from intake
         let targetDuration = 240; // default 4 hours
-        if (responses.sessionDuration === '3-4h') targetDuration = 210;
-        else if (responses.sessionDuration === '4-6h') targetDuration = 300;
-        else if (responses.sessionDuration === '6+h') targetDuration = 420;
+        if (profile.sessionDuration === '3-4h') targetDuration = 210;
+        else if (profile.sessionDuration === '4-6h') targetDuration = 300;
+        else if (profile.sessionDuration === '6+h') targetDuration = 420;
 
         // Determine if user wants to consider a booster
-        const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
+        const considerBooster = profile.considerBooster === 'yes' || profile.considerBooster === 'decide-later';
 
         set({
           intake: {
@@ -538,7 +577,7 @@ export const useSessionStore = create(
           timeline: {
             ...state.timeline,
             targetDuration,
-            scheduledStartTime: responses.startTime,
+            scheduledStartTime: profile.startTime,
           },
           booster: {
             ...state.booster,
@@ -546,7 +585,7 @@ export const useSessionStore = create(
           },
         });
 
-        // Generate timeline from intake responses
+        // Generate timeline from session profile
         get().generateTimelineFromIntake();
       },
 
@@ -556,11 +595,11 @@ export const useSessionStore = create(
 
       generateTimelineFromIntake: () => {
         const state = get();
-        const responses = state.intake.responses;
+        const profile = state.sessionProfile;
 
-        // Look up timeline configuration based on intake responses
-        const focus = responses.primaryFocus || 'open';
-        const guidance = responses.guidanceLevel || 'full';
+        // Look up timeline configuration based on session profile
+        const focus = profile.primaryFocus || 'open';
+        const guidance = profile.guidanceLevel || 'full';
         const config = guidance === 'minimal'
           ? TIMELINE_CONFIGS.minimal
           : TIMELINE_CONFIGS[focus]?.[guidance] || TIMELINE_CONFIGS.open.full;
@@ -606,7 +645,7 @@ export const useSessionStore = create(
         }
 
         // Booster check-in — insert after first peak module if applicable
-        const considerBooster = responses.considerBooster === 'yes' || responses.considerBooster === 'decide-later';
+        const considerBooster = profile.considerBooster === 'yes' || profile.considerBooster === 'decide-later';
         if (considerBooster) {
           modules = modules.map(m => {
             if (m.phase === 'peak' && m.order >= 1) {
@@ -1112,28 +1151,12 @@ export const useSessionStore = create(
       // SUBSTANCE CHECKLIST ACTIONS
       // ============================================
 
-      updateSubstanceChecklist: (field, value) => {
-        const state = get();
-        let updates = { [field]: value };
-
-        // Calculate dosage feedback when dosage is entered
-        if (field === 'plannedDosageMg' && value !== null) {
-          const mg = Number(value);
-          let feedback = null;
-          if (mg > 0 && mg <= 75) feedback = 'light';
-          else if (mg <= 125) feedback = 'moderate';
-          else if (mg <= 150) feedback = 'strong';
-          else if (mg > 150) feedback = 'heavy';
-          updates.dosageFeedback = feedback;
-        }
-
-        set({
-          substanceChecklist: {
-            ...state.substanceChecklist,
-            ...updates,
-          },
-        });
-      },
+      // updateSubstanceChecklist removed in v24 — the moved fields
+      // (hasSubstance, hasTestedSubstance, hasPreparedDosage, plannedDosageMg,
+      // dosageFeedback) are now written via updateSessionProfile, and the
+      // remaining runtime fields (hasTakenSubstance, ingestionTime,
+      // ingestionTimeConfirmed) are written by recordIngestionTime and
+      // confirmIngestionTime below.
 
       recordIngestionTime: (time = Date.now()) => {
         set({
@@ -1184,23 +1207,11 @@ export const useSessionStore = create(
         }
       },
 
-      setTouchstone: (phrase) => {
-        set({
-          preSubstanceActivity: {
-            ...get().preSubstanceActivity,
-            touchstone: phrase,
-          },
-        });
-      },
-
-      setIntentionJournalEntryId: (id) => {
-        set({
-          preSubstanceActivity: {
-            ...get().preSubstanceActivity,
-            intentionJournalEntryId: id,
-          },
-        });
-      },
+      // setTouchstone, setIntentionJournalEntryId, and setFocusJournalEntryId
+      // were removed in v24 — call sites now use updateSessionProfile directly:
+      //   updateSessionProfile('touchstone', phrase)
+      //   updateSessionProfile('intentionJournalEntryId', id)
+      //   updateSessionProfile('focusJournalEntryId', id)
 
       // ── Life Graph Actions ──────────────────────────────────────
 
@@ -1246,14 +1257,8 @@ export const useSessionStore = create(
         });
       },
 
-      setFocusJournalEntryId: (id) => {
-        set({
-          preSubstanceActivity: {
-            ...get().preSubstanceActivity,
-            focusJournalEntryId: id,
-          },
-        });
-      },
+      // setFocusJournalEntryId removed in v24 — see comment above
+      // setIntentionJournalEntryId for the migration pattern.
 
       // ============================================
       // BOOSTER DOSE ACTIONS
@@ -1351,7 +1356,7 @@ export const useSessionStore = create(
         const state = get();
         // Resolve final dose: user-edited or calculated from initial
         const finalDose = state.booster.boosterDoseMg
-          ?? calculateBoosterDose(state.substanceChecklist.plannedDosageMg);
+          ?? calculateBoosterDose(state.sessionProfile.plannedDosageMg);
         set({
           booster: {
             ...state.booster,
@@ -2720,40 +2725,55 @@ export const useSessionStore = create(
         set({
           sessionPhase: 'not-started',
           sessionId: null,
-          intake: {
-            currentSection: 'A',
-            responses: {
-              experienceLevel: null,
-              sessionMode: null,
-              hasPreparation: null,
-              primaryFocus: null,
-              relationshipType: null,
-              holdingQuestion: '',
-              emotionalState: null,
-              guidanceLevel: null,
-              activityPreferences: [],
-              considerBooster: null,
-              promptFormat: null,
-              sessionDuration: null,
-              startTime: null,
-              safeSpace: null,
-              hasWaterSnacks: null,
-              emergencyContact: null,
-              emergencyContactDetails: { name: '', phone: '' },
-              medications: { taking: false, details: '' },
-              heartConditions: null,
-              psychiatricHistory: null,
-            },
-            isComplete: false,
-            showSafetyWarnings: false,
-            showMedicationWarning: false,
-          },
-          substanceChecklist: {
+          sessionProfile: {
+            // Identity & context (Section A)
+            experienceLevel: null,
+            sessionMode: null,
+            hasPreparation: null,
+            // Intention & focus (Section B)
+            primaryFocus: null,
+            relationshipType: null,
+            holdingQuestion: '',
+            emotionalState: null,
+            // Session preferences (Section C)
+            guidanceLevel: null,
+            activityPreferences: [],
+            considerBooster: null,
+            promptFormat: null,
+            sessionDuration: null,
+            startTime: null,
+            // Safety & practicality (Section D)
+            safeSpace: null,
+            hasWaterSnacks: null,
+            emergencyContact: null,
+            emergencyContactDetails: { name: '', phone: '', notes: '' },
+            medications: { taking: false, details: '' },
+            heartConditions: null,
+            psychiatricHistory: null,
+            contraindicatedMedications: null,
+            // Substance plan
+            hasMDMA: null,
+            hasTested: null,
+            physicalPreparation: null,
+            lastMDMAUse: null,
             hasSubstance: null,
             hasTestedSubstance: null,
             hasPreparedDosage: null,
             plannedDosageMg: null,
             dosageFeedback: null,
+            // Intention artifacts
+            touchstone: '',
+            intentionJournalEntryId: null,
+            focusJournalEntryId: null,
+          },
+          intake: {
+            currentSection: 'A',
+            currentQuestionIndex: 0,
+            isComplete: false,
+            showSafetyWarnings: false,
+            showMedicationWarning: false,
+          },
+          substanceChecklist: {
             hasTakenSubstance: false,
             ingestionTime: null,
             ingestionTimeConfirmed: false,
@@ -2761,9 +2781,6 @@ export const useSessionStore = create(
           preSubstanceActivity: {
             substanceChecklistSubPhase: 'part1',
             completedActivities: [],
-            touchstone: '',
-            intentionJournalEntryId: null,
-            focusJournalEntryId: null,
           },
           timeline: {
             scheduledStartTime: null,
@@ -3501,6 +3518,90 @@ export function migrateSessionState(persistedState, version) {
                 emergencyContactDetails: { name: '', phone: '' },
               },
             };
+          }
+        }
+
+        // Version 23 -> 24: Consolidate user-entered data into sessionProfile.
+        // Pulls fields out of intake.responses, the user-data subset of
+        // substanceChecklist, and the intention artifacts of preSubstanceActivity.
+        // After migration, those old paths are deleted from the slices that
+        // shrank. The function is pure (no set/get) so it can run in both the
+        // live persist middleware and the archive load path.
+        if (version < 24) {
+          state.sessionProfile = {
+            // Identity (from intake.responses)
+            experienceLevel: state.intake?.responses?.experienceLevel ?? null,
+            sessionMode: state.intake?.responses?.sessionMode ?? null,
+            hasPreparation: state.intake?.responses?.hasPreparation ?? null,
+            primaryFocus: state.intake?.responses?.primaryFocus ?? null,
+            relationshipType: state.intake?.responses?.relationshipType ?? null,
+            holdingQuestion: state.intake?.responses?.holdingQuestion ?? '',
+            emotionalState: state.intake?.responses?.emotionalState ?? null,
+            guidanceLevel: state.intake?.responses?.guidanceLevel ?? null,
+            activityPreferences: state.intake?.responses?.activityPreferences ?? [],
+            considerBooster: state.intake?.responses?.considerBooster ?? null,
+            promptFormat: state.intake?.responses?.promptFormat ?? null,
+            sessionDuration: state.intake?.responses?.sessionDuration ?? null,
+            startTime: state.intake?.responses?.startTime ?? null,
+            safeSpace: state.intake?.responses?.safeSpace ?? null,
+            hasWaterSnacks: state.intake?.responses?.hasWaterSnacks ?? null,
+            emergencyContact: state.intake?.responses?.emergencyContact ?? null,
+            emergencyContactDetails: state.intake?.responses?.emergencyContactDetails ?? { name: '', phone: '', notes: '' },
+            medications: state.intake?.responses?.medications ?? { taking: false, details: '' },
+            heartConditions: state.intake?.responses?.heartConditions ?? null,
+            psychiatricHistory: state.intake?.responses?.psychiatricHistory ?? null,
+            contraindicatedMedications: state.intake?.responses?.contraindicatedMedications ?? null,
+            hasMDMA: state.intake?.responses?.hasMDMA ?? null,
+            hasTested: state.intake?.responses?.hasTested ?? null,
+            physicalPreparation: state.intake?.responses?.physicalPreparation ?? null,
+            lastMDMAUse: state.intake?.responses?.lastMDMAUse ?? null,
+
+            // Substance plan (from substanceChecklist)
+            hasSubstance: state.substanceChecklist?.hasSubstance ?? null,
+            hasTestedSubstance: state.substanceChecklist?.hasTestedSubstance ?? null,
+            hasPreparedDosage: state.substanceChecklist?.hasPreparedDosage ?? null,
+            plannedDosageMg: state.substanceChecklist?.plannedDosageMg ?? null,
+            dosageFeedback: state.substanceChecklist?.dosageFeedback ?? null,
+
+            // Intention artifacts (from preSubstanceActivity)
+            touchstone: state.preSubstanceActivity?.touchstone ?? '',
+            intentionJournalEntryId: state.preSubstanceActivity?.intentionJournalEntryId ?? null,
+            focusJournalEntryId: state.preSubstanceActivity?.focusJournalEntryId ?? null,
+          };
+
+          // Strip the moved fields from their old homes so consumers don't see
+          // stale data and we don't double-store anything in the persisted blob.
+          if (state.intake) {
+            delete state.intake.responses;
+          }
+          if (state.substanceChecklist) {
+            delete state.substanceChecklist.hasSubstance;
+            delete state.substanceChecklist.hasTestedSubstance;
+            delete state.substanceChecklist.hasPreparedDosage;
+            delete state.substanceChecklist.plannedDosageMg;
+            delete state.substanceChecklist.dosageFeedback;
+          }
+          if (state.preSubstanceActivity) {
+            delete state.preSubstanceActivity.touchstone;
+            delete state.preSubstanceActivity.intentionJournalEntryId;
+            delete state.preSubstanceActivity.focusJournalEntryId;
+          }
+        }
+
+        // Version 24 → 25: Add notes field to emergencyContactDetails so the
+        // helper modal's contact view can persist free-form notes the user
+        // wants their emergency contact to see (availability, address, etc.).
+        // Defaults are spread first so existing name/phone are preserved.
+        if (version < 25) {
+          if (state.sessionProfile?.emergencyContactDetails) {
+            state.sessionProfile.emergencyContactDetails = {
+              name: '',
+              phone: '',
+              notes: '',
+              ...state.sessionProfile.emergencyContactDetails,
+            };
+          } else if (state.sessionProfile) {
+            state.sessionProfile.emergencyContactDetails = { name: '', phone: '', notes: '' };
           }
         }
 

@@ -9,8 +9,8 @@ const STROKE_WIDTH    = 6;
 const WAVE_BASELINE_Y = 75;   // horizon line — slightly below center, more sky than water
 const WAVE_AMPLITUDE  = 4;
 const WAVE_WAVELENGTH = 60;   // 2 visible crests across the 120-wide canvas
-const WAVE_PERIOD     = 5;    // seconds for the wave to advance one full wavelength
 const WAVE_SAMPLES    = 60;
+const WAVE_CYCLES_PER_LOOP = 2;  // wave must complete a whole number of cycles per loop for a seamless seam
 
 // Sun (orbits in an ellipse centered on the horizon line)
 const SUN_RADIUS      = 10;
@@ -19,50 +19,18 @@ const SUN_ORBIT_CY    = WAVE_BASELINE_Y;
 const SUN_ORBIT_RX    = 40;
 const SUN_ORBIT_RY    = 35;
 
-// Timeline (TOTAL = 15s = 3 × WAVE_PERIOD for a perfectly seamless wave seam)
-const HIDDEN_DUR      = 3;    // sun travels invisibly under the horizon
-const RISE_DUR        = 4;    // sun arcs from left horizon → apex (cubic ease-out)
-const APEX_HOLD       = 4;    // sun holds at the apex (with ray-dot embellishment)
-const DESCEND_DUR     = 4;    // sun arcs from apex → right horizon (cubic ease-in)
+// Timeline
+const HIDDEN_DUR      = 3;       // sun travels invisibly under the horizon
+const RISE_DUR        = 4;       // sun arcs from left horizon → apex (cubic ease-out)
+const APEX_HOLD       = 0.001;   // effectively no hold at the apex
+const DESCEND_DUR     = 4;       // sun arcs from apex → right horizon (cubic ease-in)
 const TOTAL           = HIDDEN_DUR + RISE_DUR + APEX_HOLD + DESCEND_DUR;
 
+// Derive WAVE_PERIOD from TOTAL so the wave always completes a whole number of cycles
+// per loop — this guarantees a seamless wave seam regardless of timeline tweaks.
+const WAVE_PERIOD     = TOTAL / WAVE_CYCLES_PER_LOOP;
+
 const TWO_PI = Math.PI * 2;
-
-// Ray-dot embellishment that briefly appears around the sun during the apex hold.
-const SUN_APEX_X = SUN_ORBIT_CX;
-const SUN_APEX_Y = SUN_ORBIT_CY - SUN_ORBIT_RY;
-const RAY_DOT_OFFSET = 20;
-const RAY_DOT_RADIUS = 2;
-const RAY_DOTS = [
-  { cx: SUN_APEX_X,                  cy: SUN_APEX_Y - RAY_DOT_OFFSET },  // top
-  { cx: SUN_APEX_X + RAY_DOT_OFFSET, cy: SUN_APEX_Y                  },  // right
-  { cx: SUN_APEX_X - RAY_DOT_OFFSET, cy: SUN_APEX_Y                  },  // left
-];
-
-// Ray-dot timing (relative to start of the apex hold)
-const RAY_DOT_INITIAL_DELAY = 0.5;
-const RAY_DOT_STAGGER       = 0.20;
-const RAY_DOT_FADE_DUR      = 0.15;
-const RAY_DOT_HOLD_DUR      = 1.90;
-const RAY_DOT_OUT_STAGGER   = 0.15;
-
-const RAY_DOT_TIMES = RAY_DOTS.map((_, i) => {
-  const fadeInStart   = RAY_DOT_INITIAL_DELAY + i * RAY_DOT_STAGGER;
-  const fadeInEnd     = fadeInStart + RAY_DOT_FADE_DUR;
-  const lastFadeInEnd = RAY_DOT_INITIAL_DELAY + (RAY_DOTS.length - 1) * RAY_DOT_STAGGER + RAY_DOT_FADE_DUR;
-  const holdEnd       = lastFadeInEnd + RAY_DOT_HOLD_DUR;
-  const fadeOutStart  = holdEnd + i * RAY_DOT_OUT_STAGGER;
-  const fadeOutEnd    = fadeOutStart + RAY_DOT_FADE_DUR;
-  return { fadeInStart, fadeInEnd, fadeOutStart, fadeOutEnd };
-});
-
-function rayDotOpacity(apexElapsed, times) {
-  if (apexElapsed < times.fadeInStart) return 0;
-  if (apexElapsed < times.fadeInEnd) return (apexElapsed - times.fadeInStart) / RAY_DOT_FADE_DUR;
-  if (apexElapsed < times.fadeOutStart) return 1;
-  if (apexElapsed < times.fadeOutEnd) return 1 - (apexElapsed - times.fadeOutStart) / RAY_DOT_FADE_DUR;
-  return 0;
-}
 
 function buildWavePath(waveOffset) {
   let d = '';
@@ -129,7 +97,6 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
   const waveRef    = useRef(null);
   const skyClipRef = useRef(null);
   const sunRef     = useRef(null);
-  const rayDotRefs = useRef([]);
   const rafRef     = useRef(null);
   const startRef   = useRef(null);
 
@@ -156,16 +123,6 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
       if (sunRef.current) {
         sunRef.current.setAttribute('cx', sunX);
         sunRef.current.setAttribute('cy', sunY);
-      }
-
-      // Ray dots are visible only during the apex hold
-      const visibleElapsed = elapsed - HIDDEN_DUR;
-      const inApex = visibleElapsed >= RISE_DUR && visibleElapsed < RISE_DUR + APEX_HOLD;
-      const apexElapsed = visibleElapsed - RISE_DUR;
-      for (let i = 0; i < RAY_DOTS.length; i++) {
-        const op = inApex ? rayDotOpacity(apexElapsed, RAY_DOT_TIMES[i]) : 0;
-        const dot = rayDotRefs.current[i];
-        if (dot) dot.setAttribute('opacity', op);
       }
 
       rafRef.current = requestAnimationFrame(animate);
@@ -212,22 +169,6 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-
-      {/* Ray dots — appear briefly around the sun during the apex hold */}
-      {RAY_DOTS.map((dot, i) => (
-        <circle
-          key={i}
-          ref={el => { rayDotRefs.current[i] = el; }}
-          cx={dot.cx}
-          cy={dot.cy}
-          r={RAY_DOT_RADIUS}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={STROKE_WIDTH}
-          strokeLinecap="round"
-          opacity={0}
-        />
-      ))}
     </svg>
   );
 });

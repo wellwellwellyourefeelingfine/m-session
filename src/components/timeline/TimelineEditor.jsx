@@ -103,8 +103,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const timeline = useSessionStore((state) => state.timeline);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const booster = useSessionStore((state) => state.booster);
-  const intake = useSessionStore((state) => state.intake);
-  const preSubstanceActivity = useSessionStore((state) => state.preSubstanceActivity);
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const session = useSessionStore((state) => state.session);
   const followUp = useSessionStore((state) => state.followUp);
   const checkFollowUpAvailability = useSessionStore((state) => state.checkFollowUpAvailability);
@@ -400,18 +399,18 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               Started at {formatTime(substanceChecklist?.ingestionTime)}
             </p>
             <p className="text-[var(--color-text-secondary)]">
-              Dosage: {substanceChecklist?.plannedDosageMg || '—'}mg
+              Dosage: {sessionProfile?.plannedDosageMg || '—'}mg
             </p>
             {booster?.status === 'taken' && booster?.boosterTakenAt && (
               <p className="text-[var(--color-text-secondary)]">
-                Booster: +{booster.boosterDoseMg || calculateBoosterDose(substanceChecklist?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
+                Booster: +{booster.boosterDoseMg || calculateBoosterDose(sessionProfile?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
               </p>
             )}
             {(() => {
               // Try to get the intention from the journal entry (which may have been edited)
-              // Fall back to intake.holdingQuestion if no journal entry exists
-              const intentionEntry = preSubstanceActivity?.intentionJournalEntryId
-                ? getEntryById(preSubstanceActivity.intentionJournalEntryId)
+              // Fall back to sessionProfile.holdingQuestion if no journal entry exists
+              const intentionEntry = sessionProfile?.intentionJournalEntryId
+                ? getEntryById(sessionProfile.intentionJournalEntryId)
                 : null;
 
               // Parse only the intention part (before any "---" separator for insights)
@@ -422,8 +421,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 intentionText = contentBeforeSeparator.replace(/^INTENTION:\n\n/i, '').trim();
               }
 
-              // Fall back to intake holdingQuestion if no journal entry or empty
-              const displayIntention = intentionText || intake?.holdingQuestion;
+              // Fall back to sessionProfile holdingQuestion if no journal entry or empty
+              const displayIntention = intentionText || sessionProfile?.holdingQuestion;
 
               return displayIntention ? (
                 <p className="text-[var(--color-text-secondary)]">

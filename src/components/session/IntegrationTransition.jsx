@@ -56,12 +56,12 @@ export default function IntegrationTransition() {
   const transitionToIntegration = useSessionStore((state) => state.transitionToIntegration);
   const updateIntegrationCapture = useSessionStore((state) => state.updateIntegrationCapture);
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
-  const intake = useSessionStore((state) => state.intake);
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const addEntry = useJournalStore((state) => state.addEntry);
 
-  // Get user's original intention and focus from intake
-  const originalIntention = intake?.responses?.holdingQuestion || '';
-  const originalFocus = intake?.responses?.primaryFocus || 'open';
+  // Get user's original intention and focus from session profile
+  const originalIntention = sessionProfile?.holdingQuestion || '';
+  const originalFocus = sessionProfile?.primaryFocus || 'open';
 
   // Current effective focus (original or changed)
   const effectiveFocus = focusChanged && newFocus ? newFocus : originalFocus;

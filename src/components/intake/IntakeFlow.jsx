@@ -63,7 +63,8 @@ const HEALTH_WARNINGS = {
 export default function IntakeFlow({ onComplete }) {
   const {
     intake,
-    updateIntakeResponse,
+    sessionProfile,
+    updateSessionProfile,
     setIntakeQuestionIndex,
   } = useSessionStore();
 
@@ -88,7 +89,7 @@ export default function IntakeFlow({ onComplete }) {
   };
 
   const currentQuestion = allQuestions[currentQuestionIndex];
-  const currentValue = intake.responses[currentQuestion?.field];
+  const currentValue = sessionProfile[currentQuestion?.field];
   const totalQuestions = allQuestions.length;
 
   // Check if current question is answered
@@ -102,7 +103,7 @@ export default function IntakeFlow({ onComplete }) {
 
   // Handle answer selection - auto-advance for single-select
   const handleAnswer = (value) => {
-    updateIntakeResponse(currentQuestion.section, currentQuestion.field, value);
+    updateSessionProfile(currentQuestion.field, value);
 
     // Check if this is a health condition question with "yes" answer - show warning
     if (currentQuestion.field === 'heartConditions' && value === 'yes') {
@@ -145,13 +146,13 @@ export default function IntakeFlow({ onComplete }) {
   // Check if a question should be skipped based on its skipWhen or showWhen condition
   // Read fresh state from store to avoid stale closure issues during auto-advance
   const shouldSkipQuestion = (question) => {
-    const currentResponses = useSessionStore.getState().intake.responses;
+    const currentProfile = useSessionStore.getState().sessionProfile;
     // showWhen: function-based — skip if the function returns false
-    if (question?.showWhen && !question.showWhen(currentResponses)) return true;
+    if (question?.showWhen && !question.showWhen(currentProfile)) return true;
     // skipWhen: object-based — skip if field matches value
     if (!question?.skipWhen) return false;
     const { field, value } = question.skipWhen;
-    return currentResponses[field] === value;
+    return currentProfile[field] === value;
   };
 
   // Navigate to next question with fade animation
@@ -220,13 +221,13 @@ export default function IntakeFlow({ onComplete }) {
   const renderQuestion = () => {
     if (!currentQuestion) return null;
 
-    // Resolve contentBlocks if it's a function of responses. This lets question
-    // configs declare conditional content (e.g., a sitter-only note) using the
-    // same vocabulary as static contentBlocks. The resolution happens here so
-    // leaf question components stay unaware of the function form and continue
-    // to receive a plain array.
+    // Resolve contentBlocks if it's a function of the session profile. This
+    // lets question configs declare conditional content (e.g., a sitter-only
+    // note) using the same vocabulary as static contentBlocks. The resolution
+    // happens here so leaf question components stay unaware of the function
+    // form and continue to receive a plain array.
     const resolvedQuestion = typeof currentQuestion.contentBlocks === 'function'
-      ? { ...currentQuestion, contentBlocks: currentQuestion.contentBlocks(intake.responses) }
+      ? { ...currentQuestion, contentBlocks: currentQuestion.contentBlocks(sessionProfile) }
       : currentQuestion;
 
     const commonProps = {
@@ -515,7 +516,7 @@ export default function IntakeFlow({ onComplete }) {
                 type="button"
                 onClick={() => {
                   // Reset the answer to "no" and close warning
-                  updateIntakeResponse(currentQuestion.section, currentQuestion.field, 'no');
+                  updateSessionProfile(currentQuestion.field, 'no');
                   setActiveWarning(null);
                 }}
                 className="w-full py-2 text-[var(--color-text-tertiary)] text-xs underline"

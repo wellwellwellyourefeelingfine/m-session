@@ -20,7 +20,13 @@ function buildMetadata(sessionState) {
     closedAt: sessionState.session?.closedAt || null,
     finalDurationSeconds: sessionState.session?.finalDurationSeconds || null,
     sessionPhase: sessionState.sessionPhase || 'not-started',
-    dosageMg: sessionState.substanceChecklist?.plannedDosageMg || null,
+    // Dual-fallback: v24 archives have plannedDosageMg in sessionProfile;
+    // v23 archives still have it in substanceChecklist until they're loaded
+    // and re-archived. Either shape works.
+    dosageMg:
+      sessionState.sessionProfile?.plannedDosageMg ??
+      sessionState.substanceChecklist?.plannedDosageMg ??
+      null,
     intakeComplete: sessionState.intake?.isComplete || false,
   };
 }

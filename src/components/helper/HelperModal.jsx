@@ -42,7 +42,7 @@ const DEFAULT_MODAL_HEIGHT_PX = 570;
 
 export default function HelperModal() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
-  const emergencyContactDetails = useSessionStore((state) => state.intake?.responses?.emergencyContactDetails);
+  const emergencyContactDetails = useSessionStore((state) => state.sessionProfile?.emergencyContactDetails);
   const sessionId = useSessionStore((state) => state.sessionId);
   const insertAtActive = useSessionStore((state) => state.insertAtActive);
 
@@ -59,6 +59,10 @@ export default function HelperModal() {
   // It cross-fades when selectedRating changes (for inline result transitions).
   const [displayedRating, setDisplayedRating] = useState(null);
   const [isResultVisible, setIsResultVisible] = useState(true);
+  // Lifted from EmergencyContactView so the modal can react to edit-mode for
+  // its height transition. Reset on back/exit so re-entering the view always
+  // shows the default (non-edit) state.
+  const [isEditingContact, setIsEditingContact] = useState(false);
 
   // Close handler — mirrors ModuleLibraryDrawer's handleClose pattern.
   // Triggers exit animation, waits for it to complete, then unmounts via the store.
@@ -105,6 +109,12 @@ export default function HelperModal() {
         setSelectedCategory(null);
         setSelectedRating(null);
         setDisplayedRating(null);
+      }
+      // Clear edit-mode flag if leaving the emergency contact view, so the
+      // modal shrinks back to default height and re-entering the view starts
+      // in the non-edit (read) state.
+      if (currentStep === 'emergency-contact') {
+        setIsEditingContact(false);
       }
     });
   }, [stepHistory, currentStep, fadeTransition]);
@@ -204,12 +214,16 @@ export default function HelperModal() {
   const activeCategories = helperCategories.filter((c) => c.phase === phaseKey);
 
   // Modal height:
-  //   - Default (initial category grid): fixed pixel height so the modal opens
-  //     to the same size on every device, sized to fit the content exactly.
-  //     Clamped on small viewports so it never overflows the screen.
-  //   - Expanded (after picking a rating): vh-based so result content can
-  //     breathe and the modal grows with the device.
-  const isExpanded = currentStep === 'category' && selectedRating !== null;
+  //   - Default (initial category grid OR emergency contact view in read mode):
+  //     fixed pixel height so the modal opens to the same size on every device,
+  //     sized to fit the content exactly. Clamped on small viewports so it
+  //     never overflows the screen.
+  //   - Expanded (after picking a rating, OR when editing the emergency contact):
+  //     vh-based so result/edit content can breathe and the modal grows with
+  //     the device.
+  const isExpanded =
+    (currentStep === 'category' && selectedRating !== null) ||
+    (currentStep === 'emergency-contact' && isEditingContact);
   const modalHeightCss = isExpanded
     ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
     : `min(${DEFAULT_MODAL_HEIGHT_PX}px, calc(100vh - var(--tabbar-height) - 12px))`;
@@ -284,7 +298,12 @@ export default function HelperModal() {
         );
 
       case 'emergency-contact':
-        return <EmergencyContactView />;
+        return (
+          <EmergencyContactView
+            isEditing={isEditingContact}
+            onEditToggle={setIsEditingContact}
+          />
+        );
 
       case 'category':
       case 'max-activity':

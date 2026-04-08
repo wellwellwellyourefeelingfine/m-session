@@ -42,15 +42,15 @@ export default function PreSessionIntro() {
   const [isExiting, setIsExiting] = useState(false);
   const [showTransition, setShowTransition] = useState(false);
 
-  // Store selectors (intake needed before intention state initialization)
-  const intake = useSessionStore((state) => state.intake);
+  // Store selectors (sessionProfile needed before intention state initialization)
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
 
   // Intention sub-flow state
   const [inIntentionFlow, setInIntentionFlow] = useState(false);
   const [intentionStep, setIntentionStep] = useState(0);
   const [touchstoneInput, setTouchstoneInput] = useState('');
   const [intentionText, setIntentionText] = useState(
-    () => intake.responses?.holdingQuestion || ''
+    () => sessionProfile?.holdingQuestion || ''
   );
 
   // Initial entrance fade-in effect
@@ -74,19 +74,12 @@ export default function PreSessionIntro() {
   const completePreSubstanceActivity = useSessionStore(
     (state) => state.completePreSubstanceActivity
   );
-  const setTouchstone = useSessionStore((state) => state.setTouchstone);
-  const setIntentionJournalEntryId = useSessionStore(
-    (state) => state.setIntentionJournalEntryId
-  );
-  const setFocusJournalEntryId = useSessionStore(
-    (state) => state.setFocusJournalEntryId
-  );
-  const updateIntakeResponse = useSessionStore(
-    (state) => state.updateIntakeResponse
+  const updateSessionProfile = useSessionStore(
+    (state) => state.updateSessionProfile
   );
   const addEntry = useJournalStore((state) => state.addEntry);
 
-  const primaryFocus = intake.responses?.primaryFocus;
+  const primaryFocus = sessionProfile?.primaryFocus;
   const primaryFocusLabel = PRIMARY_FOCUS_LABELS[primaryFocus] || 'your chosen focus';
   const isIntentionCompleted = completedActivities.includes('intention');
 
@@ -159,7 +152,7 @@ export default function PreSessionIntro() {
 
   const handleIntentionStep1Continue = () => {
     if (touchstoneInput.trim()) {
-      setTouchstone(touchstoneInput.trim());
+      updateSessionProfile('touchstone', touchstoneInput.trim());
     }
 
     const focusContent = `MY SESSION FOCUS: ${primaryFocusLabel}\nMY INITIAL IMPRESSION: ${touchstoneInput.trim()}`;
@@ -169,7 +162,7 @@ export default function PreSessionIntro() {
       moduleTitle: 'Pre-Substance - Session Focus',
       isEdited: false,
     });
-    setFocusJournalEntryId(focusEntry.id);
+    updateSessionProfile('focusJournalEntryId', focusEntry.id);
 
     fadeTransition(() => setIntentionStep(2));
   };
@@ -182,13 +175,13 @@ export default function PreSessionIntro() {
       moduleTitle: 'Pre-Substance - Session Focus',
       isEdited: false,
     });
-    setFocusJournalEntryId(focusEntry.id);
+    updateSessionProfile('focusJournalEntryId', focusEntry.id);
 
     fadeTransition(() => setIntentionStep(2));
   };
 
   const handleIntentionStep2Continue = () => {
-    updateIntakeResponse('B', 'holdingQuestion', intentionText);
+    updateSessionProfile('holdingQuestion', intentionText);
 
     const intentionContent = `INTENTION:\n\n${intentionText}`;
     const intentionEntry = addEntry({
@@ -197,7 +190,7 @@ export default function PreSessionIntro() {
       moduleTitle: 'Pre-Substance Intention',
       isEdited: false,
     });
-    setIntentionJournalEntryId(intentionEntry.id);
+    updateSessionProfile('intentionJournalEntryId', intentionEntry.id);
 
     completePreSubstanceActivity('intention');
 

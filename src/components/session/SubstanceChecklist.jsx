@@ -69,21 +69,18 @@ export default function SubstanceChecklist() {
   const [showDosageWarning, setShowDosageWarning] = useState(null); // 'heavy' | 'dangerous' | null
   const [editingContact, setEditingContact] = useState(false);
 
-  const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
-  const updateSubstanceChecklist = useSessionStore((state) => state.updateSubstanceChecklist);
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
+  const updateSessionProfile = useSessionStore((state) => state.updateSessionProfile);
   const setSubstanceChecklistSubPhase = useSessionStore((state) => state.setSubstanceChecklistSubPhase);
   const booster = useSessionStore((state) => state.booster);
   const updateBoosterPrepared = useSessionStore((state) => state.updateBoosterPrepared);
 
-  const updateIntakeResponse = useSessionStore((state) => state.updateIntakeResponse);
-  const emergencyContactDetails = useSessionStore(
-    (state) => state.intake?.responses?.emergencyContactDetails
-  ) || { name: '', phone: '' };
-  const sessionMode = useSessionStore((state) => state.intake?.responses?.sessionMode);
+  const emergencyContactDetails = sessionProfile.emergencyContactDetails || { name: '', phone: '' };
+  const sessionMode = sessionProfile.sessionMode;
   const isSitterSession = sessionMode === 'with-sitter';
 
   const handleContactFieldChange = (field, value) => {
-    updateIntakeResponse('D', 'emergencyContactDetails', {
+    updateSessionProfile('emergencyContactDetails', {
       ...emergencyContactDetails,
       [field]: value,
     });
@@ -120,8 +117,8 @@ export default function SubstanceChecklist() {
   const renderStep = () => {
     // Booster prep step (inserted after dosage when applicable)
     if (showBoosterStep && step === BOOSTER_STEP) {
-      const boosterDose = substanceChecklist.plannedDosageMg
-        ? calculateBoosterDose(substanceChecklist.plannedDosageMg)
+      const boosterDose = sessionProfile.plannedDosageMg
+        ? calculateBoosterDose(sessionProfile.plannedDosageMg)
         : null;
 
       return (
@@ -203,7 +200,7 @@ export default function SubstanceChecklist() {
               <div className="space-y-3">
                 <button
                   onClick={() => {
-                    updateSubstanceChecklist('hasSubstance', true);
+                    updateSessionProfile('hasSubstance', true);
                     handleNext();
                   }}
                   className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -212,7 +209,7 @@ export default function SubstanceChecklist() {
                 </button>
                 <button
                   onClick={() => {
-                    updateSubstanceChecklist('hasSubstance', false);
+                    updateSessionProfile('hasSubstance', false);
                   }}
                   className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
                 >
@@ -241,7 +238,7 @@ export default function SubstanceChecklist() {
               <div className="space-y-3">
                 <button
                   onClick={() => {
-                    updateSubstanceChecklist('hasTestedSubstance', true);
+                    updateSessionProfile('hasTestedSubstance', true);
                     handleNext();
                   }}
                   className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -250,7 +247,7 @@ export default function SubstanceChecklist() {
                 </button>
                 <button
                   onClick={() => {
-                    updateSubstanceChecklist('hasTestedSubstance', false);
+                    updateSessionProfile('hasTestedSubstance', false);
                     handleNext();
                   }}
                   className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -285,15 +282,15 @@ export default function SubstanceChecklist() {
                 <input
                   type="number"
                   placeholder="Enter amount"
-                  value={substanceChecklist.plannedDosageMg || ''}
-                  onChange={(e) => updateSubstanceChecklist('plannedDosageMg', e.target.value)}
+                  value={sessionProfile.plannedDosageMg || ''}
+                  onChange={(e) => updateSessionProfile('plannedDosageMg', e.target.value)}
                   className="flex-1 py-3 px-4 border border-[var(--color-border)] bg-transparent focus:outline-none focus:border-[var(--color-text-primary)]"
                 />
                 <span className="text-[var(--color-text-secondary)]">mg</span>
               </div>
 
               {/* Dangerous dose warning - shown inline when dose >= 300mg */}
-              {(parseInt(substanceChecklist.plannedDosageMg, 10) || 0) >= DOSAGE_THRESHOLDS.DANGEROUS && (
+              {(parseInt(sessionProfile.plannedDosageMg, 10) || 0) >= DOSAGE_THRESHOLDS.DANGEROUS && (
                 <div className="mt-6 p-4 border border-red-500/50 bg-red-500/10">
                   <p className="font-medium mb-2 text-red-400">
                     Dangerous Dose
@@ -305,13 +302,13 @@ export default function SubstanceChecklist() {
               )}
 
               {/* Normal dosage feedback - shown when dose is not dangerous */}
-              {substanceChecklist.dosageFeedback && (parseInt(substanceChecklist.plannedDosageMg, 10) || 0) < DOSAGE_THRESHOLDS.DANGEROUS && (
+              {sessionProfile.dosageFeedback && (parseInt(sessionProfile.plannedDosageMg, 10) || 0) < DOSAGE_THRESHOLDS.DANGEROUS && (
                 <div className="mt-6 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                   <p className="font-medium mb-2">
-                    {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].range} — {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].label}
+                    {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].range} — {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].label}
                   </p>
                   <p className="text-[var(--color-text-secondary)] text-sm">
-                    {DOSAGE_FEEDBACK[substanceChecklist.dosageFeedback].description}
+                    {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].description}
                   </p>
                 </div>
               )}
@@ -476,7 +473,7 @@ export default function SubstanceChecklist() {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  updateIntakeResponse('B', 'emotionalState', 'calm');
+                  updateSessionProfile('emotionalState', 'calm');
                   handleContinueToIntro();
                 }}
                 className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -485,7 +482,7 @@ export default function SubstanceChecklist() {
               </button>
               <button
                 onClick={() => {
-                  updateIntakeResponse('B', 'emotionalState', 'anxious');
+                  updateSessionProfile('emotionalState', 'anxious');
                   handleContinueToIntro();
                 }}
                 className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -494,7 +491,7 @@ export default function SubstanceChecklist() {
               </button>
               <button
                 onClick={() => {
-                  updateIntakeResponse('B', 'emotionalState', 'excited');
+                  updateSessionProfile('emotionalState', 'excited');
                   handleContinueToIntro();
                 }}
                 className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -503,7 +500,7 @@ export default function SubstanceChecklist() {
               </button>
               <button
                 onClick={() => {
-                  updateIntakeResponse('B', 'emotionalState', 'heavy');
+                  updateSessionProfile('emotionalState', 'heavy');
                   handleContinueToIntro();
                 }}
                 className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
@@ -512,7 +509,7 @@ export default function SubstanceChecklist() {
               </button>
               <button
                 onClick={() => {
-                  updateIntakeResponse('B', 'emotionalState', 'neutral');
+                  updateSessionProfile('emotionalState', 'neutral');
                   handleContinueToIntro();
                 }}
                 className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
@@ -540,7 +537,7 @@ export default function SubstanceChecklist() {
 
   // Check dosage level for warnings
   const getDosageWarningLevel = () => {
-    const dose = parseInt(substanceChecklist.plannedDosageMg, 10);
+    const dose = parseInt(sessionProfile.plannedDosageMg, 10);
     if (!dose || isNaN(dose)) return null;
     if (dose >= DOSAGE_THRESHOLDS.DANGEROUS) return 'dangerous';
     if (dose >= DOSAGE_THRESHOLDS.HEAVY) return 'heavy';
@@ -553,7 +550,7 @@ export default function SubstanceChecklist() {
     if (warningLevel) {
       setShowDosageWarning(warningLevel);
     } else {
-      updateSubstanceChecklist('hasPreparedDosage', true);
+      updateSessionProfile('hasPreparedDosage', true);
       handleNext();
     }
   };
@@ -561,7 +558,7 @@ export default function SubstanceChecklist() {
   // Handle dosage warning acknowledgment
   const handleDosageWarningAcknowledge = () => {
     setShowDosageWarning(null);
-    updateSubstanceChecklist('hasPreparedDosage', true);
+    updateSessionProfile('hasPreparedDosage', true);
     handleNext();
   };
 
@@ -573,7 +570,7 @@ export default function SubstanceChecklist() {
     }
 
     const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
-    const dose = parseInt(substanceChecklist.plannedDosageMg, 10);
+    const dose = parseInt(sessionProfile.plannedDosageMg, 10);
     const isDangerousDose = dose >= DOSAGE_THRESHOLDS.DANGEROUS;
 
     switch (displayStep) {
@@ -581,7 +578,7 @@ export default function SubstanceChecklist() {
         return {
           label: 'Continue',
           onClick: handleDosageContinue,
-          disabled: !substanceChecklist.plannedDosageMg || isDangerousDose,
+          disabled: !sessionProfile.plannedDosageMg || isDangerousDose,
         };
       case 3: // Prepare space
         return {

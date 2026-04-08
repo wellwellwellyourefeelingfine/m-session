@@ -43,7 +43,7 @@ export default function BoosterConsiderationModal() {
 
   // Store selectors
   const booster = useSessionStore((state) => state.booster);
-  const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
+  const plannedDosageMg = useSessionStore((state) => state.sessionProfile.plannedDosageMg);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
   const recordBoosterCheckIn = useSessionStore((state) => state.recordBoosterCheckIn);
   const takeBooster = useSessionStore((state) => state.takeBooster);
@@ -92,7 +92,7 @@ export default function BoosterConsiderationModal() {
     }
   }, [booster.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const initialDoseMg = substanceChecklist.plannedDosageMg;
+  const initialDoseMg = plannedDosageMg;
   const calculatedBoosterMg = initialDoseMg ? calculateBoosterDose(initialDoseMg) : null;
   const effectiveBoosterMg = booster.boosterDoseMg ?? calculatedBoosterMg;
   const isCustomDose = booster.boosterDoseMg != null && booster.boosterDoseMg !== calculatedBoosterMg;

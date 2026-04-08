@@ -42,14 +42,13 @@ const MOON_STEP = 8;
 
 export default function IntentionSettingActivity({ module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
-  const intake = useSessionStore((s) => s.intake);
-  const updateIntakeResponse = useSessionStore((s) => s.updateIntakeResponse);
+  const sessionProfile = useSessionStore((s) => s.sessionProfile);
+  const updateSessionProfile = useSessionStore((s) => s.updateSessionProfile);
   const completePreSubstanceActivity = useSessionStore((s) => s.completePreSubstanceActivity);
-  const setIntentionJournalEntryId = useSessionStore((s) => s.setIntentionJournalEntryId);
   const sessionId = useSessionStore((s) => s.sessionId);
   const addEntry = useJournalStore((s) => s.addEntry);
 
-  const existingIntention = intake.responses?.holdingQuestion || '';
+  const existingIntention = sessionProfile?.holdingQuestion || '';
   const hasExistingIntention = existingIntention.trim().length > 0;
 
   // ── Progress reporting ──
@@ -209,14 +208,14 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   // ── Save intention to store ──
   const saveIntention = useCallback(() => {
     if (intentionText.trim()) {
-      updateIntakeResponse('B', 'holdingQuestion', intentionText.trim());
+      updateSessionProfile('holdingQuestion', intentionText.trim());
     }
-  }, [intentionText, updateIntakeResponse]);
+  }, [intentionText, updateSessionProfile]);
 
   // ── Module completion ──
   const handleModuleComplete = useCallback(() => {
     if (intentionText.trim()) {
-      updateIntakeResponse('B', 'holdingQuestion', intentionText.trim());
+      updateSessionProfile('holdingQuestion', intentionText.trim());
 
       const entry = addEntry({
         content: `INTENTION:\n\n${intentionText.trim()}`,
@@ -227,13 +226,13 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
       });
 
       if (entry?.id) {
-        setIntentionJournalEntryId(entry.id);
+        updateSessionProfile('intentionJournalEntryId', entry.id);
       }
     }
 
     completePreSubstanceActivity('intention-setting');
     onComplete();
-  }, [intentionText, updateIntakeResponse, addEntry, sessionId, setIntentionJournalEntryId, completePreSubstanceActivity, onComplete]);
+  }, [intentionText, updateSessionProfile, addEntry, sessionId, completePreSubstanceActivity, onComplete]);
 
   // ── Skip handler (saves intention if written) ──
   const handleModuleSkip = useCallback(() => {

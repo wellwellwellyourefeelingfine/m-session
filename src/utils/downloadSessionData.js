@@ -55,9 +55,8 @@ function getSessionData() {
   const journalState = useJournalStore.getState();
 
   const {
-    intake,
+    sessionProfile,
     substanceChecklist,
-    preSubstanceActivity,
     transitionCaptures,
     session,
     booster,
@@ -81,10 +80,14 @@ function getSessionData() {
       finalDurationSeconds: session?.finalDurationSeconds,
       status: sessionState.sessionPhase,
     },
-    intake: intake?.responses || {},
+    // Export shape stays the same: `intake` holds the user's answers (now
+    // sourced from sessionProfile, which is the v24 home for all user data),
+    // `substanceChecklist` holds the dosage + ingestion event, `intention`
+    // holds the intention text + touchstone.
+    intake: sessionProfile || {},
     substanceChecklist: {
-      plannedDosageMg: substanceChecklist?.plannedDosageMg,
-      dosageFeedback: substanceChecklist?.dosageFeedback,
+      plannedDosageMg: sessionProfile?.plannedDosageMg,
+      dosageFeedback: sessionProfile?.dosageFeedback,
       ingestionTime: substanceChecklist?.ingestionTime,
     },
     booster: booster?.status !== 'pending' ? {
@@ -97,8 +100,8 @@ function getSessionData() {
       boosterPrepared: booster?.boosterPrepared,
     } : null,
     intention: {
-      original: intake?.responses?.holdingQuestion || '',
-      touchstone: preSubstanceActivity?.touchstone || '',
+      original: sessionProfile?.holdingQuestion || '',
+      touchstone: sessionProfile?.touchstone || '',
     },
     comeUpCheckIn: comeUpCheckIn?.responses?.length > 0 ? {
       responses: comeUpCheckIn.responses,
@@ -739,6 +742,9 @@ ${centerText(`Exported ${exportDate}`)}
       } else if (key === 'emergencyContactDetails' && typeof value === 'object') {
         const parts = [value.name, value.phone].filter(Boolean);
         if (parts.length > 0) text += `\n  ${label}:  ${parts.join(' — ')}`;
+        if (value.notes && value.notes.trim()) {
+          text += `\n  Emergency Contact Notes:  ${value.notes.trim()}`;
+        }
       } else if (optionLabels[key]?.[value]) {
         text += `\n  ${label}:  ${optionLabels[key][value]}`;
       } else {

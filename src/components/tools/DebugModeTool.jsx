@@ -29,21 +29,21 @@ function ComeUpTest() {
       const twentyMinutesAgo = now - 20 * 60 * 1000;
 
       useSessionStore.setState({
+        sessionProfile: {
+          ...store.sessionProfile,
+          sessionDuration: '4-6h',
+          experienceLevel: 'experienced',
+          sessionMode: 'solo-guided',
+          guidanceLevel: 'balanced',
+          considerBooster: 'no',
+          safeSpace: 'yes',
+          emergencyContact: 'yes',
+          heartConditions: 'no',
+          psychiatricHistory: 'no',
+        },
         intake: {
           ...store.intake,
           isComplete: true,
-          responses: {
-            ...store.intake.responses,
-            sessionDuration: '4-6h',
-            experienceLevel: 'experienced',
-            sessionMode: 'solo-guided',
-            guidanceLevel: 'balanced',
-            considerBooster: 'no',
-            safeSpace: 'yes',
-            emergencyContact: 'yes',
-            heartConditions: 'no',
-            psychiatricHistory: 'no',
-          },
         },
         sessionPhase: 'pre-session',
         timeline: {
@@ -152,23 +152,23 @@ function FollowUpTest() {
       const sessionDurationMs = 4 * 60 * 60 * 1000; // 4 hours
       const ingestionTime = closedAt - sessionDurationMs;
 
-      // 1. Set intake as complete
+      // 1. Set sessionProfile + intake as complete
       useSessionStore.setState({
+        sessionProfile: {
+          ...store.sessionProfile,
+          sessionDuration: '4-6h',
+          experienceLevel: 'experienced',
+          sessionMode: 'solo-guided',
+          guidanceLevel: 'balanced',
+          considerBooster: 'no',
+          safeSpace: 'yes',
+          emergencyContact: 'yes',
+          heartConditions: 'no',
+          psychiatricHistory: 'no',
+        },
         intake: {
           ...store.intake,
           isComplete: true,
-          responses: {
-            ...store.intake.responses,
-            sessionDuration: '4-6h',
-            experienceLevel: 'experienced',
-            sessionMode: 'solo-guided',
-            guidanceLevel: 'balanced',
-            considerBooster: 'no',
-            safeSpace: 'yes',
-            emergencyContact: 'yes',
-            heartConditions: 'no',
-            psychiatricHistory: 'no',
-          },
         },
         sessionPhase: 'pre-session',
         timeline: {
@@ -355,22 +355,22 @@ function BoosterPeakTest() {
       });
 
       useSessionStore.setState({
+        sessionProfile: {
+          ...store.sessionProfile,
+          sessionDuration: '4-6h',
+          experienceLevel: 'experienced',
+          sessionMode: 'solo-guided',
+          guidanceLevel: 'balanced',
+          considerBooster: 'yes',
+          safeSpace: 'yes',
+          emergencyContact: 'yes',
+          heartConditions: 'no',
+          psychiatricHistory: 'no',
+          holdingQuestion: 'To dream like Hans Castorp in the snow.',
+        },
         intake: {
           ...store.intake,
           isComplete: true,
-          responses: {
-            ...store.intake.responses,
-            sessionDuration: '4-6h',
-            experienceLevel: 'experienced',
-            sessionMode: 'solo-guided',
-            guidanceLevel: 'balanced',
-            considerBooster: 'yes',
-            safeSpace: 'yes',
-            emergencyContact: 'yes',
-            heartConditions: 'no',
-            psychiatricHistory: 'no',
-            holdingQuestion: 'To dream like Hans Castorp in the snow.',
-          },
         },
         sessionPhase: 'pre-session',
         timeline: {
@@ -402,20 +402,23 @@ function BoosterPeakTest() {
 
       useSessionStore.setState({
         sessionPhase: 'active',
+        sessionProfile: {
+          ...useSessionStore.getState().sessionProfile,
+          plannedDosageMg: 100,
+          dosageFeedback: 'moderate',
+          touchstone: 'snow',
+          intentionJournalEntryId: intentionEntry.id,
+        },
         substanceChecklist: {
           ...useSessionStore.getState().substanceChecklist,
           hasTakenSubstance: true,
           ingestionTime: ninetyMinutesAgo,
           ingestionTimeConfirmed: true,
-          plannedDosageMg: 100,
-          dosageFeedback: 'moderate',
         },
         preSubstanceActivity: {
           ...useSessionStore.getState().preSubstanceActivity,
           substanceChecklistSubPhase: 'pre-session-intro',
           completedActivities: ['intention'],
-          touchstone: 'snow',
-          intentionJournalEntryId: intentionEntry.id,
         },
         booster: {
           ...useSessionStore.getState().booster,

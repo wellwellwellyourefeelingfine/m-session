@@ -38,7 +38,7 @@ export default function FollowUpRevisit() {
   const exitFollowUpModule = useSessionStore((state) => state.exitFollowUpModule);
   const followUp = useSessionStore((state) => state.followUp);
   const startFollowUpModule = useSessionStore((state) => state.startFollowUpModule);
-  const intake = useSessionStore((state) => state.intake);
+  const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const transitionCaptures = useSessionStore((state) => state.transitionCaptures);
   const addEntry = useJournalStore((state) => state.addEntry);
 
@@ -48,7 +48,7 @@ export default function FollowUpRevisit() {
   const progress = ((currentStepIndex + 1) / totalSteps) * 100;
 
   // Get session data to display
-  const intention = intake?.responses?.holdingQuestion || '';
+  const intention = sessionProfile?.holdingQuestion || '';
   const intentionAddition = transitionCaptures?.integration?.editedIntention || '';
   const futureMessage = transitionCaptures?.closing?.futureMessage || '';
   const commitment = transitionCaptures?.closing?.commitment || '';

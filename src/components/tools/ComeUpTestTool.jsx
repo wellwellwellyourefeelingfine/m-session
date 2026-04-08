@@ -29,23 +29,23 @@ export default function ComeUpTestTool() {
       const now = Date.now();
       const twentyMinutesAgo = now - 20 * 60 * 1000;
 
-      // 1. Mark intake as complete with sensible defaults
+      // 1. Populate sessionProfile with sensible defaults + mark intake complete
       useSessionStore.setState({
+        sessionProfile: {
+          ...store.sessionProfile,
+          sessionDuration: '4-6h',
+          experienceLevel: 'experienced',
+          sessionMode: 'solo-guided',
+          guidanceLevel: 'balanced',
+          considerBooster: 'no',
+          safeSpace: 'yes',
+          emergencyContact: 'yes',
+          heartConditions: 'no',
+          psychiatricHistory: 'no',
+        },
         intake: {
           ...store.intake,
           isComplete: true,
-          responses: {
-            ...store.intake.responses,
-            sessionDuration: '4-6h',
-            experienceLevel: 'experienced',
-            sessionMode: 'solo-guided',
-            guidanceLevel: 'balanced',
-            considerBooster: 'no',
-            safeSpace: 'yes',
-            emergencyContact: 'yes',
-            heartConditions: 'no',
-            psychiatricHistory: 'no',
-          },
         },
         sessionPhase: 'pre-session',
         timeline: {
