@@ -27,7 +27,10 @@ import { ANIMATION_MAP } from '../blockRenderers/HeaderBlock';
 import expandScreenToBlocks from '../utils/expandScreenToBlocks';
 import evaluateCondition from '../utils/evaluateCondition';
 
-const FADE_MS = 400;
+// Fade speeds: default (snappy) for most content, ritual (slower, more intentional)
+// for sections with `ritualFade: true` in their config.
+const FADE_DEFAULT = 400;
+const FADE_RITUAL = 700;
 
 export default function ScreensSection({
   section,
@@ -59,6 +62,7 @@ export default function ScreensSection({
   onScreenChange,
 }) {
   const screens = section.screens || [];
+  const FADE_MS = section.ritualFade ? FADE_RITUAL : FADE_DEFAULT;
   const [screenIndex, setScreenIndex] = useState(0);
   const [isTitleVisible, setIsTitleVisible] = useState(false);
   const [isAnimationVisible, setIsAnimationVisible] = useState(false);
@@ -222,7 +226,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader]);
+  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
@@ -252,7 +256,7 @@ export default function ScreensSection({
         setIsAnimationVisible(true);
       }
     }, FADE_MS);
-  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader]);
+  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader, FADE_MS]);
 
   const handleChoiceSelect = useCallback((key, optionId) => {
     onChoiceSelect(key, optionId);
@@ -348,7 +352,10 @@ export default function ScreensSection({
         <div className="pt-2">
           {/* Header title — fades independently */}
           {headerBlock?.title && (
-            <div className={`transition-opacity duration-[${FADE_MS}ms] ${isTitleVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`transition-opacity ${isTitleVisible ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transitionDuration: `${FADE_MS}ms` }}
+            >
               <h2
                 className={headerBlock.titleClassName || 'text-xl font-light mb-2 text-center'}
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
@@ -360,7 +367,10 @@ export default function ScreensSection({
 
           {/* Header animation — fades independently */}
           {HeaderAnimationComp && (
-            <div className={`transition-opacity duration-[${FADE_MS}ms] ${isAnimationVisible ? 'opacity-100' : 'opacity-0'}`}>
+            <div
+              className={`transition-opacity ${isAnimationVisible ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transitionDuration: `${FADE_MS}ms` }}
+            >
               <div className="flex justify-center mb-4">
                 <HeaderAnimationComp {...headerAnimationProps} />
               </div>
@@ -369,8 +379,8 @@ export default function ScreensSection({
 
           {/* Body blocks — fade together on screen transition */}
           <div
-            className={`transition-opacity duration-[${FADE_MS}ms] ${isBodyVisible ? 'opacity-100' : 'opacity-0'}`}
-            style={{ paddingBottom: '6rem' }}
+            className={`transition-opacity ${isBodyVisible ? 'opacity-100' : 'opacity-0'}`}
+            style={{ transitionDuration: `${FADE_MS}ms`, paddingBottom: '6rem' }}
           >
             {bodyBlocks.map((block, i) => (
               <div key={i} className={i > 0 ? 'mt-4' : ''}>

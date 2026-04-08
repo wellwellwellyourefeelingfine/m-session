@@ -5,7 +5,7 @@
  * The animation defaults to AsciiMoon but can be configured to any registered animation.
  *
  * Optional props on the block config:
- *   animation: 'ascii-moon' | 'morphing-shapes' | 'ascii-diamond' | 'leaf' | 'compass'
+ *   animation: 'ascii-moon' | 'morphing-shapes' | 'ascii-diamond' | 'leaf' | 'compass' | 'wave'
  *   animationProps: { size, strokeWidth, ... } — passed directly to the animation component
  *   titleClassName: override for the title's className (e.g., larger text for meditation headers)
  */
@@ -15,6 +15,7 @@ import MorphingShapes from '../../../capabilities/animations/MorphingShapes';
 import AsciiDiamond from '../../../capabilities/animations/AsciiDiamond';
 import LeafDrawV2 from '../../../capabilities/animations/LeafDrawV2';
 import CompassV2 from '../../../capabilities/animations/CompassV2';
+import WaveLoop from '../../../capabilities/animations/WaveLoop';
 
 export const ANIMATION_MAP = {
   'ascii-moon': AsciiMoon,
@@ -22,6 +23,7 @@ export const ANIMATION_MAP = {
   'ascii-diamond': AsciiDiamond,
   'leaf': LeafDrawV2,
   'compass': CompassV2,
+  'wave': WaveLoop,
 };
 
 export default function HeaderBlock({ block }) {

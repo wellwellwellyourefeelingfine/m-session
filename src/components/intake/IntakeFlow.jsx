@@ -220,8 +220,17 @@ export default function IntakeFlow({ onComplete }) {
   const renderQuestion = () => {
     if (!currentQuestion) return null;
 
+    // Resolve contentBlocks if it's a function of responses. This lets question
+    // configs declare conditional content (e.g., a sitter-only note) using the
+    // same vocabulary as static contentBlocks. The resolution happens here so
+    // leaf question components stay unaware of the function form and continue
+    // to receive a plain array.
+    const resolvedQuestion = typeof currentQuestion.contentBlocks === 'function'
+      ? { ...currentQuestion, contentBlocks: currentQuestion.contentBlocks(intake.responses) }
+      : currentQuestion;
+
     const commonProps = {
-      question: currentQuestion,
+      question: resolvedQuestion,
       value: currentValue,
       onChange: handleAnswer,
     };
@@ -237,18 +246,8 @@ export default function IntakeFlow({ onComplete }) {
         return <TimePicker {...commonProps} />;
       case 'dosage-calculator':
         return <DosageCalculator {...commonProps} onContinue={goToNextQuestion} />;
-      case 'contact-input': {
-        const dynamicNote = currentQuestion.dynamicNote
-          ? currentQuestion.dynamicNote(intake.responses)
-          : null;
-        return (
-          <ContactInput
-            {...commonProps}
-            onContinue={goToNextQuestion}
-            dynamicNote={dynamicNote}
-          />
-        );
-      }
+      case 'contact-input':
+        return <ContactInput {...commonProps} onContinue={goToNextQuestion} />;
       default:
         return null;
     }

@@ -6,40 +6,49 @@
  *
  * Sections (top to bottom):
  *   1. Reassurance text (agnostic, trusts the user's judgment)
- *   2. Emergency contact card (from intake.responses.emergencyContactDetails)
+ *   2. Emergency contact card with split Call / Text actions when a phone is saved
+ *      (from intake.responses.emergencyContactDetails)
  *   3. Emergency services row (911 / 112)
  *   4. Fireside Project card (psychedelic peer support — call or text)
  */
 
-import { useState } from 'react';
-import { PhoneIcon } from '../shared/Icons';
-import EmergencyContactPopup from './EmergencyContactPopup';
+import { PhoneIcon, MessageIcon } from '../shared/Icons';
 
 export default function EmergencyFlow({ emergencyContact }) {
-  const [showPopup, setShowPopup] = useState(false);
+  const contactName = emergencyContact?.name?.trim() || '';
+  const contactPhone = emergencyContact?.phone?.trim() || '';
+  const hasContact = Boolean(contactName || contactPhone);
+  const hasPhone = Boolean(contactPhone);
+  // The Call/Text labels include the contact's name when present, and fall back
+  // to the action verb on its own otherwise.
+  const callLabel = contactName ? `Call ${contactName}` : 'Call';
+  const textLabel = contactName ? `Text ${contactName}` : 'Text';
 
-  const hasContact = emergencyContact?.name || emergencyContact?.phone;
-  const hasPhone = Boolean(emergencyContact?.phone);
-
-  // Inner card content shared between the tappable button and the read-only div fallback
-  const renderCardContents = () => (
-    <>
-      <p
-        className="text-[9px] uppercase tracking-wider text-left"
-        style={{ color: 'var(--color-text-tertiary)' }}
-      >
-        Emergency Contact
+  return (
+    <div className="space-y-3 animate-fadeIn">
+      {/* Reassurance — agnostic, direct */}
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+        If something feels serious right now, trust that. The options below are here for you. Pick whichever feels most useful.
       </p>
-      {hasContact ? (
-        <>
-          {emergencyContact.name && (
-            <p className="text-xs text-left" style={{ color: 'var(--color-text-primary)' }}>
-              {emergencyContact.name}
-            </p>
-          )}
-          {hasPhone ? (
-            <div
-              className="flex items-center gap-2 w-full px-3 py-2 border text-center justify-center"
+
+      {/* Emergency contact card — split Call / Text actions when a phone is saved */}
+      <div className="border p-3 space-y-2" style={{ borderColor: 'var(--color-border)' }}>
+        <p
+          className="text-[9px] uppercase tracking-wider text-left"
+          style={{ color: 'var(--color-text-tertiary)' }}
+        >
+          Emergency Contact
+        </p>
+        {hasContact && contactName && (
+          <p className="text-xs text-left" style={{ color: 'var(--color-text-primary)' }}>
+            {contactName}
+          </p>
+        )}
+        {hasPhone ? (
+          <div className="flex gap-2">
+            <a
+              href={`tel:${contactPhone}`}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border text-[11px] uppercase tracking-wider transition-colors"
               style={{
                 borderColor: 'var(--accent)',
                 backgroundColor: 'var(--accent-bg)',
@@ -47,46 +56,31 @@ export default function EmergencyFlow({ emergencyContact }) {
               }}
             >
               <PhoneIcon size={14} />
-              <span className="text-[11px] uppercase tracking-wider">
-                Call {emergencyContact.name || 'Emergency Contact'}
-              </span>
-            </div>
-          ) : (
-            <p className="text-[10px] text-left" style={{ color: 'var(--color-text-tertiary)' }}>
-              No phone number saved
-            </p>
-          )}
-        </>
-      ) : (
-        <p className="text-xs text-left" style={{ color: 'var(--color-text-secondary)' }}>
-          Call your emergency contact
-        </p>
-      )}
-    </>
-  );
-
-  return (
-    <div className="space-y-3 animate-fadeIn">
-      {/* Reassurance — agnostic, direct */}
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-        If something feels serious right now, trust that. The options below are here for you &mdash; pick whichever feels most useful.
-      </p>
-
-      {/* Emergency contact card — tappable when a phone number is saved */}
-      {hasPhone ? (
-        <button
-          type="button"
-          onClick={() => setShowPopup(true)}
-          className="w-full border p-3 space-y-2 transition-opacity hover:opacity-80"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
-          {renderCardContents()}
-        </button>
-      ) : (
-        <div className="border p-3 space-y-2" style={{ borderColor: 'var(--color-border)' }}>
-          {renderCardContents()}
-        </div>
-      )}
+              <span>{callLabel}</span>
+            </a>
+            <a
+              href={`sms:${contactPhone}`}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border text-[11px] uppercase tracking-wider transition-colors"
+              style={{
+                borderColor: 'var(--accent)',
+                backgroundColor: 'var(--accent-bg)',
+                color: 'var(--color-text-primary)',
+              }}
+            >
+              <MessageIcon size={14} />
+              <span>{textLabel}</span>
+            </a>
+          </div>
+        ) : hasContact ? (
+          <p className="text-[10px] text-left" style={{ color: 'var(--color-text-tertiary)' }}>
+            No phone number saved
+          </p>
+        ) : (
+          <p className="text-xs text-left" style={{ color: 'var(--color-text-secondary)' }}>
+            No emergency contact saved
+          </p>
+        )}
+      </div>
 
       {/* Emergency services — compact two-button row */}
       <div className="border p-3 space-y-2" style={{ borderColor: 'var(--color-border)' }}>
@@ -134,13 +128,6 @@ export default function EmergencyFlow({ emergencyContact }) {
         </div>
       </div>
 
-      {showPopup && (
-        <EmergencyContactPopup
-          name={emergencyContact?.name || ''}
-          phone={emergencyContact?.phone || ''}
-          onClose={() => setShowPopup(false)}
-        />
-      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { useEffect, useRef } from 'react';
 import Header from './Header';
 import TabBar from './TabBar';
 import HelperModal from '../helper/HelperModal';
+import { AppUpdaterProvider } from '../shared/AppUpdaterContext';
 
 export default function AppShell({ children }) {
   const darkMode = useAppStore((state) => state.darkMode);
@@ -40,16 +41,18 @@ export default function AppShell({ children }) {
   }, []);
 
   return (
-    <div className="h-full flex flex-col bg-app-white dark:bg-app-black">
-      <Header />
-      {isHelperOpen && <HelperModal />}
+    <AppUpdaterProvider>
+      <div className="h-full flex flex-col bg-app-white dark:bg-app-black">
+        <Header />
+        {isHelperOpen && <HelperModal />}
 
-      {/* Main content area - scrollable container with fixed header/footer compensation */}
-      <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>
-        {children}
-      </main>
+        {/* Main content area - scrollable container with fixed header/footer compensation */}
+        <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>
+          {children}
+        </main>
 
-      <TabBar />
-    </div>
+        <TabBar />
+      </div>
+    </AppUpdaterProvider>
   );
 }

@@ -85,18 +85,20 @@ export const sectionDQuestions = [
   {
     field: 'emergencyContactDetails',
     type: 'contact-input',
-    label: 'Who can we contact if you need help?',
+    label: 'Who can you contact if you need help?',
     required: false,
-    contentBlocks: [
+    contentBlocks: (responses) => [
       { type: 'spacer' },
       { type: 'text', text: 'It\u2019s best practice to have an emergency contact: someone you\u2019ve reached out to before your session to let them know what you\u2019re planning. This can be as simple as a text letting them know you\u2019d like them to be available during this time.' },
+      ...(responses.sessionMode === 'with-sitter'
+        ? [
+            { type: 'spacer' },
+            { type: 'text', text: 'You\u2019ve indicated you\u2019re using this app with a sitter, but if you\u2019d still like to add or update emergency details below, you can.' },
+          ]
+        : []),
       { type: 'spacer' },
       { type: 'text', text: 'Both fields are optional. You can also add or update these details later from within the app.', color: 'grey' },
     ],
-    dynamicNote: (responses) =>
-      responses.sessionMode === 'with-sitter'
-        ? 'You\u2019ve indicated you\u2019re using this app with a sitter, but if you\u2019d still like to add or update emergency details below, you can.'
-        : null,
     inputs: [
       { field: 'name', placeholder: 'Emergency Name', required: false },
       { field: 'phone', placeholder: 'Emergency Number', required: false, inputMode: 'tel' },

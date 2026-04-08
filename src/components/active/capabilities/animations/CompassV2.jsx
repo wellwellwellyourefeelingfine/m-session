@@ -1,17 +1,45 @@
 import { useEffect, useRef, memo } from 'react';
 
-const TOTAL = 13;
+const HOLD_AFTER_DRAW = 1;          // 1s hold after compass fully drawn before needle spins
+const TOTAL = 13 + HOLD_AFTER_DRAW; // 14s
 
-export default memo(function CompassV2Animation({ size = 100 }) {
+// Absolute times (seconds) for every keyframe event.
+// Events at or before bodyDrawEnd are at their original times;
+// everything after is shifted by HOLD_AFTER_DRAW so the leaf-draw and needle-spin
+// phases keep their original real-time speeds.
+const T = {
+  innerCenterArrived: 1.3,                      // big inner circle reaches center
+  groupFadeStart:     2.08,                     // body group fade-in begins
+  groupFadeEnd:       2.21,                     // body group fully visible
+  bodyDrawStart:      2.08,                     // frame & needle start drawing
+  bodyDrawEnd:        3.9,                      // === LOOP ANCHOR: compass fully drawn ===
+
+  // 1s hold inserted here
+  needleSpinStart:    3.9  + HOLD_AFTER_DRAW,   // 4.9s
+  needleSpinEnd:      6.5  + HOLD_AFTER_DRAW,   // 7.5s
+  ring2DrawStart:     6.5  + HOLD_AFTER_DRAW,   // 7.5s
+  ring2OpacityOff:    6.5  + HOLD_AFTER_DRAW,   // 7.5s
+  ring2OpacityOn:     6.63 + HOLD_AFTER_DRAW,   // 7.63s
+  ring2DrawEnd:       7.54 + HOLD_AFTER_DRAW,   // 8.54s
+
+  bodyUndrawStart:    10.66 + HOLD_AFTER_DRAW,  // 11.66s
+  innerUndrawEnd:     12.22 + HOLD_AFTER_DRAW,  // 13.22s
+  bodyUndrawEnd:      12.48 + HOLD_AFTER_DRAW,  // 13.48s
+  innerOpacityOut:    12.48 + HOLD_AFTER_DRAW,  // 13.48s
+  groupFadeOutStart:  12.48 + HOLD_AFTER_DRAW,  // 13.48s
+  groupFadeOutEnd:    12.74 + HOLD_AFTER_DRAW,  // 13.74s
+  innerShapeReturn:   12.48 + HOLD_AFTER_DRAW,  // 13.48s — inner morphs back to top
+};
+
+const pct = (s) => `${(s / TOTAL) * 100}%`;
+const LOOP_DELAY = -T.bodyDrawEnd; // -3.9s — shifts visible loop start to "compass fully drawn"
+
+export default memo(function CompassV2Animation({ size = 120 }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
-    const drawStart = 0.16;
-    const drawEnd = 0.30;
-    const undrawStart = 0.82;
-    const undrawEnd = 0.96;
 
     // Body elements: outer frame + needle only (inner circle has custom animations)
     const elements = [
@@ -39,15 +67,15 @@ export default memo(function CompassV2Animation({ size = 100 }) {
         #${item.id} {
           stroke-dasharray: ${len};
           stroke-dashoffset: ${len};
-          animation: compassv2-draw-${i} ${TOTAL}s linear infinite;
+          animation: compassv2-draw-${i} ${TOTAL}s linear ${LOOP_DELAY}s infinite;
         }
         @keyframes compassv2-draw-${i} {
-          0%                        { stroke-dashoffset: ${len}; }
-          ${drawStart * 100}%       { stroke-dashoffset: ${len}; }
-          ${drawEnd * 100}%         { stroke-dashoffset: 0; }
-          ${undrawStart * 100}%     { stroke-dashoffset: 0; }
-          ${undrawEnd * 100}%       { stroke-dashoffset: ${len}; }
-          100%                      { stroke-dashoffset: ${len}; }
+          0%                              { stroke-dashoffset: ${len}; }
+          ${pct(T.bodyDrawStart)}         { stroke-dashoffset: ${len}; }
+          ${pct(T.bodyDrawEnd)}           { stroke-dashoffset: 0; }
+          ${pct(T.bodyUndrawStart)}       { stroke-dashoffset: 0; }
+          ${pct(T.bodyUndrawEnd)}         { stroke-dashoffset: ${len}; }
+          100%                            { stroke-dashoffset: ${len}; }
         }
       `;
     });
@@ -56,21 +84,21 @@ export default memo(function CompassV2Animation({ size = 100 }) {
     css += `
       #compassv2-inner-circle {
         animation:
-          compassv2-inner-shape ${TOTAL}s ease-in-out infinite,
-          compassv2-inner-exit ${TOTAL}s linear infinite;
+          compassv2-inner-shape ${TOTAL}s ease-in-out ${LOOP_DELAY}s infinite,
+          compassv2-inner-exit ${TOTAL}s linear ${LOOP_DELAY}s infinite;
       }
       @keyframes compassv2-inner-shape {
-        0%    { cy: 16px; r: 6px; }
-        10%   { cy: 84px; r: 27px; }
-        96%   { cy: 84px; r: 27px; }
-        100%  { cy: 16px; r: 6px; }
+        0%                              { cy: 16px; r: 6px; }
+        ${pct(T.innerCenterArrived)}    { cy: 84px; r: 27px; }
+        ${pct(T.innerShapeReturn)}      { cy: 84px; r: 27px; }
+        100%                            { cy: 16px; r: 6px; }
       }
       @keyframes compassv2-inner-exit {
-        0%    { stroke-dashoffset: 0; opacity: 1; }
-        82%   { stroke-dashoffset: 0; opacity: 1; }
-        94%   { stroke-dashoffset: 100; opacity: 1; }
-        96%   { stroke-dashoffset: 100; opacity: 0; }
-        100%  { stroke-dashoffset: 100; opacity: 0; }
+        0%                              { stroke-dashoffset: 0; opacity: 1; }
+        ${pct(T.bodyUndrawStart)}       { stroke-dashoffset: 0; opacity: 1; }
+        ${pct(T.innerUndrawEnd)}        { stroke-dashoffset: 100; opacity: 1; }
+        ${pct(T.innerOpacityOut)}       { stroke-dashoffset: 100; opacity: 0; }
+        100%                            { stroke-dashoffset: 100; opacity: 0; }
       }
     `;
 
@@ -84,23 +112,41 @@ export default memo(function CompassV2Animation({ size = 100 }) {
           stroke-dashoffset: ${ring2Len};
           opacity: 0;
           animation:
-            compassv2-ring2-draw ${TOTAL}s linear infinite,
-            compassv2-ring2-opacity ${TOTAL}s linear infinite;
+            compassv2-ring2-draw ${TOTAL}s linear ${LOOP_DELAY}s infinite,
+            compassv2-ring2-opacity ${TOTAL}s linear ${LOOP_DELAY}s infinite;
         }
         @keyframes compassv2-ring2-draw {
-          0%    { stroke-dashoffset: ${ring2Len}; }
-          50%   { stroke-dashoffset: ${ring2Len}; }
-          58%   { stroke-dashoffset: 0; }
-          100%  { stroke-dashoffset: 0; }
+          0%                              { stroke-dashoffset: ${ring2Len}; }
+          ${pct(T.ring2DrawStart)}        { stroke-dashoffset: ${ring2Len}; }
+          ${pct(T.ring2DrawEnd)}          { stroke-dashoffset: 0; }
+          100%                            { stroke-dashoffset: 0; }
         }
         @keyframes compassv2-ring2-opacity {
-          0%    { opacity: 0; }
-          50%   { opacity: 0; }
-          51%   { opacity: 1; }
-          100%  { opacity: 1; }
+          0%                              { opacity: 0; }
+          ${pct(T.ring2OpacityOff)}       { opacity: 0; }
+          ${pct(T.ring2OpacityOn)}        { opacity: 1; }
+          100%                            { opacity: 1; }
         }
       `;
     }
+
+    // Needle spin and group fade — moved here from inline JSX <style> so they share T/pct.
+    css += `
+      @keyframes compassv2-needle-spin {
+        0%                              { transform: rotate(0deg); }
+        ${pct(T.needleSpinStart)}       { transform: rotate(0deg); }
+        ${pct(T.needleSpinEnd)}         { transform: rotate(720deg); }
+        100%                            { transform: rotate(720deg); }
+      }
+      @keyframes compassv2-group-fade {
+        0%                              { opacity: 0; }
+        ${pct(T.groupFadeStart)}        { opacity: 0; }
+        ${pct(T.groupFadeEnd)}          { opacity: 1; }
+        ${pct(T.groupFadeOutStart)}     { opacity: 1; }
+        ${pct(T.groupFadeOutEnd)}       { opacity: 0; }
+        100%                            { opacity: 0; }
+      }
+    `;
 
     styleEl.textContent = css;
     document.head.appendChild(styleEl);
@@ -120,33 +166,37 @@ export default memo(function CompassV2Animation({ size = 100 }) {
       height={height}
       style={{ overflow: 'visible', color: 'var(--accent)', opacity: 0.7 }}
     >
-      {/* Inner circle: starts at ring position, scales up to full compass inner circle */}
+      {/* Inner circle: initial JSX values match the loop-start frame (big circle at center)
+          to avoid a first-paint flicker before the keyframes attach in useEffect.
+          The compassv2-inner-shape animation overrides cy/r once it starts. */}
       <circle
         id="compassv2-inner-circle"
-        cx="60" cy="16" r="6"
+        cx="60" cy="84" r="27"
         pathLength="100"
         strokeDasharray="100"
         fill="none"
         stroke="currentColor"
-        strokeWidth="3.2"
+        strokeWidth="6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
-      {/* Ring 2: draws in at top after needle spin, stays visible through end */}
+      {/* Ring 2: draws in at top after needle spin, stays visible through end.
+          Initial opacity 0 to match the loop-start frame (ring 2 not yet visible). */}
       <circle
         id="compassv2-ring-2"
         cx="60" cy="16" r="6"
+        opacity="0"
         fill="none"
         stroke="currentColor"
-        strokeWidth="3.2"
+        strokeWidth="6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
 
       <g style={{
         transform: 'translateY(12px)',
-        animation: `${TOTAL}s linear infinite compassv2-group-fade`,
+        animation: `${TOTAL}s linear ${LOOP_DELAY}s infinite compassv2-group-fade`,
       }}>
 
         {/* Outer frame with 4 triangular points */}
@@ -155,7 +205,7 @@ export default memo(function CompassV2Animation({ size = 100 }) {
           d="M 60,22 L 68,35 A 38,38 0 0,1 97,64 L 106,72 L 97,80 A 38,38 0 0,1 68,109 L 60,120 L 52,109 A 38,38 0 0,1 23,80 L 14,72 L 23,64 A 38,38 0 0,1 52,35 L 60,22"
           fill="none"
           stroke="currentColor"
-          strokeWidth="3.2"
+          strokeWidth="6"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -163,38 +213,20 @@ export default memo(function CompassV2Animation({ size = 100 }) {
         {/* Diamond needle — spins independently */}
         <g style={{
           transformOrigin: '60px 72px',
-          animation: `${TOTAL}s ease-in-out infinite compassv2-needle-spin`,
+          animation: `${TOTAL}s ease-in-out ${LOOP_DELAY}s infinite compassv2-needle-spin`,
         }}>
           <path
             id="compassv2-needle"
             d="M 60,54 L 66,72 L 60,90 L 54,72 L 60,54"
             fill="none"
             stroke="currentColor"
-            strokeWidth="3.2"
+            strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </g>
 
       </g>
-
-      <style>{`
-        @keyframes compassv2-needle-spin {
-          0%   { transform: rotate(0deg); }
-          30%  { transform: rotate(0deg); }
-          50%  { transform: rotate(720deg); }
-          100% { transform: rotate(720deg); }
-        }
-
-        @keyframes compassv2-group-fade {
-          0%   { opacity: 0; }
-          16%  { opacity: 0; }
-          17%  { opacity: 1; }
-          96%  { opacity: 1; }
-          98%  { opacity: 0; }
-          100% { opacity: 0; }
-        }
-      `}</style>
     </svg>
   );
 });

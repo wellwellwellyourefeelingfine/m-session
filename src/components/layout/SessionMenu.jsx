@@ -12,9 +12,10 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
+import { useAppUpdaterContext } from '../shared/AppUpdaterContext';
 import SessionHistoryModal from '../history/SessionHistoryModal';
 import DataDownloadModal from '../session/DataDownloadModal';
-import { APP_VERSION } from '../../constants';
+import { APP_VERSION, BUILD_SHA } from '../../constants';
 
 // Banner ID must match the one used in TimelineEditor/TimelineTutorial
 const TUTORIAL_BANNER_ID = 'timeline-tutorial';
@@ -25,6 +26,7 @@ export default function SessionMenu() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
+  const [showFullVersion, setShowFullVersion] = useState(false);
   const menuRef = useRef(null);
 
   const sessionPhase = useSessionStore((s) => s.sessionPhase);
@@ -38,6 +40,7 @@ export default function SessionMenu() {
   const setCurrentTab = useAppStore((s) => s.setCurrentTab);
   const { canPromptNatively, promptNativeInstall, isStandalone } = useInstallPrompt();
   const showInstallButton = !isStandalone;
+  const { checkStatus, updateAvailable, checkForUpdate, applyUpdate } = useAppUpdaterContext();
 
   const hasData = sessionPhase !== 'not-started' || journalEntries.length > 0;
   const hasImages = journalEntries.some((e) => e.hasImage);
@@ -48,6 +51,7 @@ export default function SessionMenu() {
     setTimeout(() => {
       setIsOpen(false);
       setIsClosingMenu(false);
+      setShowFullVersion(false); // reset version reveal so each open starts at brand
     }, 150);
   }, []);
 
@@ -186,13 +190,60 @@ export default function SessionMenu() {
                 }}
               />
             </button>
-            <span
-              className="text-[9px] tracking-wider text-[var(--color-text-tertiary)]"
-              style={{ fontFamily: 'Azeret Mono, monospace' }}
+            <button
+              type="button"
+              onClick={() => setShowFullVersion((v) => !v)}
+              className="relative tracking-wider text-[var(--color-text-tertiary)] cursor-pointer"
+              style={{
+                fontFamily: 'Azeret Mono, monospace',
+                minWidth: '110px',
+                height: '14px',
+              }}
+              aria-label={showFullVersion ? 'Hide version details' : 'Show version details'}
             >
-              m-session v{APP_VERSION}
-            </span>
+              {/* Brand state — larger to fill the space now that there's no
+                  version next to it. Absolutely positioned so the two states
+                  crossfade in place. */}
+              <span
+                className="absolute inset-0 flex items-center justify-end text-[11px] transition-opacity duration-200"
+                style={{ opacity: showFullVersion ? 0 : 1 }}
+              >
+                m-session
+              </span>
+              {/* Version state — smaller because the version + hash string is
+                  longer and needs to fit comfortably in the same space. */}
+              <span
+                className="absolute inset-0 flex items-center justify-end text-[9px] transition-opacity duration-200"
+                style={{ opacity: showFullVersion ? 1 : 0 }}
+              >
+                v{APP_VERSION}{BUILD_SHA ? ` · ${BUILD_SHA}` : ' · no hash'}
+              </span>
+            </button>
           </div>
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={async () => {
+              if (updateAvailable) {
+                // New version waiting — activate and reload
+                applyUpdate();
+              } else {
+                // Re-run a check (lets users force a fresh check; cheap and useful)
+                await checkForUpdate();
+              }
+            }}
+            disabled={checkStatus === 'checking'}
+            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-30 disabled:cursor-default"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            {checkStatus === 'checking'
+              ? 'Checking…'
+              : updateAvailable
+                ? 'Update App'
+                : checkStatus === 'error'
+                  ? 'Error - Try Again'
+                  : 'App Up-to-Date'}
+          </button>
           {showInstallButton && (
             <>
               <div className="border-t border-[var(--color-border)]" />

@@ -38,15 +38,16 @@ export const routingTestModuleContent = {
       id: 'index-0-intro',
       type: 'screens',
       screens: [
-        // Screen 1: "Header Fade Test" + AsciiMoon
+        // Screen 1: "Header Fade Test" + Wave
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'ascii-moon' },
+            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
             { type: 'text', lines: [
               'Screen 1 of 4 in this section.',
               '§',
-              'Header: "Header Fade Test" + AsciiMoon.',
+              'Header: "Header Fade Test" + Wave.',
               '§',
+              'Showcasing the new wave animation across these screens.',
               'Next screen has the SAME title and SAME animation.',
               'Expected: nothing in the header should fade.',
             ] },
@@ -55,27 +56,27 @@ export const routingTestModuleContent = {
         // Screen 2: Same title + same animation → header should NOT fade
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'ascii-moon' },
+            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
             { type: 'text', lines: [
               'Screen 2 of 4.',
               '§',
-              'Header: "Header Fade Test" + AsciiMoon (same as screen 1).',
+              'Header: "Header Fade Test" + Wave (same as screen 1).',
               '§',
-              'Next screen has the SAME title but a DIFFERENT animation (leaf).',
-              'Expected: title stays, animation fades to leaf.',
+              'Next screen has the SAME title and SAME animation.',
+              'Expected: nothing in the header should fade.',
             ] },
           ],
         },
-        // Screen 3: Same title + different animation → only animation should fade
+        // Screen 3: Same title + same animation → header should still NOT fade
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'leaf' },
+            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
             { type: 'text', lines: [
               'Screen 3 of 4.',
               '§',
-              'Header: "Header Fade Test" + Leaf (title same, animation changed).',
+              'Header: "Header Fade Test" + Wave (same as screen 2).',
               '§',
-              'Next screen has a DIFFERENT title but SAME animation (leaf).',
+              'Next screen has a DIFFERENT title but the SAME animation.',
               'Expected: animation stays, title fades to new text.',
             ] },
           ],
@@ -83,11 +84,11 @@ export const routingTestModuleContent = {
         // Screen 4: Different title + same animation → only title should fade
         {
           blocks: [
-            { type: 'header', title: 'Routing Overview', animation: 'leaf' },
+            { type: 'header', title: 'Routing Overview', animation: 'wave' },
             { type: 'text', lines: [
               'Screen 4 of 4.',
               '§',
-              'Header: "Routing Overview" + Leaf (title changed, animation same).',
+              'Header: "Routing Overview" + Wave (title changed, animation same).',
               '§',
               'This module tests the {routing} and {bookmark} system.',
               'Expected flow: 0 → 1 → 2 → 5 → 4 → 6',
@@ -98,17 +99,31 @@ export const routingTestModuleContent = {
       ],
     },
 
-    // ── Index 1: Education ───────���──────────────────────────────────────────
+    // ── Index 1: Education (ritual fade — slower, more intentional) ────────
     {
       id: 'index-1-education',
       type: 'screens',
+      ritualFade: true,
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'Index 1 — Education' },
+            { type: 'header', title: 'Index 1 — Ritual Fade' },
             { type: 'text', lines: [
-              'Normal sequential screen.',
-              'Next is the checkpoint at index 2.',
+              'This section uses ritualFade: true.',
+              '§',
+              'Transitions should feel slower and more intentional (700ms vs 400ms).',
+              '§',
+              'Click Continue to feel the slower fade to the next screen.',
+            ] },
+          ],
+        },
+        {
+          blocks: [
+            { type: 'header', title: 'Index 1 — Ritual Fade' },
+            { type: 'text', lines: [
+              'Second ritual screen.',
+              '§',
+              'Click Continue to advance to index 2 (back to default snappy fade).',
             ] },
           ],
         },

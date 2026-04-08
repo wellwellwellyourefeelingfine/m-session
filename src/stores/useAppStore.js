@@ -27,6 +27,7 @@ export const useAppStore = create(
         timerSound: false, // Audio alert when timer completes
         gongSound: true, // Meditation bell at start/end of meditations
         alternateAppLogo: false, // PNG logo instead of animated text
+        autoUpdate: true, // Automatic background app updates (silent install + activation on next cold launch)
       },
       setPreference: (key, value) =>
         set((state) => ({

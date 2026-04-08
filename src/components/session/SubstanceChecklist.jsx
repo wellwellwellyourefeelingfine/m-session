@@ -398,8 +398,8 @@ export default function SubstanceChecklist() {
                     onChange={(e) => handleContactFieldChange('name', e.target.value)}
                     className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
                     style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text-primary)',
                     }}
                   />
                   <input
@@ -410,8 +410,8 @@ export default function SubstanceChecklist() {
                     onChange={(e) => handleContactFieldChange('phone', e.target.value)}
                     className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
                     style={{
-                      borderColor: 'var(--border)',
-                      color: 'var(--text-primary)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text-primary)',
                     }}
                   />
                 </div>

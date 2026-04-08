@@ -30,8 +30,15 @@ import RatingScale from './RatingScale';
 import ActivitySuggestions from './ActivitySuggestions';
 import EmergencyFlow from './EmergencyFlow';
 import AcknowledgeClose from './AcknowledgeClose';
+import EmergencyContactView from './EmergencyContactView';
 
 const CLOSE_ANIMATION_MS = 350;
+
+// Default modal height (initial category grid step). Fixed pixels — not vh —
+// so the modal opens to the same size on every device. Tuned to fit the
+// 6 category cards + emergency contact card + top bar exactly without scroll.
+// Adjust this single number if the initial-step content ever changes.
+const DEFAULT_MODAL_HEIGHT_PX = 570;
 
 export default function HelperModal() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
@@ -187,15 +194,25 @@ export default function HelperModal() {
     handleRatingSelect(10);
   }, [handleRatingSelect]);
 
+  // Emergency contact card on the initial step — pushes to the dedicated view/edit page.
+  const handleEmergencyContactSelect = useCallback(() => {
+    pushStep('emergency-contact');
+  }, [pushStep]);
+
   // Determine which categories to show
   const phaseKey = sessionPhase === 'completed' ? 'follow-up' : 'active';
   const activeCategories = helperCategories.filter((c) => c.phase === phaseKey);
 
-  // Modal height: expands when the user has picked a rating (so result content has room).
+  // Modal height:
+  //   - Default (initial category grid): fixed pixel height so the modal opens
+  //     to the same size on every device, sized to fit the content exactly.
+  //     Clamped on small viewports so it never overflows the screen.
+  //   - Expanded (after picking a rating): vh-based so result content can
+  //     breathe and the modal grows with the device.
   const isExpanded = currentStep === 'category' && selectedRating !== null;
   const modalHeightCss = isExpanded
     ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
-    : `min(75vh, calc(100vh - var(--tabbar-height) - 12px))`;
+    : `min(${DEFAULT_MODAL_HEIGHT_PX}px, calc(100vh - var(--tabbar-height) - 12px))`;
 
   // Determine what result content to show beneath the rating scale based on the current rating.
   const getResultRoute = (rating) => {
@@ -261,8 +278,13 @@ export default function HelperModal() {
           <CategoryGrid
             categories={activeCategories}
             onSelect={handleCategorySelect}
+            emergencyContact={emergencyContactDetails}
+            onSelectEmergencyContact={handleEmergencyContactSelect}
           />
         );
+
+      case 'emergency-contact':
+        return <EmergencyContactView />;
 
       case 'category':
       case 'max-activity':
@@ -274,7 +296,14 @@ export default function HelperModal() {
               <CategoryHeader category={selectedCategory} />
             </div>
             {selectedCategory?.prompt && (
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              <p
+                className="text-lg leading-snug"
+                style={{
+                  fontFamily: "'DM Serif Text', serif",
+                  textTransform: 'none',
+                  color: 'var(--color-text-primary)',
+                }}
+              >
                 {selectedCategory.prompt}
               </p>
             )}

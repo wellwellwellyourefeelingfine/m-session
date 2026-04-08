@@ -13,8 +13,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'HandIcon',
     label: 'Intense feeling',
-    description: 'Somatic overwhelm, tightness, trembling, heat',
-    prompt: 'On a scale of 0 to 10, how intense is this feeling?',
+    description: 'Pressure or sensation in the body that demands attention',
+    expandedDescription:
+      "I\u2019m feeling pressure or sensation in my body that\u2019s hard to ignore. There\u2019s tightness, trembling, heat, or buzzing energy pulling all of my attention.",
+    prompt: 'How intense is this feeling?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -43,8 +45,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'EyeIcon',
     label: 'Trauma',
-    description: 'Vivid emotional or sensory flashbacks feel like they\u2019re happening now',
-    prompt: 'On a scale of 0 to 10, how vivid or overwhelming is this right now?',
+    description: 'Past experiences surfacing as if they\u2019re happening now',
+    expandedDescription:
+      "Something from my past is surfacing and feels like it\u2019s happening right now. I\u2019m seeing, hearing, or feeling things from another moment in my life, and my body is reacting as if it\u2019s here in the room.",
+    prompt: 'How vivid or overwhelming is this right now?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -74,8 +78,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'AngryIcon',
     label: 'Resistance',
-    description: 'A part of me is fighting the process. I\u2019m having thoughts that feel urgent',
-    prompt: 'On a scale of 0 to 10, how strong is this resistance?',
+    description: 'Something inside is pushing back against the process',
+    expandedDescription:
+      "A part of me is pushing back against what\u2019s happening. I\u2019m having urgent thoughts about figuring something out or taking control, and the harder I try to surrender, the more it digs in.",
+    prompt: 'How strong is this resistance?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -105,8 +111,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'TearIcon',
     label: 'Grief',
-    description: 'Sudden wave of crying, feeling of loss, sadness, emptiness',
-    prompt: 'On a scale of 0 to 10, how intense is this wave?',
+    description: 'A wave of sadness, loss, or old ache rising up',
+    expandedDescription:
+      "A wave of sadness has moved through me without warning. I might be crying without understanding why, or feeling the weight of an old loss that\u2019s bigger than the moment I\u2019m in.",
+    prompt: 'How intense is this wave?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -136,8 +144,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'EggIcon',
     label: 'Ego dissolution',
-    description: 'I feel a strange sense of self is lost, reality feels unknown',
-    prompt: 'On a scale of 0 to 10, how disorienting does this feel?',
+    description: 'The sense of self feels uncertain or far away',
+    expandedDescription:
+      "My sense of who I am feels uncertain. The boundary between me and everything else is softer than usual, and reality feels strange or far away.",
+    prompt: 'How disorienting does this feel?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -166,8 +176,10 @@ export const helperCategories = [
     phase: 'active',
     icon: 'LaughIcon',
     label: 'I feel so good',
-    description: 'I have so much energy, I can\u2019t sit still/focus, I want to move',
-    prompt: 'On a scale of 0 to 10, how strong is this energy?',
+    description: 'Energy moving through, hard to sit still or focus',
+    expandedDescription:
+      "I\u2019m full of energy and I can feel it moving through me. It\u2019s hard to sit still or focus, and I\u2019m not sure if this is too much.",
+    prompt: 'How strong is this energy?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -201,7 +213,7 @@ export const helperCategories = [
     icon: 'TearIcon',
     label: 'My mood is really low',
     description: 'Feeling down, flat, or emotionally depleted',
-    prompt: 'On a scale of 0 to 10, how low is your mood?',
+    prompt: 'How low is your mood?',
     showScale: true,
     skipScaleTo: null,
     routing: {
@@ -224,7 +236,7 @@ export const helperCategories = [
     icon: 'EggIcon',
     label: 'I am having difficulty with the integration work',
     description: 'Struggling to process or make sense of the experience',
-    prompt: 'On a scale of 0 to 10, how stuck do you feel?',
+    prompt: 'How stuck do you feel?',
     showScale: true,
     skipScaleTo: null,
     routing: {

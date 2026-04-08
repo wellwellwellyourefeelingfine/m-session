@@ -10,6 +10,7 @@ import AsciiMoon from '../../../capabilities/animations/AsciiMoon';
 import MorphingShapes from '../../../capabilities/animations/MorphingShapes';
 import LeafDrawV2 from '../../../capabilities/animations/LeafDrawV2';
 import CompassV2 from '../../../capabilities/animations/CompassV2';
+import WaveLoop from '../../../capabilities/animations/WaveLoop';
 import renderContentLines from '../utils/renderContentLines';
 
 const ANIMATION_MAP = {
@@ -18,6 +19,7 @@ const ANIMATION_MAP = {
   'morphing-shapes': MorphingShapes,
   'leaf': LeafDrawV2,
   'compass': CompassV2,
+  'wave': WaveLoop,
 };
 
 export default function AnimationBlock({ screen, accentTerms }) {

@@ -1022,11 +1022,24 @@ function TimelineTutorialTrigger() {
   const dismissBanner = useAppStore((state) => state.dismissBanner);
   const [showTutorial, setShowTutorial] = useState(false);
 
+  // Consume the reveal-animation flag exactly once per component instance.
+  // Using useRef + render-time init (rather than reading inside useEffect) is
+  // critical: in StrictMode dev, effect setups run twice with a cleanup in
+  // between, which would otherwise consume the module-level flag on the first
+  // pass and see `false` on the second — collapsing the 7.5s delay to 50ms and
+  // flashing the tutorial up during the moon overlay. The ref is preserved
+  // across StrictMode's simulated remount, so the second render sees the
+  // cached result and skips re-consuming.
+  const needsLongDelayRef = useRef(null);
+  if (needsLongDelayRef.current === null) {
+    needsLongDelayRef.current = consumeRevealAnimationPending();
+  }
+
   useEffect(() => {
     if (dismissed) return;
     // Only wait for reveal animation if Generate Timeline was just pressed.
     // Page refreshes, "Show Tutorial" menu clicks → near-instant.
-    const delay = consumeRevealAnimationPending() ? 7500 : 50;
+    const delay = needsLongDelayRef.current ? 7500 : 50;
     const timer = setTimeout(() => setShowTutorial(true), delay);
     return () => clearTimeout(timer);
   }, [dismissed]);

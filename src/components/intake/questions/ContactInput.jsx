@@ -3,7 +3,7 @@
  * Two-field contact input (name + phone) for emergency contact details
  */
 
-export default function ContactInput({ question, value, onChange, onContinue, dynamicNote }) {
+export default function ContactInput({ question, value, onChange, onContinue }) {
   const contactValue = value || { name: '', phone: '' };
 
   const handleFieldChange = (field, fieldValue) => {
@@ -24,13 +24,6 @@ export default function ContactInput({ question, value, onChange, onContinue, dy
           </p>
         );
       })}
-
-      {dynamicNote && (
-        <>
-          <div className="flex justify-center"><div className="circle-spacer" /></div>
-          <p style={{ color: 'var(--text-secondary)' }}>{dynamicNote}</p>
-        </>
-      )}
 
       <div className="space-y-3">
         {question.inputs.map((input) => (

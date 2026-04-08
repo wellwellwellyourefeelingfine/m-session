@@ -1,14 +1,36 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
+
+// Read app version from package.json — single source of truth
+const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
+
+// Get the git short SHA so each build is uniquely identifiable. Falls back to
+// an empty string if git isn't available (e.g., the .git folder is missing or
+// git CLI is not on PATH). The fallback is intentional — we want the build to
+// succeed even outside a git checkout.
+let gitShortSha = ''
+try {
+  gitShortSha = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+    .toString()
+    .trim()
+} catch {
+  console.warn('[vite.config] git rev-parse failed — version label will show "no hash"')
+}
 
 // https://vite.dev/config/
 export default defineConfig({
   base: '/app/',
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_SHA__: JSON.stringify(gitShortSha),
+  },
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon-light-16x16.png', 'favicon-light-32x32.png', 'favicon-dark-16x16.png', 'favicon-dark-32x32.png', 'apple-touch-icon.png', 'mask-icon.svg', 'icon.svg'],
       manifest: {
         name: 'm-session',

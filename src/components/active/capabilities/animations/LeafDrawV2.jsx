@@ -44,11 +44,13 @@ const PATH_DATA = [
 const CIRCLE_INDEX = PATH_DATA.length - 1;
 const LEAF_STROKE = 11;
 
-const SEED_HOLD   = 700;
-const DRAW_DUR    = 12000;
-const HOLD_DUR    = 2200;
-const LEAF_FADE   = 1000;
-const DESCEND_DUR = 2500;
+const SEED_HOLD     = 700;
+const DRAW_BASE_DUR = 12000;
+const LEAF_HOLD     = 500;  // Extra hold after leaf is fully drawn, before the top dot starts drawing
+const DRAW_DUR      = DRAW_BASE_DUR + LEAF_HOLD;
+const HOLD_DUR      = 2200;
+const LEAF_FADE     = 1000;
+const DESCEND_DUR   = 2500;
 const TOTAL = SEED_HOLD + DRAW_DUR + HOLD_DUR + LEAF_FADE + DESCEND_DUR;
 
 // Phase boundaries (cumulative)
@@ -75,6 +77,7 @@ export default memo(function LeafDrawV2Animation() {
   const rafRef = useRef(null);
   const startRef = useRef(null);
   const rangesRef = useRef(null);
+  const loopOffsetRef = useRef(0);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -129,8 +132,11 @@ export default memo(function LeafDrawV2Animation() {
     const lastVeinEnd = Math.max(...veinPaths.map(v => rawRanges[v.idx].end));
     const avgVeinLen = veinPaths.reduce((s, v) => s + v.len, 0) / veinPaths.length;
     const pauseBeforeCircle = avgVeinLen * 0.8;
-    cursor = lastVeinEnd + pauseBeforeCircle;
     const circleDrawSpan = circleEntry.len * 4; // draw at quarter speed, matching stem
+    // Inflate the pause so LEAF_HOLD ms of extra real time elapse between the leaf
+    // finishing and the circle starting, without affecting any drawing speeds.
+    const extraPauseRaw = (lastVeinEnd + pauseBeforeCircle + circleDrawSpan) * LEAF_HOLD / DRAW_BASE_DUR;
+    cursor = lastVeinEnd + pauseBeforeCircle + extraPauseRaw;
     rawRanges[circleEntry.idx] = { start: cursor, end: cursor + circleDrawSpan, len: circleEntry.len };
 
     // Normalize all ranges to [0, 1]
@@ -141,14 +147,26 @@ export default memo(function LeafDrawV2Animation() {
       len: r.len,
     }));
 
+    // Loop start is the moment the leaf is fully drawn but the circle hasn't started.
+    // In real time within the cycle, that's SEED_HOLD + (drawProgress where last vein ends) * DRAW_DUR.
+    loopOffsetRef.current = SEED_HOLD + (lastVeinEnd / maxEnd) * DRAW_DUR;
+
     paths.forEach((p, i) => {
       const len = ranges[i].len;
       p.style.strokeDasharray = len;
-      p.style.strokeDashoffset = len;
+      // Pre-seed loop-start state: leaf paths fully drawn, circle hidden.
+      // Avoids a one-frame flash between mount paint and first RAF tick.
+      p.style.strokeDashoffset = i === CIRCLE_INDEX ? len : 0;
     });
 
     if (seedRef.current) {
       seedRef.current.setAttribute('opacity', 1);
+    }
+    if (leafGroupRef.current) {
+      leafGroupRef.current.setAttribute('opacity', 1);
+    }
+    if (circleGroupRef.current) {
+      circleGroupRef.current.setAttribute('opacity', 1);
     }
 
     rangesRef.current = ranges;
@@ -167,7 +185,7 @@ export default memo(function LeafDrawV2Animation() {
     function animate(timestamp) {
       if (!leafGroup || !circleGroup || !seedEl || !paths[0]) return;
       if (!startRef.current) startRef.current = timestamp;
-      const elapsed = (timestamp - startRef.current) % TOTAL;
+      const elapsed = (timestamp - startRef.current + loopOffsetRef.current) % TOTAL;
 
       let drawProgress, leafOpacity, circleOpacity, circleTranslateX, circleTranslateY, seedOpacity;
 
@@ -258,8 +276,8 @@ export default memo(function LeafDrawV2Animation() {
   return (
     <svg
       viewBox="55 2 130 248"
-      width="79"
-      height="150"
+      width="120"
+      height="229"
       style={{ overflow: 'visible', color: 'var(--accent)', opacity: 0.7 }}
     >
       {/* Seed circle at stem base — matches circle path styling for seamless swap */}

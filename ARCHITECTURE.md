@@ -2,7 +2,7 @@
 
 Developer documentation for M-SESSION. For an overview of the project, see [README.md](README.md).
 
-> **Terminology note:** The within-session Phase 3 is called **"Synthesis"** in all user-facing content but **`integration`** in all internal code. See [Architecture Decision #8](#8-phase-3-terminology-synthesis-ui--integration-code) for the full rationale and guidance.
+> **Terminology note:** The within-session Phase 3 is called **"Synthesis"** in all user-facing content but **`integration`** in all internal code. See [Architecture Decision #10](#10-phase-3-terminology-synthesis-ui--integration-code) for the full rationale and guidance.
 
 ---
 
@@ -63,6 +63,17 @@ src/
 │   │   ├── ChatInput.jsx
 │   │   ├── ChatMessage.jsx
 │   │   └── ChatSidebar.jsx
+│   ├── helper/                    # "What's happening?" support modal (heart icon in header)
+│   │   ├── HelperModal.jsx        # Top-anchored sheet modal — multi-step rating/result flow
+│   │   ├── HelperButton.jsx       # Heart icon trigger rendered inside Header
+│   │   ├── HelperTopBar.jsx       # Back / title / close header bar
+│   │   ├── CategoryGrid.jsx       # 2-column category card grid (initial step)
+│   │   ├── CategoryHeader.jsx     # Wide category card shown above the rating scale
+│   │   ├── RatingScale.jsx        # 0–10 bubble scale
+│   │   ├── ActivitySuggestions.jsx # Activity result block (reuses timeline ModuleCard)
+│   │   ├── EmergencyFlow.jsx      # Emergency contact / 911 / 112 / Fireside Project block
+│   │   ├── AcknowledgeClose.jsx   # Acknowledge text shown when rating is 0
+│   │   └── PreSessionContent.jsx  # Pre-session informational text
 │   ├── history/                   # Session history browsing
 │   │   └── SessionHistoryModal.jsx # Accordion-style past sessions panel
 │   ├── home/                      # Home view, follow-up section, pre-session view
@@ -78,6 +89,7 @@ src/
 │   ├── useJournalStore.js         # Journal entries
 │   ├── useAIStore.js              # AI assistant state + conversations
 │   ├── useToolsStore.js           # Tools panel state
+│   ├── useHelperStore.js          # Helper Modal open/closed state (transient, not persisted)
 │   └── useSessionHistoryStore.js  # Archived session management
 ├── services/
 │   ├── aiService.js               # AI provider API integration
@@ -112,6 +124,9 @@ src/
 │   │   └── master/                # MasterModule content config files
 │   ├── meditations/               # Meditation content + audio mappings (14 content files)
 │   ├── intake/                    # 4-section questionnaire
+│   ├── helper/                    # Helper Modal content
+│   │   ├── categories.js          # 6 active + 2 follow-up categories with routing/copy
+│   │   └── formatLog.js           # Journal entry formatter for helper interactions
 │   └── timeline/
 │       └── configurations.js      # 11 timeline configs (5 focuses × 2 guidance + minimal)
 ├── utils/
@@ -211,7 +226,7 @@ Section (control bar + lifecycle)
 
 | Type | Purpose | Key Config |
 |------|---------|------------|
-| `screens` | Step-through screen sequence | `screens[], hideTimer?, rightSlotViewer?` |
+| `screens` | Step-through screen sequence | `screens[], hideTimer?, rightSlotViewer?, ritualFade?` |
 | `meditation` | Audio-synced meditation via `useMeditationPlayback` | `meditationId, animation?, showTranscript?, composerOptions?` |
 | `timer` | Countdown timer for music/dance/rest | `animation?, showAlarm?, recommendations?, allowAddTime?` |
 | `generate` | PNG generation with RevealOverlay | `generatorId, buttonLabel, saveToJournal?, imageName?` |
@@ -392,6 +407,29 @@ Journal entries are built by `journalAssembler.js` on module completion. Two-lay
 2. **Condition passed?** — If a prompt has a `condition` field and it fails, the prompt is excluded.
 
 Prompts that pass both filters are always included in the journal, even if the user left them blank. Empty prompts are saved as `[no entry — 3:45 PM]` with a wall-clock timestamp, supporting users who journal physically and need to cross-reference.
+
+#### Fade Speed (ritualFade)
+
+Screens sections support two fade speeds for transitions between screens:
+
+- **Default** (400ms) — snappy, used for most content
+- **Ritual** (700ms) — slower and more intentional, used for moments that warrant slowing down
+
+To use ritual fade, add `ritualFade: true` to the section config:
+
+```javascript
+{
+  id: 'closing-reflection',
+  type: 'screens',
+  ritualFade: true,
+  screens: [
+    { type: 'text', header: 'Take this with you', lines: [...] },
+    { type: 'prompt', prompt: 'What stayed with you?', placeholder: '...' },
+  ]
+}
+```
+
+The flag applies to all screen transitions within the section (title, animation, and body fades all use the same duration). This matches the pace used in `PreSessionIntro.jsx` for ritual moments.
 
 #### Meditation Variations
 
@@ -1169,6 +1207,100 @@ ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs --list-voices
 
 ---
 
+## Helper Modal
+
+The Helper Modal is the "What's happening?" support overlay accessed via a heart-icon button in the header. It provides phase-aware emotional support content during a session: a category grid → 0–10 rating scale → inline result content (acknowledge / activity suggestions / emergency contacts) that cross-fades based on the rating.
+
+### Activation & Phase Gating
+
+- Trigger: `HelperButton` (heart icon, accent color) lives in `Header.jsx` between the AI tab and the hamburger menu.
+- Visibility gate: button only renders when `sessionPhase` is `'pre-session'`, `'active'`, or `'completed'`.
+- Open mechanism: button calls `useHelperStore.openHelper()`. AppShell conditionally mounts `<HelperModal />` based on `isOpen`, mirroring the BoosterModal/ModuleLibraryDrawer pattern.
+- Close mechanism: `handleClose` sets a local `isClosing` flag (triggers exit animation), then `setTimeout(closeHelper, 350)` unmounts the modal after the slide-out completes.
+
+### Multi-Step Flow
+
+The modal manages a small step machine via local React state:
+
+| Step | Content |
+|------|---------|
+| `'initial'` | Category grid (6 active or 2 follow-up categories from `helperCategories`) |
+| `'category'` | `CategoryHeader` + prompt + `RatingScale` + inline result block |
+
+After the user selects a rating, `displayedRating` drives an inline cross-fade between three result components: `AcknowledgeClose` (rating 0), `ActivitySuggestions` (1–8, with the `max-activity` or `gentle-activity` set selected based on the rating's routing range), or `EmergencyFlow` (9–10). The modal does NOT navigate to a new step — all results render inline beneath the rating scale on the same `'category'` page so the user can rapidly tap different ratings and watch the suggestions cross-fade. Only the modal's body height transitions (75vh ↔ 95vh via the `isExpanded` flag) when a rating is first selected.
+
+### Activity Card Reuse
+
+`ActivitySuggestions` reuses the timeline `ModuleCard` component for visual consistency with the home timeline. It constructs synthetic module instances (`{ instanceId: 'helper-...', libraryId, title, duration, status: 'upcoming' }`) and passes them to `ModuleCard` with `isActiveSession={false}` and `canRemove={false}`. A scoped `<style>` block in `ActivitySuggestions.jsx` applies tighter padding to `.helper-activity-card > div > div` so the card is shorter inside the helper modal context — without modifying `ModuleCard` itself.
+
+### Emergency Flow
+
+`EmergencyFlow` reads `intake.responses.emergencyContactDetails` (a `{ name, phone }` object captured during intake's `contact-input` question). It renders three compact cards inline:
+
+1. Emergency contact card (named `tel:` link if details exist, generic prompt if not)
+2. Emergency services row (911 / 112 buttons)
+3. Fireside Project card (psychedelic peer support — call or text)
+
+Reassurance copy is intentionally agnostic ("If something feels serious right now, trust that. The options below are here for you — pick whichever feels most useful.") so the modal doesn't presume the user's experience.
+
+### Inserting Activities Mid-Session
+
+When a user taps an activity card from `ActivitySuggestions`, the helper modal calls `useSessionStore.insertAtActive(libraryId)`. This action:
+
+1. Creates a new module instance at `order: 0` in the current phase
+2. Resets the previously-active module's status from `'active'` back to `'upcoming'` and clears its `startedAt`
+3. Sets `inOpenSpace: false` so `ActiveView`'s auto-start logic picks up the new module
+4. Navigates to the active tab via `useAppStore.getState().setCurrentTab('active')`
+5. Calls `precacheAudioForModule(libraryId)` (non-blocking)
+
+The action also handles linked parent modules (e.g. `protector-dialogue`) by creating both Part 1 and Part 2 with a shared `linkedGroupId`, identical to the existing `addModule` linked-creation logic.
+
+### Journal Logging
+
+Each helper modal interaction creates a journal entry on category selection (via `useJournalStore.addEntry({ source: 'session', moduleTitle: 'Helper Modal' })`). The entry is updated in place as the user picks a rating, then again if they select an activity. The format is plain text built by `formatHelperModalLog()` in `src/content/helper/formatLog.js`.
+
+### Categories & Routing
+
+`src/content/helper/categories.js` defines the full category set. Each category object has:
+
+| Field | Description |
+|-------|-------------|
+| `id` | React key + journal log identifier |
+| `phase` | `'active'` (6 categories) or `'follow-up'` (2 stub categories) |
+| `icon` | Icon component name from `Icons.jsx` |
+| `label`, `description` | Card display text |
+| `prompt` | Rating prompt question |
+| `routing.ranges` | Array of `{ min, max, route }` mapping rating values to result types |
+| `acknowledgeText` | Rating-0 result content |
+| `maxActivityIntro`, `gentleActivityIntro` | Intro text above suggestion lists |
+| `maxActivitySuggestions`, `gentleActivitySuggestions` | Arrays of `{ id, label, description }` referencing `library.js` IDs |
+
+The `getRouteForRating(category, rating)` helper resolves a rating value to one of `'acknowledge-close' | 'max-activity' | 'gentle-activity' | 'emergency'` by walking the `routing.ranges` array.
+
+### File Layout
+
+```
+src/components/helper/
+  HelperModal.jsx           # Multi-step orchestrator
+  HelperButton.jsx          # Heart trigger in Header
+  HelperTopBar.jsx          # Back / "What's happening?" / close header bar
+  CategoryGrid.jsx          # 2-column grid (initial step)
+  CategoryHeader.jsx        # Wide category card shown above the rating scale
+  RatingScale.jsx           # 0–10 bubble scale (matches LifeGraph milestone rating)
+  ActivitySuggestions.jsx   # Activity result block (reuses ModuleCard)
+  EmergencyFlow.jsx         # Emergency contacts (rating 9–10 result)
+  AcknowledgeClose.jsx      # Acknowledgment (rating 0 result)
+  PreSessionContent.jsx     # Static informational text for pre-session phase
+
+src/content/helper/
+  categories.js             # Category configs + getRouteForRating helper
+  formatLog.js              # formatHelperModalLog (journal entry serializer)
+
+src/stores/useHelperStore.js  # isOpen / openHelper / closeHelper
+```
+
+---
+
 ## AI Assistant
 
 An optional AI assistant for session support:
@@ -1213,7 +1345,13 @@ All stores use Zustand with `persist` middleware for localStorage backup.
   sessionPhase: 'not-started' | 'intake' | 'pre-session' |
                 'substance-checklist' | 'active' | 'paused' | 'completed',
 
-  intake: { currentSection, currentQuestionIndex, responses, isComplete },
+  intake: {
+    currentSection, currentQuestionIndex, isComplete,
+    responses: {
+      // ... all questionnaire responses ...
+      emergencyContactDetails: { name, phone }, // structured contact for Helper Modal emergency flow
+    },
+  },
   substanceChecklist: { plannedDosageMg, ingestionTime, ... },
   preSubstanceActivity: { touchstone, completedActivities, ... },
 
@@ -1260,11 +1398,27 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 
 **Key Actions:**
 - `startSession()`, `completeModule()`, `skipModule()`
+- `addModule(libraryId, phase, position)` — pre-session timeline editing (handles linked parents)
+- `insertAtActive(libraryId)` — runtime mid-session module injection (used by Helper Modal); inserts at position 0 in the current phase, resets the previously-active module to upcoming, navigates to the active tab, and precaches audio
 - `beginPeakTransition()`, `transitionToPeak()`, `transitionToIntegration()`
 - `recordCheckInResponse()`, `recordIngestionTime()`, `confirmIngestionTime()`
 - `setSubstanceChecklistSubPhase()`, `completePreSubstanceActivity()`
 - `updateTransitionCapture()`, `updateClosingCapture()`, `completeSession()`
 - `completeFollowUpModule()`, `updateFollowUpModule()`
+
+### useHelperStore (Helper Modal trigger bridge)
+
+A minimal Zustand store with no persistence — exists solely to bridge the trigger button (`HelperButton` in `Header.jsx`) and the modal mount point (`AppShell.jsx`), since they live in different component trees.
+
+```javascript
+{
+  isOpen: false,
+  openHelper: () => set({ isOpen: true }),
+  closeHelper: () => set({ isOpen: false }),
+}
+```
+
+The modal is conditionally mounted in `AppShell` via `{isHelperOpen && <HelperModal />}`, so each open is a fresh component mount with fresh `useState` initial values. State does not persist across sessions or reloads.
 
 ### localStorage Keys
 
@@ -1275,6 +1429,8 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 | `mdma-guide-journal-state` | useJournalStore |
 | `mdma-guide-ai-state` | useAIStore |
 | `mdma-guide-session-history` | useSessionHistoryStore |
+
+`useHelperStore` and `useToolsStore` are intentionally **not** persisted — they hold transient UI state only.
 
 ---
 
@@ -1331,7 +1487,67 @@ A small stroke-only circle used as a visual separator between content sections:
 
 ### Custom Animations
 
-Keyframe animations defined in `index.css`: `fadeIn`, `fadeOut`, `slideUp`, `slideDown`, `breath-idle`, `orb-glow`
+Keyframe animations defined in `index.css`:
+
+| Keyframe | Purpose | Easing / duration |
+|----------|---------|-------------------|
+| `fadeIn` / `fadeOut` | Backdrop overlays for all sheet modals | `0.3s ease-out` |
+| `slideUp` | Bottom-sheet modal entrance (`translateY(100%) → 0`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
+| `slideDownOut` | Bottom-sheet modal exit (`translateY(0) → 100%`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
+| `slideDownIn` | Top-anchored modal entrance — used by HelperModal (`translateY(-100%) → 0`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
+| `slideUpOut` | Top-anchored modal exit (`translateY(0) → -100%`) | `0.35s cubic-bezier(0.65, 0, 0.35, 1)` |
+| `slideDown` | Small popover drop-in (`translateY(-20px) → 0`) — used by AISettingsPanel, EmergencyContactPopup | `0.3s ease-out` |
+| `slideUpSmall` | Minimized check-in/booster status bar (small 20px nudge with opacity fade) | `0.3s ease-out` |
+| `slideInFromRight` / `slideOutToRight` / `slideInFromLeft` / `slideOutToLeft` | Horizontal slides for journal navigation and AI sidebar | `0.3s ease-out forwards` |
+| `breath-idle`, `orb-glow` | BreathOrb visualization | varies |
+
+The four full-slide keyframes (`slideUp`, `slideDownOut`, `slideDownIn`, `slideUpOut`) animate **transform only — no opacity**. This is intentional: modal panels should feel like solid physical objects sliding into view, not ghostly UI elements that fade in. The backdrop overlay has its own fade (via `fadeIn` / `fadeOut`) — that's where any "gentle dimming" comes from.
+
+The `cubic-bezier(0.65, 0, 0.35, 1)` curve is a symmetric ease-in-out that accelerates smoothly out of rest, hits peak speed in the middle, and decelerates to a soft stop. Used consistently across all four full-slide keyframes for a unified feel.
+
+### Modal Layout Pattern (Sheet Modals)
+
+All sheet modals (`HelperModal`, `BoosterConsiderationModal`, `ModuleLibraryDrawer`, `ComeUpCheckIn`, `JournalSettings`, the home follow-up modals, `DataDownloadModal`, `PeakPhaseCheckIn`, `ClosingCheckIn`, etc.) follow the same structural template:
+
+```jsx
+<div className="fixed inset-0 z-50">                                     {/* outer wrapper, no animation */}
+  <div                                                                   {/* backdrop — sibling */}
+    className={`absolute inset-0 bg-black/25 ${
+      isClosing ? 'animate-fadeOut' : 'animate-fadeIn'
+    }`}
+    onClick={handleClose}
+  />
+  <div                                                                   {/* panel — sibling */}
+    className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md
+      bg-[var(--color-bg)] rounded-t-2xl flex flex-col overflow-hidden ${
+        isClosing ? 'animate-slideDownOut' : 'animate-slideUp'
+      }`}
+    style={{ height: modalHeight }}
+  >
+    {/* panel content */}
+  </div>
+</div>
+```
+
+**Critical: the backdrop and panel must be SIBLINGS, not parent/child.** CSS opacity is multiplicative across the parent/child tree — if the panel is rendered inside a fading backdrop wrapper, the panel inherits that opacity multiplier and visually fades alongside the backdrop, even if the panel's own slide keyframe doesn't change opacity. Both BoosterModal and HelperModal had this exact bug at one point and were restructured to use sibling layout.
+
+For top-anchored modals (currently only `HelperModal`), invert the positioning: `flex items-start` parent isn't needed — use `absolute top-0 left-1/2 -translate-x-1/2` on the panel, and use `animate-slideDownIn` / `animate-slideUpOut` instead of `slideUp` / `slideDownOut`. The `-100%` translateY is relative to the modal's own height, so the slide always covers the full distance regardless of body height (this is why height transitions between e.g. 75vh ↔ 95vh don't break the slide animation).
+
+**Close handler pattern** — match the animation duration:
+
+```javascript
+const [isClosing, setIsClosing] = useState(false);
+
+const handleClose = () => {
+  if (isClosing) return;
+  setIsClosing(true);
+  setTimeout(() => {
+    onClose(); // or store action like closeHelper()
+  }, 350); // matches the 0.35s slide-out keyframe
+};
+```
+
+The flag swaps the slide-in class for the slide-out class, the timeout waits for the exit animation to complete, then the parent removes the modal from the DOM. **Always 350ms now** — was previously 300ms before the easing/duration update.
 
 ### Animation Components
 
@@ -1423,6 +1639,11 @@ A reusable transition screen for smooth flow between sections:
 | Follow-up: Integration | `src/components/followup/FollowUpIntegration.jsx` |
 | Follow-up: Values Compass | `src/components/followup/FollowUpValuesCompass.jsx` |
 | AI assistant | `src/components/ai/AIAssistantModal.jsx` |
+| Helper Modal orchestrator | `src/components/helper/HelperModal.jsx` |
+| Helper Modal trigger button | `src/components/helper/HelperButton.jsx` |
+| Helper Modal store | `src/stores/useHelperStore.js` |
+| Helper categories + routing | `src/content/helper/categories.js` |
+| Helper journal entry formatter | `src/content/helper/formatLog.js` |
 | Session menu (hamburger) | `src/components/layout/SessionMenu.jsx` |
 | Session history modal | `src/components/history/SessionHistoryModal.jsx` |
 | Session history store | `src/stores/useSessionHistoryStore.js` |
@@ -1534,7 +1755,14 @@ Journal images stored in IndexedDB are not included in archives. Users should do
 7. **Local-only data with export**
    - Why: Privacy-first; no accounts or cloud sync; user owns their data via download
 
-8. **Phase 3 terminology: "Synthesis" (UI) / `integration` (code)**
+8. **Sheet modals use sibling backdrop+panel layout, not parent/child**
+   - Why: CSS opacity is multiplicative across the parent/child tree. If the panel is rendered inside a fading backdrop wrapper, the panel inherits the parent's opacity multiplier and visually fades alongside the backdrop — even if the panel's own slide keyframe doesn't change opacity. Both BoosterModal and HelperModal had this exact bug at one point. The fix is a non-animating outer `<div className="fixed inset-0 z-50">` with backdrop and panel as absolute-positioned siblings inside.
+   - The slide keyframes (`slideUp`, `slideDownOut`, `slideDownIn`, `slideUpOut`) animate transform only (no opacity) so panels feel like solid physical objects, not ghostly UI overlays. The backdrop fades on its own via the separate `fadeIn` / `fadeOut` keyframes. See "Modal Layout Pattern" in the Design System section.
+
+9. **Helper Modal trigger lives in Header, modal mounts in AppShell, bridged by `useHelperStore`**
+   - Why: The button and the modal live in different component trees (Header is a Header child, the modal mounts at AppShell level so its `fixed` positioning and z-index don't get scoped under any particular tab view). They can't share local React state, so we use a tiny dedicated Zustand store as the bridge. This mirrors how the AI assistant uses `useAIStore.isModalOpen` for the same trigger-in-header / modal-elsewhere pattern. The helper modal is conditionally mounted (`{isHelperOpen && <HelperModal />}`) so each open is a fresh component mount with fresh state — no leftover-state bugs.
+
+10. **Phase 3 terminology: "Synthesis" (UI) / `integration` (code)**
 
    In the MDMA therapy community, "integration" universally refers to the post-session therapeutic work — the non-drug sessions, journaling, and reflection that happen in the days and weeks *after* an experience. Our app originally used "Integration" for the third within-session phase (come-up → peak → integration), which created a terminology collision: users familiar with the clinical literature would see "Integration Phase" and think of post-session work, not the in-session wind-down.
 
