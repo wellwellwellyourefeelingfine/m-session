@@ -23,7 +23,7 @@ export default function HelperTopBar({ canGoBack, onBack, onClose }) {
       </button>
 
       {/* Center: header + description */}
-      <div className="flex-1 text-center px-2">
+      <div className="flex-1 text-center px-2" style={{ marginTop: '3px' }}>
         <h2
           className="text-2xl"
           style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)', lineHeight: 1, margin: 0 }}

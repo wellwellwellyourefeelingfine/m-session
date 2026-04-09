@@ -230,7 +230,7 @@ export default function ComeUpCheckIn() {
   // Confirmation dialog for early "fully arrived"
   if (showConfirmation) {
     return (
-      <div className="fixed inset-0 bg-black/30 flex items-end justify-center z-50 animate-fadeIn">
+      <div className="fixed inset-0 bg-black/25 flex items-end justify-center z-50">
         <div className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp">
           <h3 className="mb-4 text-lg" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Are you sure?</h3>
           <p className="text-[var(--color-text-secondary)] mb-6">
@@ -281,14 +281,17 @@ export default function ComeUpCheckIn() {
 
   // Full modal state
   return (
-    <div
-      className={`fixed inset-0 bg-black/30 flex items-end justify-center z-50 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}
-      onClick={showReassurance ? handleMinimize : handleMinimize}
-    >
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop — sibling of the panel so its opacity transition doesn't affect the panel */}
+      <div
+        className={`absolute inset-0 bg-black/25 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        onClick={handleMinimize}
+      />
+
+      {/* Panel — slides up from below, fully opaque the entire time */}
       <div
         ref={modalCardRef}
-        className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}
-        onClick={(e) => e.stopPropagation()}
+        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[var(--color-bg)] rounded-t-2xl p-6 pb-8 ${isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'}`}
       >
         <div className="flex justify-between items-start mb-6">
           <div>

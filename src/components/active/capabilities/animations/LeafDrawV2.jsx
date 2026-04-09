@@ -276,8 +276,8 @@ export default memo(function LeafDrawV2Animation() {
   return (
     <svg
       viewBox="55 2 130 248"
-      width="120"
-      height="229"
+      width="70"
+      height="133"
       style={{ overflow: 'visible', color: 'var(--accent)', opacity: 0.7 }}
     >
       {/* Seed circle at stem base — matches circle path styling for seamless swap */}

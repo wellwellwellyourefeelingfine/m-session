@@ -51,7 +51,7 @@ export default function JournalSettings({ onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 bg-black/30 flex items-end justify-center z-50 ${
+      className={`fixed inset-0 bg-black/25 flex items-end justify-center z-50 ${
         isClosing ? 'animate-fadeOut' : 'animate-fadeIn'
       }`}
       onClick={handleBackdropClick}

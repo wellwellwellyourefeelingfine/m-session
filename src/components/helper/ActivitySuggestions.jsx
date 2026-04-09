@@ -1,11 +1,15 @@
 /**
  * ActivitySuggestions
- * Shows contextual intro text + activity cards + "I need more help" escalation.
- * Reuses the timeline ModuleCard component for visual consistency with the home timeline.
+ * Shows contextual intro text + activity cards. Reuses the timeline ModuleCard
+ * component for visual consistency with the home timeline.
  *
  * Cards are wrapped in `.helper-activity-card` so we can apply a slightly reduced
  * padding override here without touching ModuleCard itself. This keeps the size
  * tweak local to the helper modal context.
+ *
+ * The "I need more help" escalation button used to live here in V4. In V5 it
+ * has moved to TriageResultStep where it functions as an expand/collapse for
+ * the EmergencyFlow rather than a route trigger.
  */
 
 import ModuleCard from '../timeline/ModuleCard';
@@ -27,7 +31,7 @@ const helperCardStyles = `
   }
 `;
 
-export default function ActivitySuggestions({ introText, activities, onSelectActivity, onNeedMoreHelp }) {
+export default function ActivitySuggestions({ introText, activities, onSelectActivity }) {
   return (
     <div className="space-y-4 animate-fadeIn">
       <style>{helperCardStyles}</style>
@@ -66,17 +70,6 @@ export default function ActivitySuggestions({ introText, activities, onSelectAct
             </div>
           );
         })}
-      </div>
-
-      <div className="flex justify-center" style={{ marginTop: '-0.25rem' }}>
-        <button
-          type="button"
-          onClick={onNeedMoreHelp}
-          className="text-xs uppercase tracking-wider underline"
-          style={{ color: 'var(--accent)' }}
-        >
-          I need more help
-        </button>
       </div>
     </div>
   );

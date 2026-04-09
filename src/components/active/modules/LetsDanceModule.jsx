@@ -110,7 +110,7 @@ function RecommendationsWidget({ initiallyOpen = false }) {
       {/* Album detail popup */}
       {selectedAlbum && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25"
           onClick={() => setSelectedAlbum(null)}
         >
           <div
@@ -267,7 +267,7 @@ function AllRecommendationsModal({ isOpen, closing, onClose }) {
       {/* Album detail popup */}
       {selectedAlbum && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/30"
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/25"
           onClick={() => setSelectedAlbum(null)}
         >
           <div
@@ -632,7 +632,7 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onProgress
       {/* Add Time popup */}
       {showAddTime && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25"
           onClick={() => { setShowAddTime(false); setAddTimeAmount(5); }}
         >
           <div

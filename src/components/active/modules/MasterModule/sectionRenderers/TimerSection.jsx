@@ -108,7 +108,7 @@ function RecommendationsWidget({ initiallyOpen = false, type = 'music' }) {
 
 function AlbumDetailPopup({ album, onClose }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25" onClick={onClose}>
       <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-6 max-w-xs w-full" onClick={(e) => e.stopPropagation()}>
         <div className="space-y-4">
           <div>
@@ -470,7 +470,7 @@ export default function TimerSection({
 
       {/* Add Time popup */}
       {showAddTime && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30" onClick={() => { setShowAddTime(false); setAddTimeAmount(5); }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25" onClick={() => { setShowAddTime(false); setAddTimeAmount(5); }}>
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] p-6 max-w-xs w-full" onClick={(e) => e.stopPropagation()}>
             <div className="space-y-4">
               <p className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)] text-center">Add Time</p>

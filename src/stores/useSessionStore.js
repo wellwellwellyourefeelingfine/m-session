@@ -875,7 +875,17 @@ export const useSessionStore = create(
        */
       insertAtActive: (libraryId) => {
         const state = get();
-        const currentPhase = state.timeline.currentPhase;
+        // Determine which phase to insert into:
+        //   - During an active session, use timeline.currentPhase (come-up,
+        //     peak, or integration).
+        //   - After session completion, the timeline phase is null, but the
+        //     user is in the post-session 'completed' phase where modules
+        //     live under phase: 'follow-up'. Treat that as the target.
+        // This lets the helper modal insert activities into the follow-up
+        // timeline when the user navigates a triage tree post-session.
+        const currentPhase =
+          state.timeline.currentPhase
+          || (state.sessionPhase === 'completed' ? 'follow-up' : null);
         if (!currentPhase) return { success: false, error: 'No active phase' };
 
         const libraryModule = getModuleById(libraryId);
@@ -890,8 +900,10 @@ export const useSessionStore = create(
           const linkedGroupId = generateId();
           const currentModuleId = state.modules.currentModuleInstanceId;
 
-          // Part 1 inserts at order 0 in current phase; Part 2 at start of integration
-          const part2Phase = (currentPhase === 'integration') ? 'integration' : 'integration';
+          // Part 1 inserts at order 0 in current phase; Part 2 at start of
+          // integration (or follow-up, if we're in the post-session phase
+          // — Part 2 should stay in the same conceptual segment as Part 1).
+          const part2Phase = currentPhase === 'follow-up' ? 'follow-up' : 'integration';
 
           // Shift all modules in current phase: increment order by 1
           let updatedItems = state.modules.items.map(m => {

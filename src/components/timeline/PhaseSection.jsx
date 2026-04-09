@@ -226,9 +226,13 @@ const PhaseSection = forwardRef(function PhaseSection(
           }
         </p>
 
-        {/* Collapsible content — staged animation: fade content, then collapse height */}
+        {/* Collapsible content — staged animation: fade content, then collapse height.
+            Left padding + negative-margin inset reserves room for the reorder arrows
+            (which sit at -left-8 on each module row) so overflow-hidden doesn't clip
+            them in edit mode, while keeping module cards visually in their original
+            position. */}
         <div
-          className="overflow-hidden ease-in-out"
+          className="overflow-hidden ease-in-out pl-8 -ml-8"
           style={{
             maxHeight: heightCollapsed ? 0 : '2000px',
             transition: heightCollapsed ? 'max-height 300ms ease-in-out' : 'max-height 500ms ease-in-out',

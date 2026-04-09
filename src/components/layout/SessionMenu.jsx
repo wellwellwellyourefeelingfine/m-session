@@ -270,20 +270,6 @@ export default function SessionMenu() {
           <div className="border-t border-[var(--color-border)]" />
           <button
             type="button"
-            onClick={() => {
-              closeMenu();
-              undismissBanner(TUTORIAL_BANNER_ID);
-              setCurrentTab('home');
-            }}
-            disabled={sessionPhase === 'not-started' || sessionPhase === 'intake'}
-            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-30 disabled:cursor-default"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            Show Tutorial
-          </button>
-          <div className="border-t border-[var(--color-border)]" />
-          <button
-            type="button"
             onClick={handleShowHistory}
             disabled={archivedSessions.length === 0}
             className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-30 disabled:cursor-default"
@@ -305,6 +291,20 @@ export default function SessionMenu() {
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Export Session
+          </button>
+          <div className="border-t border-[var(--color-border)]" />
+          <button
+            type="button"
+            onClick={() => {
+              closeMenu();
+              undismissBanner(TUTORIAL_BANNER_ID);
+              setCurrentTab('home');
+            }}
+            disabled={sessionPhase === 'not-started' || sessionPhase === 'intake'}
+            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors disabled:opacity-30 disabled:cursor-default"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            Show Tutorial
           </button>
           <div className="border-t border-[var(--color-border)]" />
           <button
@@ -341,7 +341,7 @@ export default function SessionMenu() {
 
       {/* Modals portaled to body to escape header's backdrop-filter stacking context */}
       {showConfirm && createPortal(
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4 text-[var(--color-text-primary)]">Start New Session?</h3>
             <p className="text-[var(--color-text-secondary)] text-sm mb-4">

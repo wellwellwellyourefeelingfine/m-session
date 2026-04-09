@@ -36,7 +36,7 @@ export default function HelperButton() {
         }}
         aria-label="Open support menu"
       >
-        <HeartIcon size={22} strokeWidth={2} className="text-[var(--accent)]" />
+        <HeartIcon size={22} strokeWidth={3} className="text-[var(--accent)]" />
       </button>
     </div>
   );

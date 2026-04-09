@@ -76,7 +76,7 @@ export function ExamplesDrawer({ examples, addedTexts, onAdd, onClose }) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[55] bg-black/30"
+        className="fixed inset-0 z-[55] bg-black/25"
         onClick={onClose}
       />
       {/* Drawer */}

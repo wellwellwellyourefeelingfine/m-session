@@ -85,7 +85,7 @@ export default function DurationPicker({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/25 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleClose}
     >
       <div

@@ -11,7 +11,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
-import { setRevealAnimationPending } from '../timeline/tutorialRevealFlag';
+import { scheduleTutorialReveal } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
@@ -178,8 +178,8 @@ export default function HomeView() {
 
   // Called by IntakeFlow after its fade-out completes
   const handleIntakeComplete = () => {
-    // Signal that the reveal animation is playing — tutorial should wait
-    setRevealAnimationPending();
+    // Schedule the tutorial for a few seconds after the reveal animation ends
+    scheduleTutorialReveal();
     // Put the overlay up FIRST (covers whatever is currently rendered)
     setTransitionStep('moon-enter');
 

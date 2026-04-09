@@ -285,7 +285,7 @@ export function MobileSidebar({ isOpen, onClose, onOpenSettings }) {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/30 z-[76] md:hidden ${isClosing ? 'animate-fadeOut pointer-events-none' : 'animate-fadeIn'}`}
+        className={`fixed inset-0 bg-black/25 z-[76] md:hidden ${isClosing ? 'animate-fadeOut pointer-events-none' : 'animate-fadeIn'}`}
         style={{ top: 'var(--header-height)' }}
         onClick={handleClose}
       />

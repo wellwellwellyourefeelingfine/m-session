@@ -14,31 +14,36 @@
  *
  * The backdrop and panel are SIBLINGS so the backdrop's opacity transition doesn't
  * affect the panel's visual opacity.
+ *
+ * V5: the per-category rating + result flow has been replaced by a phase-aware
+ * decision tree managed by TriageStepRunner. The modal owns the major view
+ * state machine ('initial' / 'triage' / 'emergency-contact'), `selectedCategory`,
+ * and the runner's "has the rating been committed" flag (which drives the
+ * default → expanded height transition). Triage state itself lives inside the
+ * runner — fresh on every category open, discarded on back-out.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useHelperStore } from '../../stores/useHelperStore';
-import { helperCategories, getRouteForRating } from '../../content/helper/categories';
-import { formatHelperModalLog } from '../../content/helper/formatLog';
+import { helperCategories } from '../../content/helper/categories';
+import { formatHelperModalLog, buildStepResponses } from '../../content/helper/formatLog';
+import { classifyPhaseWindow } from '../../content/helper/resolverUtils';
+import { getModuleById } from '../../content/modules';
 import HelperTopBar from './HelperTopBar';
 import PreSessionContent from './PreSessionContent';
 import CategoryGrid from './CategoryGrid';
-import CategoryHeader from './CategoryHeader';
-import RatingScale from './RatingScale';
-import ActivitySuggestions from './ActivitySuggestions';
-import EmergencyFlow from './EmergencyFlow';
-import AcknowledgeClose from './AcknowledgeClose';
 import EmergencyContactView from './EmergencyContactView';
+import TriageStepRunner from './TriageStepRunner';
+import PlaceholderCategory from './PlaceholderCategory';
 
 const CLOSE_ANIMATION_MS = 350;
 
-// Default modal height (initial category grid step). Fixed pixels — not vh —
-// so the modal opens to the same size on every device. Tuned to fit the
-// 6 category cards + emergency contact card + top bar exactly without scroll.
-// Adjust this single number if the initial-step content ever changes.
-const DEFAULT_MODAL_HEIGHT_PX = 570;
+// Default modal height. Fixed pixels (not vh) so the modal opens to the same
+// size on every device. Tuned to fit the 6 category cards + emergency contact
+// card + top bar without scroll. Adjust if the initial-step content changes.
+const DEFAULT_MODAL_HEIGHT_PX = 550;
 
 export default function HelperModal() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
@@ -52,20 +57,45 @@ export default function HelperModal() {
   const [currentStep, setCurrentStep] = useState('initial');
   const [stepHistory, setStepHistory] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedRating, setSelectedRating] = useState(null);
   const [isContentVisible, setIsContentVisible] = useState(true);
-  const [journalEntryId, setJournalEntryId] = useState(null);
-  // displayedRating drives the result content shown beneath the rating scale.
-  // It cross-fades when selectedRating changes (for inline result transitions).
-  const [displayedRating, setDisplayedRating] = useState(null);
-  const [isResultVisible, setIsResultVisible] = useState(true);
   // Lifted from EmergencyContactView so the modal can react to edit-mode for
   // its height transition. Reset on back/exit so re-entering the view always
   // shows the default (non-edit) state.
   const [isEditingContact, setIsEditingContact] = useState(false);
+  // Lifted from EmergencyContactView so the modal expands when the user
+  // taps "I need more help" inside the contact view, mirroring how it
+  // expands when they tap Edit.
+  const [isContactEmergencyExpanded, setIsContactEmergencyExpanded] = useState(false);
+  // Has the user committed to a rating value inside the current triage flow?
+  // Drives the modal height: stays at default until this flips true, then
+  // expands and stays expanded until the user backs out past the rating
+  // (or navigates away from 'triage').
+  const [hasRatedInTriage, setHasRatedInTriage] = useState(false);
+
+  // Imperative ref to the active TriageStepRunner so the top bar's back
+  // button can pop a triage step without prop-drilling state.
+  const triageRunnerRef = useRef(null);
+
+  // Build session context once on mount. The modal is unmounted/remounted on
+  // every open, so this captures a snapshot of the relevant store fields at
+  // the moment the user opens the helper.
+  const sessionContext = useMemo(() => {
+    const state = useSessionStore.getState();
+    const ingestionTime = state.substanceChecklist?.ingestionTime;
+    const ingestionMs =
+      ingestionTime instanceof Date ? ingestionTime.getTime() : ingestionTime || null;
+    const minutesSinceIngestion = ingestionMs
+      ? Math.floor((Date.now() - ingestionMs) / 60000)
+      : null;
+    return {
+      minutesSinceIngestion,
+      timelinePhase: state.timeline?.currentPhase || null,
+      phaseWindow: classifyPhaseWindow(minutesSinceIngestion),
+      hasEmergencyContact: Boolean(state.sessionProfile?.emergencyContactDetails?.phone),
+    };
+  }, []);
 
   // Close handler — mirrors ModuleLibraryDrawer's handleClose pattern.
-  // Triggers exit animation, waits for it to complete, then unmounts via the store.
   const handleClose = useCallback(() => {
     if (isClosing) return;
     setIsClosing(true);
@@ -81,7 +111,9 @@ export default function HelperModal() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleClose]);
 
-  // Fade transition helper for step navigation (back/forward between pages inside the modal)
+  // Fade transition helper for major view changes (back/forward between pages
+  // inside the modal). Used for initial ↔ triage ↔ emergency-contact transitions.
+  // Triage internal step transitions are handled by the runner itself.
   const fadeTransition = useCallback((callback) => {
     setIsContentVisible(false);
     setTimeout(() => {
@@ -90,7 +122,7 @@ export default function HelperModal() {
     }, 200);
   }, []);
 
-  // Navigation helpers
+  // Push a new major view onto the stack with a fade transition.
   const pushStep = useCallback((nextStep) => {
     fadeTransition(() => {
       setStepHistory((prev) => [...prev, currentStep]);
@@ -98,192 +130,140 @@ export default function HelperModal() {
     });
   }, [currentStep, fadeTransition]);
 
+  // Back handler. Inside the triage flow, first try to pop a triage step
+  // via the runner's imperative goBack. Only if that returns false (no more
+  // steps to pop) do we fall through to the major-view back logic.
   const handleBack = useCallback(() => {
+    // Inside triage: delegate to the runner first.
+    if (currentStep === 'triage' && triageRunnerRef.current) {
+      const handled = triageRunnerRef.current.goBack();
+      if (handled) return;
+    }
+
+    // Major view back navigation.
     if (stepHistory.length === 0) return;
     fadeTransition(() => {
       const prev = stepHistory[stepHistory.length - 1];
       setStepHistory((h) => h.slice(0, -1));
       setCurrentStep(prev);
-      // Clear rating if going back from rating step
-      if (currentStep === 'category') {
+      // Clear triage and contact flags when leaving those views so the next
+      // entry starts fresh and the modal shrinks back to default height.
+      if (currentStep === 'triage') {
         setSelectedCategory(null);
-        setSelectedRating(null);
-        setDisplayedRating(null);
+        setHasRatedInTriage(false);
       }
-      // Clear edit-mode flag if leaving the emergency contact view, so the
-      // modal shrinks back to default height and re-entering the view starts
-      // in the non-edit (read) state.
       if (currentStep === 'emergency-contact') {
         setIsEditingContact(false);
+        setIsContactEmergencyExpanded(false);
       }
     });
-  }, [stepHistory, currentStep, fadeTransition]);
+  }, [currentStep, stepHistory, fadeTransition]);
 
-  // Category selection handler
+  // Category selection handler. Always navigates to the triage view (the
+  // runner handles whether the category has a step tree or is a placeholder).
+  // No journal entry is created here — entries are created on action only.
   const handleCategorySelect = useCallback((category) => {
     setSelectedCategory(category);
+    setHasRatedInTriage(false);
+    pushStep('triage');
+  }, [pushStep]);
 
-    // Create journal entry on category selection
-    const entry = useJournalStore.getState().addEntry({
+  // Activity selection handler.
+  // Creates a journal entry capturing the full triage path, inserts the module
+  // at the active position, and closes the modal.
+  // The runner passes us its triageState and the currently-resolved result so
+  // we can build the entry from the full context at action time.
+  const handleActivitySelect = useCallback((activity, triageState) => {
+    if (selectedCategory) {
+      const libraryModule = getModuleById(activity.id);
+      const activityTitle = libraryModule?.title || activity.id;
+      useJournalStore.getState().addEntry({
+        content: formatHelperModalLog({
+          categoryLabel: selectedCategory.label,
+          stepResponses: buildStepResponses(selectedCategory, triageState),
+          phaseWindow: sessionContext.phaseWindow,
+          minutesSinceIngestion: sessionContext.minutesSinceIngestion,
+          activityChosen: activityTitle,
+          emergencyActionTaken: null,
+        }),
+        source: 'session',
+        sessionId,
+        moduleTitle: 'Helper Modal',
+      });
+    }
+
+    insertAtActive(activity.id);
+    handleClose();
+  }, [selectedCategory, sessionContext, sessionId, insertAtActive, handleClose]);
+
+  // Emergency action handler.
+  // Called when the user taps any button representing a real emergency action:
+  //   - Call/Text on the saved contact (from EmergencyFlow inside triage,
+  //     OR from the dedicated EmergencyContactView reachable from the initial step)
+  //   - 911/112 (from EmergencyFlow only)
+  //   - Fireside Project Call/Text (from EmergencyFlow only)
+  // When called from the dedicated contact view (no triageState), the category
+  // and step responses are omitted from the entry by formatHelperModalLog.
+  const handleEmergencyAction = useCallback((actionLabel, triageState) => {
+    useJournalStore.getState().addEntry({
       content: formatHelperModalLog({
-        categoryLabel: category.label,
-        rating: null,
-        route: null,
+        categoryLabel: selectedCategory?.label ?? null,
+        stepResponses: triageState
+          ? buildStepResponses(selectedCategory, triageState)
+          : null,
+        phaseWindow: sessionContext.phaseWindow,
+        minutesSinceIngestion: sessionContext.minutesSinceIngestion,
         activityChosen: null,
-        escalatedToEmergency: false,
+        emergencyActionTaken: actionLabel,
       }),
       source: 'session',
       sessionId,
       moduleTitle: 'Helper Modal',
     });
-    setJournalEntryId(entry.id);
-
-    // If category skips scale, go directly to its skipScaleTo route
-    if (!category.showScale && category.skipScaleTo) {
-      pushStep(category.skipScaleTo);
-    } else {
-      pushStep('category');
-    }
-  }, [sessionId, pushStep]);
-
-  // Rating selection handler
-  // Stays on the category page and cross-fades the result content beneath the rating scale.
-  const handleRatingSelect = useCallback((rating) => {
-    setSelectedRating(rating);
-
-    const route = getRouteForRating(selectedCategory, rating);
-
-    // Update journal entry with rating and route
-    if (journalEntryId) {
-      const store = useJournalStore.getState();
-      store.updateEntry(journalEntryId, formatHelperModalLog({
-        categoryLabel: selectedCategory.label,
-        rating,
-        route,
-        activityChosen: null,
-        escalatedToEmergency: route === 'emergency',
-      }));
-    }
-
-    // Cross-fade the inline result content. If something is already showing, fade it out first.
-    if (displayedRating !== null && displayedRating !== rating) {
-      setIsResultVisible(false);
-      setTimeout(() => {
-        setDisplayedRating(rating);
-        setIsResultVisible(true);
-      }, 200);
-    } else {
-      setDisplayedRating(rating);
-      setIsResultVisible(true);
-    }
-  }, [selectedCategory, journalEntryId, displayedRating]);
-
-  // Activity selection handler
-  const handleActivitySelect = useCallback((activity) => {
-    // Update journal entry with chosen activity
-    if (journalEntryId) {
-      const store = useJournalStore.getState();
-      const route = selectedRating !== null ? getRouteForRating(selectedCategory, selectedRating) : selectedCategory.skipScaleTo;
-      store.updateEntry(journalEntryId, formatHelperModalLog({
-        categoryLabel: selectedCategory.label,
-        rating: selectedRating,
-        route,
-        activityChosen: activity.label,
-        escalatedToEmergency: false,
-      }));
-    }
-
-    // Insert module at active position and close modal
-    insertAtActive(activity.id);
-    handleClose();
-  }, [selectedCategory, selectedRating, journalEntryId, insertAtActive, handleClose]);
-
-  // "I need more help" escalation — triggers the emergency rating inline
-  // by selecting rating 10, which cross-fades the emergency content into the result slot.
-  const handleNeedMoreHelp = useCallback(() => {
-    handleRatingSelect(10);
-  }, [handleRatingSelect]);
+  }, [selectedCategory, sessionContext, sessionId]);
 
   // Emergency contact card on the initial step — pushes to the dedicated view/edit page.
   const handleEmergencyContactSelect = useCallback(() => {
     pushStep('emergency-contact');
   }, [pushStep]);
 
-  // Determine which categories to show
+  // Determine which categories to show based on session phase. Categories
+  // declare a `phases` array — a category can be eligible for `'active'`,
+  // `'follow-up'`, or both. The 4 core categories (Intense Feeling, Trauma,
+  // Resistance, Grief) are eligible for both, so they appear in the
+  // follow-up grid alongside the two follow-up-only stubs.
   const phaseKey = sessionPhase === 'completed' ? 'follow-up' : 'active';
-  const activeCategories = helperCategories.filter((c) => c.phase === phaseKey);
+  const activeCategories = helperCategories.filter((c) => c.phases?.includes(phaseKey));
 
-  // Modal height:
-  //   - Default (initial category grid OR emergency contact view in read mode):
-  //     fixed pixel height so the modal opens to the same size on every device,
-  //     sized to fit the content exactly. Clamped on small viewports so it
-  //     never overflows the screen.
-  //   - Expanded (after picking a rating, OR when editing the emergency contact):
-  //     vh-based so result/edit content can breathe and the modal grows with
-  //     the device.
+  // Modal height — single rule:
+  //   - Default (DEFAULT_MODAL_HEIGHT_PX): everywhere EXCEPT after the rating
+  //     step has been committed inside the triage flow, OR while editing the
+  //     emergency contact, OR while the contact view's "I need more help"
+  //     emergency block is expanded.
+  //   - Expanded (95vh): triggered by any of the above three states.
   const isExpanded =
-    (currentStep === 'category' && selectedRating !== null) ||
-    (currentStep === 'emergency-contact' && isEditingContact);
+    (currentStep === 'triage' && hasRatedInTriage) ||
+    (currentStep === 'emergency-contact' &&
+      (isEditingContact || isContactEmergencyExpanded));
   const modalHeightCss = isExpanded
     ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
     : `min(${DEFAULT_MODAL_HEIGHT_PX}px, calc(100vh - var(--tabbar-height) - 12px))`;
 
-  // Determine what result content to show beneath the rating scale based on the current rating.
-  const getResultRoute = (rating) => {
-    if (rating === null || !selectedCategory) return null;
-    return getRouteForRating(selectedCategory, rating);
-  };
-
-  const getActivitiesForRoute = (route) => {
-    if (!selectedCategory) return [];
-    if (route === 'max-activity') return selectedCategory.maxActivitySuggestions;
-    if (route === 'gentle-activity') return selectedCategory.gentleActivitySuggestions;
-    return [];
-  };
-
-  const getActivityIntroForRoute = (route) => {
-    if (!selectedCategory) return '';
-    if (route === 'max-activity') return selectedCategory.maxActivityIntro;
-    if (route === 'gentle-activity') return selectedCategory.gentleActivityIntro;
-    return '';
-  };
-
-  // Render the inline result block beneath the rating scale.
-  const renderInlineResult = () => {
-    const route = getResultRoute(displayedRating);
-    if (!route) return null;
-
-    if (route === 'acknowledge-close') {
+  // Render content based on current major view.
+  const renderContent = () => {
+    // Pre-session has its own special initial view (a dimmed preview of the
+    // in-session helper modal with an explanatory overlay), but the user
+    // CAN still navigate to the emergency contact view to set up their
+    // contact details before the session begins. So pre-session + initial
+    // → PreSessionContent, pre-session + emergency-contact → the normal
+    // EmergencyContactView, handled by the switch statement below.
+    if (sessionPhase === 'pre-session' && currentStep === 'initial') {
       return (
-        <AcknowledgeClose text={selectedCategory?.acknowledgeText} />
-      );
-    }
-
-    if (route === 'max-activity' || route === 'gentle-activity') {
-      return (
-        <ActivitySuggestions
-          introText={getActivityIntroForRoute(route)}
-          activities={getActivitiesForRoute(route)}
-          onSelectActivity={handleActivitySelect}
-          onNeedMoreHelp={handleNeedMoreHelp}
+        <PreSessionContent
+          emergencyContact={emergencyContactDetails}
+          onSelectEmergencyContact={handleEmergencyContactSelect}
         />
       );
-    }
-
-    if (route === 'emergency') {
-      return (
-        <EmergencyFlow emergencyContact={emergencyContactDetails} />
-      );
-    }
-
-    return null;
-  };
-
-  // Render content based on current step
-  const renderContent = () => {
-    // Pre-session: informational only
-    if (sessionPhase === 'pre-session') {
-      return <PreSessionContent />;
     }
 
     switch (currentStep) {
@@ -297,47 +277,31 @@ export default function HelperModal() {
           />
         );
 
+      case 'triage':
+        // Categories without a `steps` array (the follow-up stubs) render
+        // a Placeholder rather than the runner.
+        if (!selectedCategory?.steps) {
+          return <PlaceholderCategory category={selectedCategory} />;
+        }
+        return (
+          <TriageStepRunner
+            ref={triageRunnerRef}
+            category={selectedCategory}
+            sessionContext={sessionContext}
+            onActivitySelect={handleActivitySelect}
+            onEmergencyAction={handleEmergencyAction}
+            onRatingCommittedChange={setHasRatedInTriage}
+          />
+        );
+
       case 'emergency-contact':
         return (
           <EmergencyContactView
             isEditing={isEditingContact}
             onEditToggle={setIsEditingContact}
+            onContactAction={handleEmergencyAction}
+            onEmergencyExpandedChange={setIsContactEmergencyExpanded}
           />
-        );
-
-      case 'category':
-      case 'max-activity':
-      case 'gentle-activity':
-      case 'acknowledge-close':
-        return (
-          <div className="space-y-5">
-            <div style={{ marginTop: '1px' }}>
-              <CategoryHeader category={selectedCategory} />
-            </div>
-            {selectedCategory?.prompt && (
-              <p
-                className="text-lg leading-snug"
-                style={{
-                  fontFamily: "'DM Serif Text', serif",
-                  textTransform: 'none',
-                  color: 'var(--color-text-primary)',
-                }}
-              >
-                {selectedCategory.prompt}
-              </p>
-            )}
-            <RatingScale
-              value={selectedRating}
-              onChange={handleRatingSelect}
-            />
-            {/* Inline result content beneath the rating scale, cross-fading on rating change */}
-            <div
-              className="transition-opacity duration-200"
-              style={{ opacity: isResultVisible ? 1 : 0 }}
-            >
-              {renderInlineResult()}
-            </div>
-          </div>
         );
 
       default:
@@ -369,14 +333,25 @@ export default function HelperModal() {
         {/* Top bar — back button, header, close button */}
         <div style={{ marginBottom: '-2px' }}>
           <HelperTopBar
-            canGoBack={stepHistory.length > 0}
+            canGoBack={stepHistory.length > 0 || (currentStep === 'triage' && hasRatedInTriage)}
             onBack={handleBack}
             onClose={handleClose}
           />
         </div>
 
-        {/* Scrollable content area — inner fade for step navigation cross-fades */}
-        <div className="flex-1 overflow-y-auto px-5 pt-2 pb-6">
+        {/* Content area — scroll is enabled only on views where it's actually
+            needed (triage and emergency-contact). The initial category grid
+            and pre-session content are sized to fit exactly, so scroll is
+            disabled there to prevent the bouncy "jiggle room" feeling.
+            pt-0 keeps the gap between the header subtitle and the content
+            below it as tight as possible. */}
+        <div
+          className={`flex-1 px-5 pt-0 pb-6 ${
+            currentStep === 'triage' || currentStep === 'emergency-contact'
+              ? 'overflow-y-auto'
+              : 'overflow-y-hidden'
+          }`}
+        >
           <div
             className="transition-opacity duration-200"
             style={{ opacity: isContentVisible ? 1 : 0 }}

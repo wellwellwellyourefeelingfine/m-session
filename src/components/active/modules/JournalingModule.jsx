@@ -40,17 +40,6 @@ export default function JournalingModule({ module, onComplete, onSkip, onProgres
 
   const report = useProgressReporter(onProgressUpdate);
 
-  // Report step-based progress whenever phase or screenIndex changes
-  useEffect(() => {
-    if (phase === 'idle') {
-      report.idle();
-    } else if (phase === 'complete') {
-      report.step(screens.length, screens.length);
-    } else if (phase === 'active') {
-      report.step(screenIndex + 1, screens.length);
-    }
-  }, [phase, screenIndex, screens.length, report]);
-
   const libraryModule = getModuleById(module.libraryId);
 
   // Build unified screen list — supports new `screens` format or legacy format
@@ -77,6 +66,20 @@ export default function JournalingModule({ module, onComplete, onSkip, onProgres
     const closingScreens = (module.content?.closingScreens || []).map((s) => ({ type: 'text', ...s }));
     return [...introScreens, ...promptScreens, ...closingScreens];
   }, [module.content]);
+
+  // Report step-based progress whenever phase or screenIndex changes.
+  // MUST be declared after `screens` because it reads screens.length —
+  // hoisting this above the useMemo would put `screens` in the temporal
+  // dead zone and throw a ReferenceError on first render.
+  useEffect(() => {
+    if (phase === 'idle') {
+      report.idle();
+    } else if (phase === 'complete') {
+      report.step(screens.length, screens.length);
+    } else if (phase === 'active') {
+      report.step(screenIndex + 1, screens.length);
+    }
+  }, [phase, screenIndex, screens.length, report]);
 
   const currentScreen = screens[screenIndex];
   const isLastScreen = screenIndex >= screens.length - 1;

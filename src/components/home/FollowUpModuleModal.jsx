@@ -59,7 +59,7 @@ export default function FollowUpModuleModal({ moduleId, onClose }) {
 
   return (
     <div
-      className={`fixed inset-0 bg-black/30 flex items-end justify-center z-50 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+      className={`fixed inset-0 bg-black/25 flex items-end justify-center z-50 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
       onClick={handleClose}
     >
       <div

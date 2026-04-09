@@ -496,7 +496,7 @@ export default function IntakeFlow({ onComplete }) {
 
       {/* Health Warning Modal */}
       {activeWarning && HEALTH_WARNINGS[activeWarning] && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6">
             <h3 className="text-[var(--color-text-primary)] mb-4">
               {HEALTH_WARNINGS[activeWarning].title}

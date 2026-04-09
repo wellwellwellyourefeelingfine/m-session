@@ -219,7 +219,7 @@ export default function ClockNoteModal({ _isOpen, onClose, frozenTime }) {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/30"
+        className="absolute inset-0 bg-black/25"
         onClick={handleClose}
       />
 

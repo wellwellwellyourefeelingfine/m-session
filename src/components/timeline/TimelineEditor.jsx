@@ -20,7 +20,7 @@ import TimelineSummary from './TimelineSummary';
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
-import { consumeRevealAnimationPending } from './tutorialRevealFlag';
+import { getTutorialRevealDelay } from './tutorialRevealFlag';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -534,9 +534,13 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                   );
                 })()}
 
-                {/* Collapsible content — staged animation matching PhaseSection */}
+                {/* Collapsible content — staged animation matching PhaseSection.
+                    Left padding + negative-margin inset reserves room for the reorder
+                    arrows (-left-8 on each module row) so overflow-hidden doesn't clip
+                    them in edit mode, while keeping module cards in their original
+                    visual position. */}
                 <div
-                  className="overflow-hidden ease-in-out"
+                  className="overflow-hidden ease-in-out pl-8 -ml-8"
                   style={{
                     maxHeight: preSessionHeightCollapsed ? 0 : '2000px',
                     transition: preSessionHeightCollapsed ? 'max-height 300ms ease-in-out' : 'max-height 500ms ease-in-out',
@@ -918,7 +922,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Warning Modal */}
       {warningModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4">Note</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -944,7 +948,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
       {/* Error Modal */}
       {errorModal && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 px-6">
+        <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
             <h3 className="mb-4">Can't Add Module</h3>
             <p className="text-[var(--color-text-secondary)] mb-6">
@@ -1013,33 +1017,20 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 /**
  * TimelineTutorialTrigger
  * Waits for the reveal animation to finish before showing the tutorial overlay.
- * On first mount (initial page load): 7.5s delay (reveal takes ~4.7s + buffer).
- * On re-trigger (from "Show Tutorial" menu): 500ms delay.
+ *
+ * Timing is driven by a wall-clock target scheduled in HomeView (see
+ * tutorialRevealFlag). Reading that target is idempotent, so this survives
+ * StrictMode's simulated remount, late mounts, or any re-render without
+ * collapsing to the wrong delay.
  */
 function TimelineTutorialTrigger() {
   const dismissed = useAppStore((state) => state.dismissedBanners['timeline-tutorial']);
   const dismissBanner = useAppStore((state) => state.dismissBanner);
   const [showTutorial, setShowTutorial] = useState(false);
 
-  // Consume the reveal-animation flag exactly once per component instance.
-  // Using useRef + render-time init (rather than reading inside useEffect) is
-  // critical: in StrictMode dev, effect setups run twice with a cleanup in
-  // between, which would otherwise consume the module-level flag on the first
-  // pass and see `false` on the second — collapsing the 7.5s delay to 50ms and
-  // flashing the tutorial up during the moon overlay. The ref is preserved
-  // across StrictMode's simulated remount, so the second render sees the
-  // cached result and skips re-consuming.
-  const needsLongDelayRef = useRef(null);
-  if (needsLongDelayRef.current === null) {
-    needsLongDelayRef.current = consumeRevealAnimationPending();
-  }
-
   useEffect(() => {
     if (dismissed) return;
-    // Only wait for reveal animation if Generate Timeline was just pressed.
-    // Page refreshes, "Show Tutorial" menu clicks → near-instant.
-    const delay = needsLongDelayRef.current ? 7500 : 50;
-    const timer = setTimeout(() => setShowTutorial(true), delay);
+    const timer = setTimeout(() => setShowTutorial(true), getTutorialRevealDelay());
     return () => clearTimeout(timer);
   }, [dismissed]);
 

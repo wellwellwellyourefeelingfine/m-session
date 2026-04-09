@@ -21,7 +21,17 @@ import { PhoneIcon } from '../shared/Icons';
 const CIRCLE_SIZE = 36;
 const CIRCLE_OFFSET = -8; // how far the circle overhangs the card edges
 
-export default function CategoryGrid({ categories, onSelect, emergencyContact, onSelectEmergencyContact }) {
+export default function CategoryGrid({
+  categories,
+  onSelect,
+  emergencyContact,
+  onSelectEmergencyContact,
+  // When true, the 6 category cards are dimmed and made non-interactive
+  // (used by the pre-session preview). The wide emergency contact card
+  // at the bottom stays fully active so the user can still set up their
+  // contact details before their session begins.
+  categoriesDimmed = false,
+}) {
   const contactName = emergencyContact?.name?.trim() || '';
   const contactPhone = emergencyContact?.phone?.trim() || '';
   const hasContact = Boolean(contactName || contactPhone);
@@ -37,7 +47,15 @@ export default function CategoryGrid({ categories, onSelect, emergencyContact, o
         paddingLeft: -CIRCLE_OFFSET,
       }}
     >
-      <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+      <div
+        className="grid grid-cols-2 gap-x-5 gap-y-4"
+        // `inert` blocks all interaction (clicks, focus, screen-reader
+        // announcement) when the categories are dimmed. The grid sub-tree
+        // becomes purely visual.
+        inert={categoriesDimmed || undefined}
+        aria-hidden={categoriesDimmed || undefined}
+        style={categoriesDimmed ? { opacity: 0.3, pointerEvents: 'none' } : undefined}
+      >
         {categories.map((cat) => {
           const IconComponent = Icons[cat.icon];
           return (
@@ -83,7 +101,7 @@ export default function CategoryGrid({ categories, onSelect, emergencyContact, o
               </p>
               {/* Description — full width, flows right after the title */}
               <p
-                className="text-[10px] uppercase tracking-wider leading-snug mt-[5px]"
+                className="text-[10px] uppercase tracking-wider leading-snug mt-[12px]"
                 style={{ color: 'var(--color-text-tertiary)' }}
               >
                 {cat.description}
@@ -134,7 +152,7 @@ export default function CategoryGrid({ categories, onSelect, emergencyContact, o
             Emergency Contact
           </p>
           <p
-            className="text-[10px] uppercase tracking-wider leading-snug mt-1"
+            className="text-[10px] uppercase tracking-wider leading-snug mt-[10px]"
             style={{ color: 'var(--color-text-tertiary)' }}
           >
             {contactDescription}
