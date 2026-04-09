@@ -303,7 +303,6 @@ export default function MappingTerritoryActivity({ _module, onComplete, onSkip, 
   const currentStep = MAPPING_SCREENS[currentStepIndex];
   const totalSteps = MAPPING_SCREENS.length;
   const isLastStep = currentStepIndex === totalSteps - 1;
-  const progress = ((currentStepIndex + 1) / PROGRESS_STEPS) * 100;
 
   // ── Report step progress to parent status bar ──
   useEffect(() => {

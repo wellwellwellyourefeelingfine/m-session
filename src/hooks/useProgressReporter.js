@@ -13,11 +13,13 @@
  *   report.idle();                                // clear progress
  */
 
-import { useMemo, useRef, useCallback } from 'react';
+import { useMemo, useRef, useCallback, useEffect } from 'react';
 
 export default function useProgressReporter(onProgressUpdate) {
   const callbackRef = useRef(onProgressUpdate);
-  callbackRef.current = onProgressUpdate;
+  useEffect(() => {
+    callbackRef.current = onProgressUpdate;
+  });
 
   const step = useCallback((currentStep, totalSteps) => {
     if (!callbackRef.current) return;

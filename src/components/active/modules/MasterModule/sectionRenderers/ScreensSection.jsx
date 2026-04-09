@@ -106,10 +106,6 @@ export default function ScreensSection({
     return -1;
   }, [screens, isScreenVisible]);
 
-  const isLastVisibleScreen = useMemo(() => {
-    return findNextVisibleScreen(screenIndex + 1) === -1;
-  }, [screenIndex, findNextVisibleScreen]);
-
   // Count visible screens and current position among them (1-based)
   const visibleScreenInfo = useMemo(() => {
     let totalVisible = 0;

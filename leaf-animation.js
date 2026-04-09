@@ -152,7 +152,6 @@
 
   // Animation loop
   var startTime = null;
-  var raf;
 
   function animate(timestamp) {
     if (!startTime) startTime = timestamp;
@@ -223,8 +222,8 @@
       paths[i].style.strokeDashoffset = r.len * (1 - seg);
     }
 
-    raf = requestAnimationFrame(animate);
+    requestAnimationFrame(animate);
   }
 
-  raf = requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
 })();

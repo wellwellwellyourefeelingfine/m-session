@@ -120,6 +120,15 @@ export default function MeditationSection({
     composerOptions: section.composerOptions,
   });
 
+  // Fade transition state for idle → active
+  const [isLeaving, setIsLeaving] = useState(false);
+
+  // Begin with fade transition
+  const handleBeginWithTransition = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => playback.handleStart(), 400);
+  }, [playback]);
+
   if (!meditation) {
     return (
       <>
@@ -141,15 +150,6 @@ export default function MeditationSection({
   const displayDuration = hasVariations
     ? Math.round((meditation.variations[selectedVariation]?.duration || 0) / 60)
     : selectedDuration;
-
-  // Fade transition state for idle → active
-  const [isLeaving, setIsLeaving] = useState(false);
-
-  // Begin with fade transition
-  const handleBeginWithTransition = useCallback(() => {
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 400);
-  }, [playback]);
 
   return (
     <>

@@ -205,7 +205,6 @@ export default function LifeGraphActivity({ _module, onComplete, onSkip, onProgr
   const currentStep = steps[currentStepIndex];
   const isLastStep = currentStepIndex === totalSteps - 1;
   const progressSteps = deepenBranch ? totalSteps : BASE_STEP_COUNT;
-  const progress = ((currentStepIndex + 1) / progressSteps) * 100;
 
   // ── Report step progress to parent status bar ──
   useEffect(() => {
