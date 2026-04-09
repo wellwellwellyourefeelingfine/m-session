@@ -5,7 +5,7 @@
  * Lives in the Tools tab. Weight-based ranges with optional booster info.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToolsStore } from '../../stores/useToolsStore';
 import TestingTool from './TestingTool';
 
@@ -37,13 +37,48 @@ export default function DosageTool() {
   const [showBooster, setShowBooster] = useState(false);
   const [showTesting, setShowTesting] = useState(false);
 
+  // Ref for the Substance Testing section wrapper, used to scroll the
+  // section to the top of the visible area when the user deep-links here
+  // from the intake form's "Substance Testing" link.
+  const testingSectionRef = useRef(null);
+  // Tracks whether the most recent expansion came from a deep-link, so we
+  // only scroll on deep-link expansion (not when the user manually toggles
+  // the section open by tapping its header).
+  const shouldScrollToTesting = useRef(false);
+
   // Auto-expand a section when deep-linked from elsewhere
   useEffect(() => {
     if (pendingSection === 'testing') {
+      shouldScrollToTesting.current = true;
       setShowTesting(true);
       clearPendingSection();
     }
   }, [pendingSection, clearPendingSection]);
+
+  // After the testing section mounts via deep-link, scroll its header to
+  // the top of the nearest scroll container. Two rAFs let the layout
+  // settle (TestingTool mounts and grows the parent's scroll height)
+  // before we measure and scroll. Behavior 'smooth' so the motion reads
+  // as intentional rather than a jump cut.
+  useEffect(() => {
+    if (!showTesting || !shouldScrollToTesting.current) return;
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        if (testingSectionRef.current) {
+          testingSectionRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }
+        shouldScrollToTesting.current = false;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [showTesting]);
 
   const weightKg = unit === 'kg'
     ? parseFloat(weight)
@@ -216,11 +251,19 @@ export default function DosageTool() {
             <span className="text-app-black dark:text-app-white">Individual response varies.</span>{' '}
             These are starting points, not prescriptions.
           </li>
+          <li>
+            <span className="text-app-black dark:text-app-white">Crystal form?</span>{' '}
+            You&rsquo;ll need a milligram-sensitive scale (often called a jewelry scale,
+            accurate to 0.001g) to measure properly. Standard kitchen scales are not precise enough.
+          </li>
         </ul>
       </div>
 
       {/* Substance Testing - collapsible */}
-      <div className="pt-4 border-t border-app-gray-200 dark:border-app-gray-800">
+      <div
+        ref={testingSectionRef}
+        className="pt-4 border-t border-app-gray-200 dark:border-app-gray-800"
+      >
         <button
           onClick={() => setShowTesting(!showTesting)}
           className="w-full text-left py-3 text-sm flex justify-between items-center hover:opacity-70 transition-opacity"

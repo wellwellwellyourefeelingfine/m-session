@@ -15,7 +15,19 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useHelperStore } from '../../stores/useHelperStore';
 import { HeartIcon } from '../shared/Icons';
 
-const VALID_PHASES = ['pre-session', 'active', 'completed'];
+// The button is available everywhere except the totally-empty 'paused' state.
+// In the pre-active phases ('not-started' / 'intake' / 'substance-checklist'),
+// the modal renders the same dimmed preview + explanatory overlay it shows
+// during 'pre-session' so the user gets a feel for what tools will be
+// available once the session is underway, even before they generate a timeline.
+const VALID_PHASES = [
+  'not-started',
+  'intake',
+  'pre-session',
+  'substance-checklist',
+  'active',
+  'completed',
+];
 
 export default function HelperButton() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);

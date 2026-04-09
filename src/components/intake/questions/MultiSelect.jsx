@@ -15,7 +15,16 @@ export default function MultiSelect({ question, value = [], onChange }) {
 
   return (
     <div className="space-y-3">
-      <p style={{ color: 'var(--text-primary)' }}>{question.label}</p>
+      <p
+        className="text-lg"
+        style={{
+          fontFamily: "'DM Serif Text', serif",
+          textTransform: 'none',
+          color: 'var(--text-primary)',
+        }}
+      >
+        {question.label}
+      </p>
       {question.description && (
         <p style={{ color: 'var(--text-tertiary)' }}>{question.description}</p>
       )}

@@ -251,13 +251,19 @@ export default function HelperModal() {
 
   // Render content based on current major view.
   const renderContent = () => {
-    // Pre-session has its own special initial view (a dimmed preview of the
-    // in-session helper modal with an explanatory overlay), but the user
-    // CAN still navigate to the emergency contact view to set up their
-    // contact details before the session begins. So pre-session + initial
-    // → PreSessionContent, pre-session + emergency-contact → the normal
-    // EmergencyContactView, handled by the switch statement below.
-    if (sessionPhase === 'pre-session' && currentStep === 'initial') {
+    // The pre-active phases ('not-started', 'intake', 'pre-session',
+    // 'substance-checklist') all show the dimmed preview + explanatory
+    // overlay so the user gets a feel for what tools will be available
+    // once the session begins. The user CAN still navigate from this view
+    // into the emergency contact page to set up their contact details
+    // ahead of time — that case falls through to the switch statement
+    // below since `currentStep` would have changed to 'emergency-contact'.
+    const isPreActivePhase =
+      sessionPhase === 'not-started'
+      || sessionPhase === 'intake'
+      || sessionPhase === 'pre-session'
+      || sessionPhase === 'substance-checklist';
+    if (isPreActivePhase && currentStep === 'initial') {
       return (
         <PreSessionContent
           emergencyContact={emergencyContactDetails}

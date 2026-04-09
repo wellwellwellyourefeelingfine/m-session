@@ -4,13 +4,30 @@
  * Frequently asked questions about MDMA use for personal growth
  * and how the app works. Expandable sections for easy scanning.
  * Lives in the Tools tab.
+ *
+ * Deep-linking: other parts of the app can navigate to a specific
+ * section by setting `pendingSection` on the tools store before
+ * opening this tool. The current handler covers `'booster'`, which
+ * opens the two booster-dose questions and scrolls the section
+ * header into view. Scrolling lives at the FAQTool level (not on
+ * each Question) so multiple questions can be opened by a single
+ * deep-link without competing scroll calls.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useToolsStore } from '../../stores/useToolsStore';
 
-// Individual FAQ item
-function Question({ q, children }) {
+// Individual FAQ item. `openSignal` is an external "open me" trigger
+// used by deep-linking — each time it changes to a non-zero value, the
+// question opens itself. The Question does NOT scroll; FAQTool handles
+// scrolling separately so multiple questions can share one scroll target.
+function Question({ q, openSignal = 0, children }) {
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    if (openSignal === 0) return;
+    setIsOpen(true);
+  }, [openSignal]);
 
   return (
     <div className="border-b border-[var(--color-border)]">
@@ -30,16 +47,68 @@ function Question({ q, children }) {
   );
 }
 
-// Section header
-function SectionHeader({ children }) {
+// Section header. `forwardRef`-style — accepts a `headerRef` so deep-link
+// scrolls can target the section header (which sits just above the first
+// question of the section) and land the user at the top of the section.
+function SectionHeader({ children, headerRef }) {
   return (
-    <p className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] pt-6 pb-2">
+    <p
+      ref={headerRef}
+      className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] pt-6 pb-2"
+    >
       {children}
     </p>
   );
 }
 
 export default function FAQTool() {
+  const pendingSection = useToolsStore((state) => state.pendingSection);
+  const clearPendingSection = useToolsStore((state) => state.clearPendingSection);
+
+  // Counter that increments every time a deep-link arrives asking for the
+  // booster section. Passed down to both booster Questions' `openSignal`
+  // prop so they open in unison. Using a counter (rather than a boolean)
+  // lets us re-trigger the same section if the user navigates away and
+  // comes back to the same deep-link.
+  const [boosterOpenSignal, setBoosterOpenSignal] = useState(0);
+
+  // Ref on the "Booster Dose" section header. The header sits just above
+  // the first question of the section, so scrolling it to the top of the
+  // viewport lands the user at the start of the section with both
+  // questions visible beneath it.
+  const boosterHeaderRef = useRef(null);
+
+  // Step 1: react to the deep-link signal. Bumping boosterOpenSignal
+  // tells the booster Questions to open; clearing pendingSection retires
+  // the deep-link so it doesn't re-fire. The actual scroll happens in
+  // the separate effect below — keeping it here would race with the
+  // pendingSection cleanup (clearing pendingSection re-runs this effect,
+  // and the cleanup would cancel the scheduled scroll timer before it
+  // fired).
+  useEffect(() => {
+    if (pendingSection === 'booster') {
+      setBoosterOpenSignal((n) => n + 1);
+      clearPendingSection();
+    }
+  }, [pendingSection, clearPendingSection]);
+
+  // Step 2: when boosterOpenSignal increments, schedule the scroll.
+  // boosterOpenSignal is a monotonically increasing counter, so the
+  // effect's cleanup only runs on a fresh re-trigger — never mid-scroll.
+  // The 750ms delay lets ToolPanel's 500ms grid expansion plus the
+  // panel content fade (200ms delay + 300ms duration) settle before we
+  // measure. Same value used by DosageTool's testing-section scroll.
+  useEffect(() => {
+    if (boosterOpenSignal === 0) return;
+    const timer = setTimeout(() => {
+      boosterHeaderRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 750);
+    return () => clearTimeout(timer);
+  }, [boosterOpenSignal]);
+
   return (
     <div className="py-6 px-6 max-w-xl mx-auto space-y-2">
       {/* Header */}
@@ -195,6 +264,60 @@ export default function FAQTool() {
         <p>
           <span className="text-[var(--color-text-primary)]">Difficulty urinating</span> —
           Common and temporary. Don't force it; it will resolve.
+        </p>
+      </Question>
+
+      {/* Booster Dose */}
+      <SectionHeader headerRef={boosterHeaderRef}>Booster Dose</SectionHeader>
+
+      <Question q="What is a booster dose?" openSignal={boosterOpenSignal}>
+        <p>
+          A booster, sometimes called a supplemental dose, is a smaller amount
+          of MDMA taken once during your session to extend the peak experience
+          by another hour or two. It doesn&apos;t intensify the peak, just
+          lengthens it.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Timing:</span> The
+          ideal window is 60 to 120 minutes after your initial dose, usually
+          about 30 minutes after you feel fully arrived. Taken later than 2
+          hours, a booster mostly extends the comedown rather than adding to
+          the peak.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Dose:</span> A
+          common starting point is half your initial dose. Most harm reduction
+          guidance suggests staying under 180 to 200mg total for a single
+          session.
+        </p>
+        <p>
+          The app will guide you through a check-in around the 90-minute mark
+          to help you decide.
+        </p>
+      </Question>
+
+      <Question q="Should I take a booster?" openSignal={boosterOpenSignal}>
+        <p>
+          A booster gives you more time in an open state, which can be valuable
+          if you&rsquo;re in the middle of meaningful inner work and not ready
+          to come down. The cost is a longer comedown and sometimes more
+          pronounced next-day effects.
+        </p>
+        <p>
+          Many people find a single dose entirely sufficient. More time
+          isn&rsquo;t always more depth.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Reasons to take one:</span>{' '}
+          The work you came to do is unfolding and you want more time with it.
+          Your experience feels stable and pleasant, not overwhelming. You feel
+          like you&rsquo;ve only just gotten started.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Reasons to skip it:</span>{' '}
+          Your experience already feels intense. Your body feels uncomfortable.
+          You sense you&rsquo;re naturally completing a cycle and ready to
+          integrate. When in doubt, let the session land where it is.
         </p>
       </Question>
 

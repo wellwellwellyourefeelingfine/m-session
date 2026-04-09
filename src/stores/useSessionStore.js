@@ -137,7 +137,6 @@ export const useSessionStore = create(
         contraindicatedMedications: null,  // RESERVED
 
         // Substance plan (from SubstanceChecklist screens 0-2)
-        hasMDMA: null,                 // RESERVED
         hasTested: null,               // RESERVED
         physicalPreparation: null,     // RESERVED
         lastMDMAUse: null,             // RESERVED
@@ -2764,7 +2763,6 @@ export const useSessionStore = create(
             psychiatricHistory: null,
             contraindicatedMedications: null,
             // Substance plan
-            hasMDMA: null,
             hasTested: null,
             physicalPreparation: null,
             lastMDMAUse: null,
@@ -3563,7 +3561,6 @@ export function migrateSessionState(persistedState, version) {
             heartConditions: state.intake?.responses?.heartConditions ?? null,
             psychiatricHistory: state.intake?.responses?.psychiatricHistory ?? null,
             contraindicatedMedications: state.intake?.responses?.contraindicatedMedications ?? null,
-            hasMDMA: state.intake?.responses?.hasMDMA ?? null,
             hasTested: state.intake?.responses?.hasTested ?? null,
             physicalPreparation: state.intake?.responses?.physicalPreparation ?? null,
             lastMDMAUse: state.intake?.responses?.lastMDMAUse ?? null,

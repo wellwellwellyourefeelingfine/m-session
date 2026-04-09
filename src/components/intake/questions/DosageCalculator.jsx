@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { useAppStore } from '../../../stores/useAppStore';
 import { useToolsStore } from '../../../stores/useToolsStore';
+import { ArrowUpRightIcon } from '../../shared/Icons';
 
 // Therapeutic range: 1.0 - 1.5 mg/kg with floor/ceiling
 const calculateRange = (weightKg) => {
@@ -22,7 +23,7 @@ const calculateRange = (weightKg) => {
   return { low, high };
 };
 
-export default function DosageCalculator({ question }) {
+export default function DosageCalculator({ question, onContinue }) {
   const [weight, setWeight] = useState('');
   const [unit, setUnit] = useState('lb');
 
@@ -43,21 +44,27 @@ export default function DosageCalculator({ question }) {
 
   return (
     <div className="space-y-3">
-      <p style={{ color: 'var(--text-primary)' }}>{question.label}</p>
-
-      <div className="flex justify-center"><div className="circle-spacer" /></div>
-
-      <p style={{ color: 'var(--text-primary)' }}>
-        The standard therapeutic dose used in clinical settings is 80–120mg. We recommend staying within this range.
+      <p
+        className="text-lg"
+        style={{
+          fontFamily: "'DM Serif Text', serif",
+          textTransform: 'none',
+          color: 'var(--text-primary)',
+        }}
+      >
+        {question.label}
       </p>
 
-      <div className="flex justify-center"><div className="circle-spacer" /></div>
+      <div aria-hidden="true" style={{ height: '6px' }} />
+
+      <p style={{ color: 'var(--text-primary)' }}>
+        The standard therapeutic dose used in clinical settings is 80–120mg. We recommend staying within this range or setting your dosage based on your weight.
+      </p>
+
+      <div aria-hidden="true" style={{ height: '6px' }} />
 
       {/* Weight-based calculator */}
       <div className="space-y-3">
-        <label className="block text-xs uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
-          Enter your weight for a personalized suggestion
-        </label>
         <div className="flex items-center gap-3">
           <input
             type="text"
@@ -133,23 +140,40 @@ export default function DosageCalculator({ question }) {
         </div>
       )}
 
-      <div className="flex justify-center"><div className="circle-spacer" /></div>
-
-      <p style={{ color: 'var(--text-tertiary)' }}>
-        If your MDMA is in crystal form, you will need a milligram-sensitive scale (often called a jewelry scale, accurate to 0.001g) to measure properly. Standard kitchen scales are not precise enough.
-      </p>
+      <div aria-hidden="true" style={{ height: '6px' }} />
 
       {/* Link to full Dosage Assistant */}
       <div className="pt-2">
         <button
           type="button"
           onClick={handleOpenDosageTool}
-          className="uppercase tracking-wider text-xs underline"
+          className="inline-flex items-center gap-1 uppercase tracking-wider text-xs"
           style={{ color: 'var(--accent)' }}
         >
-          Open Dosage Assistant
+          <span>Dosage Assistant</span>
+          <ArrowUpRightIcon size={12} />
         </button>
       </div>
+
+      {/* Inline Continue button — rendered here (instead of in IntakeFlow's
+          nav row) so it sits flush beneath the Dosage Assistant link
+          without the nav row's larger top margin pushing it down. mt-0
+          collapses the gap to match pages 8 and 9, where the answer
+          buttons sit directly beneath their accent-color link without
+          the parent's space-y-3 inserting extra margin. */}
+      {onContinue && (
+        <button
+          type="button"
+          onClick={onContinue}
+          className="w-full py-4 uppercase tracking-wider transition-opacity duration-300 mt-0"
+          style={{
+            backgroundColor: 'var(--text-primary)',
+            color: 'var(--bg-primary)',
+          }}
+        >
+          Continue
+        </button>
+      )}
     </div>
   );
 }

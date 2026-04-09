@@ -5,6 +5,7 @@
 
 import { useAppStore } from '../../../stores/useAppStore';
 import { useToolsStore } from '../../../stores/useToolsStore';
+import { ArrowUpRightIcon } from '../../shared/Icons';
 
 export default function SingleSelect({ question, value, onChange }) {
   const handleToolLink = (action) => {
@@ -24,14 +25,37 @@ export default function SingleSelect({ question, value, onChange }) {
 
   return (
     <div className="space-y-3">
-      <p style={{ color: 'var(--text-primary)' }}>{question.label}</p>
+      <p
+        className="text-lg"
+        style={{
+          fontFamily: "'DM Serif Text', serif",
+          textTransform: 'none',
+          color: 'var(--text-primary)',
+        }}
+      >
+        {question.label}
+      </p>
       {question.contentBlocks && question.contentBlocks.map((block, i) => {
+        // Resolve content-block text color. `grey` is the lightest tertiary
+        // gray; `grey-dark` is a darker secondary gray used on the safety
+        // self-screening pages (medications / heart / psychiatric) where
+        // the trailing caveat needs to be more readable while still
+        // visually de-emphasized relative to the primary copy.
+        const textColor =
+          block.color === 'grey-dark'
+            ? 'var(--text-secondary)'
+            : block.color === 'grey'
+              ? 'var(--text-tertiary)'
+              : 'var(--text-primary)';
+
         if (block.type === 'spacer') {
-          return <div key={i} className="flex justify-center"><div className="circle-spacer" /></div>;
+          // Invisible spacer — preserves vertical rhythm without the
+          // decorative circle. Same 6px height as the original circle-spacer.
+          return <div key={i} aria-hidden="true" style={{ height: '6px' }} />;
         }
         if (block.type === 'list') {
           return (
-            <ul key={i} className="text-left space-y-1 pl-4" style={{ color: block.color === 'grey' ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>
+            <ul key={i} className="text-left space-y-1 pl-4" style={{ color: textColor }}>
               {block.items.map((item) => (
                 <li key={item} className="list-disc">{item}</li>
               ))}
@@ -44,14 +68,15 @@ export default function SingleSelect({ question, value, onChange }) {
               key={i}
               type="button"
               onClick={() => handleToolLink(block.action)}
-              className="uppercase tracking-wider text-xs underline"
+              className="inline-flex items-center gap-1 uppercase tracking-wider text-xs"
               style={{ color: 'var(--accent)' }}
             >
-              {block.text}
+              <span>{block.text}</span>
+              <ArrowUpRightIcon size={12} />
             </button>
           );
         }
-        return <p key={i} style={{ color: block.color === 'grey' ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{block.text}</p>;
+        return <p key={i} style={{ color: textColor }}>{block.text}</p>;
       })}
       {!question.contentBlocks && question.description && (
         <p style={{ color: 'var(--text-tertiary)' }}>{question.description}</p>
@@ -68,21 +93,31 @@ export default function SingleSelect({ question, value, onChange }) {
       )}
 
       <div className="space-y-2">
-        {question.options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className="w-full text-left px-4 py-3 border transition-colors duration-75"
-            style={{
-              borderColor: value === option.value ? 'var(--text-primary)' : 'var(--border)',
-              backgroundColor: value === option.value ? 'var(--text-primary)' : 'transparent',
-              color: value === option.value ? 'var(--bg-primary)' : 'var(--text-primary)',
-            }}
-          >
-            <span className="uppercase tracking-wider">{option.label}</span>
-          </button>
-        ))}
+        {question.options.map((option) => {
+          // `neutralOptions` is set on safety self-screening questions
+          // (medications / heart conditions / psychiatric history) where
+          // we don't want the chosen answer to flash in a strong filled
+          // black/white style — that visual weight can feel like the app
+          // is endorsing one answer over the other. With neutralOptions
+          // on, both buttons keep the same neutral border and text color
+          // before AND after selection.
+          const showSelectedStyle = !question.neutralOptions && value === option.value;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onChange(option.value)}
+              className="w-full text-left px-4 py-3 border transition-colors duration-75"
+              style={{
+                borderColor: showSelectedStyle ? 'var(--text-primary)' : 'var(--border)',
+                backgroundColor: showSelectedStyle ? 'var(--text-primary)' : 'transparent',
+                color: showSelectedStyle ? 'var(--bg-primary)' : 'var(--text-primary)',
+              }}
+            >
+              <span className="uppercase tracking-wider">{option.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

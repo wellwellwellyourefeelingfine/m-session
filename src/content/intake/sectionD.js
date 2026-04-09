@@ -11,19 +11,6 @@ export const sectionDQuestions = [
     required: false,
   },
   {
-    field: 'hasMDMA',
-    type: 'single-select',
-    label: 'Do you have your MDMA?',
-    contentBlocks: [
-      { type: 'spacer' },
-      { type: 'text', text: 'Of course, you can also choose to do this session without any substances as well.', color: 'grey' },
-    ],
-    options: [
-      { value: 'yes', label: 'Yes' },
-      { value: 'not-yet', label: 'Not yet' },
-    ],
-  },
-  {
     field: 'hasTested',
     type: 'single-select',
     label: 'Have you tested your MDMA yet?',
@@ -31,7 +18,7 @@ export const sectionDQuestions = [
       { type: 'spacer' },
       { type: 'text', text: 'We recommend testing your MDMA either with an at-home kit or by sending it to a lab service.' },
       { type: 'spacer' },
-      { type: 'accent-link', text: 'Check out the Resources in the Tools tab for more information.', action: { tab: 'tools', tool: 'dosage', section: 'testing' } },
+      { type: 'accent-link', text: 'Substance Testing', action: { tab: 'tools', tool: 'dosage', section: 'testing' } },
     ],
     options: [
       { value: 'yes', label: 'Yes' },
@@ -42,7 +29,12 @@ export const sectionDQuestions = [
     field: 'considerBooster',
     type: 'single-select',
     label: 'Would you like to consider a supplemental dose?',
-    description: 'Some people choose to take a smaller "booster" dose partway through their session to extend the experience. This is entirely optional.',
+    contentBlocks: [
+      { type: 'spacer' },
+      { type: 'text', text: 'Some people choose to take a smaller "booster" dose partway through their session to extend the experience. This is entirely optional.' },
+      { type: 'spacer' },
+      { type: 'accent-link', text: 'Booster Dose', action: { tab: 'tools', tool: 'faq', section: 'booster' } },
+    ],
     options: [
       { value: 'yes', label: 'Yes, I\'d like to consider it' },
       { value: 'no', label: 'No, just one dose' },
@@ -52,18 +44,16 @@ export const sectionDQuestions = [
   {
     field: 'physicalPreparation',
     type: 'single-select',
-    label: 'Have you prepared your body for this session?',
+    label: 'Do you feel physically ready for a session?',
     contentBlocks: [
       { type: 'spacer' },
-      { type: 'text', text: 'To prepare your body for your session, we recommend:' },
+      { type: 'text', text: 'An MDMA session can be demanding of the body. We recommend:' },
       { type: 'list', items: [
-        'Being well-rested (avoid sleep deprivation)',
+        'Being well-rested',
         'Eating a light meal 2\u20133 hours beforehand',
         'Avoiding alcohol for at least 24 hours before',
         'Limiting or avoiding caffeine on session day',
       ]},
-      { type: 'spacer' },
-      { type: 'text', text: 'These factors meaningfully affect how your body processes MDMA and how you feel during the experience.', color: 'grey' },
     ],
     options: [
       { value: 'yes', label: 'Yes' },
@@ -108,6 +98,7 @@ export const sectionDQuestions = [
     field: 'contraindicatedMedications',
     type: 'single-select',
     label: 'Do you currently take any of the following medications?',
+    neutralOptions: true,
     contentBlocks: [
       { type: 'spacer' },
       { type: 'list', items: [
@@ -120,6 +111,8 @@ export const sectionDQuestions = [
         'HIV protease inhibitors (Ritonavir)',
         'Stimulants (Adderall, Ritalin)',
       ]},
+      { type: 'spacer' },
+      { type: 'text', text: 'These medications can interact dangerously with MDMA, ranging from blunted effects to serotonin syndrome and other serious risks. Consult with your doctor about titrating off this medication before you decide to begin a session.' },
     ],
     options: [
       { value: 'yes', label: 'Yes' },
@@ -130,6 +123,7 @@ export const sectionDQuestions = [
     field: 'heartConditions',
     type: 'single-select',
     label: 'Do you have any heart conditions?',
+    neutralOptions: true,
     contentBlocks: [
       { type: 'spacer' },
       { type: 'text', text: 'MDMA significantly increases heart rate and blood pressure, sometimes for several hours. This includes conditions such as:' },
@@ -141,7 +135,7 @@ export const sectionDQuestions = [
         'Cardiomyopathy',
       ]},
       { type: 'spacer' },
-      { type: 'text', text: 'If you have any cardiovascular concerns, we strongly recommend consulting a healthcare provider before proceeding.', color: 'grey' },
+      { type: 'text', text: 'If you have any cardiovascular concerns, we strongly recommend consulting a healthcare provider before proceeding.' },
     ],
     options: [
       { value: 'yes', label: 'Yes' },
@@ -152,6 +146,7 @@ export const sectionDQuestions = [
     field: 'psychiatricHistory',
     type: 'single-select',
     label: 'Do you have a history of psychosis or severe psychiatric conditions?',
+    neutralOptions: true,
     contentBlocks: [
       { type: 'spacer' },
       { type: 'text', text: 'MDMA can temporarily alter perception and emotional processing in powerful ways. For most people this is manageable, but certain conditions carry elevated risk:' },
@@ -162,7 +157,7 @@ export const sectionDQuestions = [
         'Severe dissociative disorders',
       ]},
       { type: 'spacer' },
-      { type: 'text', text: 'If any of these apply, please consult a mental health professional before proceeding. This is not about judgment \u2014 it\u2019s about ensuring your safety during a vulnerable experience.', color: 'grey' },
+      { type: 'text', text: 'If any of these apply, please consult a mental health professional before proceeding. This is not about judgment \u2014 it\u2019s about ensuring your safety during a vulnerable experience.' },
     ],
     options: [
       { value: 'yes', label: 'Yes' },

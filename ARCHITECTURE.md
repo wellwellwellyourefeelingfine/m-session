@@ -64,16 +64,22 @@ src/
 │   │   ├── ChatMessage.jsx
 │   │   └── ChatSidebar.jsx
 │   ├── helper/                    # "What's happening?" support modal (heart icon in header)
-│   │   ├── HelperModal.jsx        # Top-anchored sheet modal — multi-step rating/result flow
+│   │   ├── HelperModal.jsx        # Top-anchored sheet modal — major-view orchestrator
 │   │   ├── HelperButton.jsx       # Heart icon trigger rendered inside Header
 │   │   ├── HelperTopBar.jsx       # Back / title / close header bar
-│   │   ├── CategoryGrid.jsx       # 2-column category card grid (initial step)
-│   │   ├── CategoryHeader.jsx     # Wide category card shown above the rating scale
-│   │   ├── RatingScale.jsx        # 0–10 bubble scale
-│   │   ├── ActivitySuggestions.jsx # Activity result block (reuses timeline ModuleCard)
-│   │   ├── EmergencyFlow.jsx      # Emergency contact / 911 / 112 / Fireside Project block
+│   │   ├── CategoryGrid.jsx       # 2-column category card grid + slim emergency contact card
+│   │   ├── CategoryHeader.jsx     # Wide category card shown above the triage flow
+│   │   ├── RatingScale.jsx        # 0–10 bubble scale (supports `dimmed` completed state)
+│   │   ├── TriageStepRunner.jsx   # V5 decision tree orchestrator (rating → choice(s) → result)
+│   │   ├── TriageChoiceStep.jsx   # Single-select option cards inside the triage flow
+│   │   ├── TriageResultStep.jsx   # Resolver result + activity suggestions + I-need-more-help expand
+│   │   ├── ActivitySuggestions.jsx # Activity card list (reuses timeline ModuleCard)
+│   │   ├── EmergencyFlow.jsx      # Emergency contact card / 911-112 / Fireside Project (rating 10)
+│   │   ├── EmergencyContactCard.jsx # Shared bordered contact card with Call/Text + tap-to-copy
+│   │   ├── EmergencyContactView.jsx # Dedicated contact page (header + card + edit + notes)
 │   │   ├── AcknowledgeClose.jsx   # Acknowledge text shown when rating is 0
-│   │   └── PreSessionContent.jsx  # Pre-session informational text
+│   │   ├── PlaceholderCategory.jsx # "Coming soon" view for stub categories (low-mood, integration)
+│   │   └── PreSessionContent.jsx  # Pre-session dimmed preview + explanatory overlay
 │   ├── history/                   # Session history browsing
 │   │   └── SessionHistoryModal.jsx # Accordion-style past sessions panel
 │   ├── home/                      # Home view, follow-up section, pre-session view
@@ -125,8 +131,10 @@ src/
 │   ├── meditations/               # Meditation content + audio mappings (14 content files)
 │   ├── intake/                    # 4-section questionnaire
 │   ├── helper/                    # Helper Modal content
-│   │   ├── categories.js          # 6 active + 2 follow-up categories with routing/copy
-│   │   └── formatLog.js           # Journal entry formatter for helper interactions
+│   │   ├── categories.js          # 8 categories with `phases` arrays + decision-tree `steps`
+│   │   ├── formatLog.js           # Journal entry formatter (V5 step-path format)
+│   │   ├── resolverUtils.js       # classifyPhaseWindow, formatTimeContext, ACT id constants
+│   │   └── resolvers/             # 6 per-category pure resolver functions (one per active category)
 │   └── timeline/
 │       └── configurations.js      # 11 timeline configs (5 focuses × 2 guidance + minimal)
 ├── utils/
@@ -1021,7 +1029,7 @@ TIMELINE_CONFIGS[focus][guidanceLevel] = {
 ### Generation Flow
 
 `generateTimelineFromIntake()` in `useSessionStore.js`:
-1. Reads `responses.primaryFocus` (fallback: `'open'`) and `responses.guidanceLevel` (fallback: `'full'`)
+1. Reads `sessionProfile.primaryFocus` (fallback: `'open'`) and `sessionProfile.guidanceLevel` (fallback: `'full'`)
 2. Looks up the matching configuration from `TIMELINE_CONFIGS`
 3. Builds module instances from the config (assigns `instanceId`, `order`, `phase`, library content)
 4. Resolves linked module groups (e.g., `'protector'` → shared `linkedGroupId`)
@@ -1207,96 +1215,268 @@ ELEVENLABS_API_KEY=your_key node scripts/generate-<name>-audio.mjs --list-voices
 
 ---
 
-## Helper Modal
+## Helper Modal (V5)
 
-The Helper Modal is the "What's happening?" support overlay accessed via a heart-icon button in the header. It provides phase-aware emotional support content during a session: a category grid → 0–10 rating scale → inline result content (acknowledge / activity suggestions / emergency contacts) that cross-fades based on the rating.
+The Helper Modal is the "What's happening?" support overlay accessed via a heart-icon button in the header. V5 replaces the V4 flat rating-to-route system with a **phase-aware decision tree** per category: rating → choice(s) → resolver-generated result. The same intensity rating produces wildly different advice depending on where the user is in the session, what part of their body they're feeling, what kind of resistance is showing up, etc.
 
 ### Activation & Phase Gating
 
-- Trigger: `HelperButton` (heart icon, accent color) lives in `Header.jsx` between the AI tab and the hamburger menu.
+- Trigger: `HelperButton` (heart icon, accent color, stroke width 3) lives in `Header.jsx` between the AI tab and the hamburger menu.
 - Visibility gate: button only renders when `sessionPhase` is `'pre-session'`, `'active'`, or `'completed'`.
 - Open mechanism: button calls `useHelperStore.openHelper()`. AppShell conditionally mounts `<HelperModal />` based on `isOpen`, mirroring the BoosterModal/ModuleLibraryDrawer pattern.
 - Close mechanism: `handleClose` sets a local `isClosing` flag (triggers exit animation), then `setTimeout(closeHelper, 350)` unmounts the modal after the slide-out completes.
+- Each open is a fresh React mount with fresh `useState`, so there are never leftover-state bugs.
 
-### Multi-Step Flow
+### Major-View State Machine
 
-The modal manages a small step machine via local React state:
+`HelperModal` owns a 3-case `currentStep` state machine:
 
 | Step | Content |
 |------|---------|
-| `'initial'` | Category grid (6 active or 2 follow-up categories from `helperCategories`) |
-| `'category'` | `CategoryHeader` + prompt + `RatingScale` + inline result block |
+| `'initial'` | `CategoryGrid` — 2-column category grid + slim full-width emergency contact card at the bottom. (`PreSessionContent` overrides this when `sessionPhase === 'pre-session'`.) |
+| `'triage'` | `TriageStepRunner` walking the selected category's decision tree, OR `PlaceholderCategory` for stub categories without a `steps` array. |
+| `'emergency-contact'` | `EmergencyContactView` — dedicated page with category-style header, contact card, edit toggle, notes textarea, and an "I need more help" expand for the full EmergencyFlow. |
 
-After the user selects a rating, `displayedRating` drives an inline cross-fade between three result components: `AcknowledgeClose` (rating 0), `ActivitySuggestions` (1–8, with the `max-activity` or `gentle-activity` set selected based on the rating's routing range), or `EmergencyFlow` (9–10). The modal does NOT navigate to a new step — all results render inline beneath the rating scale on the same `'category'` page so the user can rapidly tap different ratings and watch the suggestions cross-fade. Only the modal's body height transitions (75vh ↔ 95vh via the `isExpanded` flag) when a rating is first selected.
+`stepHistory` is a stack used by the top-bar back button to navigate between major views. Inside the triage flow, the runner manages its own back navigation imperatively via `useImperativeHandle`; the parent's back button delegates to `triageRunnerRef.current.goBack()` first and only falls through to the major-view stack when the runner reports there's nothing left to pop.
 
-### Activity Card Reuse
+### Decision Tree Architecture
 
-`ActivitySuggestions` reuses the timeline `ModuleCard` component for visual consistency with the home timeline. It constructs synthetic module instances (`{ instanceId: 'helper-...', libraryId, title, duration, status: 'upcoming' }`) and passes them to `ModuleCard` with `isActiveSession={false}` and `canRemove={false}`. A scoped `<style>` block in `ActivitySuggestions.jsx` applies tighter padding to `.helper-activity-card > div > div` so the card is shorter inside the helper modal context — without modifying `ModuleCard` itself.
+Each category in `helperCategories` declares a `steps` array describing the decision tree:
 
-### Emergency Flow
+```js
+{
+  id: 'intense-feeling',
+  phases: ['active', 'follow-up'],
+  icon: 'HandIcon',
+  label: 'Intense feeling',
+  description: '...',          // shown on the grid card
+  expandedDescription: '...',  // shown inside CategoryHeader during triage
+  acknowledgeText: '...',      // shown for rating 0
+  steps: [
+    { type: 'rating',  id: 'intensity', prompt: '...', journalLabel: 'Intensity' },
+    { type: 'choice',  id: 'bodyLocation', prompt: '...',
+      showWhen: (state) => state.intensity >= 1 && state.intensity <= 9,
+      options: [...] },
+    { type: 'result',  resolve: resolveIntenseFeeling },
+  ],
+}
+```
 
-`EmergencyFlow` reads `intake.responses.emergencyContactDetails` (a `{ name, phone }` object captured during intake's `contact-input` question). It renders three compact cards inline:
+Three step types:
 
-1. Emergency contact card (named `tel:` link if details exist, generic prompt if not)
-2. Emergency services row (911 / 112 buttons)
-3. Fireside Project card (psychedelic peer support — call or text)
+| Type | Purpose |
+|------|---------|
+| `rating` | 0–10 bubble scale (`RatingScale`) — captures a numeric value into `triageState[id]` |
+| `choice` | Single-select option cards (`TriageChoiceStep`) — captures a string value into `triageState[id]` |
+| `result` | Calls a resolver function `(triageState, sessionContext) → ResultPayload` and renders via `TriageResultStep` |
 
-Reassurance copy is intentionally agnostic ("If something feels serious right now, trust that. The options below are here for you — pick whichever feels most useful.") so the modal doesn't presume the user's experience.
+`showWhen` is an optional predicate that hides a step when its result would be undefined or irrelevant. `journalLabel` is a short noun (e.g. "Vividness", "Body location") used in journal entries.
 
-### Inserting Activities Mid-Session
+### TriageStepRunner — Stacking Step Flow
 
-When a user taps an activity card from `ActivitySuggestions`, the helper modal calls `useSessionStore.insertAtActive(libraryId)`. This action:
+Steps render as a stack: each completed step stays visible, and the next step fades in beneath it via the `animate-fadeIn` CSS keyframe (which only runs once per mount). Existing steps don't re-mount when the next one appears, so they never re-fade or flicker. The user accumulates a visible triage path on the page.
 
-1. Creates a new module instance at `order: 0` in the current phase
-2. Resets the previously-active module's status from `'active'` back to `'upcoming'` and clears its `startedAt`
-3. Sets `inOpenSpace: false` so `ActiveView`'s auto-start logic picks up the new module
-4. Navigates to the active tab via `useAppStore.getState().setCurrentTab('active')`
-5. Calls `precacheAudioForModule(libraryId)` (non-blocking)
+**Forward navigation:** the runner writes the value into `triageState`, then schedules `advanceFrom(...)` after a 300ms beat (so the user sees their selection register on the bubble or card before the next step appears). On advance, the runner also calls `requestScroll()` which increments a `scrollTick` state — a `useEffect` watching that tick calls `bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })`, smoothly bringing the new content into view as it fades in.
 
-The action also handles linked parent modules (e.g. `protector-dialogue`) by creating both Part 1 and Part 2 with a shared `linkedGroupId`, identical to the existing `addModule` linked-creation logic.
+**Retroactive editing:** locked steps stay tappable. When the user taps a different option on a previously-completed step, `truncateStateAfter` wipes any downstream answers, the new value is written, and `advanceFrom` re-walks from that point. Visual: snap-update with no fade animation (the user is making a direct correction and expects an instant response).
 
-### Journal Logging
+**Back navigation:** the runner's `goBack` fades out the current active step's container via `fadingOutFromIndex`, then decrements `activeIndex` after a 200ms timer. If activeIndex is already 0, returns `false` so the parent can navigate back to the category grid.
 
-Each helper modal interaction creates a journal entry on category selection (via `useJournalStore.addEntry({ source: 'session', moduleTitle: 'Helper Modal' })`). The entry is updated in place as the user picks a rating, then again if they select an activity. The format is plain text built by `formatHelperModalLog()` in `src/content/helper/formatLog.js`.
+**Hardcoded rating overrides:**
+- Rating `0` → renders `AcknowledgeClose` with the category's `acknowledgeText` beneath the locked rating. No further steps walked.
+- Rating `10` → renders `EmergencyFlow` beneath the locked rating. Bypasses all subsequent steps. (Rating 9 walks the normal decision tree as the high end of the regular range.)
 
-### Categories & Routing
+**Locked-step appearance:** rating bubbles dim non-selected to 30% opacity but stay tappable. Choice cards highlight the selected option and dim the others. "Locked" is purely visual — completed steps remain interactive for retroactive editing.
 
-`src/content/helper/categories.js` defines the full category set. Each category object has:
+### Session Context & Phase-Aware Resolvers
 
-| Field | Description |
-|-------|-------------|
-| `id` | React key + journal log identifier |
-| `phase` | `'active'` (6 categories) or `'follow-up'` (2 stub categories) |
-| `icon` | Icon component name from `Icons.jsx` |
-| `label`, `description` | Card display text |
-| `prompt` | Rating prompt question |
-| `routing.ranges` | Array of `{ min, max, route }` mapping rating values to result types |
-| `acknowledgeText` | Rating-0 result content |
-| `maxActivityIntro`, `gentleActivityIntro` | Intro text above suggestion lists |
-| `maxActivitySuggestions`, `gentleActivitySuggestions` | Arrays of `{ id, label, description }` referencing `library.js` IDs |
+On mount, `HelperModal` builds a `sessionContext` object via `useMemo`:
 
-The `getRouteForRating(category, rating)` helper resolves a rating value to one of `'acknowledge-close' | 'max-activity' | 'gentle-activity' | 'emergency'` by walking the `routing.ranges` array.
+```js
+{
+  minutesSinceIngestion,    // wall-clock minutes from substanceChecklist.ingestionTime, or null
+  timelinePhase,            // state.timeline.currentPhase ('come-up' | 'peak' | 'integration' | null)
+  phaseWindow,              // classified by classifyPhaseWindow(minutes)
+  hasEmergencyContact,      // boolean
+}
+```
+
+`phaseWindow` is derived purely from minutes since ingestion (independent of the user's manually-advanced timeline phase). The windows:
+
+| Window | Minutes | Used by resolvers for... |
+|---|---|---|
+| `pre-onset` | 0–19 | Anticipatory anxiety framing |
+| `come-up` | 20–60 | Sympathomimetic activation, "this is your body adjusting" framing |
+| `early-peak` | 61–90 | Transition copy, between come-up and full effects |
+| `peak` | 91–210 | Full processing window, somatic-experiencing tools |
+| `late-session` | 211–360 | Synthesis, integration, letter-writing tools |
+| `post-session` | 361+ | Residual effects only |
+
+Resolvers (`src/content/helper/resolvers/*.js`) are pure functions: `(triageState, sessionContext) → ResultPayload`. No store access, no React, no side effects. Each of the 6 active categories has its own resolver file. Resolvers branch on `phaseWindow` and the user's `triageState` answers to produce phase-aware copy and activity lists.
+
+A `ResultPayload` looks like:
+
+```js
+{
+  timeContextLine?: "You're about 47 minutes in.",  // come-up + early-peak only
+  message: "Pressure in the chest during the peak often signals...",
+  secondaryMessage?: "If you're worried, the options below are for you.",
+  activityIntro?: "These can help you stay with what's happening.",
+  activities?: [{ id: 'simple-grounding' }, { id: 'body-scan' }],
+  activityPaths?: [                  // ego-dissolution identity branch only
+    { label: 'This feels scary', activities: [...] },
+    { label: 'This feels expansive', activities: [...] },
+  ],
+  showEmergencyCard?: true,          // chest-heart come-up
+}
+```
+
+`formatTimeContext(minutes, phaseWindow)` in `resolverUtils.js` returns the time line only when `phaseWindow` is `come-up` or `early-peak`, hidden in `peak` / `late-session` / `null`. Time is shown to the exact minute ("about 19 minutes in"), not rounded.
+
+The `ACT` constant in `resolverUtils.js` is a shared dictionary mapping short keys to `{ id }` objects, e.g. `ACT.simpleGrounding = { id: 'simple-grounding' }`. Resolvers reference activities as `[ACT.simpleGrounding, ACT.bodyScan]`. `ActivitySuggestions` looks up display text via `getModuleById(activity.id)`, so a bare `{ id }` is sufficient.
+
+### Categories — Cross-Phase Eligibility
+
+`helperCategories` in `src/content/helper/categories.js` is the canonical list. Each category declares a `phases` ARRAY indicating where it should appear:
+
+| Category | `phases` | Notes |
+|---|---|---|
+| Intense feeling | `['active', 'follow-up']` | Core category, appears in both phases |
+| Trauma | `['active', 'follow-up']` | Core |
+| Resistance | `['active', 'follow-up']` | Core |
+| Grief | `['active', 'follow-up']` | Core |
+| Ego dissolution | `['active']` | Active session only |
+| I feel so good | `['active']` | Active session only |
+| Low mood | `['follow-up']` | Follow-up only — currently a `PlaceholderCategory` stub (V6) |
+| Integration | `['follow-up']` | Follow-up only — stub (V6) |
+
+`HelperModal` filters with `helperCategories.filter((c) => c.phases?.includes(phaseKey))`, where `phaseKey` is `'follow-up'` when `sessionPhase === 'completed'`, otherwise `'active'`. The 4 core categories appear in both grids.
+
+### Modal Height — Single Rule
+
+```js
+const isExpanded =
+  (currentStep === 'triage' && hasRatedInTriage) ||
+  (currentStep === 'emergency-contact' && (isEditingContact || isContactEmergencyExpanded));
+```
+
+- **Default (`DEFAULT_MODAL_HEIGHT_PX`, currently 540px):** category grid, contact view in read mode, pre-session preview, follow-up placeholder, freshly-entered triage view before any rating commit.
+- **Expanded (`min(95vh, calc(100vh - var(--tabbar-height) - 12px))`):** triggered by ANY of three things — the user committing a rating in a triage flow, tapping the contact card's Edit toggle, or tapping the contact view's "I need more help" expand button. Stays expanded for the rest of the flow until the user navigates back past the trigger.
+
+The runner reports `hasRatedInTriage` upward via an `onRatingCommittedChange` callback. The contact view reports `isEditingContact` and `isContactEmergencyExpanded` upward via similar prop callbacks. All three states are owned by `HelperModal` so the height derivation lives in one place.
+
+The 350ms `cubic-bezier(0.65, 0, 0.35, 1)` height transition is on the panel itself; all internal content fades happen alongside it.
+
+### Emergency Contact Surface
+
+The user's emergency contact lives at `state.sessionProfile.emergencyContactDetails` as `{ name, phone, notes }` (extended from `{ name, phone }` in v25 of the session store). It's captured during intake's `contact-input` question and editable from `SubstanceChecklist.jsx`, the dedicated `EmergencyContactView`, and the rating-10 `EmergencyFlow`.
+
+**`EmergencyContactCard.jsx`** is the shared bordered card displaying the contact. Used in three places:
+
+1. Inside `EmergencyFlow` (rating 10 result and "I need more help" expand)
+2. Inside `EmergencyContactView` (the dedicated contact page)
+3. Inside `TriageResultStep` when a resolver sets `showEmergencyCard: true` (chest-heart come-up)
+
+Card features:
+- **Name + Number on a single line** when both fit, with name left-aligned and number right-aligned via `justify-between`. Wraps to two lines when content would overflow (`flex-wrap` + `whitespace-nowrap` on the inner groups).
+- **Tap-to-copy on the number** — tapping the number value writes it to the clipboard via `navigator.clipboard.writeText` (with a `document.execCommand('copy')` fallback for older webviews) and briefly swaps the text to "Copied" in accent color for 1.5s.
+- **First-name-only Call/Text buttons** — labels show only the first name (split on whitespace), e.g. "Joe Dirt" → "Call Joe" / "Text Joe".
+- **Optional Edit/Save toggle in the top-right corner** — when an `onEditToggle` callback is passed, a small uppercase "Edit" pill renders at `top: 8, right: 12`. Flips to accent-colored "Save" when `isEditing` is true. The card's top padding bumps up when the toggle is present so the small text doesn't overlap the value row.
+
+**`EmergencyContactView.jsx`** is the dedicated contact page, reachable via the wide contact card on the initial step. Contains:
+
+1. Wide CategoryHeader-style header with PhoneIcon escutcheon
+2. `EmergencyContactCard` (with `hideLabel`, edit toggle, and `onContactAction` for journal logging)
+3. **Animated edit-mode inputs** — name + phone text fields hidden behind a CSS grid `1fr/0fr` trick that smoothly grows/collapses while opacity-fading in/out, all in sync with the modal's 350ms height transition. Tracked via `inert` (not `aria-hidden`) to avoid focus warnings on collapse. Contains a secondary pill-shaped "Save" button beneath the phone input, functionally identical to the corner toggle.
+4. **Notes box** — bordered textarea for emergency contact notes with concrete-examples placeholder. Auto-saves on blur. When focused with content, an inline pill-shaped "Save" affordance fades in at the bottom-center; tapping it (via `onMouseDown` to fire before blur, with `e.preventDefault()` to avoid passive-listener warnings) blurs the textarea and dismisses the mobile keyboard.
+5. **"I need more help" expand/collapse** — beneath the notes box, an accent-colored button with a `CirclePlusIcon` that flips to `CircleSkipIcon` when expanded. Tapping fades in the full `EmergencyFlow` (with `hideContactCard` so the contact card isn't duplicated). The expand state is reported up to `HelperModal` so the modal grows to its expanded height.
+
+**`EmergencyFlow.jsx`** renders inside the rating-10 emergency override AND inside the contact view's "I need more help" expand. Contains:
+
+1. Reassurance text ("If something feels serious right now, trust that...")
+2. `EmergencyContactCard` (suppressed via `hideContactCard` when called from `EmergencyContactView` to avoid duplication)
+3. Emergency Services row (911 / 112)
+4. Fireside Project card (psychedelic peer support — call or text)
+
+All buttons in `EmergencyFlow` and `EmergencyContactCard` are `<a>` tags with `tel:` / `sms:` hrefs, plus inline `textDecoration: 'none'` and the `no-underline` Tailwind class to override the global `a` underline rule in `src/index.css`. All buttons fire an `onAction(label)` callback before navigation so `HelperModal` can write a journal entry capturing the action.
+
+### Pre-Session Mode
+
+When `sessionPhase === 'pre-session' && currentStep === 'initial'`, the modal renders `PreSessionContent` instead of the live `CategoryGrid`. This view shows the same `CategoryGrid` component with `categoriesDimmed` set to `true` — the 6 category cards are wrapped in `inert` and `opacity: 0.3` so they're visible but non-interactive. A centered explanatory overlay card sits over the dimmed grid with a heart icon and one short paragraph explaining what the modal becomes once the session is underway.
+
+**Critical exception:** the wide emergency contact card at the BOTTOM of `CategoryGrid` stays fully interactive in pre-session, so the user CAN navigate to `EmergencyContactView` and set up their contact details before the session begins. `CategoryGrid`'s `categoriesDimmed` prop wraps only the inner category grid `<div>` in inert — the contact card below it is unaffected. The pre-session render path also passes `currentStep === 'initial'` as a guard so navigating to `'emergency-contact'` from pre-session correctly falls through to the normal `EmergencyContactView` switch case.
+
+### Inserting Activities — Active and Follow-up
+
+When the user taps an activity card from a triage result, `HelperModal.handleActivitySelect` calls `useSessionStore.insertAtActive(libraryId)`. This action:
+
+1. Determines the target phase: `state.timeline.currentPhase` during an active session, OR `'follow-up'` when `sessionPhase === 'completed'`. This lets the helper modal insert activities into the follow-up timeline post-session.
+2. Creates a new module instance at `order: 0` in the target phase
+3. Resets the previously-active module's status from `'active'` back to `'upcoming'` and clears its `startedAt`
+4. Sets `inOpenSpace: false` so `ActiveView`'s auto-start logic picks up the new module
+5. Navigates to the active tab via `useAppStore.getState().setCurrentTab('active')`
+6. Calls `precacheAudioForModule(libraryId)` (non-blocking)
+
+The action also handles linked parent modules (e.g. `protector-dialogue`) by creating both Part 1 and Part 2 with a shared `linkedGroupId`. Part 2's phase tracks Part 1: in active session it goes to `integration`; in follow-up it stays in `follow-up`.
+
+### Journal Logging — Create on Action
+
+Journal entries are created **only when the user takes a real action**, not on category select / rating select / step navigation. The "action" surfaces are:
+
+- Tapping an activity card in a triage result → `handleActivitySelect`
+- Tapping a Call/Text/911/112/Fireside button anywhere in the modal → `handleEmergencyAction`
+- Tapping a Call/Text button on the dedicated emergency contact view → `handleEmergencyAction`
+
+The runner stashes its current `triageState` and the current resolved result, and `HelperModal` builds the entry at action time using `formatHelperModalLog` from `src/content/helper/formatLog.js`. The format captures the full triage path:
+
+```
+HELPER MODAL
+
+Category: Intense feeling
+Intensity: 5/10
+Body location: Chest or heart
+Phase window: Come-up (~30 min)
+Activity chosen: Simple Grounding
+```
+
+`buildStepResponses(category, triageState)` is a helper in `formatLog.js` that walks the category's `steps` array and emits `[{ label, value }]` pairs (using each step's `journalLabel` and the matched option label). Steps that the user didn't reach (because of `showWhen` or rating overrides) are omitted.
+
+Entries triggered from the standalone emergency contact view (no `triageState`) omit `categoryLabel`, step responses, and phase window cleanly.
 
 ### File Layout
 
 ```
 src/components/helper/
-  HelperModal.jsx           # Multi-step orchestrator
-  HelperButton.jsx          # Heart trigger in Header
-  HelperTopBar.jsx          # Back / "What's happening?" / close header bar
-  CategoryGrid.jsx          # 2-column grid (initial step)
-  CategoryHeader.jsx        # Wide category card shown above the rating scale
-  RatingScale.jsx           # 0–10 bubble scale (matches LifeGraph milestone rating)
-  ActivitySuggestions.jsx   # Activity result block (reuses ModuleCard)
-  EmergencyFlow.jsx         # Emergency contacts (rating 9–10 result)
-  AcknowledgeClose.jsx      # Acknowledgment (rating 0 result)
-  PreSessionContent.jsx     # Static informational text for pre-session phase
+  HelperModal.jsx              # Major-view orchestrator + journal entry creation
+  HelperButton.jsx             # Heart trigger in Header
+  HelperTopBar.jsx             # Back / "What's happening?" / close header bar
+  CategoryGrid.jsx             # 2-column grid + slim emergency contact card; supports `categoriesDimmed`
+  CategoryHeader.jsx           # Wide category card shown above the triage flow
+  RatingScale.jsx              # 0–10 bubble scale, supports `dimmed` for completed state
+  TriageStepRunner.jsx         # Stacking decision-tree orchestrator (forwardRef + goBack)
+  TriageChoiceStep.jsx         # Single-select option cards
+  TriageResultStep.jsx         # Resolver result + activities + I-need-more-help expand
+  ActivitySuggestions.jsx      # Activity card list (reuses ModuleCard)
+  EmergencyContactCard.jsx     # Shared contact card with name/number + Call/Text + tap-to-copy + edit toggle
+  EmergencyContactView.jsx     # Dedicated contact page (header + card + edit + notes + I-need-more-help expand)
+  EmergencyFlow.jsx            # Full emergency content (contact + 911/112 + Fireside); supports `hideContactCard`
+  AcknowledgeClose.jsx         # Acknowledgment text shown when rating is 0
+  PlaceholderCategory.jsx      # "Coming soon" view for stub categories
+  PreSessionContent.jsx        # Pre-session dimmed preview + explanatory overlay
 
 src/content/helper/
-  categories.js             # Category configs + getRouteForRating helper
-  formatLog.js              # formatHelperModalLog (journal entry serializer)
+  categories.js                # 8 categories with `phases` arrays + `steps` decision trees
+  formatLog.js                 # formatHelperModalLog + buildStepResponses (V5 step-path format)
+  resolverUtils.js             # classifyPhaseWindow, formatTimeContext, ACT id constants
+  resolvers/
+    intense-feeling.js         # resolveIntenseFeeling (intensity × bodyLocation × phaseWindow)
+    trauma.js                  # resolveTrauma (vividness × dualAwareness × phaseWindow)
+    resistance.js              # resolveResistance (strength × resistanceType × phaseWindow)
+    grief.js                   # resolveGrief (intensity × expression × phaseWindow)
+    ego-dissolution.js         # resolveEgoDissolution (disorientation × experienceType × phaseWindow)
+    feel-good.js               # resolveFeelGood (energy × energyFeeling × phaseWindow)
 
-src/stores/useHelperStore.js  # isOpen / openHelper / closeHelper
+src/stores/useHelperStore.js   # isOpen / openHelper / closeHelper (transient, not persisted)
 ```
 
 ---
@@ -1347,13 +1527,45 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 
   intake: {
     currentSection, currentQuestionIndex, isComplete,
-    responses: {
-      // ... all questionnaire responses ...
-      emergencyContactDetails: { name, phone }, // structured contact for Helper Modal emergency flow
-    },
+    showSafetyWarnings, showMedicationWarning,
+    // Navigation + completion flags only. User-entered answers live in
+    // `sessionProfile` (migrated out of `intake.responses` in store v24).
   },
-  substanceChecklist: { plannedDosageMg, ingestionTime, ... },
-  preSubstanceActivity: { touchstone, completedActivities, ... },
+  sessionProfile: {
+    // Universal per-session user-data slice. Holds every value the user enters
+    // during this session — intake questionnaire answers, the substance plan
+    // (hasSubstance/hasTested/hasPreparedDosage/plannedDosageMg/dosageFeedback),
+    // the intention artifacts (touchstone, intentionJournalEntryId,
+    // focusJournalEntryId), and the emergency contact. Written via the single
+    // universal `updateSessionProfile(field, value)` action; auto-derives
+    // `dosageFeedback` whenever `plannedDosageMg` is written.
+    //
+    // Per-session, not global: each session has its own profile that travels
+    // with the session through archive/restore, never destroyed by `resetSession`
+    // (which always runs after the prior session is safely snapshotted into the
+    // history store). Only `deleteSession()` permanently removes a profile.
+    //
+    // Includes: experienceLevel, sessionMode, primaryFocus, holdingQuestion,
+    // emotionalState, guidanceLevel, sessionDuration, considerBooster,
+    // safeSpace, heartConditions, psychiatricHistory, medications,
+    // emergencyContactDetails: { name, phone, notes },  // (notes added in v25)
+    // hasSubstance, hasTestedSubstance, hasPreparedDosage,
+    // plannedDosageMg, dosageFeedback, touchstone,
+    // intentionJournalEntryId, focusJournalEntryId,
+    // ... and a handful of reserved fields (experienceLevel, activityPreferences,
+    // hasMDMA, hasTested, etc.) collected by intake but not yet read by any
+    // consumer. See useSessionStore.js for the full shape (35 fields total).
+  },
+  substanceChecklist: {
+    hasTakenSubstance, ingestionTime, ingestionTimeConfirmed,
+    // Ingestion-event runtime state only. The user-entered substance fields
+    // (hasSubstance, plannedDosageMg, etc.) moved to sessionProfile in v24.
+  },
+  preSubstanceActivity: {
+    substanceChecklistSubPhase, completedActivities,
+    // Navigation + completion tracking only. Intention artifacts (touchstone,
+    // intentionJournalEntryId, focusJournalEntryId) moved to sessionProfile in v24.
+  },
 
   timeline: {
     currentPhase: 'come-up' | 'peak' | 'integration',
@@ -1399,12 +1611,33 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 **Key Actions:**
 - `startSession()`, `completeModule()`, `skipModule()`
 - `addModule(libraryId, phase, position)` — pre-session timeline editing (handles linked parents)
-- `insertAtActive(libraryId)` — runtime mid-session module injection (used by Helper Modal); inserts at position 0 in the current phase, resets the previously-active module to upcoming, navigates to the active tab, and precaches audio
+- `insertAtActive(libraryId)` — runtime module injection (used by Helper Modal). Inserts at position 0 in the current phase (`timeline.currentPhase`, OR `'follow-up'` when `sessionPhase === 'completed'`), resets the previously-active module to upcoming, navigates to the active tab, and precaches audio. Handles linked-parent modules (e.g. protector-dialogue) by creating Part 1 + Part 2 with a shared `linkedGroupId`; Part 2's phase tracks Part 1 (`integration` during active session, `follow-up` after completion).
+- `updateSessionProfile(field, value)` — universal user-data writer. Auto-derives `dosageFeedback` when `plannedDosageMg` is written. Replaced the old per-slice writers (`updateIntakeResponse`, `updateSubstanceChecklist`, `setTouchstone`, `setIntentionJournalEntryId`, `setFocusJournalEntryId`) in store v24.
 - `beginPeakTransition()`, `transitionToPeak()`, `transitionToIntegration()`
 - `recordCheckInResponse()`, `recordIngestionTime()`, `confirmIngestionTime()`
 - `setSubstanceChecklistSubPhase()`, `completePreSubstanceActivity()`
 - `updateTransitionCapture()`, `updateClosingCapture()`, `completeSession()`
 - `completeFollowUpModule()`, `updateFollowUpModule()`
+
+### `sessionProfile` — design rationale
+
+The `sessionProfile` slice is the **single source of truth for every value the user enters during a session**, regardless of which screen captured it. Before v24, this data was scattered across `intake.responses` (the questionnaire), `substanceChecklist` (the dosage + substance answers), and `preSubstanceActivity` (intention artifacts), with cross-slice writes (e.g., `SubstanceChecklist.jsx` Step 4 writing to `intake.responses.emergencyContactDetails`). The slice consolidates all of that.
+
+**Lifecycle.** A session profile is born when a session starts, lives forever inside its parent session (preserved across the archive/restore cycle), and is only destroyed when the parent session is explicitly deleted via `useSessionHistoryStore.deleteSession()`. `resetSession()` only ever runs *after* the prior session has been safely snapshotted into the history store via `archiveAndReset()` or `loadSession()`, so `resetSession` is never a user-data-loss path in normal use.
+
+**Per-session, not global.** Each session has its own profile. Two sessions never share data. Starting a new session never pre-fills any field from a prior session — even emergency contact details. This is intentional: it lets users genuinely change their intention, focus, dosage, or contact between sessions.
+
+**Read sites.** The most-read fields are:
+- `holdingQuestion` — read by AI prompt, integration transition, both follow-up modules, session history list, timeline editor, and the export
+- `plannedDosageMg` — read by AI prompt, booster calculation, timeline display, module card, export, and session history metadata
+- `emergencyContactDetails` — read by the helper modal's emergency flow and the dedicated `EmergencyContactView`
+- `primaryFocus` + `guidanceLevel` — read by `generateTimelineFromIntake` to choose the timeline configuration
+
+**What did NOT move into `sessionProfile`.** The semantic line is *answers vs. event state*: `sessionProfile` holds answers, `substanceChecklist` holds event state. So `ingestionTime`, `hasTakenSubstance`, and `ingestionTimeConfirmed` stay in `substanceChecklist` (they're captured timestamps marking the ingestion *event*, not user answers). Similarly, `intake.{currentSection, currentQuestionIndex, isComplete, showSafetyWarnings, showMedicationWarning}` stay in `intake` because they're navigation/completion flags, not answers. And `preSubstanceActivity.{substanceChecklistSubPhase, completedActivities}` stay in `preSubstanceActivity` because they track screen completion, not user answers.
+
+**Migration.** Store v24 added `sessionProfile` and the v23→v24 migration; v25 added `notes` to `emergencyContactDetails`. The migration runs in two places: the Zustand `persist` middleware on first load after the new bundle ships, and `useSessionHistoryStore.loadSession()` for archived sessions still in an older shape. The function is pure (no `set`/`get` calls) so it's safe to run in either context. No archive data is lost — old archives migrate on demand when the user loads them.
+
+**Adding a new field.** To capture a new piece of user data: (1) add the default to the `sessionProfile` initial state in `useSessionStore.js`, (2) add it to the `resetSession()` payload, (3) add a v(N-1)→vN migration case if the default isn't `null` (otherwise the `??` fallback in `migrateSessionState` handles it), (4) read/write at the call site via `useSessionStore((s) => s.sessionProfile.fieldName)` and `updateSessionProfile('fieldName', value)`. No new actions, no new slices. Auto-archived, auto-migrated, auto-included in the export.
 
 ### useHelperStore (Helper Modal trigger bridge)
 
@@ -1642,8 +1875,13 @@ A reusable transition screen for smooth flow between sections:
 | Helper Modal orchestrator | `src/components/helper/HelperModal.jsx` |
 | Helper Modal trigger button | `src/components/helper/HelperButton.jsx` |
 | Helper Modal store | `src/stores/useHelperStore.js` |
-| Helper categories + routing | `src/content/helper/categories.js` |
+| Helper categories + decision trees | `src/content/helper/categories.js` |
+| Helper resolver utilities (`classifyPhaseWindow`, `ACT`) | `src/content/helper/resolverUtils.js` |
+| Helper resolvers (one per active category) | `src/content/helper/resolvers/*.js` |
 | Helper journal entry formatter | `src/content/helper/formatLog.js` |
+| Triage step runner (decision-tree orchestrator) | `src/components/helper/TriageStepRunner.jsx` |
+| Shared emergency contact card | `src/components/helper/EmergencyContactCard.jsx` |
+| Dedicated emergency contact view | `src/components/helper/EmergencyContactView.jsx` |
 | Session menu (hamburger) | `src/components/layout/SessionMenu.jsx` |
 | Session history modal | `src/components/history/SessionHistoryModal.jsx` |
 | Session history store | `src/stores/useSessionHistoryStore.js` |

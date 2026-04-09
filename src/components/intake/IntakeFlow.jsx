@@ -82,6 +82,27 @@ export default function IntakeFlow({ onComplete }) {
   const [showCompletionScreen, setShowCompletionScreen] = useState(
     currentQuestionIndex >= allQuestions.length
   );
+  // Dedicated visibility flag for the Ready-to-Begin (completion) screen.
+  // Decoupled from `isVisible` so the fade-in always runs from 0 → 1 on
+  // mount, even when the previous screen's `isVisible` was already true
+  // when we navigated here.
+  const [completionVisible, setCompletionVisible] = useState(false);
+  useEffect(() => {
+    if (!showCompletionScreen) {
+      setCompletionVisible(false);
+      return;
+    }
+    // Two rAFs to guarantee the initial opacity:0 paint commits before
+    // we flip to opacity:1, so the CSS transition fires.
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => setCompletionVisible(true));
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [showCompletionScreen]);
   const [activeWarning, setActiveWarning] = useState(null); // 'heartConditions' | 'psychiatricHistory' | null
 
   const setCurrentQuestionIndex = (index) => {
@@ -211,7 +232,11 @@ export default function IntakeFlow({ onComplete }) {
   };
 
   const handleComplete = () => {
-    setIsVisible(false);
+    // Fade the completion screen out before navigating away. We toggle
+    // completionVisible (the dedicated flag for this screen) so the
+    // fade matches the symmetrical fade-in handled by the
+    // showCompletionScreen useEffect.
+    setCompletionVisible(false);
     setTimeout(() => {
       onComplete();
     }, 350);
@@ -287,9 +312,20 @@ export default function IntakeFlow({ onComplete }) {
 
             <div className="min-h-[300px]">
               <div className="space-y-3">
+                <p
+                  className="text-lg"
+                  style={{
+                    fontFamily: "'DM Serif Text', serif",
+                    textTransform: 'none',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  This is a Progressive Web App
+                </p>
+
                 <p style={{ color: 'var(--text-primary)' }}>
-                  This is a Progressive Web App and works best saved to your home screen.
-                  For offline access, full screen, and no browser distractions:
+                  A PWA works best saved to your home screen. For offline access,
+                  full screen, and no browser distractions:
                 </p>
 
                 <ol className="text-left space-y-1 pl-4" style={{ color: 'var(--text-primary)' }}>
@@ -298,7 +334,7 @@ export default function IntakeFlow({ onComplete }) {
                   <li className="list-decimal">Tap <strong>Add</strong> to confirm</li>
                 </ol>
 
-                <div className="flex justify-center"><div className="circle-spacer" /></div>
+                <div aria-hidden="true" style={{ height: '6px' }} />
 
                 <p style={{ color: 'var(--text-tertiary)' }}>
                   This app doesn&apos;t use any cookies, trackers, or analytics.
@@ -312,14 +348,12 @@ export default function IntakeFlow({ onComplete }) {
               <button
                 type="button"
                 onClick={() => {
+                  // Fade out the privacy screen, then mount the completion
+                  // screen. completionVisible starts at false and the
+                  // showCompletionScreen useEffect handles the fade-in.
                   setIsVisible(false);
                   setTimeout(() => {
                     setShowCompletionScreen(true);
-                    requestAnimationFrame(() => {
-                      requestAnimationFrame(() => {
-                        setIsVisible(true);
-                      });
-                    });
                   }, 300);
                 }}
                 className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300"
@@ -357,12 +391,22 @@ export default function IntakeFlow({ onComplete }) {
   if (showCompletionScreen) {
     return (
       <>
-        <ModuleProgressBar progress={progress} visible={false} />
+        <ModuleProgressBar progress={progress} visible={true} />
         <div
           className="max-w-md mx-auto px-6 py-8 transition-opacity duration-300"
-          style={{ opacity: isVisible ? 1 : 0 }}
+          style={{ opacity: completionVisible ? 1 : 0 }}
         >
-        <h2 className="font-serif text-lg text-center mb-8" style={{ color: 'var(--text-primary)' }}>Ready to Begin</h2>
+        <h2
+          className="text-center mb-8"
+          style={{
+            fontFamily: "'DM Serif Text', serif",
+            textTransform: 'none',
+            fontSize: '1.5rem',
+            color: 'var(--text-primary)',
+          }}
+        >
+          Ready to Begin
+        </h2>
 
         {(intake.showSafetyWarnings || intake.showMedicationWarning) && (
           <SafetyWarning
@@ -372,13 +416,13 @@ export default function IntakeFlow({ onComplete }) {
         )}
 
         <div className="mt-8">
-          <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>
+          <p className="mb-4" style={{ color: 'var(--text-primary)' }}>
             Your personalized session timeline will be generated based on your responses.
           </p>
 
-          <div className="flex justify-center mb-4"><div className="circle-spacer" /></div>
+          <div aria-hidden="true" style={{ height: '6px', marginBottom: '1rem' }} />
 
-          <p className="mb-6" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="mb-6" style={{ color: 'var(--text-primary)' }}>
             In the days before your planned session, we recommend reviewing your timeline. You can add, remove, or reorder different activities based on the session focus you wish to have.
           </p>
 
@@ -398,7 +442,9 @@ export default function IntakeFlow({ onComplete }) {
             <button
               type="button"
               onClick={() => {
-                setIsVisible(false);
+                // Fade the completion screen out via completionVisible,
+                // then unmount it and let the privacy screen reappear.
+                setCompletionVisible(false);
                 setTimeout(() => {
                   setShowCompletionScreen(false);
                   setIsVisible(true);
@@ -442,10 +488,17 @@ export default function IntakeFlow({ onComplete }) {
             {renderQuestion()}
           </div>
 
-          {/* Navigation - only show for non-single-select or when showing continue button */}
-          <div className="mt-12 space-y-4">
-            {/* Continue button for multi-select, text, and time inputs */}
-            {currentQuestion?.type !== 'single-select' && currentQuestion?.type !== 'contact-input' && (
+          {/* Navigation - only show for non-single-select or when showing continue button.
+              Top margin and inter-button spacing are intentionally tight: question
+              components that own their own Continue button (contact-input,
+              dosage-calculator) sit immediately above this row, and we want the
+              Back button hugging the bottom of the visible content rather than
+              floating with a deep gap. */}
+          <div className="mt-6 space-y-1">
+            {/* Continue button for multi-select, text, and time inputs.
+                Excluded for single-select (auto-advance), contact-input
+                (renders inline), and dosage-calculator (renders inline). */}
+            {currentQuestion?.type !== 'single-select' && currentQuestion?.type !== 'contact-input' && currentQuestion?.type !== 'dosage-calculator' && (
               <button
                 type="button"
                 onClick={goToNextQuestion}
@@ -498,7 +551,14 @@ export default function IntakeFlow({ onComplete }) {
       {activeWarning && HEALTH_WARNINGS[activeWarning] && (
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm p-6">
-            <h3 className="text-[var(--color-text-primary)] mb-4">
+            <h3
+              className="text-lg mb-4"
+              style={{
+                fontFamily: "'DM Serif Text', serif",
+                textTransform: 'none',
+                color: 'var(--color-text-primary)',
+              }}
+            >
               {HEALTH_WARNINGS[activeWarning].title}
             </h3>
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
