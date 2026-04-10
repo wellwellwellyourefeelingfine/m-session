@@ -8,7 +8,7 @@
  * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
@@ -37,6 +37,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onProg
   const duration = useSyncedDuration(module, { hasStarted });
   const [isLeaving, setIsLeaving] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+  const idleMounted = useRef(false);
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
@@ -133,7 +134,10 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onProg
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
         {!playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+          <div
+            className={`text-center ${isLeaving ? 'animate-fadeOut' : !idleMounted.current ? 'animate-fadeIn' : ''}`}
+            ref={(el) => { if (el) idleMounted.current = true; }}
+          >
             <IdleScreen
               title={meditation.title}
               description={meditation.description}

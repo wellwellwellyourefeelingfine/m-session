@@ -269,7 +269,7 @@ export default function EmergencyContactView({
         // is an accessibility violation, which the browser warns about when
         // the user clicks the inner Save button to collapse the wrapper).
         // React 19 supports `inert` as a first-class prop.
-        inert={!isEditing}
+        inert={!isEditing || undefined}
       >
         <div className="min-h-0 overflow-hidden">
           <div className="space-y-4 pt-5">
