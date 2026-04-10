@@ -265,7 +265,7 @@ export default function HelperModal() {
       (isEditingContact || isContactEmergencyExpanded));
   const modalHeightCss = isExpanded
     ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
-    : `min(${DEFAULT_MODAL_HEIGHT_PX}px, calc(100vh - var(--tabbar-height) - 12px))`;
+    : `min(calc(${DEFAULT_MODAL_HEIGHT_PX}px + env(safe-area-inset-top, 0px)), calc(100vh - var(--tabbar-height) - 12px))`;
 
   // Render content based on current major view.
   const renderContent = () => {
@@ -351,6 +351,7 @@ export default function HelperModal() {
         className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] bg-[var(--bg-primary)] rounded-b-2xl flex flex-col overflow-hidden ${isClosing ? 'animate-slideUpOut' : 'animate-slideDownIn'}`}
         style={{
           height: modalHeightCss,
+          paddingTop: 'env(safe-area-inset-top, 0px)',
           transition: 'height 350ms cubic-bezier(0.65, 0, 0.35, 1)',
         }}
       >
