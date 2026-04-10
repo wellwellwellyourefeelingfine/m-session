@@ -310,34 +310,27 @@ export default function SessionMenu() {
             Show Tutorial
           </button>
           <div className="border-t border-[var(--color-border)]" />
-          <button
-            type="button"
-            onClick={() => {
-              const params = new URLSearchParams({ app_version: APP_VERSION });
-              window.open(
-                `https://tally.so/r/BzG9qN?${params}`,
-                '_blank',
-                'noopener,noreferrer'
-              );
-              closeMenu();
-            }}
-            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          <a
+            href={`https://tally.so/r/BzG9qN?app_version=${encodeURIComponent(APP_VERSION)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="block w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors no-underline"
+            style={{ fontFamily: 'Azeret Mono, monospace', color: 'inherit' }}
           >
             Give Feedback <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
-          </button>
+          </a>
           <div className="border-t border-[var(--color-border)]" />
-          <button
-            type="button"
-            onClick={() => {
-              window.open('/', '_blank', 'noopener,noreferrer');
-              closeMenu();
-            }}
-            className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          <a
+            href={`${window.location.origin}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={closeMenu}
+            className="block w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors no-underline"
+            style={{ fontFamily: 'Azeret Mono, monospace', color: 'inherit' }}
           >
             Landing Page <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
-          </button>
+          </a>
           </div>
         </div>
       )}
