@@ -266,13 +266,13 @@ export default function PreSessionIntro() {
   // Step 0: Arrival
   const renderStep0Content = () => (
     <div className="space-y-6 text-center">
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         Close your eyes for a moment.
       </p>
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         Notice your breath. Notice where your body meets the surface beneath you.
       </p>
-      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
         There's nowhere else to be right now.
       </p>
     </div>
@@ -282,7 +282,10 @@ export default function PreSessionIntro() {
   const renderStep1Content = () => (
     <div className="space-y-6">
       {/* Description */}
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
+      <p
+        className="text-lg mb-3 text-[var(--color-text-primary)] text-center"
+        style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+      >
         Would you like to spend a few minutes with your intention before taking your substance?
       </p>
 
@@ -333,19 +336,19 @@ export default function PreSessionIntro() {
   // Step 2: Letting Go
   const renderStep2Content = () => (
     <div className="space-y-6 text-center">
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         You've prepared. You've set your intention.
       </p>
 
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         Now let it go.
       </p>
 
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         You don't need to direct what happens next or make sure it "works." The MDMA will soften the part of your mind that reacts to difficult thoughts with avoidance or defense.
       </p>
 
-      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
         Your only task is to stay present with whatever arises—curious rather than controlling.
       </p>
     </div>
@@ -354,14 +357,14 @@ export default function PreSessionIntro() {
   // Step 3: Take Substance
   const renderStep3Content = () => (
     <div className="space-y-6 text-center">
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         When you're ready.
       </p>
-      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
         There's no rush.
       </p>
 
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         Find a comfortable position. Take your substance with a few sips of water.
       </p>
 
@@ -377,7 +380,7 @@ export default function PreSessionIntro() {
   // Step 4: Confirm Time
   const renderStep4Content = () => (
     <div className="space-y-6 text-center">
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         We've recorded your start time as:
       </p>
 
@@ -410,7 +413,7 @@ export default function PreSessionIntro() {
         </div>
       ) : showTimeEdit ? (
         <div className="space-y-4">
-          <p className="text-[var(--color-text-primary)] uppercase tracking-wider text-xs">
+          <p className="text-[var(--color-text-primary)] uppercase tracking-wider text-sm">
             What time did you take your substance?
           </p>
           <input
@@ -432,7 +435,7 @@ export default function PreSessionIntro() {
           </button>
         </div>
       ) : (
-        <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+        <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
           Time confirmed. Continue when ready.
         </p>
       )}
@@ -442,11 +445,11 @@ export default function PreSessionIntro() {
   // Step 5: Begin Session
   const renderStep5Content = () => (
     <div className="space-y-6 text-center">
-      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
         The session has begun.
       </p>
 
-      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+      <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
         For the next 30-60 minutes, the MDMA will come on gradually. There's nothing you need to do.
       </p>
     </div>
@@ -461,14 +464,17 @@ export default function PreSessionIntro() {
       case 0:
         return (
           <div className="space-y-6 text-center">
-            <h2 className="font-serif text-lg text-[var(--color-text-primary)]">
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               Your Focus
             </h2>
-            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-sm">
               During your preparation, you said you were drawn to this session for{' '}
               <span className="text-[var(--accent)]">{primaryFocusLabel.toLowerCase()}</span>.
             </p>
-            <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-xs">
+            <p className="text-[var(--color-text-tertiary)] leading-relaxed uppercase tracking-wider text-sm">
               Before you begin, take a moment with what brought you here.
             </p>
           </div>
@@ -477,13 +483,19 @@ export default function PreSessionIntro() {
       case 1:
         return (
           <div className="space-y-6">
-            <h2 className="font-serif text-lg text-[var(--color-text-primary)] text-center">
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               Touchstone
             </h2>
-            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
+            <p
+              className="text-lg mb-3 text-[var(--color-text-primary)] text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               Is there a word or phrase that captures what feels most important right now?
             </p>
-            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs text-center">
+            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-sm text-center">
               This will be available as a touchstone you can return to throughout your session.
             </p>
 
@@ -509,13 +521,19 @@ export default function PreSessionIntro() {
       case 2:
         return (
           <div className="space-y-6">
-            <h2 className="font-serif text-lg text-[var(--color-text-primary)] text-center">
+            <h2
+              className="text-xl font-light mb-2 text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               Your Intention
             </h2>
-            <p className="text-[var(--color-text-primary)] leading-relaxed uppercase tracking-wider text-xs text-center">
+            <p
+              className="text-lg mb-3 text-[var(--color-text-primary)] text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
               Here is the intention you set during your preparation. Does this still hold true?
             </p>
-            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs text-center">
+            <p className="text-[var(--color-text-tertiary)] uppercase tracking-wider text-sm text-center">
               You can edit or add to it if you like.
             </p>
 

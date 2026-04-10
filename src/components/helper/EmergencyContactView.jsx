@@ -286,6 +286,7 @@ export default function EmergencyContactView({
                 onChange={(e) => setName(e.target.value)}
                 onBlur={handleNameBlur}
                 placeholder="Enter contact name"
+                autoComplete="off"
                 tabIndex={isEditing ? 0 : -1}
                 className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
                 style={{
@@ -309,6 +310,7 @@ export default function EmergencyContactView({
                 onChange={(e) => setPhone(e.target.value)}
                 onBlur={handlePhoneBlur}
                 placeholder="Enter phone number"
+                autoComplete="off"
                 tabIndex={isEditing ? 0 : -1}
                 className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors"
                 style={{
