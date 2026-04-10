@@ -432,7 +432,7 @@ export default function EmergencyContactView({
           buttons inside EmergencyFlow is redundant on this view (the same
           card is already shown above), but it's a small overlap for the
           benefit of keeping the EmergencyFlow component reusable as-is. */}
-      <div className="flex justify-center mt-5">
+      <div className="flex justify-center mt-2">
         <button
           type="button"
           onClick={handleNeedMoreHelpToggle}
