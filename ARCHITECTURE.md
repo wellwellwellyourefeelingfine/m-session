@@ -1223,7 +1223,7 @@ The Helper Modal is the "What's happening?" support overlay accessed via a heart
 
 - Trigger: `HelperButton` (heart icon, accent color, stroke width 3) lives in `Header.jsx` between the AI tab and the hamburger menu.
 - Visibility gate: button only renders when `sessionPhase` is `'pre-session'`, `'active'`, or `'completed'`.
-- Open mechanism: button calls `useHelperStore.openHelper()`. AppShell conditionally mounts `<HelperModal />` based on `isOpen`, mirroring the BoosterModal/ModuleLibraryDrawer pattern.
+- Open mechanism: button calls `useHelperStore.openHelper()`. AppShell conditionally mounts `<HelperModal />` via `React.lazy` + `Suspense` based on `isOpen`, mirroring the BoosterModal/ModuleLibraryDrawer pattern. The entire helper subsystem (~5,000 lines across 28 files) is code-split into its own chunk and only downloaded on first open.
 - Close mechanism: `handleClose` sets a local `isClosing` flag (triggers exit animation), then `setTimeout(closeHelper, 350)` unmounts the modal after the slide-out completes.
 - Each open is a fresh React mount with fresh `useState`, so there are never leftover-state bugs.
 
@@ -1738,6 +1738,23 @@ The four full-slide keyframes (`slideUp`, `slideDownOut`, `slideDownIn`, `slideU
 
 The `cubic-bezier(0.65, 0, 0.35, 1)` curve is a symmetric ease-in-out that accelerates smoothly out of rest, hits peak speed in the middle, and decelerates to a soft stop. Used consistently across all four full-slide keyframes for a unified feel.
 
+### Scroll Reveal System
+
+A scroll-triggered entrance animation system ported from the landing page. Elements start invisible and shifted down 24px, then fade+slide into view as they enter the viewport. Staggered delay classes create a cascading effect within each section.
+
+**CSS classes** (defined in `index.css`):
+- `.rv` — base class: `opacity: 0; transform: translateY(24px)` with 0.9s expo-out transition
+- `.rv.visible` — revealed state: `opacity: 1; transform: translateY(0)`
+- `.rv-d1` through `.rv-d5` — stagger delays in 80ms increments (0.08s–0.40s)
+
+**Hook** (`src/hooks/useScrollReveal.js`): takes a container ref, creates a single `IntersectionObserver` (threshold 0.08, rootMargin `0px 0px -30px 0px`). Hero elements marked with `data-rv-hero` are revealed on mount via double-`requestAnimationFrame`. Non-hero elements are revealed on scroll intersection and immediately unobserved (one-shot). Observer is disconnected on unmount.
+
+**Currently used on**: `ActiveEmptyState.jsx` only (the "Begin Your Journey" page).
+
+**Altered-state UX note**: This system should be used sparingly within the app. It works well on the initial welcome page because the user is guaranteed to be sober and in a normal state. During an active session, scroll-triggered motion animations can be disorienting when the user is in an altered state. The app's in-session design philosophy favors static layouts and minimal motion — content should be present and stable when it appears, not animating into place. Reserve scroll reveal for pre-session contexts where the user is not under the influence.
+
+Respects `prefers-reduced-motion` via the existing global rule that collapses `transition-duration` to `0.01ms`.
+
 ### Modal Layout Pattern (Sheet Modals)
 
 All sheet modals (`HelperModal`, `BoosterConsiderationModal`, `ModuleLibraryDrawer`, `ComeUpCheckIn`, `JournalSettings`, the home follow-up modals, `DataDownloadModal`, `PeakPhaseCheckIn`, `ClosingCheckIn`, etc.) follow the same structural template:
@@ -1972,8 +1989,10 @@ Journal images stored in IndexedDB are not included in archives. Users should do
 
 ## Architecture Decisions
 
-1. **All views kept mounted** (hidden with CSS, not unmounted)
+1. **Views kept mounted after first visit** (hidden with CSS, not unmounted)
    - Why: Meditation timers must survive tab switches
+   - Home and Active are eagerly loaded on app launch; Journal and Tools are lazy-loaded on first tab visit via `React.lazy` + `Suspense`
+   - HomeView was evaluated for lazy-loading but only saved ~4 KB gzipped from the initial bundle (most of its imports are shared with other eagerly-loaded code), while adding ~64 KB of duplicated code across chunk boundaries — not worth the trade-off
 
 2. **Phase transitions as components** (PeakTransition, IntegrationTransition, ClosingRitual)
    - Why: Supportive, personalized experience between phases with user captures
@@ -2085,6 +2104,25 @@ wakeLock.release();
 ### Philosophy Alignment
 
 This approach aligns with the app's non-directive philosophy. Rigid timing isn't essential—the app guides rather than dictates. Users are trusted to manage their own experience, with the app providing supportive structure that adapts to however they return.
+
+---
+
+## Bundle Size
+
+The production build uses Vite's default 500 KB chunk size warning threshold. The main `index` chunk sits around ~700 KB minified (~197 KB gzipped) as of April 2026. This is above the threshold but acceptable for a PWA — the service worker caches all chunks after first load, so repeat visits are instant.
+
+**What's in the main chunk:** Session store (~3,600 LOC), HomeView, IntakeFlow, TimelineEditor, all shared components/icons/utilities, and third-party deps (React, Zustand). These are all interconnected via shared imports and don't split cleanly.
+
+**What's lazy-loaded:**
+- ActiveView, JournalView, ToolsView (tab-level code splitting via `React.lazy`)
+- HelperModal (entire helper subsystem: 17 components, 8 resolvers, 3 content files)
+- All 25+ session modules (via `moduleRegistry.js`)
+
+**Guidelines for keeping the bundle in check:**
+- New self-contained features (modals, overlays, drawers) that are user-initiated should use `React.lazy` — the HelperModal pattern in `AppShell.jsx` is the template
+- New session modules get lazy-loading for free via the module registry
+- Before lazy-loading a component, verify its imports are mostly unique to it — shared dependencies stay in the common chunk regardless, and excessive splitting can *increase* total payload through duplication
+- Run `npm run build` and check the chunk sizes when adding substantial new code
 
 ---
 

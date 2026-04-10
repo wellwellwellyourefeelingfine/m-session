@@ -1,6 +1,6 @@
 /**
  * AboutTool Component
- * About this project, what it is, what it isn't, and legal context.
+ * About this project, what it is, why it exists, who built it, and legal context.
  */
 
 import { useState } from 'react';
@@ -18,134 +18,140 @@ export default function AboutTool() {
   };
   return (
     <div className="py-6 px-6 max-w-xl mx-auto">
-      <h3 className="text-lg mb-8 tracking-wider text-xs text-[var(--color-text-tertiary)]">
-        About This Project
-      </h3>
 
       <div className="space-y-8 text-[var(--color-text-secondary)]">
-        {/* What m-session Is */}
+        {/* What is m-session? */}
         <section>
           <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
-            What m-session Is
+            What is m-session?
           </h2>
           <p className="mb-4">
-            m-session provides structure and support for MDMA sessions focused on
-            personal growth. Not therapy. Not treatment. A companion for honest
-            self-reflection — whether you're on your own, with a partner, or with
-            a trusted sitter.
+            m-session gives your session shape: preparation, intention-setting, guided
+            activities drawn from established therapeutic frameworks, and integration
+            tools for the days that follow. It works whether you{'\u2019'}re on your own,
+            with a partner, or with a trusted sitter.
           </p>
           <p className="mb-4">
-            The app is built around the full arc of a session, including the days
-            that follow, when insights are still fresh and the work of integration
-            can actually begin. Every guided activity is rooted in an established
-            therapeutic framework — IFS, ACT, Coherence Therapy, Focusing, and
-            more — adapted for self-guided use.
+            The app doesn{'\u2019'}t tell you what to think or feel. It provides structure
+            and lets you lead. You choose which activities to engage with, how long to
+            spend with them, and when to move on. The design philosophy is non-directive:
+            the app trusts that you know what you need, even when you don{'\u2019'}t know
+            it yet.
+          </p>
+          <p className="mb-4">
+            m-session can be used solo, with a sitter, or with a partner. On your own,
+            it brings intention and structure to a solo practice. With a sitter, it
+            provides a research-informed framework for facilitation, giving someone
+            without formal training a grounded structure to work from. With a partner,
+            it opens into relationship-focused exercises designed to be done together.
+            For serious psychiatric conditions such as PTSD or complex trauma, a
+            professional therapeutic setting with trained facilitators is recommended.
+          </p>
+          <p className="mb-4">
+            Every design decision has been made with the altered state in mind. The
+            visual language is flat and calm, more like an open notebook than an app
+            competing for your attention. Text is kept minimal per screen. Light and
+            dark modes each carry a single accent color that is used sparingly to guide
+            the eye without overwhelming it, which matters when your pupils are dilated
+            and light sensitivity is high. The app runs offline, saves your state
+            automatically, and can be closed and reopened at any point without losing
+            progress. It{'\u2019'}s designed to feel as stable and undemanding as a surface
+            you can set down and pick back up whenever you{'\u2019'}re ready.
           </p>
           <p>
-            The approach throughout is non-directive: the app supports your process
-            rather than steering it. Designed for altered states — minimal cognitive
-            load, nothing jarring, nothing demanding. Content meets you where you are.
+            m-session is a free, open-source project built on the belief that the tools
+            for honest self-exploration should be accessible to anyone who wants them. In
+            a time when many people feel stuck, disconnected, or unable to access the kind
+            of support they need, this is an attempt to close that gap.
           </p>
         </section>
 
-        {/* Therapeutic Frameworks */}
+        {/* Why m-session? */}
         <section>
           <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
-            Therapeutic Frameworks
+            Why m-session?
           </h2>
           <p className="mb-4">
-            Every guided activity is rooted in an established therapeutic approach,
-            adapted for self-guided use in altered states. The module library is
-            always growing, and you can tailor your session with whichever
-            frameworks feel most relevant to your process.
+            MDMA has been used as a therapeutic tool since the 1970s, but the
+            infrastructure around it has always been polarized. On one end, clinical
+            settings with trained facilitators, expensive and largely reserved for
+            severe psychiatric diagnoses. On the other, recreational use with no
+            structure or therapeutic intention. In between is a large and underserved
+            middle ground: people who want to work with MDMA intentionally, whether
+            solo, with a partner, or with a sitter, but who don{'\u2019'}t have access
+            to a clinical program and aren{'\u2019'}t looking for a party. They might be
+            working through something specific, or they might simply want to understand
+            themselves more honestly. MDMA doesn{'\u2019'}t require a diagnosis to be
+            valuable. A private app on your own phone, used on your own terms, opens
+            that door to anyone. For some, it might even be the first step toward
+            seeking more structured professional help.
           </p>
-          <div className="space-y-3">
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Acceptance and Commitment Therapy (ACT)</p>
-              <p>Values-driven action and psychological flexibility. Used in the
-              Values Compass, Leaves on a Stream, and integration exercises.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Internal Family Systems (IFS)</p>
-              <p>Meeting protective parts with curiosity rather than judgment. Used
-              in the Protector Dialogue modules — guided meditation and journaling.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Emotionally Focused Therapy (EFT)</p>
-              <p>Mapping the emotional cycles that drive disconnection in relationships.
-              Used in The Deep Dive and The Cycle modules.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Coherence Therapy</p>
-              <p>Accessing and transforming emotional schemas through felt experience.
-              Used in the Stay With It module.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Focusing (Gendlin Method)</p>
-              <p>Turning attention inward to the body's felt sense — the place where
-              meaning hasn't yet formed into words. Used in the Felt Sense module.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Self-Compassion</p>
-              <p>Kristin Neff's framework: mindfulness, common humanity, and self-kindness.
-              Audio-guided meditation available throughout the session.</p>
-            </div>
-            <div>
-              <p className="font-medium text-[var(--color-text-primary)]">Body-Centered Practices</p>
-              <p>Body scan, breathwork, and grounding exercises. Multiple audio-guided
-              meditations designed for different phases of the experience.</p>
-            </div>
-          </div>
-          <p className="mt-4">
-            If you have suggestions for other therapeutic frameworks we should
-            build activities around, we'd love to hear from you.
+          <p className="mb-4">
+            The app draws on established therapeutic frameworks: Acceptance and
+            Commitment Therapy (ACT), Coherence Therapy, Internal Family Systems (IFS),
+            Emotionally Focused Therapy (EFT), Focusing, and others. None of this would
+            exist without the clinicians who recognized MDMA{'\u2019'}s therapeutic
+            potential, the researchers who spent decades fighting to re-legitimize its
+            use, and the broader traditions of somatic and contemplative practice that
+            these frameworks grew out of. m-session is an attempt to make this work more
+            accessible.
           </p>
-          <a
-            href="https://tally.so/r/BzG9qN"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block mt-3 text-xs uppercase tracking-wider py-2 px-4 border border-[var(--color-border)] hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            Share Feedback
-          </a>
+          <p>
+            The project is free and open source, and the module library continues to
+            grow. The long-term vision is something closer to an open repository: a
+            growing collection of practices, knowledge, and guided experiences around
+            MDMA therapy, shaped by the contributions of therapists, researchers,
+            developers, and practitioners. The hope is that many more talented people
+            will come to the table and help make it the best tool it can be.
+          </p>
         </section>
 
-        {/* Who Built This */}
+        {/* Who built m-session? */}
         <section>
           <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
-            Who Built This
+            Who built m-session?
           </h2>
           <p className="mb-4">
-            I built m-session because I believe people have the power to change
-            themselves, and that psychedelics are one of the most powerful tools
-            available to help with that. MDMA in particular has a way of cutting
-            through the noise and helping people feel connected again — sometimes
-            for the first time in years.
+            I built m-session after a solo MDMA session opened things up for me. It had
+            been years since I had touched psychedelics, and the distance made the
+            contrast sharp. I could feel how much had quietly calcified: assumptions
+            about myself, my relationships, what I thought I already understood. MDMA
+            quieted the filters that normally make it so hard to see life for what it is,
+            with acceptance and appreciation. It also made me realize how much I was
+            leaving to chance.
           </p>
           <p className="mb-4">
-            My hope is that m-session grows into a true community project, with
-            many active contributors, and that this tool becomes genuinely useful
-            for anyone on their healing journey.
+            During that session, I found myself wishing for more structure. I was writing
+            in a notebook, which is always valuable, but the process felt scattered.
+            Random thoughts, half-formed reflections, no sense of arc or progression. I
+            wanted a timeline at the very least, something that could keep track of how
+            far into the experience I was and suggest what might be worth trying next.
+            When I looked for something like that, it didn{'\u2019'}t exist. I had come to
+            value certain meditation apps in my daily life, tools that were intelligent
+            and well-designed and treated the user as an adult. I wanted something like
+            that for MDMA.
+          </p>
+          <p className="mb-4">
+            I have over seven years of experience working in psychology, my own long
+            history with these substances, and a background in the creative field.
+            m-session grew out of that intersection, working in collaboration with AI
+            (Claude Opus 4.5) on research, design, and coding. All therapeutic content
+            is reviewed and validated against primary sources. My hope is that m-session
+            grows into a true community project, with many contributors, and that it
+            becomes genuinely useful for anyone who wants to bring intention and structure
+            to their MDMA practice.
+          </p>
+          <p className="mb-4">
+            If you{'\u2019'}re reading this and feel like you can help in any way, please
+            do. You can test the app and send feedback, contribute code, or support us
+            financially. Since the project is still early, probably the most useful thing
+            you can do is just spread the word.
           </p>
           <p className="italic">
             Good luck, I love you.
           </p>
           <p className="text-[var(--color-text-tertiary)] text-xs mt-2">
             — dasloops
-          </p>
-        </section>
-
-        {/* Privacy */}
-        <section>
-          <h2 className="text-lg font-serif mb-4 text-[var(--color-text-primary)]">
-            Privacy by Design
-          </h2>
-          <p>
-            No accounts, no analytics, no data collection. Everything is stored
-            locally on your device — journal entries, intake responses, session
-            history — none of it ever leaves your browser. What you explore in a
-            session is yours alone. Open source and auditable.
           </p>
         </section>
 

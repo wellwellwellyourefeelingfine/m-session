@@ -5,10 +5,10 @@
 
 import { useAppStore } from '../../stores/useAppStore';
 import { useHelperStore } from '../../stores/useHelperStore';
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import Header from './Header';
 import TabBar from './TabBar';
-import HelperModal from '../helper/HelperModal';
+const HelperModal = lazy(() => import('../helper/HelperModal'));
 import { AppUpdaterProvider } from '../shared/AppUpdaterContext';
 
 export default function AppShell({ children }) {
@@ -44,7 +44,11 @@ export default function AppShell({ children }) {
     <AppUpdaterProvider>
       <div className="h-full flex flex-col bg-app-white dark:bg-app-black">
         <Header />
-        {isHelperOpen && <HelperModal />}
+        {isHelperOpen && (
+          <Suspense fallback={null}>
+            <HelperModal />
+          </Suspense>
+        )}
 
         {/* Main content area - scrollable container with fixed header/footer compensation */}
         <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>

@@ -34,7 +34,7 @@ const steps = [
   },
   {
     title: 'Follow-Up',
-    body: 'Completing a session unlocks a follow-up timeline with integration activities. Some are time-locked to 8, 12, 24, or 48 hours after your session. Others are connected to specific activities you completed and only appear if you did them. You can customize this timeline and export your session data from Settings.',
+    body: 'The follow-up phase is time-locked to eight hours after you complete your session. It includes integration activities, some of which are tied to specific things you did during the session. You can also add any module from the activity library to your follow-up timeline to use however you want.',
   },
   {
     title: 'Integrate',

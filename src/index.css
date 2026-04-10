@@ -672,3 +672,21 @@
   100% { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
+/* ═══════════════════════════════════════════
+   SCROLL REVEAL
+   ═══════════════════════════════════════════ */
+.rv {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rv.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.rv-d1 { transition-delay: 0.08s; }
+.rv-d2 { transition-delay: 0.16s; }
+.rv-d3 { transition-delay: 0.24s; }
+.rv-d4 { transition-delay: 0.32s; }
+.rv-d5 { transition-delay: 0.40s; }

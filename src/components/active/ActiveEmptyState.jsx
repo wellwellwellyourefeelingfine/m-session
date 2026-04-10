@@ -1,11 +1,12 @@
 /**
  * ActiveEmptyState Component
- * Redesigned welcome/philosophy page for the Active tab before session intake.
- * Same content as PhilosophyContent but with structured visual layout.
+ * Welcome page for the Active tab before session intake.
  */
 
+import { useRef } from 'react';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import { useAppStore } from '../../stores/useAppStore';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 const principles = [
   { icon: '*', title: 'You are the expert on yourself.', desc: 'No app knows your inner landscape better than you do. We provide the container. You bring the wisdom.' },
@@ -17,23 +18,28 @@ const principles = [
 
 export default function ActiveEmptyState() {
   const setCurrentTab = useAppStore.getState().setCurrentTab;
+  const containerRef = useRef(null);
+  useScrollReveal(containerRef);
 
   return (
-    <div className="flex flex-col items-center px-6 pt-4 pb-4 max-w-xl mx-auto w-full" style={{ textTransform: 'none' }}>
+    <div ref={containerRef} className="flex flex-col items-center px-6 pt-4 pb-4 max-w-xl mx-auto w-full" style={{ textTransform: 'none' }}>
 
       {/* ── Hero ── */}
       <div className="flex flex-col items-center pb-6 w-full mt-4">
         <h1
-          className="font-serif text-3xl text-center text-[var(--color-text-primary)]"
+          className="rv font-serif text-3xl text-center text-[var(--color-text-primary)]"
+          data-rv-hero
           style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
           Begin your journey
         </h1>
-        <p className="uppercase text-[10px] text-[var(--color-text-tertiary)] text-center tracking-[0.18em] mb-4">
+        <p className="rv rv-d1 uppercase text-[10px] text-[var(--color-text-tertiary)] text-center tracking-[0.18em] mb-4" data-rv-hero>
           A personal MDMA session assistant
         </p>
-        <AsciiMoon opacity={0.80} />
-        <p className="uppercase text-[10px] text-[var(--color-text-primary)] opacity-65 text-center leading-[2] tracking-[0.06em] max-w-[240px] mt-4">
+        <div className="rv rv-d2" data-rv-hero>
+          <AsciiMoon opacity={0.80} />
+        </div>
+        <p className="rv rv-d3 uppercase text-[10px] text-[var(--color-text-primary)] opacity-65 text-center leading-[2] tracking-[0.06em] max-w-[240px] mt-4" data-rv-hero>
           Structure and support for intentional MDMA experiences. Guided meditations,
           breathwork, parts work, values mapping, and journaling. Organized into a
           session flow that follows your pace and respects wherever you are in
@@ -43,14 +49,14 @@ export default function ActiveEmptyState() {
 
       {/* ── What Gets in the Way ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
-        <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Understanding</p>
+        <p className="rv uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Understanding</p>
         <h2
-          className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
+          className="rv rv-d1 font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
           style={{ fontFamily: 'DM Serif Text, serif' }}
         >
           What Gets in the Way
         </h2>
-        <div className="text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
+        <div className="rv rv-d2 text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
           <p>
             Most people have a limited ability to be truly honest with themselves. This
             isn't a character flaw. The brain has a threat-detection system that intercepts
@@ -70,14 +76,14 @@ export default function ActiveEmptyState() {
 
       {/* ── What MDMA Changes ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
-        <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Insight</p>
+        <p className="rv uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Insight</p>
         <h2
-          className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
+          className="rv rv-d1 font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
           style={{ fontFamily: 'DM Serif Text, serif' }}
         >
           What MDMA Changes
         </h2>
-        <div className="text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
+        <div className="rv rv-d2 text-[var(--color-text-secondary)] text-sm leading-relaxed space-y-4">
           <p>
             MDMA reduces this defensiveness directly. It lowers the reactivity of the
             brain's threat-response system while leaving your thinking clear and intact.
@@ -106,20 +112,20 @@ export default function ActiveEmptyState() {
 
       {/* ── The Science ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
-        <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Research</p>
+        <p className="rv uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-3">Research</p>
         <h2
-          className="font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
+          className="rv rv-d1 font-serif text-xl text-[var(--color-text-primary)] mb-4 normal-case"
           style={{ fontFamily: 'DM Serif Text, serif' }}
         >
           Our Current Understanding
         </h2>
-        <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
+        <p className="rv rv-d2 text-[var(--color-text-secondary)] text-sm leading-relaxed mb-6">
           Research over the past two decades has identified several mechanisms that work
           together to create the therapeutic window MDMA opens. None of these operate in
           isolation, but understanding them individually can help you make sense of what
           you experience during a session.
         </p>
-        <div className="space-y-[1px] bg-[var(--border)] border border-[var(--border)]">
+        <div className="rv rv-d3 space-y-[1px] bg-[var(--border)] border border-[var(--border)]">
           {[
             {
               label: 'Reduced amygdala reactivity',
@@ -157,8 +163,8 @@ export default function ActiveEmptyState() {
 
       {/* ── What It Does / Doesn't ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-[var(--border)] border border-[var(--border)]">
-          <div className="bg-[var(--bg-primary)] pt-3 pb-5 px-5">
+        <div className="rv grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-[var(--border)] border border-[var(--border)]">
+          <div className="rv rv-d1 bg-[var(--bg-primary)] pt-3 pb-5 px-5">
             <div className="text-base text-[var(--accent)] opacity-70 mb-3">{'>_'}</div>
             <div className="uppercase tracking-[0.1em] text-xs text-[var(--color-text-primary)] mb-3">What This App Does</div>
             <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed space-y-3">
@@ -177,7 +183,7 @@ export default function ActiveEmptyState() {
               </p>
             </div>
           </div>
-          <div className="bg-[var(--bg-primary)] pt-3 pb-5 px-5">
+          <div className="rv rv-d2 bg-[var(--bg-primary)] pt-3 pb-5 px-5">
             <div className="text-base text-[var(--accent)] opacity-70 mb-3">{'//'}</div>
             <div className="uppercase tracking-[0.1em] text-xs text-[var(--color-text-primary)] mb-3">What It Doesn't Do</div>
             <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed space-y-3">
@@ -199,8 +205,8 @@ export default function ActiveEmptyState() {
 
       {/* ── Principles ── */}
       <div className="w-full border-t border-[var(--border)] pt-8 pb-8">
-        <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-4">Principles</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-[var(--border)] border border-[var(--border)]">
+        <p className="rv uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-4">Principles</p>
+        <div className="rv rv-d1 grid grid-cols-1 sm:grid-cols-2 gap-[1px] bg-[var(--border)] border border-[var(--border)]">
           {principles.map((p, i) => (
             <div
               key={i}
@@ -216,17 +222,17 @@ export default function ActiveEmptyState() {
 
       {/* ── CTA ── */}
       <div className="w-full pt-4 flex flex-col items-center gap-6">
-        <blockquote className="border-l-2 border-[var(--accent)] pl-4 italic text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+        <blockquote className="rv border-l-2 border-[var(--accent)] pl-4 italic text-[var(--color-text-tertiary)] text-sm leading-relaxed">
           "You might find it of interest in the sense that it allows you to be honest with yourself."
           <footer className="mt-2 not-italic text-xs text-[var(--color-text-tertiary)]">— Sasha Shulgin to Dr. Adam (Leo Zeff)</footer>
         </blockquote>
         <button
           onClick={() => setCurrentTab('home')}
-          className="uppercase tracking-wider text-xs bg-[var(--color-text-primary)] text-[var(--color-bg)] px-8 py-3 hover:opacity-80 transition-opacity"
+          className="rv rv-d1 uppercase tracking-wider text-xs bg-[var(--color-text-primary)] text-[var(--color-bg)] px-8 py-3 hover:opacity-80 transition-opacity"
         >
           Begin Intake &rarr;
         </button>
-        <p className="uppercase tracking-wider text-[10px] text-[var(--accent)] text-center max-w-[200px] -mt-3">
+        <p className="rv rv-d2 uppercase tracking-wider text-[10px] text-[var(--accent)] text-center max-w-[200px] -mt-3">
           Complete your intake on the Home tab to begin your session.
         </p>
       </div>

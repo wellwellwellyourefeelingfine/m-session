@@ -226,10 +226,12 @@ export default function FAQTool() {
           the music. Sometimes what feels overwhelming is actually just unfamiliar.
         </p>
         <p>
-          The "I need help" tool in this app offers quick reassurance and reminds
-          you that you're safe. Breathing slowly, orienting to your surroundings,
-          and focusing on simple physical sensations (the weight of your body,
-          the texture of a blanket) can help you feel more settled.
+          The helper button (the heart icon at the top of the screen) is there for
+          moments like this. Tap it, select what you're experiencing, and it will
+          suggest a grounding activity matched to your situation. Breathing slowly,
+          orienting to your surroundings, and focusing on simple physical
+          sensations (the weight of your body, the texture of a blanket) can also
+          help you feel more settled.
         </p>
         <p>
           Intensity usually comes in waves. If you can ride it without fighting, it
@@ -434,9 +436,11 @@ export default function FAQTool() {
         </p>
         <p>
           <span className="text-[var(--color-text-primary)]">Psychological distress</span> that
-          feels unmanageable: tap "I need help" for quick reassurance, check the
-          Resources section for support lines like Fireside Project (62-FIRESIDE)
-          or TripSit chat. You can also contact a trusted friend.
+          feels unmanageable: tap the helper button (heart icon at the top of the
+          screen). It will walk you through what you're experiencing and suggest a
+          response. It also surfaces support resources, including Fireside Project
+          (62-FIRESIDE), your saved emergency contact, and options for professional
+          support. You can also contact a trusted friend.
         </p>
         <p>
           Having a plan before you begin helps you act clearly if you need to.
@@ -544,8 +548,12 @@ export default function FAQTool() {
           With it, even subtle sessions can catalyze meaningful shifts.
         </p>
         <p>
-          We recommend journaling, talking to trusted people, and revisiting your
-          session notes in the days that follow. Some people also work with
+          The app includes follow-up activities that begin unlocking hours after
+          your session ends. These guide you through checking in with how you're
+          feeling, revisiting what you wrote during the session, and reflecting on
+          what's taking shape. They're short and optional, but designed to anchor
+          the work before it fades. Journaling, talking to trusted people, and
+          revisiting your session notes all help. Some people also work with
           integration coaches or therapists.
         </p>
       </Question>
@@ -555,8 +563,10 @@ export default function FAQTool() {
 
       <Question q="How are the session phases structured?">
         <p>
-          Your session is organized into three phases that mirror the natural arc
-          of an MDMA experience:
+          Before ingestion, there is an optional pre-session phase where you can
+          try out activities in advance and get comfortable with the tools you'll
+          have available. Once you begin, the session is organized into three
+          phases that mirror the natural arc of an MDMA experience:
         </p>
         <p>
           <span className="text-[var(--color-text-primary)]">Come-up</span> —
@@ -577,9 +587,51 @@ export default function FAQTool() {
           returning to ordinary consciousness.
         </p>
         <p>
+          After you close your session, follow-up activities unlock eight hours
+          later to support integration while the experience is still fresh.
+        </p>
+        <p>
           This structure provides a container, not a cage. You control when you
           transition between phases, and you can add, remove, or skip modules
           at any point.
+        </p>
+      </Question>
+
+      <Question q="What happens after my session ends?">
+        <p>
+          After you close your session, a follow-up timeline appears on the Home
+          tab. The entire follow-up phase unlocks eight hours after the session
+          ends, giving you time to rest before returning to the app.
+        </p>
+        <p>
+          Once unlocked, four modules become available:
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Check-In</span> —
+          A brief emotional and body awareness check. How are you feeling? What
+          does your body notice?
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Revisit</span> —
+          Re-read what you wrote during your session and reflect on what stands out
+          now, with some distance.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Values Compass</span> —
+          If you used the Values Compass during your session, this module lets you
+          revisit your ACT Matrix and track which toward and away moves you've
+          noticed since.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Integration Reflection</span> —
+          A deeper check-in on what's emerged, how your commitment from the session
+          is holding up, and what feels different.
+        </p>
+        <p>
+          Each module is short (a few minutes to around twenty) and optional.
+          Completed modules save a journal entry automatically. The helper button
+          also remains available during this period, with categories tailored to
+          post-session concerns like low mood or difficulty integrating.
         </p>
       </Question>
 
@@ -636,6 +688,31 @@ export default function FAQTool() {
         </p>
         <p>
           Follow what actually arises, even if it surprises you.
+        </p>
+      </Question>
+
+      <Question q="How does the helper work?">
+        <p>
+          The heart icon at the top of the screen opens the helper. It's available
+          throughout your active session and during the follow-up period afterward.
+        </p>
+        <p>
+          When you open it, you'll see a grid of categories describing common
+          experiences: intense feeling, trauma surfacing, resistance, grief, ego
+          dissolution, and feeling good with restless energy. During follow-up,
+          the categories shift to include low mood and difficulty integrating.
+        </p>
+        <p>
+          Select what's happening, rate the intensity on a simple scale, and the
+          helper recommends a specific grounding activity or technique matched to
+          your situation. If you rate the intensity very high, it surfaces
+          emergency support options: your saved emergency contact, Fireside
+          Project, and professional support resources.
+        </p>
+        <p>
+          Every interaction with the helper is logged to your journal
+          automatically. Before the session begins, the helper shows a preview
+          of what will be available so you know what to expect.
         </p>
       </Question>
 
