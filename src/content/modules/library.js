@@ -1225,6 +1225,11 @@ export function canAddModuleToPhase(moduleId, phase) {
     return { allowed: false, error: `"${module.title}" is only available during follow-up.` };
   }
 
+  // HARD GATE: booster module is only relevant during peak and integration
+  if (module.isBoosterModule && phase !== 'peak' && phase !== 'integration') {
+    return { allowed: false, error: `"${module.title}" is only available during the peak or integration phase.` };
+  }
+
   return { allowed: true };
 }
 

@@ -11,7 +11,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
-import { scheduleTutorialReveal } from '../timeline/tutorialRevealFlag';
+import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
@@ -178,8 +178,9 @@ export default function HomeView() {
 
   // Called by IntakeFlow after its fade-out completes
   const handleIntakeComplete = () => {
-    // Schedule the tutorial for a few seconds after the reveal animation ends
-    scheduleTutorialReveal();
+    // Tutorial appears 7s after button press (~1-1.5s after reveal finishes)
+    setTutorialDelay(7000);
+    useAppStore.getState().undismissBanner('timeline-tutorial');
     // Put the overlay up FIRST (covers whatever is currently rendered)
     setTransitionStep('moon-enter');
 
@@ -427,11 +428,16 @@ export default function HomeView() {
         />
       )}
 
-      {/* Background overlay — hides content during transition, fades out to reveal */}
+      {/* Background overlay — hides content during transition, fades out to reveal.
+          Constrained to the content area between header and tab bar so the
+          header and footer remain visible above the overlay. */}
       {transitionStep != null && (
         <div style={{
           position: 'fixed',
-          inset: 0,
+          top: 'var(--header-height)',
+          left: 0,
+          right: 0,
+          bottom: 'var(--tabbar-height)',
           backgroundColor: 'var(--color-bg)',
           zIndex: 10,
           opacity: transitionStep === 'reveal' ? 0 : 1,
@@ -440,11 +446,14 @@ export default function HomeView() {
         }} />
       )}
 
-      {/* Moon animation — floats above overlay */}
+      {/* Moon animation — floats above overlay, centered in content area */}
       {transitionStep?.startsWith('moon') && (
         <div style={{
           position: 'fixed',
-          inset: 0,
+          top: 'var(--header-height)',
+          left: 0,
+          right: 0,
+          bottom: 'var(--tabbar-height)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

@@ -29,6 +29,7 @@ import { useState, useEffect, useRef } from 'react';
 import ActivitySuggestions from './ActivitySuggestions';
 import EmergencyContactCard from './EmergencyContactCard';
 import EmergencyFlow from './EmergencyFlow';
+import SupportResourceCard from './SupportResourceCard';
 import { CirclePlusIcon, CircleSkipIcon } from '../shared/Icons';
 import { useSessionStore } from '../../stores/useSessionStore';
 
@@ -101,6 +102,7 @@ export default function TriageResultStep({
     activities,
     activityPaths,
     showEmergencyCard,
+    supportResources,
   } = result;
 
   const isExpanded = emergencyState === 'open' || emergencyState === 'closing';
@@ -181,6 +183,22 @@ export default function TriageResultStep({
           onSelectActivity={onSelectActivity}
         />
       ) : null}
+
+      {/* Support resource cards — follow-up categories provide these for
+          Fireside, emergency contact, and find-a-therapist suggestions.
+          Rendered between activity suggestions and the "I need more help" button. */}
+      {supportResources && supportResources.length > 0 && (
+        <div className="space-y-3">
+          {supportResources.map((resource) => (
+            <SupportResourceCard
+              key={resource.type}
+              resource={resource}
+              emergencyContact={emergencyContact}
+              onAction={onContactAction}
+            />
+          ))}
+        </div>
+      )}
 
       {/* "I need more help" expand/collapse button. Plus icon when closed,
           CircleSkip (close) icon when open. The icon swap and the emergency

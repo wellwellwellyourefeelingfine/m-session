@@ -68,9 +68,6 @@ export default function PreSessionView() {
 
       {/* Actions */}
       <div className="space-y-4">
-        <p className="text-[var(--accent)] text-xs uppercase tracking-wider text-left leading-tight">
-          Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet. Press begin when you&apos;re ready.
-        </p>
         <button
           onClick={startSession}
           className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)]
@@ -78,6 +75,9 @@ export default function PreSessionView() {
         >
           Begin Session
         </button>
+        <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
+          Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
+        </p>
 
         <button
           onClick={resetSession}

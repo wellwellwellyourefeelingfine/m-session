@@ -31,6 +31,13 @@ const PHASE_WINDOW_LABELS = {
   'post-session': 'Post-session',
 };
 
+const FOLLOW_UP_WINDOW_LABELS = {
+  acute: 'Acute',
+  early: 'Early',
+  mid: 'Mid',
+  late: 'Late',
+};
+
 /**
  * Walk a category's `steps` array against a `triageState` object and emit
  * `[{ label, value }]` pairs in the order the user encountered them.
@@ -70,10 +77,14 @@ export function formatHelperModalLog({
   stepResponses,
   phaseWindow,
   minutesSinceIngestion,
+  timeWindow,
+  daysSinceSession,
   activityChosen,
   emergencyActionTaken,
 }) {
-  const lines = ['HELPER MODAL'];
+  // Use follow-up header when timeWindow is present
+  const header = timeWindow ? 'HELPER MODAL (FOLLOW-UP)' : 'HELPER MODAL';
+  const lines = [header];
   lines.push('');
 
   if (categoryLabel) {
@@ -86,7 +97,15 @@ export function formatHelperModalLog({
     }
   }
 
-  if (phaseWindow) {
+  // Follow-up time window takes precedence over active-session phase window
+  if (timeWindow) {
+    const windowLabel = FOLLOW_UP_WINDOW_LABELS[timeWindow] || timeWindow;
+    const daysPart =
+      daysSinceSession !== null && daysSinceSession !== undefined
+        ? ` (${daysSinceSession} day${daysSinceSession === 1 ? '' : 's'})`
+        : '';
+    lines.push(`Time window: ${windowLabel}${daysPart}`);
+  } else if (phaseWindow) {
     const phaseLabel = PHASE_WINDOW_LABELS[phaseWindow] || phaseWindow;
     const minutesPart =
       minutesSinceIngestion !== null && minutesSinceIngestion !== undefined

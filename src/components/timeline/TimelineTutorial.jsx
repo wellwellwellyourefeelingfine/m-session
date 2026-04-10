@@ -574,7 +574,7 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
 
     // above / below with auto-flip
     const vh = window.innerHeight;
-    const base = { position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex, overflowY: 'auto' };
+    const base = { position: 'fixed', left: '50%', transform: 'translateX(-50%)', zIndex };
 
     const topBelow = spotlightRect.top + spotlightRect.height + TOOLTIP_GAP;
     const spaceBelow = vh - topBelow - BOTTOM_SAFE_ZONE;
@@ -637,22 +637,20 @@ export default function TimelineTutorial({ isActive, onDismiss }) {
           pointerEvents: 'auto',
           opacity: overlayOpacity,
           transition: `opacity ${fadeDuration} var(--ease-default)`,
+          overflow: 'visible',
         }}
-        className="w-[calc(100%-3rem)] max-w-sm"
+        className="w-[calc(100%-3rem)] max-w-sm relative"
       >
-        <div className="flex justify-end mb-1 pr-1">
-          <button
-            onClick={handleDismiss}
-            className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            Skip
-          </button>
-        </div>
-
+        <button
+          onClick={handleDismiss}
+          className="absolute -top-4 right-1 z-10 px-3 py-1 rounded-full bg-[var(--color-bg)] border-2 border-[var(--color-border)] uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
+        >
+          Skip
+        </button>
         <div
-          className="bg-[var(--color-bg)] rounded-2xl px-5 pt-3 pb-3"
-          style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 0 24px 12px var(--color-bg)' }}
+          className="bg-[var(--color-bg)] rounded-2xl px-5 pt-3 pb-3 border-2 border-[var(--color-border)] overflow-y-auto"
+          style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.06), 0 0 24px 12px var(--color-bg)', maxHeight: 'inherit' }}
         >
           <p
             className="text-[var(--accent)] text-sm leading-relaxed"

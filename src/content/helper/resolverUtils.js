@@ -54,6 +54,54 @@ export function formatTimeContext(minutes, phaseWindow) {
 }
 
 // ============================================
+// FOLLOW-UP WINDOW CLASSIFICATION
+// ============================================
+
+/**
+ * Maps days-since-session to a follow-up window label.
+ *
+ * | Window | Days  | Context                                                    |
+ * |--------|-------|------------------------------------------------------------|
+ * | acute  | 0–3   | Serotonin dip window, highest vulnerability                |
+ * | early  | 4–14  | Still settling, insights fresh but fading                  |
+ * | mid    | 15–60 | Active integration period                                  |
+ * | late   | 61+   | Long-term integration                                      |
+ *
+ * Returns null when days is null (no session completion recorded).
+ */
+export function classifyFollowUpWindow(days) {
+  if (days === null || days === undefined) return null;
+  if (days <= 3) return 'acute';
+  if (days <= 14) return 'early';
+  if (days <= 60) return 'mid';
+  return 'late';
+}
+
+// ============================================
+// FOLLOW-UP TIME CONTEXT FORMATTING
+// ============================================
+
+/**
+ * Format the time context line for follow-up result screens.
+ * Only returns a string when the user is in `acute` or `early` AND
+ * daysSinceSession is available. Returns undefined otherwise so resolvers
+ * can spread the field without conditional checks.
+ *
+ * Acute: exact days. Early: approximate days. Mid/late: not shown.
+ */
+export function formatFollowUpTimeContext(days, timeWindow) {
+  if (days === null || days === undefined) return undefined;
+  if (timeWindow === 'acute') {
+    const label = days === 1 ? 'day' : 'days';
+    return `It's been ${days} ${label} since your session.`;
+  }
+  if (timeWindow === 'early') {
+    return `It's been about ${days} days since your session.`;
+  }
+  return undefined;
+}
+
+// ============================================
 // ACTIVITY ID SHORTCUTS
 // ============================================
 
@@ -87,4 +135,13 @@ export const ACT = {
   innerChildLetter: { id: 'inner-child-letter' },
   feelingDialogue: { id: 'feeling-dialogue' },
   gratitudeReflection: { id: 'therapy-gratitude' },
+
+  // Follow-up integration activities
+  integrationReflection: { id: 'integration-reflection-journal' },
+  bodySomatic: { id: 'body-somatic' },
+  natureConnection: { id: 'nature-connection' },
+  relationshipsReflection: { id: 'relationships-reflection' },
+  lifestyleReflection: { id: 'lifestyle-reflection' },
+  spiritMeaning: { id: 'spirit-meaning' },
+  lightJournaling: { id: 'light-journaling' },
 };

@@ -13,9 +13,11 @@ import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 import { useAppUpdaterContext } from '../shared/AppUpdaterContext';
+import { ArrowUpRightIcon } from '../shared/Icons';
 import SessionHistoryModal from '../history/SessionHistoryModal';
 import DataDownloadModal from '../session/DataDownloadModal';
 import { APP_VERSION, BUILD_SHA } from '../../constants';
+import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 
 // Banner ID must match the one used in TimelineEditor/TimelineTutorial
 const TUTORIAL_BANNER_ID = 'timeline-tutorial';
@@ -296,6 +298,7 @@ export default function SessionMenu() {
           <button
             type="button"
             onClick={() => {
+              setTutorialDelay(50);
               closeMenu();
               undismissBanner(TUTORIAL_BANNER_ID);
               setCurrentTab('home');
@@ -321,7 +324,7 @@ export default function SessionMenu() {
             className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
-            Give Feedback
+            Give Feedback <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
           </button>
           <div className="border-t border-[var(--color-border)]" />
           <button
@@ -333,7 +336,7 @@ export default function SessionMenu() {
             className="w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors"
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
-            Landing Page
+            Landing Page <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
           </button>
           </div>
         </div>

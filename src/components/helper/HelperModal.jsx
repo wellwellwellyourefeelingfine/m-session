@@ -29,7 +29,7 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import { useHelperStore } from '../../stores/useHelperStore';
 import { helperCategories } from '../../content/helper/categories';
 import { formatHelperModalLog, buildStepResponses } from '../../content/helper/formatLog';
-import { classifyPhaseWindow } from '../../content/helper/resolverUtils';
+import { classifyPhaseWindow, classifyFollowUpWindow } from '../../content/helper/resolverUtils';
 import { getModuleById } from '../../content/modules';
 import HelperTopBar from './HelperTopBar';
 import PreSessionContent from './PreSessionContent';
@@ -87,11 +87,25 @@ export default function HelperModal() {
     const minutesSinceIngestion = ingestionMs
       ? Math.floor((Date.now() - ingestionMs) / 60000)
       : null;
+    // Follow-up fields — computed from session.closedAt when the session is
+    // completed. Null during active sessions. Used by follow-up-only resolvers
+    // (low-mood, integration-difficulty) for time-window-aware copy.
+    const closedAt = state.session?.closedAt;
+    const closedAtMs =
+      closedAt instanceof Date ? closedAt.getTime() : closedAt || null;
+    const daysSinceSession = closedAtMs
+      ? Math.floor((Date.now() - closedAtMs) / (1000 * 60 * 60 * 24))
+      : null;
+
     return {
+      // Active-session fields (null/post-session during follow-up)
       minutesSinceIngestion,
       timelinePhase: state.timeline?.currentPhase || null,
       phaseWindow: classifyPhaseWindow(minutesSinceIngestion),
       hasEmergencyContact: Boolean(state.sessionProfile?.emergencyContactDetails?.phone),
+      // Follow-up fields (null during active session)
+      daysSinceSession,
+      timeWindow: classifyFollowUpWindow(daysSinceSession),
     };
   }, []);
 
@@ -183,6 +197,8 @@ export default function HelperModal() {
           stepResponses: buildStepResponses(selectedCategory, triageState),
           phaseWindow: sessionContext.phaseWindow,
           minutesSinceIngestion: sessionContext.minutesSinceIngestion,
+          timeWindow: sessionContext.timeWindow,
+          daysSinceSession: sessionContext.daysSinceSession,
           activityChosen: activityTitle,
           emergencyActionTaken: null,
         }),
@@ -213,6 +229,8 @@ export default function HelperModal() {
           : null,
         phaseWindow: sessionContext.phaseWindow,
         minutesSinceIngestion: sessionContext.minutesSinceIngestion,
+        timeWindow: sessionContext.timeWindow,
+        daysSinceSession: sessionContext.daysSinceSession,
         activityChosen: null,
         emergencyActionTaken: actionLabel,
       }),

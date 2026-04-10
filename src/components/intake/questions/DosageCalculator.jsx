@@ -26,6 +26,7 @@ const calculateRange = (weightKg) => {
 export default function DosageCalculator({ question, onContinue }) {
   const [weight, setWeight] = useState('');
   const [unit, setUnit] = useState('lb');
+  const [pressed, setPressed] = useState(false);
 
   const weightKg = unit === 'kg'
     ? parseFloat(weight)
@@ -130,7 +131,15 @@ export default function DosageCalculator({ question, onContinue }) {
             <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
               Suggested range
             </p>
-            <p className="text-3xl font-light" style={{ color: 'var(--text-primary)' }}>
+            <p
+              className="text-3xl"
+              style={{
+                fontFamily: "'DM Serif Text', serif",
+                textTransform: 'none',
+                fontWeight: 400,
+                color: 'var(--text-primary)',
+              }}
+            >
               {range.low} – {range.high} mg
             </p>
           </div>
@@ -164,11 +173,12 @@ export default function DosageCalculator({ question, onContinue }) {
       {onContinue && (
         <button
           type="button"
-          onClick={onContinue}
-          className="w-full py-4 uppercase tracking-wider transition-opacity duration-300 mt-0"
+          onClick={() => { setPressed(true); onContinue(); }}
+          className="w-full py-4 uppercase tracking-wider border transition-colors duration-300 mt-0"
           style={{
-            backgroundColor: 'var(--text-primary)',
+            backgroundColor: pressed ? 'var(--text-secondary)' : 'var(--text-primary)',
             color: 'var(--bg-primary)',
+            borderColor: pressed ? 'var(--text-secondary)' : 'var(--text-primary)',
           }}
         >
           Continue

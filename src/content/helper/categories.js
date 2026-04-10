@@ -38,6 +38,8 @@ import { resolveResistance } from './resolvers/resistance';
 import { resolveGrief } from './resolvers/grief';
 import { resolveEgoDissolution } from './resolvers/ego-dissolution';
 import { resolveFeelGood } from './resolvers/feel-good';
+import { resolveLowMood } from './resolvers/low-mood';
+import { resolveIntegrationDifficulty } from './resolvers/integration-difficulty';
 
 export const helperCategories = [
   // ============================================
@@ -268,31 +270,93 @@ export const helperCategories = [
   },
 
   // ============================================
-  // FOLLOW-UP-ONLY CATEGORIES (V6 — placeholder for now)
+  // FOLLOW-UP-ONLY CATEGORIES
   // These two categories appear ONLY during the post-session follow-up
-  // helper modal. They render via PlaceholderCategory until V6 fleshes
-  // out their decision trees.
+  // helper modal. They use follow-up time windows (acute/early/mid/late)
+  // computed from days since session completion.
   // ============================================
   {
     id: 'low-mood',
     phases: ['follow-up'],
-    icon: 'TearIcon',
+    icon: 'RainCloudIcon',
     label: 'Low mood',
     description: 'Feeling down, flat, or emotionally depleted',
     expandedDescription:
-      "I\u2019m feeling low after my session. Things feel flat, heavy, or emotionally drained.",
-    acknowledgeText: 'Post-session mood dips are common and usually temporary. Be gentle with yourself.',
-    // No `steps` — HelperModal renders this with PlaceholderCategory.
+      "My mood has dropped since the session. I feel flat, sad, anxious, or irritable, and it\u2019s weighing on me.",
+    acknowledgeText: 'You checked in, and that matters. Come back if anything shifts.',
+    steps: [
+      {
+        type: 'rating',
+        id: 'severity',
+        prompt: 'How low is your mood right now?',
+        journalLabel: 'Severity',
+      },
+      {
+        type: 'choice',
+        id: 'quality',
+        prompt: 'What does it feel like?',
+        journalLabel: 'Quality',
+        showWhen: (state) => state.severity >= 1 && state.severity <= 9,
+        options: [
+          { value: 'flat', label: 'Flat and empty' },
+          { value: 'sad', label: 'Sad or tearful' },
+          { value: 'irritable', label: 'Irritable and on edge' },
+          { value: 'anxious', label: 'Anxious or unsettled' },
+          { value: 'hopeless', label: 'Hopeless' },
+        ],
+      },
+      {
+        type: 'choice',
+        id: 'functioning',
+        prompt: 'How much is this affecting your daily life?',
+        journalLabel: 'Functioning',
+        showWhen: (state) => state.severity >= 4 && state.severity <= 9,
+        options: [
+          { value: 'managing', label: "I\u2019m getting through my day, but it\u2019s hard" },
+          { value: 'struggling', label: "I\u2019m having trouble doing basic things" },
+          { value: 'cant-function', label: 'I can barely function' },
+        ],
+      },
+      {
+        type: 'result',
+        resolve: resolveLowMood,
+      },
+    ],
   },
   {
     id: 'integration-difficulty',
     phases: ['follow-up'],
-    icon: 'EggIcon',
+    icon: 'OrigamiIcon',
     label: 'Integration',
-    description: 'Having difficulty with the integration work',
+    description: 'Struggling to process the experience',
     expandedDescription:
-      "I\u2019m having trouble making sense of what happened in my session. The work isn\u2019t clicking the way I hoped.",
+      "I\u2019m finding it hard to process what happened during my session, or to turn what I experienced into something useful in my daily life.",
     acknowledgeText: 'Integration takes time. There\u2019s no rush to make sense of everything right away.',
-    // No `steps` — HelperModal renders this with PlaceholderCategory.
+    steps: [
+      {
+        type: 'rating',
+        id: 'stuckness',
+        prompt: 'How stuck do you feel?',
+        journalLabel: 'Stuckness',
+      },
+      {
+        type: 'choice',
+        id: 'stuckType',
+        prompt: 'Which of these is closest to what you\u2019re experiencing?',
+        journalLabel: 'Stuck type',
+        showWhen: (state) => state.stuckness >= 1 && state.stuckness <= 9,
+        options: [
+          { value: 'fading', label: 'The insights are fading' },
+          { value: 'overwhelmed', label: "Too much came up and I don\u2019t know where to start" },
+          { value: 'nothing-changed', label: 'I understand what happened but nothing has changed' },
+          { value: 'confused', label: "I don\u2019t understand what I experienced" },
+          { value: 'avoidant', label: 'I keep avoiding the integration work' },
+        ],
+      },
+      {
+        type: 'result',
+        resolve: resolveIntegrationDifficulty,
+      },
+    ],
   },
 ];

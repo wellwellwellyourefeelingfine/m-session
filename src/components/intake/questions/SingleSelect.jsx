@@ -94,24 +94,17 @@ export default function SingleSelect({ question, value, onChange }) {
 
       <div className="space-y-2">
         {question.options.map((option) => {
-          // `neutralOptions` is set on safety self-screening questions
-          // (medications / heart conditions / psychiatric history) where
-          // we don't want the chosen answer to flash in a strong filled
-          // black/white style — that visual weight can feel like the app
-          // is endorsing one answer over the other. With neutralOptions
-          // on, both buttons keep the same neutral border and text color
-          // before AND after selection.
-          const showSelectedStyle = !question.neutralOptions && value === option.value;
+          const isSelected = value === option.value;
           return (
             <button
               key={option.value}
               type="button"
               onClick={() => onChange(option.value)}
-              className="w-full text-left px-4 py-3 border transition-colors duration-75"
+              className="w-full text-left px-4 py-3 border transition-colors duration-300"
               style={{
-                borderColor: showSelectedStyle ? 'var(--text-primary)' : 'var(--border)',
-                backgroundColor: showSelectedStyle ? 'var(--text-primary)' : 'transparent',
-                color: showSelectedStyle ? 'var(--bg-primary)' : 'var(--text-primary)',
+                borderColor: isSelected ? 'var(--text-secondary)' : 'var(--border)',
+                backgroundColor: isSelected ? 'var(--text-secondary)' : 'transparent',
+                color: isSelected ? 'var(--bg-primary)' : 'var(--text-primary)',
               }}
             >
               <span className="uppercase tracking-wider">{option.label}</span>

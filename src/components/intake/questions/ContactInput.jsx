@@ -7,10 +7,13 @@
  * surfaces feel consistent.
  */
 
+import { useState } from 'react';
+
 const NOTES_PLACEHOLDER =
   'My contact is available from 9am to 9pm. They live at 123 Main St. If unavailable, contact Jane at 555-0100.';
 
 export default function ContactInput({ question, value, onChange, onContinue }) {
+  const [pressed, setPressed] = useState(false);
   const contactValue = value || { name: '', phone: '', notes: '' };
 
   const handleFieldChange = (field, fieldValue) => {
@@ -74,11 +77,12 @@ export default function ContactInput({ question, value, onChange, onContinue }) 
       {onContinue && (
         <button
           type="button"
-          onClick={onContinue}
-          className="w-full py-4 uppercase tracking-wider transition-opacity duration-300 mt-4"
+          onClick={() => { setPressed(true); onContinue(); }}
+          className="w-full py-4 uppercase tracking-wider border transition-colors duration-300 mt-4"
           style={{
-            backgroundColor: 'var(--text-primary)',
+            backgroundColor: pressed ? 'var(--text-secondary)' : 'var(--text-primary)',
             color: 'var(--bg-primary)',
+            borderColor: pressed ? 'var(--text-secondary)' : 'var(--text-primary)',
           }}
         >
           Continue

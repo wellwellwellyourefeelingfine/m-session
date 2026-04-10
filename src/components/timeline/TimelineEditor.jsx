@@ -20,7 +20,7 @@ import TimelineSummary from './TimelineSummary';
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
-import { getTutorialRevealDelay } from './tutorialRevealFlag';
+import { getTutorialDelay } from './tutorialRevealFlag';
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -643,7 +643,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('come-up')}
-          isEditMode={isEditMode}
+          isEditMode={isCompletedSession ? false : isEditMode}
           onToggleEditMode={() => setIsEditMode(!isEditMode)}
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
@@ -667,7 +667,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('peak')}
-          isEditMode={isEditMode}
+          isEditMode={isCompletedSession ? false : isEditMode}
           onToggleEditMode={() => setIsEditMode(!isEditMode)}
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
@@ -691,7 +691,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           currentModuleId={currentModule?.instanceId}
           canRemoveModule={canRemoveModule}
           isEditable={isPhaseEditable('integration')}
-          isEditMode={isEditMode}
+          isEditMode={isCompletedSession ? false : isEditMode}
           onToggleEditMode={() => setIsEditMode(!isEditMode)}
           isCompletedSession={isCompletedSession}
           onMoveModuleUp={handleMoveModuleUp}
@@ -748,12 +748,26 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               <div className="flex-1">
                 {/* Phase header - matching PhaseSection styling */}
                 <div className="mb-4">
-                  <h3
-                    className="font-serif text-[22px]"
-                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
-                  >
-                    Follow-Up
-                  </h3>
+                  <div className="flex items-start justify-between">
+                    <h3
+                      className="font-serif text-[22px]"
+                      style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
+                    >
+                      Follow-Up
+                    </h3>
+                    {followUpModules.length > 0 && (
+                      <button
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        className={`px-3 py-1 text-xs uppercase tracking-wider transition-colors flex-shrink-0 ${
+                          isEditMode
+                            ? 'bg-[var(--accent)] text-white'
+                            : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]'
+                        }`}
+                      >
+                        {isEditMode ? 'Done' : 'Edit'}
+                      </button>
+                    )}
+                  </div>
 
                   {/* Timing info */}
                   <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
@@ -768,21 +782,67 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                 {/* Follow-up module cards */}
                 <div className="space-y-2">
-                  {followUpModules.map((module) => {
+                  {followUpModules.map((module, index) => {
                     const isCompleted = module.status === 'completed';
                     const isFollowUpLocked = followUp?.phaseUnlockTime && Date.now() < followUp.phaseUnlockTime;
 
+                    // Edit mode: non-completed modules can be reordered and removed
+                    const canEdit = isEditMode && !isCompleted;
+                    const editableModules = followUpModules.filter((m) => m.status !== 'completed');
+                    const hasMultipleEditable = editableModules.length > 1;
+                    const isFirst = index === 0;
+                    const isLast = index === followUpModules.length - 1;
+
                     return (
-                      <ModuleCard
+                      <div
                         key={module.instanceId}
-                        module={module}
-                        onClick={() => setSelectedAddedFollowUpModule(module)}
-                        statusText={isCompleted ? 'Completed' : undefined}
-                        statusIcon={isFollowUpLocked && !isCompleted
-                          ? <LockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-                          : undefined
-                        }
-                      />
+                        className="relative flex items-start"
+                      >
+                        {/* Reorder arrows */}
+                        {canEdit && hasMultipleEditable && (
+                          <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveModuleUp(module.instanceId)}
+                              disabled={isFirst}
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
+                                isFirst
+                                  ? 'opacity-30 cursor-not-allowed text-[var(--color-text-tertiary)]'
+                                  : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-95'
+                              }`}
+                              title="Move up"
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveModuleDown(module.instanceId)}
+                              disabled={isLast}
+                              className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
+                                isLast
+                                  ? 'opacity-30 cursor-not-allowed text-[var(--color-text-tertiary)]'
+                                  : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-95'
+                              }`}
+                              title="Move down"
+                            >
+                              ↓
+                            </button>
+                          </div>
+                        )}
+
+                        <ModuleCard
+                          module={module}
+                          onClick={() => setSelectedAddedFollowUpModule(module)}
+                          onRemove={() => handleRemoveModule(module.instanceId)}
+                          canRemove={canRemoveModule(module)}
+                          isEditMode={canEdit}
+                          statusText={isCompleted ? 'Completed' : undefined}
+                          statusIcon={isFollowUpLocked && !isCompleted
+                            ? <LockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
+                            : undefined
+                          }
+                        />
+                      </div>
                     );
                   })}
                 </div>
@@ -822,15 +882,15 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
         {!isActiveSession && !isCompletedSession && onBeginSession && (
           <div className="mt-8 space-y-4">
-            <p className="text-[var(--accent)] text-xs uppercase tracking-wider text-left leading-tight">
-              Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet. Press begin when you&apos;re ready.
-            </p>
             <button
               onClick={onBeginSession}
               className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
             >
               Begin Session
             </button>
+            <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
+              Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
+            </p>
           </div>
         )}
       </div>
@@ -1016,12 +1076,10 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
 /**
  * TimelineTutorialTrigger
- * Waits for the reveal animation to finish before showing the tutorial overlay.
- *
- * Timing is driven by a wall-clock target scheduled in HomeView (see
- * tutorialRevealFlag). Reading that target is idempotent, so this survives
- * StrictMode's simulated remount, late mounts, or any re-render without
- * collapsing to the wrong delay.
+ * Shows the tutorial after a delay set by the trigger source:
+ * - Generate Timeline button → 7000ms (set in HomeView)
+ * - "Show Tutorial" menu item → 50ms (set in SessionMenu)
+ * - Page refresh (default) → 50ms
  */
 function TimelineTutorialTrigger() {
   const dismissed = useAppStore((state) => state.dismissedBanners['timeline-tutorial']);
@@ -1030,7 +1088,7 @@ function TimelineTutorialTrigger() {
 
   useEffect(() => {
     if (dismissed) return;
-    const timer = setTimeout(() => setShowTutorial(true), getTutorialRevealDelay());
+    const timer = setTimeout(() => setShowTutorial(true), getTutorialDelay());
     return () => clearTimeout(timer);
   }, [dismissed]);
 
