@@ -5,33 +5,25 @@ const VIEWBOX_W       = 120;
 const VIEWBOX_H       = 120;
 const STROKE_WIDTH    = 6;
 
-// Main wave (sine path sampled across the full width)
-const WAVE_BASELINE_Y = 75;   // horizon line — slightly below center, more sky than water
-const WAVE_AMPLITUDE  = 3;    // swapped from wave 3 (gentler, slower feel)
-const WAVE_WAVELENGTH = 60;   // 2 visible crests across the 120-wide canvas
-const WAVE_PHASE      = WAVE_WAVELENGTH / 2;  // swapped from wave 3
-const WAVE_SAMPLES    = 60;
-const WAVE_CYCLES_PER_LOOP = 2;  // wave must complete a whole number of cycles per loop for a seamless seam
+// Wave shape (shared amplitude, per-wave wavelength)
+const WAVE_BASELINE_Y  = 75;
+const WAVE_AMPLITUDE   = 4;
+const WAVE_WAVELENGTH  = 120;  // wave 1: broad, elongated swells
+const WAVE2_WAVELENGTH = 90;   // wave 2: medium peaks
+const WAVE_SAMPLES     = 60;
+const WAVE_FLOW_SCALE  = 60;   // base offset per wave period (determines base flow speed)
+const WAVE_CYCLES_PER_LOOP = 2;
 
-// Second wave (shorter, centered beneath the main wave, same frequency with phase offset)
+// Per-wave: position, span, and flow speed multiplier
+// Wave 1 — full width, broad swells (1 crest per loop)
+const WAVE_SPEED       = 1;
+
+// Wave 2 — shorter, centered (2 crests per loop)
 const WAVE2_BASELINE_Y = 93;
-const WAVE2_AMPLITUDE  = 4;                       // unchanged
-const WAVE2_WAVELENGTH = WAVE_WAVELENGTH;          // same frequency as main — loops seamlessly
-const WAVE2_PHASE      = WAVE_WAVELENGTH / 4;      // quarter-wavelength offset so crests don't align
+const WAVE2_SPEED      = 1.5;
 const WAVE2_MARGIN     = 15;
 const WAVE2_START_X    = WAVE2_MARGIN;
 const WAVE2_END_X      = VIEWBOX_W - WAVE2_MARGIN;
-const WAVE2_SAMPLES    = 40;
-
-// Third wave (shortest, centered beneath the second wave)
-const WAVE3_BASELINE_Y = 111;
-const WAVE3_AMPLITUDE  = 4;                        // swapped from wave 1 (more active)
-const WAVE3_WAVELENGTH = WAVE_WAVELENGTH;           // same frequency — loops seamlessly
-const WAVE3_PHASE      = 0;                         // swapped from wave 1 (no offset)
-const WAVE3_MARGIN     = 30;
-const WAVE3_START_X    = WAVE3_MARGIN;
-const WAVE3_END_X      = VIEWBOX_W - WAVE3_MARGIN;
-const WAVE3_SAMPLES    = 30;
 
 // Sun (orbits in an ellipse centered on the horizon line)
 const SUN_RADIUS      = 10;
@@ -98,10 +90,9 @@ function computeSunAngle(elapsed) {
 
 // Compute the elapsed=0 ("sun fully set, just past the right horizon") frame values
 // so the JSX initial render matches the first RAF tick — avoids any first-paint flicker.
-const INITIAL_WAVE_PATH  = buildWavePath(WAVE_PHASE);
-const INITIAL_WAVE2_PATH = buildWavePath(WAVE2_PHASE, WAVE2_START_X, WAVE2_END_X, WAVE2_BASELINE_Y, WAVE2_AMPLITUDE, WAVE2_WAVELENGTH, WAVE2_SAMPLES);
-const INITIAL_WAVE3_PATH = buildWavePath(WAVE3_PHASE, WAVE3_START_X, WAVE3_END_X, WAVE3_BASELINE_Y, WAVE3_AMPLITUDE, WAVE3_WAVELENGTH, WAVE3_SAMPLES);
-const INITIAL_CLIP_PATH  = buildSkyClipPath(WAVE_PHASE);
+const INITIAL_WAVE_PATH  = buildWavePath(0);
+const INITIAL_WAVE2_PATH = buildWavePath(0, WAVE2_START_X, WAVE2_END_X, WAVE2_BASELINE_Y, WAVE_AMPLITUDE, WAVE2_WAVELENGTH);
+const INITIAL_CLIP_PATH  = buildSkyClipPath(0);
 const INITIAL_SUN_ANGLE = computeSunAngle(0);
 const INITIAL_SUN_X = SUN_ORBIT_CX - Math.cos(INITIAL_SUN_ANGLE) * SUN_ORBIT_RX;
 const INITIAL_SUN_Y = SUN_ORBIT_CY - Math.sin(INITIAL_SUN_ANGLE) * SUN_ORBIT_RY;
@@ -109,7 +100,6 @@ const INITIAL_SUN_Y = SUN_ORBIT_CY - Math.sin(INITIAL_SUN_ANGLE) * SUN_ORBIT_RY;
 export default memo(function WaveLoopAnimation({ size = 120 }) {
   const waveRef    = useRef(null);
   const wave2Ref   = useRef(null);
-  const wave3Ref   = useRef(null);
   const skyClipRef = useRef(null);
   const sunRef     = useRef(null);
   const rafRef     = useRef(null);
@@ -124,11 +114,10 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
       if (!startRef.current) startRef.current = timestamp;
       const elapsed = ((timestamp - startRef.current) / 1000) % TOTAL;
 
-      const waveOffset = (elapsed / WAVE_PERIOD) * WAVE_WAVELENGTH;
-      const wavePath   = buildWavePath(waveOffset + WAVE_PHASE);
-      const wave2Path  = buildWavePath(waveOffset + WAVE2_PHASE, WAVE2_START_X, WAVE2_END_X, WAVE2_BASELINE_Y, WAVE2_AMPLITUDE, WAVE2_WAVELENGTH, WAVE2_SAMPLES);
-      const wave3Path  = buildWavePath(waveOffset + WAVE3_PHASE, WAVE3_START_X, WAVE3_END_X, WAVE3_BASELINE_Y, WAVE3_AMPLITUDE, WAVE3_WAVELENGTH, WAVE3_SAMPLES);
-      const clipPath   = buildSkyClipPath(waveOffset + WAVE_PHASE);
+      const baseOffset = (elapsed / WAVE_PERIOD) * WAVE_FLOW_SCALE;
+      const wavePath   = buildWavePath(baseOffset * WAVE_SPEED);
+      const wave2Path  = buildWavePath(baseOffset * WAVE2_SPEED, WAVE2_START_X, WAVE2_END_X, WAVE2_BASELINE_Y, WAVE_AMPLITUDE, WAVE2_WAVELENGTH);
+      const clipPath   = buildSkyClipPath(baseOffset * WAVE_SPEED);
 
       const sunAngle = computeSunAngle(elapsed);
       // -cos so angle 0 starts at the LEFT horizon; -sin so positive sin moves UP visually
@@ -137,7 +126,6 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
 
       if (waveRef.current)    waveRef.current.setAttribute('d', wavePath);
       if (wave2Ref.current)   wave2Ref.current.setAttribute('d', wave2Path);
-      if (wave3Ref.current)   wave3Ref.current.setAttribute('d', wave3Path);
       if (skyClipRef.current) skyClipRef.current.setAttribute('d', clipPath);
       if (sunRef.current) {
         sunRef.current.setAttribute('cx', sunX);
@@ -189,7 +177,7 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
         strokeLinejoin="round"
       />
 
-      {/* Second wave — shorter, centered beneath, phase-offset */}
+      {/* Second wave — shorter, centered beneath */}
       <path
         ref={wave2Ref}
         d={INITIAL_WAVE2_PATH}
@@ -200,16 +188,6 @@ export default memo(function WaveLoopAnimation({ size = 120 }) {
         strokeLinejoin="round"
       />
 
-      {/* Third wave — shortest, centered beneath the second */}
-      <path
-        ref={wave3Ref}
-        d={INITIAL_WAVE3_PATH}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={STROKE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 });
