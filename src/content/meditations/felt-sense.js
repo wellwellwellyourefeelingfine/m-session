@@ -351,7 +351,7 @@ export const feltSenseMeditation = {
   id: 'felt-sense',
   title: 'Felt Sense',
   subtitle: 'A guided focusing practice',
-  description: 'Turn inward and let your body show you what it\u2019s holding. No words needed.',
+  description: 'A guided focusing practice rooted in Eugene Gendlin\u2019s work. Turn inward and let your body show you what it\u2019s holding. Rather than thinking about your experience, you\u2019ll learn to sense it directly \u2014 noticing the subtle, often wordless quality of what\u2019s there.',
 
   // Audio configuration
   audio: {

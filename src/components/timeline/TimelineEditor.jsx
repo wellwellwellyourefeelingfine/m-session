@@ -122,8 +122,19 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const moduleItems = modules?.items || [];
   const comeUpModules = moduleItems.filter((m) => m.phase === 'come-up').sort((a, b) => a.order - b.order);
   const integrationModules = moduleItems.filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order);
-  const followUpModules = moduleItems.filter((m) => m.phase === 'follow-up').sort((a, b) => a.order - b.order);
-  const preSessionModules = moduleItems.filter((m) => m.phase === 'pre-session').sort((a, b) => a.order - b.order);
+
+  // Pre-session and follow-up: completed modules sort to top (display-only,
+  // store order values unchanged). Within each group, original order preserved.
+  const sortCompletedFirst = (a, b) => {
+    const aDone = a.status === 'completed' || a.status === 'skipped';
+    const bDone = b.status === 'completed' || b.status === 'skipped';
+    if (aDone && !bDone) return -1;
+    if (!aDone && bDone) return 1;
+    if (aDone && bDone) return (a.completedAt || 0) - (b.completedAt || 0);
+    return a.order - b.order;
+  };
+  const followUpModules = moduleItems.filter((m) => m.phase === 'follow-up').sort(sortCompletedFirst);
+  const preSessionModules = moduleItems.filter((m) => m.phase === 'pre-session').sort(sortCompletedFirst);
   const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
 
   const comeUpDuration = getPhaseDuration('come-up');
@@ -558,10 +569,13 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                       const canMoveUp = index > 0;
                       const canMoveDown = index < preSessionModules.length - 1;
 
+                      const isModuleDone = module.status === 'completed' || module.status === 'skipped';
+                      const canEditPreSession = !isCompletedSession && isEditMode && !isModuleDone;
+
                       return (
                         <div key={module.instanceId} className="relative flex items-start">
-                          {/* Reorder arrows — only in edit mode with multiple modules */}
-                          {!isCompletedSession && isEditMode && preSessionModules.length > 1 && (
+                          {/* Reorder arrows — only in edit mode for non-completed modules */}
+                          {canEditPreSession && preSessionModules.length > 1 && (
                             <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
                               <button
                                 type="button"
@@ -594,8 +608,10 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
                           <ModuleCard
                             module={module}
-                            onRemove={!isCompletedSession ? () => handleRemoveModule(module.instanceId) : undefined}
-                            isEditMode={!isCompletedSession && isEditMode}
+                            onRemove={canEditPreSession ? () => handleRemoveModule(module.instanceId) : undefined}
+                            isEditMode={canEditPreSession}
+                            grayWhenCompleted
+                            statusText={isModuleDone ? (module.status === 'completed' ? 'Completed' : 'Skipped') : undefined}
                             onClick={() => setSelectedPreSessionModule(module)}
                           />
                         </div>
@@ -783,12 +799,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 {/* Follow-up module cards */}
                 <div className="space-y-2">
                   {followUpModules.map((module, index) => {
-                    const isCompleted = module.status === 'completed';
+                    const isModuleDone = module.status === 'completed' || module.status === 'skipped';
                     const isFollowUpLocked = followUp?.phaseUnlockTime && Date.now() < followUp.phaseUnlockTime;
 
                     // Edit mode: non-completed modules can be reordered and removed
-                    const canEdit = isEditMode && !isCompleted;
-                    const editableModules = followUpModules.filter((m) => m.status !== 'completed');
+                    const canEdit = isEditMode && !isModuleDone;
+                    const editableModules = followUpModules.filter((m) => m.status !== 'completed' && m.status !== 'skipped');
                     const hasMultipleEditable = editableModules.length > 1;
                     const isFirst = index === 0;
                     const isLast = index === followUpModules.length - 1;
@@ -833,11 +849,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                         <ModuleCard
                           module={module}
                           onClick={() => setSelectedAddedFollowUpModule(module)}
-                          onRemove={() => handleRemoveModule(module.instanceId)}
+                          onRemove={canEdit ? () => handleRemoveModule(module.instanceId) : undefined}
                           canRemove={canRemoveModule(module)}
                           isEditMode={canEdit}
-                          statusText={isCompleted ? 'Completed' : undefined}
-                          statusIcon={isFollowUpLocked && !isCompleted
+                          grayWhenCompleted
+                          statusText={isModuleDone ? (module.status === 'completed' ? 'Completed' : 'Skipped') : undefined}
+                          statusIcon={isFollowUpLocked && !isModuleDone
                             ? <LockIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
                             : undefined
                           }

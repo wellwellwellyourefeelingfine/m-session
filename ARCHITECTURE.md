@@ -696,24 +696,26 @@ import {
   generateTimedSequence,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
+import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 import DurationPicker from '../../shared/DurationPicker';
 
 export default function MyMeditationModule({ module, onComplete, onSkip, onProgressUpdate }) {
-  const libraryModule = getModuleById(module.libraryId);
   const meditation = getMeditationById('my-meditation');
 
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || libraryModule?.defaultDuration || 10
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
+  // Derive hasStarted from store (needed before useSyncedDuration call)
+  const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
+  const hasStarted = meditationPlayback.moduleInstanceId === module.instanceId && meditationPlayback.hasStarted;
+
+  // Duration (synced with session store — single source of truth)
+  const duration = useSyncedDuration(module, { hasStarted });
 
   // Build timed sequence — this is the only part unique to each meditation
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
-    const durationSeconds = selectedDuration * 60;
+    const durationSeconds = duration.selected * 60;
     const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds);
     const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
       speakingRate: meditation.speakingRate || 150,
@@ -721,7 +723,7 @@ export default function MyMeditationModule({ module, onComplete, onSkip, onProgr
     });
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, selectedDuration]);
+  }, [meditation, duration.selected]);
 
   // Shared hook handles timer, audio-text sync, prompt progression, etc.
   const playback = useMeditationPlayback({
@@ -758,11 +760,11 @@ export default function MyMeditationModule({ module, onComplete, onSkip, onProgr
           <div className="text-center animate-fadeIn">
             <IdleScreen title={meditation.title} description={meditation.description} />
             <button
-              onClick={() => setShowDurationPicker(true)}
+              onClick={() => duration.setShowPicker(true)}
               className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                 hover:border-[var(--color-text-tertiary)] transition-colors"
             >
-              <span className="text-2xl font-light">{selectedDuration}</span>
+              <span className="text-2xl font-light">{duration.selected}</span>
               <span className="text-sm ml-1">min</span>
             </button>
           </div>
@@ -804,10 +806,10 @@ export default function MyMeditationModule({ module, onComplete, onSkip, onProgr
         }
       />
       <DurationPicker
-        isOpen={showDurationPicker}
-        onClose={() => setShowDurationPicker(false)}
-        onSelect={setSelectedDuration}
-        currentDuration={selectedDuration}
+        isOpen={duration.showPicker}
+        onClose={() => duration.setShowPicker(false)}
+        onSelect={duration.setSelected}
+        currentDuration={duration.selected}
         durationSteps={meditation.durationSteps}
         minDuration={meditation.minDuration / 60}
         maxDuration={meditation.maxDuration / 60}
@@ -902,6 +904,24 @@ Displayed in the module detail modal as filled/unfilled dots.
 The follow-up phase uses a single 8-hour phase-level time lock (`followUp.phaseUnlockTime`) rather than per-module locks. All follow-up activities become available simultaneously once the phase unlocks. The lock is checked in:
 - `ActiveView.jsx` — follow-up landing page shows countdown when locked
 - `FollowUpModuleModal.jsx` / `AltSessionModuleModal.jsx` — Begin button disabled with countdown when locked
+
+### Pre-Session & Follow-Up Timeline Editing
+
+Both the pre-session and follow-up timelines support editing (reorder + remove) via the same `isEditMode` state in `TimelineEditor`. During completed sessions, `isEditMode` is passed as `false` to the three main PhaseSections (`isEditMode={isCompletedSession ? false : isEditMode}`) so the completed session record is locked. The follow-up section is the only section that can toggle edit mode during completed sessions.
+
+**Completed module handling** in both timelines:
+
+- **Graying**: `ModuleCard` accepts a `grayWhenCompleted` prop that triggers `opacity-50` + tertiary text for completed/skipped modules outside of active sessions. This is opt-in to avoid affecting the completed session view (which uses `phaseCompleted` for its own opacity handling).
+- **Sort order**: Both lists use `sortCompletedFirst` — completed modules float to the top sorted by `completedAt` timestamp; upcoming modules stay below in their original `order`.
+- **Edit locking**: Completed modules are excluded from edit mode — no remove button, no reorder arrows. Only upcoming modules can be edited.
+- **Skip behavior**: Skipping a pre-session or follow-up module calls `abandonModule` which resets to `upcoming` — the user can retry later. No "Skipped" status is recorded.
+
+### Module Addition Gating
+
+`canAddModuleToPhase(moduleId, phase)` in `library.js` enforces hard gates:
+- Follow-up modules (`isFollowUpModule`) blocked outside `follow-up` phase
+- Booster module (`isBoosterModule`) blocked outside `peak` and `integration` phases
+- All other modules are allowed in any phase — recommendations are expressed via `recommendedPhases` and surfaced through the Recommended filter in the library modal, not through gating
 
 ---
 
@@ -1294,10 +1314,14 @@ On mount, `HelperModal` builds a `sessionContext` object via `useMemo`:
 
 ```js
 {
+  // Active-session fields (null/post-session during follow-up)
   minutesSinceIngestion,    // wall-clock minutes from substanceChecklist.ingestionTime, or null
   timelinePhase,            // state.timeline.currentPhase ('come-up' | 'peak' | 'integration' | null)
   phaseWindow,              // classified by classifyPhaseWindow(minutes)
   hasEmergencyContact,      // boolean
+  // Follow-up fields (null during active session)
+  daysSinceSession,         // days since session.closedAt, or null
+  timeWindow,               // classified by classifyFollowUpWindow(days): 'acute' | 'early' | 'mid' | 'late' | null
 }
 ```
 
@@ -1312,7 +1336,16 @@ On mount, `HelperModal` builds a `sessionContext` object via `useMemo`:
 | `late-session` | 211–360 | Synthesis, integration, letter-writing tools |
 | `post-session` | 361+ | Residual effects only |
 
-Resolvers (`src/content/helper/resolvers/*.js`) are pure functions: `(triageState, sessionContext) → ResultPayload`. No store access, no React, no side effects. Each of the 6 active categories has its own resolver file. Resolvers branch on `phaseWindow` and the user's `triageState` answers to produce phase-aware copy and activity lists.
+`timeWindow` is derived from days since session completion (`session.closedAt`). The windows:
+
+| Window | Days | Used by follow-up resolvers for... |
+|---|---|---|
+| `acute` | 0–3 | Serotonin dip window, highest vulnerability |
+| `early` | 4–14 | Still settling, insights fresh but fading |
+| `mid` | 15–60 | Active integration period |
+| `late` | 61+ | Long-term integration |
+
+Resolvers (`src/content/helper/resolvers/*.js`) are pure functions: `(triageState, sessionContext) → ResultPayload`. No store access, no React, no side effects. Each of the 8 categories has its own resolver file. Active-session resolvers branch on `phaseWindow`; follow-up resolvers branch on `timeWindow`. Both read from the same `sessionContext` object.
 
 A `ResultPayload` looks like:
 
@@ -1328,10 +1361,15 @@ A `ResultPayload` looks like:
     { label: 'This feels expansive', activities: [...] },
   ],
   showEmergencyCard?: true,          // chest-heart come-up
+  supportResources?: [               // follow-up categories only
+    { type: 'fireside' },            // Fireside Project call/text card
+    { type: 'emergency-contact' },   // saved contact call/text card
+    { type: 'find-therapist' },      // advisory card (no action buttons)
+  ],
 }
 ```
 
-`formatTimeContext(minutes, phaseWindow)` in `resolverUtils.js` returns the time line only when `phaseWindow` is `come-up` or `early-peak`, hidden in `peak` / `late-session` / `null`. Time is shown to the exact minute ("about 19 minutes in"), not rounded.
+`formatTimeContext(minutes, phaseWindow)` in `resolverUtils.js` returns the time line only when `phaseWindow` is `come-up` or `early-peak`, hidden in `peak` / `late-session` / `null`. Time is shown to the exact minute ("about 19 minutes in"), not rounded. `formatFollowUpTimeContext(days, timeWindow)` returns a time line for `acute` and `early` windows only.
 
 The `ACT` constant in `resolverUtils.js` is a shared dictionary mapping short keys to `{ id }` objects, e.g. `ACT.simpleGrounding = { id: 'simple-grounding' }`. Resolvers reference activities as `[ACT.simpleGrounding, ACT.bodyScan]`. `ActivitySuggestions` looks up display text via `getModuleById(activity.id)`, so a bare `{ id }` is sufficient.
 
@@ -1347,8 +1385,8 @@ The `ACT` constant in `resolverUtils.js` is a shared dictionary mapping short ke
 | Grief | `['active', 'follow-up']` | Core |
 | Ego dissolution | `['active']` | Active session only |
 | I feel so good | `['active']` | Active session only |
-| Low mood | `['follow-up']` | Follow-up only — currently a `PlaceholderCategory` stub (V6) |
-| Integration | `['follow-up']` | Follow-up only — stub (V6) |
+| Low mood | `['follow-up']` | Follow-up only — severity × quality × functioning × timeWindow |
+| Integration | `['follow-up']` | Follow-up only — stuckType × timeWindow |
 
 `HelperModal` filters with `helperCategories.filter((c) => c.phases?.includes(phaseKey))`, where `phaseKey` is `'follow-up'` when `sessionPhase === 'completed'`, otherwise `'active'`. The 4 core categories appear in both grids.
 
@@ -1439,6 +1477,19 @@ Phase window: Come-up (~30 min)
 Activity chosen: Simple Grounding
 ```
 
+Follow-up entries use a different header and time context:
+
+```
+HELPER MODAL (FOLLOW-UP)
+
+Category: Low mood
+Severity: 5/10
+Quality: Flat and empty
+Functioning: I'm getting through my day, but it's hard
+Time window: Acute (2 days)
+Activity chosen: Self-Compassion
+```
+
 `buildStepResponses(category, triageState)` is a helper in `formatLog.js` that walks the category's `steps` array and emits `[{ label, value }]` pairs (using each step's `journalLabel` and the matched option label). Steps that the user didn't reach (because of `showWhen` or rating overrides) are omitted.
 
 Entries triggered from the standalone emergency contact view (no `triageState`) omit `categoryLabel`, step responses, and phase window cleanly.
@@ -1455,19 +1506,20 @@ src/components/helper/
   RatingScale.jsx              # 0–10 bubble scale, supports `dimmed` for completed state
   TriageStepRunner.jsx         # Stacking decision-tree orchestrator (forwardRef + goBack)
   TriageChoiceStep.jsx         # Single-select option cards
-  TriageResultStep.jsx         # Resolver result + activities + I-need-more-help expand
+  TriageResultStep.jsx         # Resolver result + activities + support resources + I-need-more-help expand
   ActivitySuggestions.jsx      # Activity card list (reuses ModuleCard)
+  SupportResourceCard.jsx     # Follow-up support resource cards (Fireside, emergency contact, find-therapist)
   EmergencyContactCard.jsx     # Shared contact card with name/number + Call/Text + tap-to-copy + edit toggle
   EmergencyContactView.jsx     # Dedicated contact page (header + card + edit + notes + I-need-more-help expand)
   EmergencyFlow.jsx            # Full emergency content (contact + 911/112 + Fireside); supports `hideContactCard`
   AcknowledgeClose.jsx         # Acknowledgment text shown when rating is 0
-  PlaceholderCategory.jsx      # "Coming soon" view for stub categories
+  PlaceholderCategory.jsx      # "Coming soon" view for future stub categories
   PreSessionContent.jsx        # Pre-session dimmed preview + explanatory overlay
 
 src/content/helper/
   categories.js                # 8 categories with `phases` arrays + `steps` decision trees
-  formatLog.js                 # formatHelperModalLog + buildStepResponses (V5 step-path format)
-  resolverUtils.js             # classifyPhaseWindow, formatTimeContext, ACT id constants
+  formatLog.js                 # formatHelperModalLog + buildStepResponses (V5 step-path format, follow-up variant)
+  resolverUtils.js             # classifyPhaseWindow, classifyFollowUpWindow, formatTimeContext, formatFollowUpTimeContext, ACT id constants
   resolvers/
     intense-feeling.js         # resolveIntenseFeeling (intensity × bodyLocation × phaseWindow)
     trauma.js                  # resolveTrauma (vividness × dualAwareness × phaseWindow)
@@ -1475,6 +1527,8 @@ src/content/helper/
     grief.js                   # resolveGrief (intensity × expression × phaseWindow)
     ego-dissolution.js         # resolveEgoDissolution (disorientation × experienceType × phaseWindow)
     feel-good.js               # resolveFeelGood (energy × energyFeeling × phaseWindow)
+    low-mood.js                # resolveLowMood (severity × quality × functioning × timeWindow)
+    integration-difficulty.js  # resolveIntegrationDifficulty (stuckType × timeWindow)
 
 src/stores/useHelperStore.js   # isOpen / openHelper / closeHelper (transient, not persisted)
 ```
@@ -1609,9 +1663,10 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 ```
 
 **Key Actions:**
-- `startSession()`, `completeModule()`, `skipModule()`
+- `startSession()`, `completeModule()`, `skipModule()`, `abandonModule()`
 - `addModule(libraryId, phase, position)` — pre-session timeline editing (handles linked parents)
 - `insertAtActive(libraryId)` — runtime module injection (used by Helper Modal). Inserts at position 0 in the current phase (`timeline.currentPhase`, OR `'follow-up'` when `sessionPhase === 'completed'`), resets the previously-active module to upcoming, navigates to the active tab, and precaches audio. Handles linked-parent modules (e.g. protector-dialogue) by creating Part 1 + Part 2 with a shared `linkedGroupId`; Part 2's phase tracks Part 1 (`integration` during active session, `follow-up` after completion).
+- `abandonModule(instanceId)` — resets a module to `upcoming` (clears `startedAt`, `completedAt`), marks any journal entries written during the attempt, clears meditation playback, and clears the appropriate active module pointer (`activePreSessionModule` for pre-session, `currentModuleInstanceId` for follow-up). Used by the skip button override in pre-session and follow-up contexts — these phases don't record "skipped" status; the user can simply retry later. Active-session modules continue using `skipModule()` which records the skip and auto-advances.
 - `updateSessionProfile(field, value)` — universal user-data writer. Auto-derives `dosageFeedback` when `plannedDosageMg` is written. Replaced the old per-slice writers (`updateIntakeResponse`, `updateSubstanceChecklist`, `setTouchstone`, `setIntentionJournalEntryId`, `setFocusJournalEntryId`) in store v24.
 - `beginPeakTransition()`, `transitionToPeak()`, `transitionToIntegration()`
 - `recordCheckInResponse()`, `recordIngestionTime()`, `confirmIngestionTime()`

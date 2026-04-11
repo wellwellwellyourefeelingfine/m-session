@@ -174,13 +174,9 @@ function renderContentLines(lines) {
   return (
     <div className="space-y-0">
       {lines.map((line, i) => {
-        // Circle spacer
+        // Paragraph spacer
         if (line === '\u00A7') {
-          return (
-            <div key={i} className="flex justify-center my-4">
-              <div className="circle-spacer" />
-            </div>
-          );
+          return <div key={i} className="h-3" />;
         }
 
         // Numbered line with accent number
@@ -265,24 +261,24 @@ function renderContentLines(lines) {
 function renderScreenHeader(screen) {
   if (!screen.header) return null;
 
-  // Named-concept headers (same gray as other headers — accent is only used inline)
+  // Named-concept headers
   if (screen.header === '{felt_sense_header}') {
     return (
-      <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+      <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
         Felt sense
       </p>
     );
   }
   if (screen.header === '{felt_shift_header}') {
     return (
-      <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+      <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
         Felt shift
       </p>
     );
   }
 
   return (
-    <p className="text-[var(--color-text-secondary)] text-xs uppercase tracking-wider mb-3">
+    <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
       {screen.header}
     </p>
   );
@@ -307,7 +303,7 @@ function ReflectionScreen({ screen, journalValues, onJournalChange, selectorValu
           </p>
         )}
         <div>
-          <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+          <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
             {screen.journal.prompt}
           </p>
           <textarea
@@ -331,7 +327,7 @@ function ReflectionScreen({ screen, journalValues, onJournalChange, selectorValu
       <div className="space-y-6">
         {renderContentLines(screen.lines)}
         <div>
-          <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+          <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
             {screen.journal.prompt}
           </p>
           <textarea
@@ -359,7 +355,7 @@ function ReflectionScreen({ screen, journalValues, onJournalChange, selectorValu
 
         {/* Selector */}
         <div>
-          <p className="text-[var(--color-text-primary)] text-base normal-case tracking-normal mb-3" style={{ fontFamily: 'DM Serif Text, serif' }}>
+          <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
             {screen.selector.prompt}
           </p>
           <div className="space-y-2">
@@ -388,7 +384,7 @@ function ReflectionScreen({ screen, journalValues, onJournalChange, selectorValu
         {/* Optional journal prompt */}
         {screen.journal && (
           <div>
-            <p className="text-[var(--color-text-secondary)] text-[10px] uppercase tracking-wider mb-1">
+            <p className="text-lg mb-3 text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
               {screen.journal.prompt}
             </p>
             <textarea
@@ -645,26 +641,26 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
           {!playback.isLoading ? (
-            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-4rem' }}>
-              <div className="text-center space-y-4 animate-fadeIn">
+            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
+              <div className="text-center space-y-2">
                 <h2
-                  className="font-serif text-2xl text-[var(--color-text-primary)]"
-                  style={{ textTransform: 'none' }}
+                  className="text-2xl text-[var(--color-text-primary)]"
+                  style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
                 >
                   {meditation.title}
                 </h2>
-                <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+                <p className="text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
                   {meditation.description}
                 </p>
               </div>
 
               {/* Variation selector */}
-              <div className="mt-6 space-y-3 max-w-sm mx-auto">
+              <div className="mt-3 space-y-1.5 max-w-sm mx-auto">
                 {Object.values(meditation.variations).map(v => (
                   <button
                     key={v.key}
                     onClick={() => setSelectedVariation(v.key)}
-                    className={`w-full text-left px-4 py-3 border transition-colors ${
+                    className={`w-full text-left px-4 pt-2 pb-1 border transition-colors ${
                       selectedVariation === v.key
                         ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                         : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
@@ -672,10 +668,10 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
-                        <p className="text-base text-[var(--color-text-primary)] font-['DM_Serif_Text']">
+                        <p className="text-sm text-[var(--color-text-primary)] font-['DM_Serif_Text'] leading-snug">
                           {v.label}
                         </p>
-                        <p className="text-[10px] text-[var(--color-text-tertiary)] mt-0.5 uppercase tracking-wider">
+                        <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider leading-tight">
                           {v.description}
                         </p>
                       </div>

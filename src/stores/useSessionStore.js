@@ -2268,40 +2268,6 @@ export const useSessionStore = create(
         });
       },
 
-      // Skip a pre-session module
-      // Clears activePreSessionModule and stays on Active tab (Pre-Session Active Page)
-      skipPreSessionModule: (instanceId) => {
-        const state = get();
-        const module = state.modules.items.find((m) => m.instanceId === instanceId);
-        if (!module) return;
-
-        const now = Date.now();
-
-        // Mark journal entries with PRE-SESSION header
-        if (module.startedAt) {
-          get()._markPreSessionJournalEntries(module.startedAt);
-        }
-
-        // Mark module as skipped, clear active module, stay on Active tab
-        set({
-          activePreSessionModule: null,
-          modules: {
-            ...state.modules,
-            items: state.modules.items.map((m) =>
-              m.instanceId === instanceId
-                ? { ...m, status: 'skipped', completedAt: now }
-                : m
-            ),
-          },
-          meditationPlayback: {
-            moduleInstanceId: null,
-            isPlaying: false,
-            hasStarted: false,
-            startedAt: null,
-            accumulatedTime: 0,
-          },
-        });
-      },
 
       // Exit pre-session module without completing (return to Home)
       exitPreSessionModule: () => {
@@ -2324,6 +2290,47 @@ export const useSessionStore = create(
           },
         });
         useAppStore.getState().setCurrentTab('home');
+      },
+
+      // Abandon a module in progress — reset to upcoming so the user can retry.
+      // Used by pre-session and follow-up skip overrides (these phases don't
+      // record skipped status; they just let the user come back later).
+      abandonModule: (instanceId) => {
+        const state = get();
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module) return;
+
+        // Mark any journal entries written during the attempt
+        if (module.startedAt) {
+          get()._markPreSessionJournalEntries(module.startedAt);
+        }
+
+        const updates = {
+          modules: {
+            ...state.modules,
+            items: state.modules.items.map((m) =>
+              m.instanceId === instanceId
+                ? { ...m, status: 'upcoming', startedAt: null, completedAt: null }
+                : m
+            ),
+          },
+          meditationPlayback: {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          },
+        };
+
+        // Clear the appropriate active module pointer based on phase
+        if (module.phase === 'pre-session') {
+          updates.activePreSessionModule = null;
+        } else {
+          updates.modules.currentModuleInstanceId = null;
+        }
+
+        set(updates);
       },
 
       // ============================================

@@ -129,26 +129,26 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state — variation selector */}
         {!playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-4rem' }}>
-            <div className="text-center space-y-4 animate-fadeIn">
+          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
+            <div className="text-center space-y-2">
               <h2
-                className="font-serif text-2xl text-[var(--color-text-primary)]"
-                style={{ textTransform: 'none' }}
+                className="text-2xl text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
               >
                 {meditation.title}
               </h2>
-              <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
                 {meditation.description}
               </p>
             </div>
 
             {/* Variation selector */}
-            <div className="mt-6 space-y-3 max-w-sm mx-auto">
+            <div className="mt-3 space-y-1.5 max-w-sm mx-auto">
               {Object.values(meditation.variations).map(v => (
                 <button
                   key={v.key}
                   onClick={() => setSelectedVariation(v.key)}
-                  className={`w-full text-left px-4 py-3 border transition-colors ${
+                  className={`w-full text-left px-4 pt-2 pb-1 border transition-colors ${
                     selectedVariation === v.key
                       ? 'border-[var(--accent)] bg-[var(--accent)]/10'
                       : 'border-[var(--color-border)] hover:border-[var(--color-text-tertiary)]'
@@ -156,10 +156,10 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-[var(--color-text-primary)]">
+                      <p className="text-sm text-[var(--color-text-primary)] font-['DM_Serif_Text'] leading-snug">
                         {v.label}
                       </p>
-                      <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 normal-case tracking-normal font-['DM_Serif_Text']">
+                      <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase tracking-wider leading-tight">
                         {v.description}
                       </p>
                     </div>

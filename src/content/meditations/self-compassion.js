@@ -499,13 +499,13 @@ export const selfCompassionMeditation = {
   variations: {
     default: {
       key: 'default',
-      label: 'General Self-Compassion',
+      label: 'General',
       description: 'A practice of offering kindness to yourself, as you are.',
       duration: calculateVariationDuration('default'),
     },
     relationship: {
       key: 'relationship',
-      label: 'Self-Compassion with a Relationship',
+      label: 'With a relationship',
       description: 'Extend compassion to yourself, then toward someone important to you.',
       duration: calculateVariationDuration('relationship'),
     },

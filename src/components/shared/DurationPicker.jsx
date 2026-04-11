@@ -24,12 +24,18 @@ export default function DurationPicker({
   const [closing, setClosing] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !closing) {
       const index = validSteps.indexOf(currentDuration);
       setSelectedIndex(index >= 0 ? index : 0);
-      setClosing(false);
     }
   }, [isOpen, currentDuration, validSteps]);
+
+  // Reset closing state only when the picker opens fresh
+  useEffect(() => {
+    if (isOpen) {
+      setClosing(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;

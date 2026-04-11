@@ -62,8 +62,8 @@ export default function ActiveView() {
   const followUp = useSessionStore((state) => state.followUp);
   const activePreSessionModule = useSessionStore((state) => state.activePreSessionModule);
   const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
-  const skipPreSessionModule = useSessionStore((state) => state.skipPreSessionModule);
   const exitPreSessionModule = useSessionStore((state) => state.exitPreSessionModule);
+  const abandonModule = useSessionStore((state) => state.abandonModule);
   const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
@@ -302,7 +302,7 @@ export default function ActiveView() {
                 module={preSessionModule}
                 onProgressUpdate={handleProgressUpdate}
                 onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
-                onSkip={() => skipPreSessionModule(preSessionModule.instanceId)}
+                onSkip={() => abandonModule(preSessionModule.instanceId)}
               />
             </div>
           </div>
@@ -385,6 +385,7 @@ export default function ActiveView() {
             <ModuleRenderer
               module={currentModule}
               onProgressUpdate={handleProgressUpdate}
+              onSkip={() => abandonModule(currentModule.instanceId)}
             />
           );
         }

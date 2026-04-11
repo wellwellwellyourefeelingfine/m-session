@@ -49,6 +49,7 @@ export default function ModuleCard({
   statusIcon,
   statusText,
   phaseCompleted = false,
+  grayWhenCompleted = false,
 }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -81,7 +82,10 @@ export default function ModuleCard({
   const isSkipped = isActiveSession && (isBooster
     ? (booster.status === 'skipped' || booster.status === 'expired')
     : module.status === 'skipped');
-  const isGrayedOut = isCompleted || isSkipped;
+  // Non-active-session graying (pre-session and follow-up timelines)
+  const isNonSessionCompleted = !isActiveSession && grayWhenCompleted
+    && (module.status === 'completed' || module.status === 'skipped');
+  const isGrayedOut = isCompleted || isSkipped || isNonSessionCompleted;
   const plannedDosageMg = useSessionStore((state) => state.sessionProfile.plannedDosageMg);
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionPhase = useSessionStore((state) => state.sessionPhase);

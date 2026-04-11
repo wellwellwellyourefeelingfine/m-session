@@ -51,10 +51,6 @@ export default function MeditationSection({
 
   // Duration sync (for variable-duration meditations without variations)
   const duration = useSyncedDuration(module, { hasStarted: false });
-  const [selectedDuration, setSelectedDuration] = useState(
-    module.duration || meditation?.defaultDuration || 10
-  );
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
 
   // Transcript modal
   const transcript = useTranscriptModal();
@@ -67,7 +63,7 @@ export default function MeditationSection({
     if (hasVariations) {
       const clips = meditation.assembleVariation(selectedVariation);
       const variationMeta = meditation.variations[selectedVariation];
-      const fixedDuration = variationMeta?.duration || selectedDuration * 60;
+      const fixedDuration = variationMeta?.duration || duration.selected * 60;
 
       const sequence = generateTimedSequence(clips, 1.0, {
         speakingRate: meditation.speakingRate || 150,
@@ -79,11 +75,11 @@ export default function MeditationSection({
     }
 
     // Standard variable-duration meditation
-    const durationSeconds = selectedDuration * 60;
+    const durationSeconds = duration.selected * 60;
 
     // Filter conditional prompts based on selected duration
     const prompts = meditation.prompts.filter((p) => {
-      if (p.conditional?.minDuration && selectedDuration < p.conditional.minDuration) return false;
+      if (p.conditional?.minDuration && duration.selected < p.conditional.minDuration) return false;
       return true;
     });
 
@@ -97,7 +93,7 @@ export default function MeditationSection({
     });
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, hasVariations, selectedVariation, selectedDuration, meditationId]);
+  }, [meditation, hasVariations, selectedVariation, duration.selected, meditationId]);
 
   // Get current variation's prompts for the transcript modal
   const transcriptPrompts = useMemo(() => {
@@ -149,7 +145,7 @@ export default function MeditationSection({
   // Display duration for idle screen
   const displayDuration = hasVariations
     ? Math.round((meditation.variations[selectedVariation]?.duration || 0) / 60)
-    : selectedDuration;
+    : duration.selected;
 
   return (
     <>
@@ -198,11 +194,11 @@ export default function MeditationSection({
             {/* Duration selector (for variable-duration meditations without variations) */}
             {hasVariableDuration && (
               <button
-                onClick={() => setShowDurationPicker(true)}
+                onClick={() => duration.setShowPicker(true)}
                 className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                   hover:border-[var(--color-text-tertiary)] transition-colors"
               >
-                <span className="text-2xl font-light">{selectedDuration}</span>
+                <span className="text-2xl font-light">{duration.selected}</span>
                 <span className="text-sm ml-1">min</span>
               </button>
             )}
@@ -282,10 +278,10 @@ export default function MeditationSection({
       {/* Duration picker (variable-duration meditations only) */}
       {hasVariableDuration && meditation.durationSteps && (
         <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={(val) => { setSelectedDuration(val); duration.handleChange(val); }}
-          currentDuration={selectedDuration}
+          isOpen={duration.showPicker}
+          onClose={() => duration.setShowPicker(false)}
+          onSelect={duration.setSelected}
+          currentDuration={duration.selected}
           durationSteps={meditation.durationSteps}
           minDuration={meditation.minDuration ? meditation.minDuration / 60 : undefined}
           maxDuration={meditation.maxDuration ? meditation.maxDuration / 60 : undefined}
