@@ -26,7 +26,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 - Pre-session ritual with intention-setting and centering breath
 - 3-phase active session (come-up, peak, synthesis) with human-driven transitions
 - 8-step closing ritual capturing self-gratitude, future messages, and commitments
-- Time-locked follow-up modules at 12h, 24h, and 48h post-session
+- Follow-up phase (unlocked 8h post-session) with time-locked check-ins and a growing library of MAPS-inspired integration activities
 
 **17+ Activity Modules**
 - 11 audio-synced guided meditations with pre-recorded TTS voice guidance
@@ -125,11 +125,15 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
     ├── "Integration Takes Time" — encouragement to return for follow-up
     └── "Take Care" → Close Session → PostCloseScreen animation → Home
 
-11. FOLLOW-UP (time-locked, available on Home screen)
-    ├── Values Compass Revisit (12h) — revisit session values map (conditional — only if completed in session)
-    ├── Check-In (24h) — feeling selector + optional note
-    ├── Revisit (24h) — re-read intention, future message, commitment + reflection
-    └── Integration Reflection (48h) — what's emerged + commitment status check
+11. FOLLOW-UP (phase unlocked 8h after session, available on Home screen)
+    ├── Time-locked modules (all unlock at 8h):
+    │   ├── Check-In — feeling selector + body awareness + optional note
+    │   ├── Revisit — re-read intention, future message, commitment + reflection
+    │   ├── Values Compass Revisit (conditional — only if completed in session)
+    │   └── Integration Reflection — what's emerged + commitment status check
+    └── Integration activity library (user-selectable, MAPS-inspired):
+        ├── Integration Reflection Journal, Relationships Reflection, Lifestyle Reflection
+        └── Spirit & Meaning, Body & Somatic Awareness, Nature & Connection
 ```
 
 ---

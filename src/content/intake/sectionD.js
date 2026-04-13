@@ -108,11 +108,11 @@ export const sectionDQuestions = [
         'Lithium',
         'Tramadol',
         'DXM (cough suppressants)',
-        'HIV protease inhibitors (Ritonavir)',
+        'Ritonavir, cobicistat, or HIV drugs containing them',
         'Stimulants (Adderall, Ritalin)',
       ]},
       { type: 'spacer' },
-      { type: 'text', text: 'These medications can interact dangerously with MDMA, ranging from blunted effects to serotonin syndrome and other serious risks. Consult with your doctor about titrating off this medication before you decide to begin a session.' },
+      { type: 'text', text: 'These medications interact with MDMA in various ways. Some (like MAOIs and CYP450 inhibitors such as ritonavir) are genuinely dangerous and should not be combined. Others (like SSRIs and SNRIs) primarily block MDMA\'s effects rather than creating dangerous interactions. The risks and appropriate actions differ by medication — consult your prescribing physician before making any changes to your medication regimen.' },
     ],
     options: [
       { value: 'yes', label: 'Yes' },

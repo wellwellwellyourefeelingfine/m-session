@@ -1,6 +1,6 @@
 /**
  * Follow-Up Session Content
- * Content definitions for the three time-locked follow-up modules
+ * Content definitions for the four time-locked follow-up modules
  */
 
 // ============================================
@@ -28,17 +28,17 @@ export const FOLLOW_UP_MODULES = {
     id: 'valuesCompassFollowUp',
     title: 'Values Compass',
     description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
-    lockedDescription: 'This module will be available 12 hours after your session ended.',
+    lockedDescription: 'This module will be available 8 hours after your session ended.',
     duration: '10-20 minutes',
-    unlockHours: 12,
+    unlockHours: 8,
   },
   integration: {
     id: 'integration',
     title: 'Integration Reflection',
     description: 'A deeper reflection on how integration is unfolding.',
-    lockedDescription: 'This module will be available 24 hours after your session ended.',
+    lockedDescription: 'This module will be available 8 hours after your session ended.',
     duration: '5-10 minutes',
-    unlockHours: 24,
+    unlockHours: 8,
   },
 };
 

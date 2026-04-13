@@ -400,21 +400,31 @@ export default function FAQTool() {
         </p>
         <p>
           <span className="text-[var(--color-text-primary)]">SSRIs</span> (Prozac,
-          Zoloft, Lexapro, etc.) — Block MDMA's effects and may increase risk of
-          serotonin syndrome. Most people taper off SSRIs before MDMA sessions, but
-          this should only be done under medical supervision.
+          Zoloft, Lexapro, etc.) — Block or significantly reduce MDMA's effects.
+          SSRIs inhibit the serotonin transporter that MDMA acts on, which diminishes
+          MDMA's activity rather than amplifying it. Sessions on SSRIs are unlikely
+          to be therapeutically effective. Some people taper off SSRIs beforehand, but
+          this should only be done gradually and under medical supervision.
         </p>
         <p>
           <span className="text-[var(--color-text-primary)]">MAOIs</span> — Dangerous
           combination. Risk of serotonin syndrome and hypertensive crisis.
         </p>
         <p>
-          <span className="text-[var(--color-text-primary)]">Lithium</span> — Reports
-          of seizures and other serious reactions. Do not combine.
+          <span className="text-[var(--color-text-primary)]">Lithium</span> — Limited
+          evidence suggests a possibly increased risk of adverse effects, though the
+          interaction with MDMA specifically is not well-studied. Discuss with your
+          prescribing physician before proceeding.
         </p>
         <p>
-          <span className="text-[var(--color-text-primary)]">Tramadol</span> — Increased
-          seizure risk.
+          <span className="text-[var(--color-text-primary)]">Tramadol</span> — Lowers
+          seizure threshold and has serotonergic properties, creating a risk of both
+          seizures and serotonin-related adverse effects when combined with MDMA.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Ritonavir, cobicistat, and HIV drugs containing them</span> — These
+          strongly inhibit the liver enzymes that metabolize MDMA, which can cause it
+          to accumulate to dangerous or fatal levels. Do not combine.
         </p>
         <p>
           If you take any psychiatric medications, research interactions carefully
@@ -473,23 +483,23 @@ export default function FAQTool() {
           in a calm home setting.
         </p>
         <p>
-          MDMA causes your body to release antidiuretic hormone, which
-          makes your kidneys retain water. If you drink large amounts on
-          top of this, your blood sodium can drop to dangerous levels—a
-          condition called <span className="text-[var(--color-text-primary)]">hyponatremia</span>.
-          Symptoms include headache, nausea, confusion, and in severe
-          cases, seizures.
+          MDMA use is associated with <span className="text-[var(--color-text-primary)]">hyponatremia</span> —
+          dangerously low blood sodium. The exact mechanism is debated (it may
+          involve changes in antidiuretic hormone, increased water intake behavior,
+          or other pathways), but the risk is well-documented. Symptoms include
+          headache, nausea, confusion, and in severe cases, seizures.
         </p>
         <p>
-          <span className="text-[var(--color-text-primary)]">A good rule:</span> Sip
-          small amounts regularly rather than gulping large quantities.
-          About 250ml (one cup) per hour is reasonable if you're resting
-          at home. If you're more active—dancing, moving around—you may
-          need slightly more, but still moderate.
+          <span className="text-[var(--color-text-primary)]">A good rule:</span> Drink
+          when you're thirsty, not on a schedule. For a home session lasting
+          around six hours, aim to drink no more than about 500ml (two cups)
+          total. If you're more active—dancing, moving around—you may need
+          slightly more, but still moderate.
         </p>
         <p>
-          Electrolyte drinks or coconut water can help maintain sodium
-          balance. Avoid forcing yourself to drink if you're not thirsty.
+          Note that adding electrolytes has not been shown to prevent
+          hyponatremia in comparable contexts. The most effective strategy
+          is simply limiting total fluid intake.
         </p>
       </Question>
 

@@ -241,7 +241,7 @@ export default function DosageTool() {
           </li>
           <li>
             <span className="text-app-black dark:text-app-white">Medications matter.</span>{' '}
-            SSRIs, MAOIs, and lithium have dangerous interactions.
+            MAOIs and CYP450 inhibitors (ritonavir, cobicistat) are dangerous. SSRIs block MDMA's effects.
           </li>
           <li>
             <span className="text-app-black dark:text-app-white">New batch?</span>{' '}

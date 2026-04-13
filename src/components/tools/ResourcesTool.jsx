@@ -245,6 +245,20 @@ export default function ResourcesTool() {
         <ul className="space-y-2 text-sm">
           <li>
             <a
+              href="https://github.com/groeneveld/mdma-guide/blob/main/Open%20MDMA.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[var(--color-text-primary)] underline hover:opacity-70 transition-opacity"
+            >
+              Open MDMA
+            </a>
+            <span className="text-[var(--color-text-secondary)]">
+              {' '}— Mark Groeneveld. Evidence-based guide to MDMA therapy grounded in memory reconsolidation and the defense cascade
+            </span>
+          </li>
+
+          <li>
+            <a
               href="https://maps.org/mdma/"
               target="_blank"
               rel="noopener noreferrer"

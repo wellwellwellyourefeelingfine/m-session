@@ -437,8 +437,8 @@ export const useSessionStore = create(
         unlockTimes: {
           checkIn: null,      // closedAt + 8 hours
           revisit: null,      // closedAt + 8 hours
-          integration: null,  // closedAt + 24 hours
-          valuesCompassFollowUp: null, // closedAt + 12 hours (only if VC completed)
+          integration: null,  // closedAt + 8 hours
+          valuesCompassFollowUp: null, // closedAt + 8 hours (only if VC completed)
         },
         modules: {
           checkIn: {

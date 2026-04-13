@@ -129,7 +129,7 @@ export default function ActiveEmptyState() {
           {[
             {
               label: 'Reduced amygdala reactivity',
-              body: 'The amygdala is the brain region most associated with detecting and responding to threat. MDMA decreases its activation, particularly in response to negative emotional stimuli. Neuroimaging studies show reduced reactivity to angry and fearful facial expressions, and reduced blood flow to the amygdala correlates with the intensity of MDMA\u2019s subjective effects. This is the neurological basis for the reduced defensiveness described above: your brain\u2019s alarm system turns down, allowing emotionally charged material to surface without triggering the usual defensive reactions.',
+              body: 'The amygdala is the brain region most associated with detecting and responding to threat. MDMA decreases its activation, particularly in response to negative emotional stimuli. Neuroimaging studies show reduced reactivity to angry and fearful facial expressions, and reduced blood flow to the amygdala correlates with the intensity of MDMA\u2019s subjective effects. This reduced activation may contribute to the diminished defensiveness people experience: with the brain\u2019s threat-detection system quieter, emotionally charged material can surface without triggering the usual protective reactions.',
             },
             {
               label: 'Preserved cognitive lucidity',
@@ -141,11 +141,11 @@ export default function ActiveEmptyState() {
             },
             {
               label: 'Oxytocin surge',
-              body: 'MDMA triggers a substantial release of oxytocin, reaching plasma levels up to four times baseline. This effect is unique to MDMA and not observed with LSD or amphetamine. Oxytocin is involved in trust, social bonding, and the encoding of emotional information as safe rather than threatening. This surge likely contributes to the feelings of openness, connection, and safety that people commonly report, and may play a role in reducing the fear response to difficult emotional material.',
+              body: 'MDMA triggers a substantial release of oxytocin, reaching plasma levels up to four times baseline. This effect is unique to MDMA and not observed with LSD or amphetamine. Oxytocin is involved in trust, social bonding, and the encoding of emotional information as safe rather than threatening. This surge is associated with the feelings of openness, connection, and safety that people commonly report, though the precise relationship between oxytocin levels and subjective experience is still being studied.',
             },
             {
               label: 'BDNF and neuroplasticity',
-              body: 'MDMA increases expression of brain-derived neurotrophic factor (BDNF), a protein essential for the formation of new neural connections. BDNF plays a central role in learning, memory updating, and fear extinction \u2014 the process by which old threat associations lose their grip. When BDNF signaling is blocked in animal studies, MDMA\u2019s effects on fear extinction disappear entirely. This mechanism is likely a key reason why the changes people experience during MDMA sessions tend to persist well beyond the acute effects of the substance.',
+              body: 'MDMA increases expression of brain-derived neurotrophic factor (BDNF), a protein essential for the formation of new neural connections. BDNF plays a central role in learning and memory updating \u2014 the process by which the brain revises old emotional associations. In animal studies, blocking BDNF signaling prevents MDMA from producing lasting changes in learned fear responses. This suggests BDNF-driven neuroplasticity may be one reason why shifts experienced during MDMA sessions can persist well beyond the acute effects of the substance.',
             },
           ].map((item, i) => (
             <div key={i} className="bg-[var(--bg-primary)] px-5 pt-4 pb-5">
