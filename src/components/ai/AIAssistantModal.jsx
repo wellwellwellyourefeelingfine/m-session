@@ -9,7 +9,7 @@ import { useAIStore } from '../../stores/useAIStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { AIService } from '../../services/aiService';
-import { buildSystemPrompt, buildMinimalSystemPrompt } from '../../utils/buildSystemPrompt';
+import { buildSystemPrompt, buildMinimalSystemPrompt, buildCompletedSessionPrompt } from '../../utils/buildSystemPrompt';
 import { DesktopSidebar, MobileSidebar, MobileMenuButton } from './ChatSidebar';
 import ChatWindow from './ChatWindow';
 import ChatInput from './ChatInput';
@@ -149,10 +149,15 @@ export default function AIAssistantModal({ onClose, isClosing = false }) {
       const journalState = useJournalStore.getState();
       const currentSettings = useAIStore.getState().settings;
 
-      const isInActiveSession = sessionState.sessionPhase === 'active';
-      const systemPrompt = isInActiveSession
-        ? buildSystemPrompt(sessionState, journalState, currentSettings.contextSettings)
-        : buildMinimalSystemPrompt();
+      const phase = sessionState.sessionPhase;
+      let systemPrompt;
+      if (phase === 'active' || phase === 'paused') {
+        systemPrompt = buildSystemPrompt(sessionState, journalState, currentSettings.contextSettings);
+      } else if (phase === 'completed') {
+        systemPrompt = buildCompletedSessionPrompt(sessionState, journalState, currentSettings.contextSettings);
+      } else {
+        systemPrompt = buildMinimalSystemPrompt(sessionState);
+      }
 
       // Create AI service and stream response
       const service = new AIService(provider, apiKey);

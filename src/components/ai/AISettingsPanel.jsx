@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
 import { useAIStore } from '../../stores/useAIStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
-import { buildSystemPrompt, buildMinimalSystemPrompt } from '../../utils/buildSystemPrompt';
+import { buildSystemPrompt, buildMinimalSystemPrompt, buildCompletedSessionPrompt, CONTEXT_DEFAULTS } from '../../utils/buildSystemPrompt';
 
 export default function AISettingsPanel({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('context'); // 'context' | 'prompt'
@@ -18,15 +18,7 @@ export default function AISettingsPanel({ isOpen, onClose }) {
   const updateSettings = useAIStore((state) => state.updateSettings);
 
   // Session context toggles - use local state for pending changes
-  const savedContextSettings = settings.contextSettings || {
-    includeSessionStatus: true,
-    includeTimeSinceIngestion: true,
-    includeDosage: true,
-    includeCurrentModule: true,
-    includeProgress: true,
-    includeJournal: true,
-    includeIntention: true,
-  };
+  const savedContextSettings = settings.contextSettings || { ...CONTEXT_DEFAULTS };
 
   // Local state for pending changes (before Apply)
   const [localContextSettings, setLocalContextSettings] = useState(savedContextSettings);
@@ -67,10 +59,14 @@ export default function AISettingsPanel({ isOpen, onClose }) {
   // Get current system prompt for display (using local settings for preview)
   const sessionState = useSessionStore.getState();
   const journalState = useJournalStore.getState();
-  const isInActiveSession = sessionState.sessionPhase === 'active';
+  const sessionPhase = sessionState.sessionPhase;
+  const isInActiveSession = sessionPhase === 'active' || sessionPhase === 'paused';
+  const isCompletedSession = sessionPhase === 'completed';
   const systemPrompt = isInActiveSession
     ? buildSystemPrompt(sessionState, journalState, localContextSettings)
-    : buildMinimalSystemPrompt();
+    : isCompletedSession
+      ? buildCompletedSessionPrompt(sessionState, journalState, localContextSettings)
+      : buildMinimalSystemPrompt(sessionState);
 
   // Handle click outside to close
   const handleBackdropClick = (e) => {
@@ -89,6 +85,9 @@ export default function AISettingsPanel({ isOpen, onClose }) {
     { key: 'includeProgress', label: 'Session Progress', description: 'Completed modules and check-ins' },
     { key: 'includeJournal', label: 'Journal Entries', description: 'Recent journal entries (last 3)' },
     { key: 'includeIntention', label: 'User Intention', description: 'Focus area and holding question from intake' },
+    { key: 'includeHelperModal', label: 'Helper Modal', description: 'If you used the Helper, what was selected' },
+    { key: 'includeModuleLibrary', label: 'Activity Library', description: 'Available activities the AI can suggest' },
+    { key: 'includeEmergencyContact', label: 'Emergency Contact', description: 'Your saved emergency contact name and phone' },
   ];
 
   return (
@@ -212,7 +211,9 @@ export default function AISettingsPanel({ isOpen, onClose }) {
               <p className="text-[9px] text-[var(--text-tertiary)]">
                 {isInActiveSession
                   ? 'Full context is included because you are in an active session.'
-                  : 'Minimal context is shown because no session is active.'}
+                  : isCompletedSession
+                    ? 'Post-session context is shown for integration support.'
+                    : 'Minimal context is shown because no session is active.'}
               </p>
             </div>
           )}
