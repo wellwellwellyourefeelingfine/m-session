@@ -6,9 +6,10 @@
  * - Session elapsed time
  * - Booster timing warning (if applicable)
  * - Option to continue to integration phase
- * - Close button to dismiss and return to open space
+ * - Tapping backdrop or "Stay in Open Space" dismisses
  */
 
+import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 
 // Format elapsed minutes as human-readable string
@@ -25,13 +26,13 @@ const formatElapsedTime = (minutes) => {
 };
 
 export default function PeakPhaseCheckIn() {
-  // Store subscriptions
   const booster = useSessionStore((state) => state.booster);
   const beginIntegrationTransition = useSessionStore((state) => state.beginIntegrationTransition);
   const dismissPeakCheckIn = useSessionStore((state) => state.dismissPeakCheckIn);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
 
-  // Computed values
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
+
   const elapsedMinutes = getElapsedMinutes();
   const boosterTaken = booster.status === 'taken';
   const minutesSinceBooster = boosterTaken && booster.boosterTakenAt
@@ -39,48 +40,59 @@ export default function PeakPhaseCheckIn() {
     : null;
   const showBoosterWarning = boosterTaken && minutesSinceBooster !== null && minutesSinceBooster < 45;
 
-  // Handle dismiss (return to open space)
   const handleDismiss = () => {
-    dismissPeakCheckIn();
+    if (isAnimatingOut) return;
+    setIsAnimatingOut(true);
+    setTimeout(() => dismissPeakCheckIn(), 350);
   };
 
-  // Handle continue to integration phase
   const handleContinueToIntegration = () => {
-    beginIntegrationTransition();
+    if (isAnimatingOut) return;
+    setIsAnimatingOut(true);
+    setTimeout(() => beginIntegrationTransition(), 350);
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/25 flex items-end justify-center z-50 animate-fadeIn"
-      onClick={handleDismiss}
-    >
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop — fades in/out, tap to dismiss */}
       <div
-        className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp"
-        onClick={(e) => e.stopPropagation()}
+        className={`absolute inset-0 bg-black/25 ${isAnimatingOut ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        onClick={handleDismiss}
+      />
+
+      {/* Panel — slide up on open, slide down on close */}
+      <div
+        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-[var(--color-bg)] rounded-t-2xl p-6 pb-8 ${
+          isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'
+        }`}
       >
-        {/* Close button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleDismiss}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
-          >
-            <span className="text-xl">−</span>
-          </button>
-        </div>
+        {/* Close button — absolute so the header can sit flush at the top */}
+        <button
+          onClick={handleDismiss}
+          className="absolute top-4 right-4 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
+          aria-label="Dismiss"
+        >
+          <span className="text-xl">−</span>
+        </button>
 
-        <h3 className="mb-4">End of Peak Phase</h3>
+        <h2
+          className="text-xl font-light mb-2 text-center"
+          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+        >
+          End of Peak Phase
+        </h2>
 
-        <p className="text-[var(--color-text-secondary)] mb-4 leading-relaxed">
-          You've finished all of your scheduled activities in the peak phase.
+        <p className="text-[var(--color-text-tertiary)] text-xs mb-6 text-center">
+          You are about {formatElapsedTime(elapsedMinutes)} into your session.
         </p>
 
-        <p className="text-[var(--color-text-tertiary)] text-sm mb-6">
-          {formatElapsedTime(elapsedMinutes)} have elapsed since you started your session.
+        <p className="text-[var(--color-text-secondary)] text-sm mb-4 leading-relaxed">
+          You've finished all of your scheduled activities in the peak phase.
         </p>
 
         {/* Booster timing warning */}
         {showBoosterWarning && (
-          <div className="border border-[var(--accent)] bg-[var(--accent-bg)] p-4 mb-6">
+          <div className="border border-[var(--accent)] bg-[var(--accent-bg)] p-4 mb-4">
             <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
               It's been {minutesSinceBooster} minute{minutesSinceBooster !== 1 ? 's' : ''} since
               you took your booster. You may want to wait and experience the effects before
@@ -89,12 +101,11 @@ export default function PeakPhaseCheckIn() {
           </div>
         )}
 
-        <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+        <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
           When you're ready, you can continue to the synthesis phase.
         </p>
 
         <div className="space-y-3">
-          {/* Continue to integration phase */}
           <button
             onClick={handleContinueToIntegration}
             className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
@@ -102,7 +113,6 @@ export default function PeakPhaseCheckIn() {
             Continue to Synthesis Phase
           </button>
 
-          {/* Stay in open space */}
           <button
             onClick={handleDismiss}
             className="w-full py-3 text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs hover:text-[var(--color-text-secondary)] transition-colors"

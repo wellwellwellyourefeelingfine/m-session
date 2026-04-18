@@ -19,7 +19,7 @@ import { useAppStore } from '../../stores/useAppStore';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 import ModuleStatusBar from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
-import { TransitionTextarea } from '../session/transitions/shared';
+import TransitionTextarea from '../shared/TransitionTextarea';
 
 import {
   COMMITMENT_STATUSES,

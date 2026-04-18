@@ -68,27 +68,12 @@ export default function EmergencyContactView({
   //               the timer fires, state moves to 'closed' and EmergencyFlow
   //               unmounts.
   const [emergencyState, setEmergencyState] = useState('closed');
-  const emergencyRef = useRef(null);
 
   // Notes textarea ref + focus state. The save button is shown only while
   // the textarea is focused AND has content, and tapping it dismisses the
   // keyboard by blurring the textarea (which also flushes the auto-save).
   const notesRef = useRef(null);
   const [notesFocused, setNotesFocused] = useState(false);
-
-  // When the user expands "I need more help", smooth-scroll the EmergencyFlow
-  // wrapper into view using `block: 'end'` so the BOTTOM of the flow (the
-  // Fireside Project card) lands at the bottom of the visible area. Same
-  // pattern used by TriageResultStep.
-  useEffect(() => {
-    if (emergencyState !== 'open') return;
-    const id = requestAnimationFrame(() => {
-      if (emergencyRef.current) {
-        emergencyRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [emergencyState]);
 
   // Notify the parent whenever the "I need more help" expansion flips
   // visible / hidden, so the modal can grow to its expanded height while
@@ -461,7 +446,6 @@ export default function EmergencyContactView({
           still gets the reassurance text + 911/112 row + Fireside Project. */}
       {isExpanded && (
         <div
-          ref={emergencyRef}
           className={`mt-4 ${isClosing ? 'transition-opacity' : 'animate-fadeIn'}`}
           style={
             isClosing

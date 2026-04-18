@@ -112,9 +112,8 @@ function getProgressLabel(sessionPhase, currentPhase) {
   return 'Started';
 }
 
-export default function SessionHistoryModal({ onClose }) {
+export default function SessionHistoryModal({ onClose, onLoad }) {
   const sessions = useSessionHistoryStore((s) => s.sessions);
-  const loadSession = useSessionHistoryStore((s) => s.loadSession);
   const sessionPhase = useSessionStore((s) => s.sessionPhase);
   const journalEntries = useJournalStore((s) => s.entries);
 
@@ -182,15 +181,16 @@ export default function SessionHistoryModal({ onClose }) {
     if (hasCurrentData) {
       setConfirmSessionId(sessionId);
     } else {
-      loadSession(sessionId);
-      handleClose();
+      // Parent (SessionMenu) wraps the load in a fade-overlay transition and closes this modal
+      onLoad(sessionId);
     }
   };
 
   const handleConfirmLoad = () => {
-    loadSession(confirmSessionId);
+    const id = confirmSessionId;
     setConfirmSessionId(null);
-    handleClose();
+    // Parent (SessionMenu) wraps the load in a fade-overlay transition and closes this modal
+    onLoad(id);
   };
 
   // Sort sessions newest first

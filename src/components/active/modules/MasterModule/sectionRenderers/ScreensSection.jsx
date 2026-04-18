@@ -60,6 +60,12 @@ export default function ScreensSection({
   onRouteToSection,
   // Progress reporting (called when screen position changes)
   onScreenChange,
+  // ── Transition-module extensions (absent when used by MasterModule) ──
+  customBlockRegistry,        // { blockType: Component } — custom block renderers
+  sessionData,                // derived session-level data (passed to condition evaluator + custom blocks)
+  storeState,                 // full session store snapshot (for storeValue conditions)
+  skipEnabled = true,         // transition configs can disable Skip entirely
+  skipConfirmMessage = 'Skip this activity?',
 }) {
   const screens = section.screens || [];
   const FADE_MS = section.ritualFade ? FADE_RITUAL : FADE_DEFAULT;
@@ -78,12 +84,29 @@ export default function ScreensSection({
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Condition evaluation context
+  // Block readiness map (for custom blocks that gate Continue via reportReady)
+  const [blockReadiness, setBlockReadiness] = useState({});
+
+  const reportReady = useCallback((blockKey, isReady) => {
+    setBlockReadiness((prev) => {
+      if (prev[blockKey] === isReady) return prev;
+      return { ...prev, [blockKey]: isReady };
+    });
+  }, []);
+
+  // Reset readiness when screen changes — unmounted blocks shouldn't keep their state
+  useEffect(() => {
+    setBlockReadiness({});
+  }, [screenIndex]);
+
+  // Condition evaluation context (includes sessionData + storeState when provided)
   const conditionContext = useMemo(() => ({
     choiceValues,
     selectorValues,
     visitedSections: visitedSections || [],
-  }), [choiceValues, selectorValues, visitedSections]);
+    sessionData,
+    storeState,
+  }), [choiceValues, selectorValues, visitedSections, sessionData, storeState]);
 
   const isScreenVisible = useCallback((screen) => {
     return evaluateCondition(screen.condition, conditionContext);
@@ -178,8 +201,16 @@ export default function ScreensSection({
       return null;
     })();
 
-    // If a choice has a route, exit section and route to target — fade everything
-    if (selectedRoute && onRouteToSection) {
+    // Only fire the route if the target hasn't been visited yet. Without this
+    // guard, back-navigating to a choice-with-route screen and pressing Continue
+    // would re-fire the route (because choiceValues persist), trapping the user.
+    const visited = visitedSections || [];
+    const routeTarget = selectedRoute
+      ? (typeof selectedRoute === 'string' ? selectedRoute : selectedRoute.to)
+      : null;
+    const shouldFireRoute = selectedRoute && onRouteToSection && !visited.includes(routeTarget);
+
+    if (shouldFireRoute) {
       setIsBodyVisible(false);
       setIsTitleVisible(false);
       setIsAnimationVisible(false);
@@ -188,6 +219,7 @@ export default function ScreensSection({
       }, FADE_MS);
       return;
     }
+    // If the route target is already visited, fall through to normal sequential advance.
 
     const nextVisible = findNextVisibleScreen(screenIndex + 1);
 
@@ -222,7 +254,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS]);
+  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
@@ -329,8 +361,41 @@ export default function ScreensSection({
           />
         );
 
-      default:
+      default: {
+        // Custom block registry fallback (transition-only)
+        const CustomBlock = customBlockRegistry?.[block.type];
+        if (CustomBlock) {
+          return (
+            <CustomBlock
+              block={block}
+              context={{
+                // State reads
+                responses,
+                selectorValues,
+                choiceValues,
+                selectorJournals,
+                visitedSections: visitedSections || [],
+                sessionData,
+                storeState,
+                conditionContext,
+                // State writers
+                setPromptResponse: onSetPromptResponse,
+                toggleSelector: onToggleSelector,
+                setSelectorJournal: onSetSelectorJournal,
+                setChoiceValue: onChoiceSelect,
+                // Navigation
+                advanceSection: onSectionComplete,
+                routeToSection: onRouteToSection,
+                // Readiness gating
+                reportReady,
+                // Utility
+                accentTerms,
+              }}
+            />
+          );
+        }
         return null;
+      }
     }
   };
 
@@ -339,6 +404,9 @@ export default function ScreensSection({
   const allChoicesSelected = bodyBlocks
     .filter((b) => b.type === 'choice')
     .every((b) => choiceValues[b.key]);
+
+  // Readiness gating — any block reporting ready: false disables Continue + Skip
+  const anyBlockNotReady = Object.values(blockReadiness).some((r) => r === false);
 
   const hasPreviousVisible = findPrevVisibleScreen(screenIndex - 1) !== -1;
 
@@ -390,16 +458,16 @@ export default function ScreensSection({
       <ModuleControlBar
         phase="active"
         primary={
-          hasChoiceBlock && !allChoicesSelected
-            ? { label: 'Continue', onClick: handleNext, disabled: true }
+          (hasChoiceBlock && !allChoicesSelected) || anyBlockNotReady
+            ? { label: getPrimaryLabel(), onClick: handleNext, disabled: true }
             : { label: getPrimaryLabel(), onClick: handleNext }
         }
         showBack={hasPreviousVisible || canGoBackToPreviewSection}
         onBack={handleBack}
         backConfirmMessage={null}
-        showSkip={true}
+        showSkip={skipEnabled && !anyBlockNotReady}
         onSkip={onSkip}
-        skipConfirmMessage="Skip this activity?"
+        skipConfirmMessage={skipConfirmMessage}
         rightSlot={
           section.rightSlotViewer && generatedImages?.[section.rightSlotViewer]
             ? <SlotButton icon={<ViewImageIcon />} label="View image" onClick={() => onOpenViewer?.(section.rightSlotViewer)} />

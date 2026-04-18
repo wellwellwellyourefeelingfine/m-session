@@ -5,7 +5,7 @@
  * Supports both pre-session editing and active session display
  */
 
-import { forwardRef, useState, useRef } from 'react';
+import { forwardRef, useState, useRef, useEffect } from 'react';
 import ModuleCard from './ModuleCard';
 import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
 
@@ -57,10 +57,11 @@ const PhaseSection = forwardRef(function PhaseSection(
   },
   ref
 ) {
-  // Track collapse animation stages
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [contentVisible, setContentVisible] = useState(true);
-  const [heightCollapsed, setHeightCollapsed] = useState(false);
+  // Track collapse animation stages — completed phases default to collapsed
+  const startCollapsed = phaseStatus === 'completed';
+  const [isCollapsed, setIsCollapsed] = useState(startCollapsed);
+  const [contentVisible, setContentVisible] = useState(!startCollapsed);
+  const [heightCollapsed, setHeightCollapsed] = useState(startCollapsed);
 
   const handleToggleCollapse = () => {
     if (!isCollapsed) {
@@ -79,6 +80,19 @@ const PhaseSection = forwardRef(function PhaseSection(
       }, 600);
     }
   };
+
+  // Auto-collapse when a phase transitions to completed (e.g., finishing phase 1 → phase 2).
+  // Since Home tab stays mounted, initial state alone doesn't cover this transition.
+  useEffect(() => {
+    if (phaseStatus === 'completed' && !isCollapsed) {
+      setContentVisible(false);
+      const timer = setTimeout(() => {
+        setHeightCollapsed(true);
+        setIsCollapsed(true);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [phaseStatus]);
   // Track modules being deleted for fade-out animation
   const [deletingModuleId, setDeletingModuleId] = useState(null);
   // Track modules being swapped for smooth animation

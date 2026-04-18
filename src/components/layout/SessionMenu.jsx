@@ -29,11 +29,13 @@ export default function SessionMenu() {
   const [showHistory, setShowHistory] = useState(false);
   const [showDownload, setShowDownload] = useState(false);
   const [showFullVersion, setShowFullVersion] = useState(false);
+  const [newSessionOverlay, setNewSessionOverlay] = useState(null); // null | 'fading-in' | 'fading-out'
   const menuRef = useRef(null);
 
   const sessionPhase = useSessionStore((s) => s.sessionPhase);
   const journalEntries = useJournalStore((s) => s.entries);
   const archiveAndReset = useSessionHistoryStore((s) => s.archiveAndReset);
+  const loadSession = useSessionHistoryStore((s) => s.loadSession);
   const archivedSessions = useSessionHistoryStore((s) => s.sessions);
   const darkMode = useAppStore((s) => s.darkMode);
   const toggleDarkMode = useAppStore((s) => s.toggleDarkMode);
@@ -45,7 +47,6 @@ export default function SessionMenu() {
   const { checkStatus, updateAvailable, checkForUpdate, applyUpdate } = useAppUpdaterContext();
 
   const hasData = sessionPhase !== 'not-started' || journalEntries.length > 0;
-  const hasImages = journalEntries.some((e) => e.hasImage);
 
   // Close menu with animation
   const closeMenu = useCallback(() => {
@@ -90,9 +91,34 @@ export default function SessionMenu() {
     setShowConfirm(true);
   };
 
+  // Covers the screen with a full-bleed overlay that fades in, runs the session-swap
+  // action behind the cover, then fades out to reveal the new session state.
+  const runSessionTransition = (action) => {
+    setNewSessionOverlay('fading-in');
+    // Two rAFs to guarantee the initial opacity-0 paint before transitioning to 1
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setNewSessionOverlay('visible');
+      });
+    });
+    setTimeout(() => {
+      action();
+      // Small pause so the new session state commits before we reveal it
+      setTimeout(() => {
+        setNewSessionOverlay('fading-out');
+        setTimeout(() => setNewSessionOverlay(null), 300);
+      }, 100);
+    }, 250);
+  };
+
   const handleConfirmNewSession = () => {
-    archiveAndReset();
     setShowConfirm(false);
+    runSessionTransition(archiveAndReset);
+  };
+
+  const handleLoadSession = (sessionId) => {
+    setShowHistory(false);
+    runSessionTransition(() => loadSession(sessionId));
   };
 
   const handleShowHistory = () => {
@@ -339,15 +365,15 @@ export default function SessionMenu() {
       {showConfirm && createPortal(
         <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-50 px-6">
           <div className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-sm rounded-lg p-6 shadow-lg">
-            <h3 className="mb-4 text-[var(--color-text-primary)]">Start New Session?</h3>
-            <p className="text-[var(--color-text-secondary)] text-sm mb-4">
+            <h3
+              className="mb-4 text-2xl text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Start New Session?
+            </h3>
+            <p className="text-[var(--color-text-secondary)] text-sm mb-6 leading-relaxed">
               {getWarningMessage()}
             </p>
-            {hasImages && (
-              <p className="text-[var(--color-text-tertiary)] text-xs mb-4 italic">
-                Note: Any images attached to journal entries won't be carried over. Download them before starting a new session.
-              </p>
-            )}
             <div className="space-y-3">
               <button
                 type="button"
@@ -369,8 +395,25 @@ export default function SessionMenu() {
         document.body
       )}
 
+      {/* New-session transition overlay — covers app while reset happens */}
+      {newSessionOverlay && createPortal(
+        <div
+          className="fixed inset-0 z-[60] bg-[var(--color-bg)]"
+          style={{
+            opacity: newSessionOverlay === 'visible' ? 1 : 0,
+            transition: newSessionOverlay === 'fading-out'
+              ? 'opacity 300ms ease-out'
+              : 'opacity 250ms ease-out',
+          }}
+        />,
+        document.body
+      )}
+
       {showHistory && createPortal(
-        <SessionHistoryModal onClose={() => setShowHistory(false)} />,
+        <SessionHistoryModal
+          onClose={() => setShowHistory(false)}
+          onLoad={handleLoadSession}
+        />,
         document.body
       )}
 

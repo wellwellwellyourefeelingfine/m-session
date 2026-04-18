@@ -16,6 +16,10 @@ import AsciiDiamond from '../../../capabilities/animations/AsciiDiamond';
 import LeafDrawV2 from '../../../capabilities/animations/LeafDrawV2';
 import CompassV2 from '../../../capabilities/animations/CompassV2';
 import WaveLoop from '../../../capabilities/animations/WaveLoop';
+import Sunrise from '../../../capabilities/animations/Sunrise';
+import FullSun from '../../../capabilities/animations/FullSun';
+import Sunset from '../../../capabilities/animations/Sunset';
+import Moonrise from '../../../capabilities/animations/Moonrise';
 
 export const ANIMATION_MAP = {
   'ascii-moon': AsciiMoon,
@@ -24,6 +28,10 @@ export const ANIMATION_MAP = {
   'leaf': LeafDrawV2,
   'compass': CompassV2,
   'wave': WaveLoop,
+  'sunrise': Sunrise,
+  'full-sun': FullSun,
+  'sunset': Sunset,
+  'moonrise': Moonrise,
 };
 
 export default function HeaderBlock({ block }) {

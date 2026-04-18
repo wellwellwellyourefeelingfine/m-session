@@ -17,7 +17,7 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
 import ModuleStatusBar from '../active/ModuleStatusBar';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
-import { TransitionTextarea } from '../session/transitions/shared';
+import TransitionTextarea from '../shared/TransitionTextarea';
 
 import {
   CHECK_IN_FEELINGS,

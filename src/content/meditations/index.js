@@ -24,6 +24,10 @@ import { shortGroundingMeditation } from './short-grounding';
 import { theDescentMeditation } from './the-descent';
 import { theCycleClosingMeditation } from './the-cycle-closing';
 import { pendulationMeditation } from './pendulation';
+import { transitionOpening } from './transition-opening';
+import { transitionCenteringBreath } from './transition-centering-breath';
+import { transitionPeakGrounding } from './transition-peak-grounding';
+import { transitionClosing } from './transition-closing';
 
 // Registry of all available meditations
 export const meditationLibrary = {
@@ -42,6 +46,10 @@ export const meditationLibrary = {
   'the-descent': theDescentMeditation,
   'the-cycle-closing': theCycleClosingMeditation,
   'pendulation': pendulationMeditation,
+  'transition-opening': transitionOpening,
+  'transition-centering-breath': transitionCenteringBreath,
+  'transition-peak-grounding': transitionPeakGrounding,
+  'transition-closing': transitionClosing,
 };
 
 // Re-export guided breath orb utilities

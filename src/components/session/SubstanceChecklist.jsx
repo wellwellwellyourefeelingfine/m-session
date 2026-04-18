@@ -1,23 +1,36 @@
 /**
- * SubstanceChecklist Component
- * Pre-session preparation questionnaire (6 steps)
+ * SubstanceChecklist — "Opening Checklist" (user-facing name)
  *
- * Step 0: Do you have your MDMA ready?
- * Step 1: Have you tested your substance?
- * Step 2: Dosage preparation (input + feedback)
- * Step 3: Prepare your space (tips)
- * Step 4: Trusted contact & session helper
- * Step 5: Emotional state check-in
+ * Pre-session logistical checklist. Runs after the user clicks Begin Session
+ * on Home, before the Opening Ritual. Backend file/slice names retained for
+ * store-migration compatibility; user-facing copy says "Opening Checklist".
  *
- * After completion, transitions to PreSessionIntro via substanceChecklistSubPhase
+ * Flow:
+ *   index    → welcoming cover page with Part 1 / Part 2 TOC (no status bar)
+ *   setting  → interactive checklist (water, space, etc.) with confirm-if-unchecked
+ *   journal  → physical-journal-compatibility notice
+ *   substance → "Do you have your MDMA ready?"
+ *   tested   → "Have you tested your substance?"
+ *   dosage   → dose input + real-time feedback + Dosage Assistant link
+ *   booster  → (conditional on booster.considerBooster) supplemental-dose prep
+ *   contact  → trusted contact display/edit
+ *   handoff  → "Ready to Begin" closing — fires transition to Opening Ritual
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { calculateBoosterDose } from '../../stores/useSessionStore';
+import { useAppStore } from '../../stores/useAppStore';
+import { useToolsStore } from '../../stores/useToolsStore';
 import AsciiDiamond from '../active/capabilities/animations/AsciiDiamond';
+import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import ModuleStatusBar from '../active/ModuleStatusBar';
 import ModuleControlBar from '../active/capabilities/ModuleControlBar';
+import ConfirmModal from '../journal/ConfirmModal';
+import { NotebookPenIcon, ArrowUpRightIcon } from '../shared/Icons';
+import ChecklistCheckbox from './openingChecklist/ChecklistCheckbox';
+import SketchyCircle from './openingChecklist/SketchyCircle';
+import OpeningIndex from './openingChecklist/OpeningIndex';
 
 const DOSAGE_FEEDBACK = {
   light: {
@@ -42,10 +55,9 @@ const DOSAGE_FEEDBACK = {
   },
 };
 
-// Dosage safety thresholds
 const DOSAGE_THRESHOLDS = {
-  HEAVY: 151,      // Above therapeutic range - warning
-  DANGEROUS: 300,  // Potential for serious harm - blocked
+  HEAVY: 151,
+  DANGEROUS: 300,
 };
 
 const DOSAGE_WARNINGS = {
@@ -58,16 +70,48 @@ const DOSAGE_WARNINGS = {
   dangerous: {
     title: 'Dangerous Dose',
     message: 'This dose could cause serious harm including hyperthermia, serotonin syndrome, cardiac complications, or overdose. Doses this high have been associated with fatalities. Please recalculate your dose with therapeutic guidelines in mind.',
-    confirmLabel: null, // Cannot proceed
+    confirmLabel: null,
     canProceed: false,
   },
 };
 
+// Setting Checklist items — ids are local-only, used for tracking checked state
+const SETTING_ITEMS = [
+  { id: 'water', label: 'Water on hand' },
+  { id: 'space', label: 'Enough space to move and settle' },
+  { id: 'blanket', label: 'A place to lay down and a blanket' },
+  { id: 'eye-mask', label: 'An eye mask (optional)' },
+  { id: 'audio', label: 'External speakers or headphones for music and voice guidance' },
+  { id: 'phone-dnd', label: 'Phone on Do Not Disturb' },
+  // Booster item appended conditionally
+];
+
+const BOOSTER_CHECKLIST_ITEM = {
+  id: 'booster-ready',
+  label: 'Booster dose weighed out and ready',
+};
+
 export default function SubstanceChecklist() {
-  const [step, setStep] = useState(0);
+  // Step navigation as string keys (clearer than numeric index once the flow has
+  // multiple conditional branches)
+  const [stepKey, setStepKey] = useState('index');
   const [isVisible, setIsVisible] = useState(true);
-  const [showDosageWarning, setShowDosageWarning] = useState(null); // 'heavy' | 'dangerous' | null
-  const [editingContact, setEditingContact] = useState(false);
+  const [showDosageWarning, setShowDosageWarning] = useState(null);
+
+  // Start in edit mode if the user has no saved contact yet. Without this,
+  // `showInputs = editingContact || !hasSavedContact` would flip to false the
+  // moment the user typed their first letter (because `hasSavedContact`
+  // becomes true), unmounting the input and losing focus. Initializing here
+  // ensures the inputs stay visible through the whole typing session.
+  const [editingContact, setEditingContact] = useState(() => {
+    const c = useSessionStore.getState().sessionProfile?.emergencyContactDetails;
+    return !(c?.name || c?.phone);
+  });
+
+  // Setting-checklist local state. Keys match SETTING_ITEMS ids + booster id.
+  // Not persisted — resets on unmount.
+  const [checkedItems, setCheckedItems] = useState({});
+  const [showSettingConfirm, setShowSettingConfirm] = useState(false);
 
   const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const updateSessionProfile = useSessionStore((state) => state.updateSessionProfile);
@@ -79,17 +123,35 @@ export default function SubstanceChecklist() {
   const sessionMode = sessionProfile.sessionMode;
   const isSitterSession = sessionMode === 'with-sitter';
 
+  const showBoosterStep = booster.considerBooster;
+
+  // Active step sequence — built dynamically so conditionals land in the right
+  // spot when the user has / doesn't have booster flow.
+  const stepSequence = useMemo(() => {
+    const seq = ['index', 'setting', 'journal', 'substance', 'tested', 'dosage'];
+    if (showBoosterStep) seq.push('booster');
+    seq.push('contact', 'handoff');
+    return seq;
+  }, [showBoosterStep]);
+
+  // Flow steps (the ones that appear in the "X of N" counter) exclude the index.
+  const countedSteps = stepSequence.filter((k) => k !== 'index');
+  const countedIndex = countedSteps.indexOf(stepKey);
+  const totalCountedSteps = countedSteps.length;
+
+  // Setting checklist items (booster conditional)
+  const settingItems = useMemo(() => {
+    return showBoosterStep ? [...SETTING_ITEMS, BOOSTER_CHECKLIST_ITEM] : SETTING_ITEMS;
+  }, [showBoosterStep]);
+
+  const allSettingChecked = settingItems.every((item) => checkedItems[item.id]);
+
   const handleContactFieldChange = (field, value) => {
     updateSessionProfile('emergencyContactDetails', {
       ...emergencyContactDetails,
       [field]: value,
     });
   };
-
-  const showBoosterStep = booster.considerBooster;
-  const totalSteps = showBoosterStep ? 7 : 6;
-
-  const BOOSTER_STEP = 3; // Only used when showBoosterStep is true
 
   const fadeTransition = (callback) => {
     setIsVisible(false);
@@ -99,14 +161,25 @@ export default function SubstanceChecklist() {
     }, 300);
   };
 
+  const goToStep = (key) => {
+    fadeTransition(() => setStepKey(key));
+  };
+
   const handleNext = () => {
-    fadeTransition(() => setStep(step + 1));
+    const idx = stepSequence.indexOf(stepKey);
+    if (idx >= 0 && idx < stepSequence.length - 1) {
+      goToStep(stepSequence[idx + 1]);
+    }
   };
 
   const handleBack = () => {
-    fadeTransition(() => setStep(step - 1));
+    const idx = stepSequence.indexOf(stepKey);
+    if (idx > 0) {
+      goToStep(stepSequence[idx - 1]);
+    }
   };
 
+  // Final handoff to Opening Ritual
   const handleContinueToIntro = () => {
     setIsVisible(false);
     setTimeout(() => {
@@ -114,170 +187,241 @@ export default function SubstanceChecklist() {
     }, 300);
   };
 
-  const renderStep = () => {
-    // Booster prep step (inserted after dosage when applicable)
-    if (showBoosterStep && step === BOOSTER_STEP) {
-      const boosterDose = sessionProfile.plannedDosageMg
-        ? calculateBoosterDose(sessionProfile.plannedDosageMg)
-        : null;
-
-      return (
-        <div className="space-y-8">
-          <div>
-            <h2 className="text-sm mb-4">Supplemental Dose</h2>
-            <p className="text-[var(--color-text-primary)] mb-3">
-              Do you have your supplemental dose prepared?
-            </p>
-            <p className="text-[var(--color-text-tertiary)] text-sm mb-6">
-              We highly recommend weighing out your supplemental booster dose ahead of time. Measuring a dose while under the effects of your initial dose can be difficult and may lead to impaired judgement.
-            </p>
-          </div>
-
-          {boosterDose && (
-            <div className="p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
-              <p className="text-[var(--color-text-secondary)] text-sm">
-                Based on your initial dose, your supplemental dose would be approximately{' '}
-                <span className="text-[var(--color-text-primary)] font-medium">{boosterDose}mg</span>.
-              </p>
-              <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
-                This is approximately half your initial dose.
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                updateBoosterPrepared('yes');
-                handleNext();
-              }}
-              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-            >
-              Yes, I have it ready
-            </button>
-            <button
-              onClick={() => {
-                updateBoosterPrepared('no');
-                handleNext();
-              }}
-              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-            >
-              No, I'll prepare it now
-            </button>
-            <button
-              onClick={() => {
-                updateBoosterPrepared('decided-not-to');
-                handleNext();
-              }}
-              className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
-            >
-              I've decided not to take a booster
-            </button>
-          </div>
-        </div>
-      );
+  // Setting step — Continue handler with confirm-if-unchecked
+  const handleSettingContinue = () => {
+    if (allSettingChecked) {
+      handleNext();
+    } else {
+      setShowSettingConfirm(true);
     }
+  };
 
-    // Map step for non-booster logic
-    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
+  const handleSettingConfirmProceed = () => {
+    setShowSettingConfirm(false);
+    handleNext();
+  };
 
-    switch (displayStep) {
-      // Step 0: Do you have your MDMA ready?
-      case 0:
+  const toggleSettingItem = (id) => {
+    setCheckedItems((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Dosage Assistant navigation — matches intake's pattern
+  const handleOpenDosageTool = () => {
+    const { openTools, toggleTool } = useToolsStore.getState();
+    if (!openTools.includes('dosage')) {
+      toggleTool('dosage');
+    }
+    useAppStore.getState().setCurrentTab('tools');
+  };
+
+  // Dosage warning flow
+  const getDosageWarningLevel = () => {
+    const dose = parseInt(sessionProfile.plannedDosageMg, 10);
+    if (!dose || isNaN(dose)) return null;
+    if (dose >= DOSAGE_THRESHOLDS.DANGEROUS) return 'dangerous';
+    if (dose >= DOSAGE_THRESHOLDS.HEAVY) return 'heavy';
+    return null;
+  };
+
+  const handleDosageContinue = () => {
+    const warningLevel = getDosageWarningLevel();
+    if (warningLevel) {
+      setShowDosageWarning(warningLevel);
+    } else {
+      updateSessionProfile('hasPreparedDosage', true);
+      handleNext();
+    }
+  };
+
+  const handleDosageWarningAcknowledge = () => {
+    setShowDosageWarning(null);
+    updateSessionProfile('hasPreparedDosage', true);
+    handleNext();
+  };
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Per-step content
+  // ──────────────────────────────────────────────────────────────────────
+
+  const renderStep = () => {
+    switch (stepKey) {
+      case 'index':
+        return <OpeningIndex />;
+
+      case 'setting':
         return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Before We Begin</h2>
-              <p className="text-[var(--color-text-primary)] mb-6">
-                Let's make sure you're ready to start your session.
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <h2
+                className="text-lg text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
+                Setting the Space
+              </h2>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                Take a moment to make sure you have everything you need for your session. You don&apos;t have to check every box, just the ones that apply.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-[var(--color-text-primary)]">
-                Do you have your MDMA substance ready?
-              </p>
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    updateSessionProfile('hasSubstance', true);
-                    handleNext();
-                  }}
-                  className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-                >
-                  Yes, I have it ready
-                </button>
-                <button
-                  onClick={() => {
-                    updateSessionProfile('hasSubstance', false);
-                  }}
-                  className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
-                >
-                  Not yet
-                </button>
-              </div>
+            <div className="space-y-1">
+              {settingItems.map((item) => (
+                <ChecklistCheckbox
+                  key={item.id}
+                  label={item.label}
+                  checked={!!checkedItems[item.id]}
+                  onToggle={() => toggleSettingItem(item.id)}
+                />
+              ))}
             </div>
           </div>
         );
 
-      // Step 1: Have you tested your substance?
-      case 1:
+      case 'journal':
         return (
           <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Substance Testing</h2>
-              <p className="text-[var(--color-text-primary)] mb-6">
+            {/* Header at top */}
+            <h2
+              className="text-lg text-[var(--color-text-primary)] text-center"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+            >
+              Journal Friendly
+            </h2>
+
+            {/* Icon with animated sketchy ring — both accent-colored */}
+            <div className="flex justify-center">
+              <div className="relative" style={{ width: 140, height: 140 }}>
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <SketchyCircle size={140} strokeWidth={3} color="var(--accent)" />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-[var(--accent)]">
+                  <NotebookPenIcon size={48} />
+                </div>
+              </div>
+            </div>
+
+            {/* Body copy — primary font inherits the app's uppercase default */}
+            <div className="space-y-4">
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                m-session is designed to work alongside a physical journal.
+              </p>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                When you answer a prompt by hand, note the time in your journal. m-session records a timestamp for any prompt you skip on screen, so you can line your handwritten entries up with the moment each prompt came up.
+              </p>
+
+              {/* Example block — shows the literal journal-entry marker so the
+                  user knows exactly what a "timestamp" looks like. textTransform:
+                  'none' preserves the real casing of the journal output. */}
+              <div className="py-2 px-4 border border-[var(--color-border)]">
+                <p
+                  className="text-center text-sm text-[var(--color-text-secondary)]"
+                  style={{ textTransform: 'none' }}
+                >
+                  [no entry — 3:45 PM]
+                </p>
+              </div>
+
+              <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+                Whether you type, write by hand, or both, follow what feels natural.
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'substance':
+        return (
+          <div className="space-y-8">
+            <div className="space-y-3">
+              <h2
+                className="text-lg text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
+                Your Substance
+              </h2>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                Do you have your MDMA ready?
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  updateSessionProfile('hasSubstance', true);
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Yes, I have it ready
+              </button>
+              <button
+                onClick={() => {
+                  updateSessionProfile('hasSubstance', false);
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
+              >
+                Not yet
+              </button>
+            </div>
+          </div>
+        );
+
+      case 'tested':
+        return (
+          <div className="space-y-8">
+            <div className="space-y-3">
+              <h2
+                className="text-lg text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
+                Testing
+              </h2>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
                 Testing your substance helps ensure safety. We encourage using an at-home testing kit or sending a sample to a lab.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <p className="text-[var(--color-text-primary)]">
-                Have you tested your substance?
-              </p>
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    updateSessionProfile('hasTestedSubstance', true);
-                    handleNext();
-                  }}
-                  className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-                >
-                  Yes, I've tested it
-                </button>
-                <button
-                  onClick={() => {
-                    updateSessionProfile('hasTestedSubstance', false);
-                    handleNext();
-                  }}
-                  className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-                >
-                  No, but I'm confident in my source
-                </button>
-              </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  updateSessionProfile('hasTestedSubstance', true);
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Yes, I&apos;ve tested it
+              </button>
+              <button
+                onClick={() => {
+                  updateSessionProfile('hasTestedSubstance', false);
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                No, but I&apos;m confident in my source
+              </button>
             </div>
 
-            <p className="text-[var(--color-text-tertiary)] text-sm">
+            <p className="text-[var(--color-text-tertiary)] text-xs leading-relaxed">
               Testing resources are available in the Tools tab.
             </p>
           </div>
         );
 
-      // Step 2: Dosage preparation
-      case 2:
+      case 'dosage':
         return (
           <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Dosage</h2>
-              <p className="text-[var(--color-text-primary)] mb-6">
-                Have you weighed and prepared your intended dose?
+            <div className="space-y-3">
+              <h2
+                className="text-lg text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
+                Dosage
+              </h2>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                What dose are you planning to take?
               </p>
             </div>
 
             <div className="space-y-4">
-              <p className="text-[var(--color-text-primary)]">
-                What dose are you planning to take?
-              </p>
               <div className="flex items-center space-x-3">
                 <input
                   type="number"
@@ -289,23 +433,21 @@ export default function SubstanceChecklist() {
                 <span className="text-[var(--color-text-secondary)]">mg</span>
               </div>
 
-              {/* Dangerous dose warning - shown inline when dose >= 300mg */}
+              {/* Dangerous dose inline warning */}
               {(parseInt(sessionProfile.plannedDosageMg, 10) || 0) >= DOSAGE_THRESHOLDS.DANGEROUS && (
-                <div className="mt-6 p-4 border border-red-500/50 bg-red-500/10">
-                  <p className="font-medium mb-2 text-red-400">
-                    Dangerous Dose
-                  </p>
+                <div className="p-4 border border-red-500/50 bg-red-500/10">
+                  <p className="font-medium mb-2 text-red-400">Dangerous Dose</p>
                   <p className="text-[var(--color-text-secondary)] text-sm">
                     This dose could cause serious harm. Please recalculate your dose with therapeutic guidelines in mind.
                   </p>
                 </div>
               )}
 
-              {/* Normal dosage feedback - shown when dose is not dangerous */}
+              {/* Standard dosage feedback */}
               {sessionProfile.dosageFeedback && (parseInt(sessionProfile.plannedDosageMg, 10) || 0) < DOSAGE_THRESHOLDS.DANGEROUS && (
-                <div className="mt-6 p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
+                <div className="p-4 border border-[var(--color-border)] bg-[var(--color-bg-secondary)]">
                   <p className="font-medium mb-2">
-                    {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].range} — {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].label}
+                    {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].range} · {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].label}
                   </p>
                   <p className="text-[var(--color-text-secondary)] text-sm">
                     {DOSAGE_FEEDBACK[sessionProfile.dosageFeedback].description}
@@ -314,54 +456,89 @@ export default function SubstanceChecklist() {
               )}
             </div>
 
-            <p className="text-[var(--color-text-tertiary)] text-sm">
-              Our dosage calculator is available in the Tools tab.
-            </p>
+            {/* Dosage Assistant link — matches intake styling */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleOpenDosageTool}
+                className="inline-flex items-center gap-1 uppercase tracking-wider text-xs"
+                style={{ color: 'var(--accent)' }}
+              >
+                <span>Dosage Assistant</span>
+                <ArrowUpRightIcon size={12} />
+              </button>
+            </div>
           </div>
         );
 
-      // Step 3: Prepare your space
-      case 3:
+      case 'booster': {
+        const boosterDose = sessionProfile.plannedDosageMg
+          ? calculateBoosterDose(sessionProfile.plannedDosageMg)
+          : null;
+
         return (
           <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Prepare Your Space</h2>
-              <p className="text-[var(--color-text-primary)] mb-6">
-                Before taking your substance, take a moment to prepare your environment.
+            <div className="space-y-3">
+              <h2
+                className="text-lg text-[var(--color-text-primary)]"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
+                Supplemental Dose
+              </h2>
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+                Do you have your supplemental dose prepared?
+              </p>
+              <p className="text-[var(--color-text-tertiary)] text-sm leading-relaxed">
+                We highly recommend weighing out your supplemental booster dose ahead of time. Measuring a dose while under the effects of your initial dose can be difficult and may lead to impaired judgement.
               </p>
             </div>
 
-            <div className="space-y-4 text-[var(--color-text-primary)]">
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Make sure you have water nearby</p>
+            {boosterDose && (
+              <div className="p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
+                <p className="text-[var(--color-text-secondary)] text-sm">
+                  Based on your initial dose, your supplemental dose would be approximately{' '}
+                  <span className="text-[var(--color-text-primary)] font-medium">{boosterDose}mg</span>.
+                </p>
+                <p className="text-[var(--color-text-tertiary)] text-sm mt-2">
+                  This is approximately half your initial dose.
+                </p>
               </div>
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Have a blanket or comfortable clothing ready</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Set your phone to Do Not Disturb</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Have your journal or device ready for notes</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Have access to headphones or speakers</p>
-              </div>
-              <div className="flex items-start space-x-3">
-                <span className="text-[var(--color-text-tertiary)]">•</span>
-                <p>Consider having light snacks available for later</p>
-              </div>
+            )}
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  updateBoosterPrepared('yes');
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                Yes, I have it ready
+              </button>
+              <button
+                onClick={() => {
+                  updateBoosterPrepared('no');
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+              >
+                No, I&apos;ll prepare it now
+              </button>
+              <button
+                onClick={() => {
+                  updateBoosterPrepared('decided-not-to');
+                  handleNext();
+                }}
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
+              >
+                I&apos;ve decided not to take a booster
+              </button>
             </div>
           </div>
         );
+      }
 
-      // Step 4: Trusted Contact & Support
-      case 4: {
+      case 'contact': {
         const hasSavedContact = Boolean(
           emergencyContactDetails.name || emergencyContactDetails.phone
         );
@@ -369,7 +546,12 @@ export default function SubstanceChecklist() {
 
         return (
           <div className="space-y-6 flex flex-col items-center text-center">
-            <h2 className="text-sm">Trusted Contact & Support</h2>
+            <h2
+              className="text-lg text-[var(--color-text-primary)]"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+            >
+              Trusted Contact
+            </h2>
 
             <div className="py-2">
               <AsciiDiamond />
@@ -383,7 +565,7 @@ export default function SubstanceChecklist() {
 
             {showInputs ? (
               <>
-                <p className="text-[var(--color-text-primary)]">
+                <p className="text-[var(--color-text-primary)] text-sm">
                   Save the details of someone you trust so you can quickly reach them if needed during the session.
                 </p>
 
@@ -411,15 +593,26 @@ export default function SubstanceChecklist() {
                       color: 'var(--color-text-primary)',
                     }}
                   />
+                  <textarea
+                    placeholder="Contact Info (optional)"
+                    rows={3}
+                    value={emergencyContactDetails.notes || ''}
+                    onChange={(e) => handleContactFieldChange('notes', e.target.value)}
+                    className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors resize-none leading-relaxed"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text-primary)',
+                    }}
+                  />
                 </div>
 
                 <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
-                  Optional &mdash; you can leave this blank and continue.
+                  Optional. You can leave this blank and continue.
                 </p>
               </>
             ) : (
               <>
-                <p className="text-[var(--color-text-primary)]">
+                <p className="text-[var(--color-text-primary)] text-sm">
                   If things get difficult, this is who you said you&apos;d reach out to.
                 </p>
 
@@ -443,6 +636,14 @@ export default function SubstanceChecklist() {
                       {emergencyContactDetails.phone}
                     </p>
                   )}
+                  {emergencyContactDetails.notes && (
+                    <p
+                      className="text-sm leading-relaxed whitespace-pre-wrap"
+                      style={{ color: 'var(--color-text-tertiary)', textTransform: 'none' }}
+                    >
+                      {emergencyContactDetails.notes}
+                    </p>
+                  )}
                 </div>
 
                 <button
@@ -459,64 +660,36 @@ export default function SubstanceChecklist() {
         );
       }
 
-      // Step 5: Emotional State
-      case 5:
+      case 'handoff':
         return (
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-sm mb-4">Emotional Check-In</h2>
-              <p className="text-[var(--color-text-primary)] mb-6">
-                How would you describe your current emotional state?
+          <div className="space-y-6 text-center">
+            <h2
+              className="text-2xl text-[var(--color-text-primary)]"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+            >
+              Ready to Begin
+            </h2>
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+
+            {/* Primary affirmation — each sentence on its own line, centered */}
+            <div className="space-y-1">
+              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+                The setting is prepared.
+              </p>
+              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+                Your substance is on hand.
+              </p>
+              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+                Your safety measures are in place.
               </p>
             </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  updateSessionProfile('emotionalState', 'calm');
-                  handleContinueToIntro();
-                }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-              >
-                Calm and centered
-              </button>
-              <button
-                onClick={() => {
-                  updateSessionProfile('emotionalState', 'anxious');
-                  handleContinueToIntro();
-                }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-              >
-                Some anxiety
-              </button>
-              <button
-                onClick={() => {
-                  updateSessionProfile('emotionalState', 'excited');
-                  handleContinueToIntro();
-                }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-              >
-                Excited and open
-              </button>
-              <button
-                onClick={() => {
-                  updateSessionProfile('emotionalState', 'heavy');
-                  handleContinueToIntro();
-                }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
-              >
-                Carrying heaviness
-              </button>
-              <button
-                onClick={() => {
-                  updateSessionProfile('emotionalState', 'neutral');
-                  handleContinueToIntro();
-                }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
-              >
-                Neutral
-              </button>
-            </div>
+            {/* Secondary closing — left-aligned, slightly smaller */}
+            <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed text-left">
+              You&apos;ve taken care of what needs to be taken care of. When you&apos;re ready, we&apos;ll move into the opening ritual together.
+            </p>
           </div>
         );
 
@@ -525,94 +698,76 @@ export default function SubstanceChecklist() {
     }
   };
 
-  const progress = ((step + 1) / totalSteps) * 100;
+  // ──────────────────────────────────────────────────────────────────────
+  // Controls
+  // ──────────────────────────────────────────────────────────────────────
 
-  // Determine if this step has inline selection buttons (no primary button needed)
-  const hasInlineSelection = () => {
-    // Steps with yes/no or multi-choice buttons that auto-advance
-    if (showBoosterStep && step === BOOSTER_STEP) return true;
-    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
-    return displayStep === 0 || displayStep === 1 || displayStep === 5;
-  };
-
-  // Check dosage level for warnings
-  const getDosageWarningLevel = () => {
-    const dose = parseInt(sessionProfile.plannedDosageMg, 10);
-    if (!dose || isNaN(dose)) return null;
-    if (dose >= DOSAGE_THRESHOLDS.DANGEROUS) return 'dangerous';
-    if (dose >= DOSAGE_THRESHOLDS.HEAVY) return 'heavy';
-    return null;
-  };
-
-  // Handle dosage continue with safety checks
-  const handleDosageContinue = () => {
-    const warningLevel = getDosageWarningLevel();
-    if (warningLevel) {
-      setShowDosageWarning(warningLevel);
-    } else {
-      updateSessionProfile('hasPreparedDosage', true);
-      handleNext();
-    }
-  };
-
-  // Handle dosage warning acknowledgment
-  const handleDosageWarningAcknowledge = () => {
-    setShowDosageWarning(null);
-    updateSessionProfile('hasPreparedDosage', true);
-    handleNext();
-  };
-
-  // Get primary button configuration for each step
+  // Steps whose Continue button the control bar renders (steps with inline
+  // selection buttons, or where the index screen handles its own Continue,
+  // don't use this slot).
   const getPrimaryButton = () => {
-    // Steps with inline selection don't need a primary button
-    if (hasInlineSelection()) {
-      return null;
-    }
-
-    const displayStep = showBoosterStep && step > BOOSTER_STEP ? step - 1 : step;
     const dose = parseInt(sessionProfile.plannedDosageMg, 10);
     const isDangerousDose = dose >= DOSAGE_THRESHOLDS.DANGEROUS;
 
-    switch (displayStep) {
-      case 2: // Dosage - requires input, blocked if dangerous
+    switch (stepKey) {
+      case 'index':
+        return { label: 'Continue', onClick: handleNext };
+
+      case 'setting':
+        return { label: 'Continue', onClick: handleSettingContinue };
+
+      case 'journal':
+        return { label: 'Continue', onClick: handleNext };
+
+      case 'dosage':
         return {
           label: 'Continue',
           onClick: handleDosageContinue,
           disabled: !sessionProfile.plannedDosageMg || isDangerousDose,
         };
-      case 3: // Prepare space
-        return {
-          label: 'Continue',
-          onClick: handleNext,
-        };
-      case 4: // Trusted contact
-        return {
-          label: 'Continue',
-          onClick: handleNext,
-        };
+
+      case 'contact':
+        return { label: 'Continue', onClick: handleNext };
+
+      case 'handoff':
+        return { label: 'Begin', onClick: handleContinueToIntro };
+
+      // 'substance', 'tested', 'booster' have inline-select buttons — no primary.
       default:
         return null;
     }
   };
 
-  const canGoBack = step > 0;
+  const canGoBack = stepKey !== 'index';
+
+  const showStatusBar = stepKey !== 'index';
+  const progress = stepKey === 'index'
+    ? 0
+    : ((countedIndex + 1) / totalCountedSteps) * 100;
 
   return (
     <>
-      <ModuleStatusBar
-        progress={progress}
-        leftLabel="Preparation"
-        rightContent={
-          <span className="text-[var(--color-text-tertiary)] text-xs">
-            {step + 1} of {totalSteps}
-          </span>
-        }
-      />
+      {showStatusBar && (
+        <ModuleStatusBar
+          progress={progress}
+          leftLabel="Opening Checklist"
+          rightContent={
+            <span className="text-[var(--color-text-tertiary)] text-xs">
+              {countedIndex + 1} of {totalCountedSteps}
+            </span>
+          }
+        />
+      )}
 
-      {/* Main content container - positioned below status bar, above control bar */}
-      <div className="fixed left-0 right-0 overflow-auto" style={{ top: 'var(--header-plus-status)', bottom: 'var(--bottom-chrome)' }}>
+      {/* Main content container */}
+      <div
+        className="fixed left-0 right-0 overflow-auto"
+        style={{
+          top: showStatusBar ? 'var(--header-plus-status)' : 'var(--header-height)',
+          bottom: 'var(--bottom-chrome)',
+        }}
+      >
         <div className="max-w-md mx-auto px-6 py-6">
-          {/* Content with fade animation */}
           <div
             className="transition-opacity duration-300"
             style={{ opacity: isVisible ? 1 : 0 }}
@@ -622,7 +777,6 @@ export default function SubstanceChecklist() {
         </div>
       </div>
 
-      {/* Control bar - no skip button for preparation */}
       <ModuleControlBar
         phase="active"
         primary={getPrimaryButton()}
@@ -631,6 +785,18 @@ export default function SubstanceChecklist() {
         backConfirmMessage={null}
         showSkip={false}
       />
+
+      {/* Confirm dialog when Continue is pressed with unchecked setting items */}
+      {showSettingConfirm && (
+        <ConfirmModal
+          title="Are you ready to begin?"
+          message="There are still items on the checklist that you haven't addressed. Take your time here and make sure you have everything you need before moving on."
+          confirmLabel="I'm ready"
+          cancelLabel="Go Back"
+          onConfirm={handleSettingConfirmProceed}
+          onCancel={() => setShowSettingConfirm(false)}
+        />
+      )}
 
       {/* Dosage Warning Modal */}
       {showDosageWarning && DOSAGE_WARNINGS[showDosageWarning] && (

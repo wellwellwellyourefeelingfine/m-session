@@ -21,7 +21,7 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import ModuleControlBar, { SlotButton } from '../active/capabilities/ModuleControlBar';
 import ModuleStatusBar from '../active/ModuleStatusBar';
 import CompassAnimation from '../active/capabilities/animations/CompassV2';
-import { TransitionTextarea } from '../session/transitions/shared';
+import TransitionTextarea from '../shared/TransitionTextarea';
 
 import MatrixModal, { ViewMatrixIcon } from '../active/modules/shared/matrix/MatrixModal';
 import { MatrixSchematic, FocusedMatrixSchematic } from '../active/modules/shared/matrix/MatrixSchematics';

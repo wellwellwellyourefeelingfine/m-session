@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 25;
+export const SESSION_STORE_VERSION = 26;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -116,7 +116,10 @@ export const useSessionStore = create(
         primaryFocus: null,            // 'self-understanding' | 'healing' | 'relationship' | 'creativity' | 'open'
         relationshipType: null,
         holdingQuestion: '',           // The user's intention text
-        emotionalState: null,          // Set by SubstanceChecklist Step 5
+        // @deprecated emotionalState — removed from Opening Checklist (2026-04).
+        //   Emotional check-in content now lives in the Opening Ritual. Field kept
+        //   for archive-restore compatibility; no readers remain in the codebase.
+        emotionalState: null,
 
         // Session preferences (Section C)
         guidanceLevel: null,           // 'full' | 'moderate' | 'minimal'
@@ -400,6 +403,73 @@ export const useSessionStore = create(
           bodySensations: [],           // Selected sensation IDs from check-in
           responseKey: null,            // Which tailored response was shown
           completedAt: null,
+        },
+      },
+
+      // ============================================
+      // TRANSITION DATA (TransitionModule system)
+      // ============================================
+      // All user-entered data from the four transitions (Opening Ritual, Peak,
+      // Peak-to-Integration, Closing Ritual). Separate from `transitionCaptures`
+      // which holds module-level captures (protectorDialogue, valuesCompass, etc.).
+      transitionData: {
+        // Body check-in selections, written immediately on every toggle
+        somaticCheckIns: {
+          opening: [],
+          peak: [],
+          integration: [],
+          closing: [],
+        },
+
+        // Touchstones
+        openingTouchstone: null,
+        closingTouchstone: null,
+        touchstoneArcReflection: null,
+
+        // Peak transition
+        oneWord: null,
+
+        // Intention additions (preserved separately per transition)
+        intentionAdditions: {
+          opening: null,
+          integration: null,
+        },
+
+        // Focus (peak-to-integration)
+        focusChanged: false,
+        newFocus: null,
+        newRelationshipType: null,
+
+        // Tailored activity (peak-to-integration)
+        tailoredActivityFocus: null,
+        tailoredActivityResponse: {},
+
+        // Closing ritual captures
+        selfGratitude: null,
+        futureMessage: null,
+        commitment: null,
+
+        // Completion timestamps
+        completedAt: {
+          opening: null,
+          peak: null,
+          integration: null,
+          closing: null,
+        },
+
+        // Persisted navigation state — allows mid-transition app closes to resume
+        // where the user left off. Cleared on transition completion.
+        activeNavigation: {
+          transitionId: null,         // null when no transition active
+          currentSectionIndex: 0,
+          visitedSections: [],
+          routeStack: [],
+          screenIndex: 0,
+          responses: {},
+          selectorValues: {},
+          selectorJournals: {},
+          choiceValues: {},
+          blockReadiness: {},         // custom block gating (§7.2)
         },
       },
 
@@ -1880,6 +1950,22 @@ export const useSessionStore = create(
         });
       },
 
+      // Universal writer for the new transitionData slice (TransitionModule system).
+      // Supports dot-path notation: updateTransitionData('somaticCheckIns.peak', [...])
+      updateTransitionData: (path, value) => {
+        set((state) => {
+          const keys = path.split('.');
+          const newData = { ...state.transitionData };
+          let current = newData;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current[keys[i]] = { ...current[keys[i]] };
+            current = current[keys[i]];
+          }
+          current[keys[keys.length - 1]] = value;
+          return { transitionData: newData };
+        });
+      },
+
       updateProtectorCapture: (field, value) => {
         const state = get();
         set({
@@ -2960,6 +3046,35 @@ export const useSessionStore = create(
               completedAt: null,
             },
           },
+          transitionData: {
+            somaticCheckIns: { opening: [], peak: [], integration: [], closing: [] },
+            openingTouchstone: null,
+            closingTouchstone: null,
+            touchstoneArcReflection: null,
+            oneWord: null,
+            intentionAdditions: { opening: null, integration: null },
+            focusChanged: false,
+            newFocus: null,
+            newRelationshipType: null,
+            tailoredActivityFocus: null,
+            tailoredActivityResponse: {},
+            selfGratitude: null,
+            futureMessage: null,
+            commitment: null,
+            completedAt: { opening: null, peak: null, integration: null, closing: null },
+            activeNavigation: {
+              transitionId: null,
+              currentSectionIndex: 0,
+              visitedSections: [],
+              routeStack: [],
+              screenIndex: 0,
+              responses: {},
+              selectorValues: {},
+              selectorJournals: {},
+              choiceValues: {},
+              blockReadiness: {},
+            },
+          },
           lifeGraph: {
             milestones: [],
             graphGenerated: false,
@@ -3618,6 +3733,66 @@ export function migrateSessionState(persistedState, version) {
             };
           } else if (state.sessionProfile) {
             state.sessionProfile.emergencyContactDetails = { name: '', phone: '', notes: '' };
+          }
+        }
+
+        // Version 25 → 26: Introduce transitionData slice for the new TransitionModule system.
+        // Reads old transitionCaptures.{peak, integration, closing} into the new shape
+        // and then deletes only those three transition-component sub-slices. Module-level
+        // captures (protectorDialogue, valuesCompass, stayWithIt, ...) remain in transitionCaptures.
+        if (version < 26) {
+          const oldTC = state.transitionCaptures || {};
+          const oldPeak = oldTC.peak || {};
+          const oldIntegration = oldTC.integration || {};
+          const oldClosing = oldTC.closing || {};
+
+          state.transitionData = {
+            somaticCheckIns: {
+              opening: [],
+              peak: oldPeak.bodySensations || [],
+              integration: [],
+              closing: [],
+            },
+            openingTouchstone: null,
+            closingTouchstone: null,
+            touchstoneArcReflection: null,
+            oneWord: oldPeak.oneWord || null,
+            intentionAdditions: {
+              opening: null,
+              integration: oldIntegration.editedIntention || null,
+            },
+            focusChanged: oldIntegration.focusChanged || false,
+            newFocus: oldIntegration.newFocus || null,
+            newRelationshipType: oldIntegration.newRelationshipType || null,
+            tailoredActivityFocus: oldIntegration.tailoredActivityFocus || null,
+            tailoredActivityResponse: oldIntegration.tailoredActivityResponse || {},
+            selfGratitude: oldClosing.selfGratitude || null,
+            futureMessage: oldClosing.futureMessage || null,
+            commitment: oldClosing.commitment || null,
+            completedAt: {
+              opening: null,
+              peak: oldPeak.completedAt || null,
+              integration: oldIntegration.completedAt || null,
+              closing: oldClosing.completedAt || null,
+            },
+            activeNavigation: {
+              transitionId: null,
+              currentSectionIndex: 0,
+              visitedSections: [],
+              routeStack: [],
+              screenIndex: 0,
+              responses: {},
+              selectorValues: {},
+              selectorJournals: {},
+              choiceValues: {},
+              blockReadiness: {},
+            },
+          };
+
+          // Remove only the three transition-component sub-slices; keep module captures
+          if (state.transitionCaptures) {
+            const { peak: _p, integration: _i, closing: _c, ...rest } = state.transitionCaptures;
+            state.transitionCaptures = rest;
           }
         }
 

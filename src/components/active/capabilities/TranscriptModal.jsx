@@ -4,9 +4,19 @@
  * Full-screen scrollable modal showing the complete text of a guided meditation.
  * Follows the same pattern as AllRecommendationsModal in MusicListeningModule.
  * Pure UI overlay — has no interaction with audio playback state.
+ *
+ * Rendered via createPortal onto document.body so it escapes any parent
+ * stacking context (e.g., the transition-opacity wrapper in TransitionModule
+ * that was briefly creating a stacking context during its entrance animation
+ * and trapping the modal beneath the Header / TabBar).
+ *
+ * Failsafes: closes on Escape keypress and when the document becomes hidden
+ * (tab switch / app backgrounding), so the user can never get stranded with
+ * the overlay up.
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 export const FADE_MS = 400;
 
@@ -43,6 +53,25 @@ export default function TranscriptModal({ isOpen, closing, onClose, title, promp
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
+  // Failsafes — close on Escape or when the app is backgrounded
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    const handleVisibility = () => {
+      if (document.hidden) onClose?.();
+    };
+
+    window.addEventListener('keydown', handleKey);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isOpen, onClose]);
+
   const handleExport = useCallback(() => {
     if (!prompts?.length) return;
     const text = `${title}\n\n${prompts.map((p) => p.text).join('\n\n')}`;
@@ -57,7 +86,7 @@ export default function TranscriptModal({ isOpen, closing, onClose, title, promp
 
   if (!isOpen) return null;
 
-  return (
+  const modal = (
     <div
       className="fixed inset-0 z-[60] bg-[var(--color-bg)] flex flex-col"
       style={{
@@ -124,4 +153,7 @@ export default function TranscriptModal({ isOpen, closing, onClose, title, promp
       </div>
     </div>
   );
+
+  // Portal onto document.body so the modal escapes any parent stacking context
+  return createPortal(modal, document.body);
 }

@@ -15,7 +15,6 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
-import { POST_CLOSE_CONTENT } from './transitions/content/closingRitualContent';
 
 // Timing constants (in milliseconds)
 const TIMING = {
@@ -125,7 +124,7 @@ export default function PostCloseScreen() {
         }}
       >
         <p className="text-white text-lg font-serif">
-          {POST_CLOSE_CONTENT.text}
+          Take care of yourself.
         </p>
       </div>
     </div>

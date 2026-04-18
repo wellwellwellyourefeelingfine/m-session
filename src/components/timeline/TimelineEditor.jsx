@@ -942,8 +942,11 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 <span className="text-[var(--color-text-tertiary)] text-xs">
                   {preSessionModules.length} {preSessionModules.length === 1 ? 'activity' : 'activities'}
                 </span>
-                <span className="text-[var(--color-text-tertiary)] text-xs ml-auto">
-                  {preSessionExpanded ? '▾' : '▸'}
+                <span className="ml-auto text-[var(--color-text-tertiary)]">
+                  {preSessionExpanded
+                    ? <CircleSkipIcon size={18} className="text-current" />
+                    : <CirclePlusIcon size={18} className="text-current" />
+                  }
                 </span>
               </button>
 

@@ -5,7 +5,6 @@
  */
 
 import { useSessionStore } from '../../stores/useSessionStore';
-import { CLOSING_CHECKIN_CONTENT } from './transitions/content/closingRitualContent';
 
 export default function ClosingCheckIn() {
   const dismissClosingCheckIn = useSessionStore((state) => state.dismissClosingCheckIn);
@@ -38,15 +37,15 @@ export default function ClosingCheckIn() {
         </div>
 
         <h3 className="mb-4 text-[var(--color-text-primary)]">
-          {CLOSING_CHECKIN_CONTENT.title}
+          Ready to Close Your Session?
         </h3>
 
         <p className="text-[var(--color-text-secondary)] mb-4 leading-relaxed">
-          {CLOSING_CHECKIN_CONTENT.body}
+          You&apos;ve completed your scheduled activities. Would you like to begin the closing ritual?
         </p>
 
         <p className="text-[var(--color-text-tertiary)] mb-8 text-sm leading-relaxed">
-          {CLOSING_CHECKIN_CONTENT.bodySecondary}
+          The closing ritual is a gentle way to honor what you experienced and create a bridge to the days ahead.
         </p>
 
         <div className="space-y-3">
@@ -54,13 +53,13 @@ export default function ClosingCheckIn() {
             onClick={handleBeginClosing}
             className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
           >
-            {CLOSING_CHECKIN_CONTENT.beginButton}
+            Begin Closing Ritual
           </button>
           <button
             onClick={handleStayHere}
             className="w-full py-3 text-[var(--color-text-tertiary)] uppercase tracking-wider text-xs hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            {CLOSING_CHECKIN_CONTENT.stayButton}
+            Not yet, stay here
           </button>
         </div>
       </div>

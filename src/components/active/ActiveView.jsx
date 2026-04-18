@@ -10,14 +10,15 @@ import { useAppStore } from '../../stores/useAppStore';
 import ModuleRenderer from './ModuleRenderer';
 import ModuleStatusBar, { formatTime } from './ModuleStatusBar';
 import SubstanceChecklist from '../session/SubstanceChecklist';
-import PreSessionIntro from '../session/PreSessionIntro';
 import ComeUpCheckIn from '../session/ComeUpCheckIn';
-import PeakTransition from '../session/PeakTransition';
 import BoosterConsiderationModal from '../session/BoosterConsiderationModal';
 import PeakPhaseCheckIn from '../session/PeakPhaseCheckIn';
-import IntegrationTransition from '../session/IntegrationTransition';
 import ClosingCheckIn from '../session/ClosingCheckIn';
-import ClosingRitual from '../session/ClosingRitual';
+import TransitionModule from '../session/TransitionModule/TransitionModule';
+import { openingRitualConfig } from '../../content/transitions/openingRitualConfig';
+import { peakTransitionConfig } from '../../content/transitions/peakTransitionConfig';
+import { peakToIntegrationConfig } from '../../content/transitions/peakToIntegrationConfig';
+import { closingRitualConfig } from '../../content/transitions/closingRitualConfig';
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import ActiveEmptyState from './ActiveEmptyState';
@@ -244,7 +245,7 @@ export default function ActiveView() {
   const renderSubstanceChecklistRouter = () => {
     switch (substanceChecklistSubPhase) {
       case 'pre-session-intro':
-        return <PreSessionIntro />;
+        return <TransitionModule config={openingRitualConfig} />;
       case 'part1':
       default:
         return <SubstanceChecklist />;
@@ -471,15 +472,15 @@ export default function ActiveView() {
   };
 
   const renderActiveSession = () => {
-    // Check for active phase transitions first
+    // Check for active phase transitions first — all four use the unified TransitionModule
     if (activeTransition === 'come-up-to-peak') {
-      return <PeakTransition />;
+      return <TransitionModule config={peakTransitionConfig} />;
     }
     if (activeTransition === 'peak-to-integration') {
-      return <IntegrationTransition />;
+      return <TransitionModule config={peakToIntegrationConfig} />;
     }
     if (activeTransition === 'session-closing') {
-      return <ClosingRitual />;
+      return <TransitionModule config={closingRitualConfig} />;
     }
 
     const sessionElapsedContent = (
