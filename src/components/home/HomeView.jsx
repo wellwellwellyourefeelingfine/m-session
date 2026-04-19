@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
@@ -150,6 +151,19 @@ export default function HomeView() {
     }
   }, [sessionPhase]);
 
+  // Shared ritual timing — overlay + moon each fade over 700ms.
+  // Sequence:
+  //   0ms      mount overlay + moon at opacity 0
+  //   50ms    'moon-visible' → overlay + moon fade in (700ms)
+  //   800ms   content swap happens behind fully-opaque overlay
+  //   1800ms  'moon-exit' → moon fades out (700ms), overlay stays opaque
+  //   2500ms  'reveal' → overlay fades out (700ms) revealing new content
+  //   3300ms  cleanup
+  const RITUAL_CONTENT_SWAP_MS = 800;
+  const RITUAL_MOON_EXIT_MS = 1800;
+  const RITUAL_REVEAL_MS = 2500;
+  const RITUAL_CLEANUP_MS = 3300;
+
   // Handle Begin Session - moon transition then navigate to substance checklist
   const handleBeginSession = () => {
     // Cancel any active pre-session module before starting the main session
@@ -165,10 +179,10 @@ export default function HomeView() {
       setTimeout(() => {
         startSubstanceChecklist();
         setCurrentTab('active');
-      }, 200),
-      setTimeout(() => setTransitionStep('moon-exit'), 2750),
-      setTimeout(() => setTransitionStep('reveal'), 3550),
-      setTimeout(() => setTransitionStep(null), 4700),
+      }, RITUAL_CONTENT_SWAP_MS),
+      setTimeout(() => setTransitionStep('moon-exit'), RITUAL_MOON_EXIT_MS),
+      setTimeout(() => setTransitionStep('reveal'), RITUAL_REVEAL_MS),
+      setTimeout(() => setTransitionStep(null), RITUAL_CLEANUP_MS),
     ];
   };
 
@@ -185,11 +199,11 @@ export default function HomeView() {
     setTransitionStep('moon-enter');
 
     transitionTimersRef.current = [
-      setTimeout(() => setTransitionStep('moon-visible'), 50),   // fade in moon (700ms)
-      setTimeout(() => completeIntake(), 200),                   // generate timeline behind overlay
-      setTimeout(() => setTransitionStep('moon-exit'), 2750),    // hold 2s, then fade out (700ms)
-      setTimeout(() => setTransitionStep('reveal'), 3550),       // moon gone, overlay fades out (1s)
-      setTimeout(() => setTransitionStep(null), 4700),           // cleanup
+      setTimeout(() => setTransitionStep('moon-visible'), 50),
+      setTimeout(() => completeIntake(), RITUAL_CONTENT_SWAP_MS),
+      setTimeout(() => setTransitionStep('moon-exit'), RITUAL_MOON_EXIT_MS),
+      setTimeout(() => setTransitionStep('reveal'), RITUAL_REVEAL_MS),
+      setTimeout(() => setTransitionStep(null), RITUAL_CLEANUP_MS),
     ];
   };
 
@@ -428,45 +442,56 @@ export default function HomeView() {
         />
       )}
 
-      {/* Background overlay — hides content during transition, fades out to reveal.
-          Constrained to the content area between header and tab bar so the
-          header and footer remain visible above the overlay. */}
-      {transitionStep != null && (
-        <div style={{
-          position: 'fixed',
-          top: 'var(--header-height)',
-          left: 0,
-          right: 0,
-          bottom: 'var(--tabbar-height)',
-          backgroundColor: 'var(--color-bg)',
-          zIndex: 10,
-          opacity: transitionStep === 'reveal' ? 0 : 1,
-          transition: 'opacity 1000ms ease',
-          pointerEvents: 'none',
-        }} />
-      )}
-
-      {/* Moon animation — floats above overlay, centered in content area */}
-      {transitionStep?.startsWith('moon') && (
-        <div style={{
-          position: 'fixed',
-          top: 'var(--header-height)',
-          left: 0,
-          right: 0,
-          bottom: 'var(--tabbar-height)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 20,
-          pointerEvents: 'none',
-        }}>
+      {/* Background overlay + moon animation — portaled to document.body so
+          the overlay survives the tab switch that happens mid-transition
+          (handleBeginSession switches to the Active tab at 200ms; HomeView
+          then becomes display:none, and anything rendered inside it would
+          vanish instantly). Rendering via portal keeps the overlay visible
+          until the transition completes. */}
+      {transitionStep != null && createPortal(
+        <>
+          {/* Background overlay — fades in to cover, stays opaque while the
+              content swap happens, then fades out to reveal. Constrained to the
+              content area between header and tab bar so the header and footer
+              remain visible above the overlay. Both fades run at 700ms for
+              ritual pacing. */}
           <div style={{
-            opacity: transitionStep === 'moon-visible' ? 1 : 0,
+            position: 'fixed',
+            top: 'var(--header-height)',
+            left: 0,
+            right: 0,
+            bottom: 'var(--tabbar-height)',
+            backgroundColor: 'var(--color-bg)',
+            zIndex: 10,
+            opacity: (transitionStep === 'moon-enter' || transitionStep === 'reveal') ? 0 : 1,
             transition: 'opacity 700ms ease',
-          }}>
-            <AsciiMoon />
-          </div>
-        </div>
+            pointerEvents: 'none',
+          }} />
+
+          {/* Moon animation — floats above overlay, centered in content area */}
+          {transitionStep?.startsWith('moon') && (
+            <div style={{
+              position: 'fixed',
+              top: 'var(--header-height)',
+              left: 0,
+              right: 0,
+              bottom: 'var(--tabbar-height)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 20,
+              pointerEvents: 'none',
+            }}>
+              <div style={{
+                opacity: transitionStep === 'moon-visible' ? 1 : 0,
+                transition: 'opacity 700ms ease',
+              }}>
+                <AsciiMoon />
+              </div>
+            </div>
+          )}
+        </>,
+        document.body
       )}
     </div>
   );

@@ -73,13 +73,22 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
    ├── Supplemental dose prep (conditional — if booster selected in intake)
    └── Trusted contact & session helper
 
-4. PRE-SESSION INTRO (6 steps + intention sub-flow)
-   ├── Arrival
-   ├── Intention menu (review intention / centering breath / skip)
-   │   └── Intention sub-flow: focus reminder → touchstone → intention text
-   ├── Letting Go
+4. OPENING RITUAL (TransitionModule)
+   ├── Prepare your space
+   ├── Body check-in (10-sensation grid + open-ended description)
+   ├── Touchstone (word or phrase anchor)
+   ├── Crossroads — consolidated optional activities
+   │   ├── Centering breath
+   │   ├── Set or review intention
+   │   ├── Gratitude moment
+   │   └── Support-person check-in
+   │   (each routes with a bookmark, returning to the Crossroads)
+   ├── Letting Go (permission screen)
    ├── Take substance → records ingestion time
    ├── Confirm ingestion time (with adjustment option)
+   ├── Reassurance: "what to expect" before the guided audio
+   ├── Guided audio — clearing the space, arriving in the body
+   ├── Reassurance: debrief + soften into the wait
    └── Begin session → TransitionBuffer → startSession()
 
 5. ACTIVE SESSION — COME-UP PHASE
@@ -91,7 +100,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 6. PEAK TRANSITION (6 steps)
    ├── "You've Arrived" — acknowledgment
    ├── One Word — capture current experience (text input)
-   ├── Body Sensations — multi-select grid (8 options)
+   ├── Body Sensations — multi-select grid (10 sensations + "Something I can't name")
    ├── Tune In — reassurance
    ├── Let It Unfold — permission statement
    └── Begin → TransitionBuffer → enter peak phase

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useToolsStore } from '../../stores/useToolsStore';
+import { useAppStore } from '../../stores/useAppStore';
 
 // ─── Come-Up Test ───────────────────────────────────────────────
 
@@ -521,6 +522,110 @@ function BoosterPeakTest() {
   );
 }
 
+// ─── Begin Session Test ─────────────────────────────────────────
+
+function BeginSessionTest() {
+  const sessionPhase = useSessionStore((state) => state.sessionPhase);
+  const resetSession = useSessionStore((state) => state.resetSession);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const isActive = sessionPhase === 'active';
+
+  const handleLaunch = () => {
+    resetSession();
+    useJournalStore.setState({ entries: [], navigation: { currentView: 'editor', activeEntryId: null } });
+    useToolsStore.setState({ openTools: [], timerDuration: 0, timerRemaining: 0, timerActive: false, timerStartTime: null });
+
+    setTimeout(() => {
+      const store = useSessionStore.getState();
+
+      useSessionStore.setState({
+        sessionProfile: {
+          ...store.sessionProfile,
+          sessionDuration: '4-6h',
+          experienceLevel: 'experienced',
+          sessionMode: 'solo-guided',
+          guidanceLevel: 'balanced',
+          considerBooster: 'no',
+          safeSpace: 'yes',
+          emergencyContact: 'yes',
+          heartConditions: 'no',
+          psychiatricHistory: 'no',
+        },
+        intake: {
+          ...store.intake,
+          isComplete: true,
+        },
+        sessionPhase: 'pre-session',
+        timeline: {
+          ...store.timeline,
+          targetDuration: 300,
+        },
+      });
+
+      useSessionStore.getState().generateTimelineFromIntake();
+
+      useAppStore.getState().setCurrentTab('home');
+      setShowConfirm(false);
+    }, 50);
+  };
+
+  return (
+    <>
+      <div className="space-y-3">
+        <p className="text-sm text-[var(--color-text-primary)]">Begin Session Test</p>
+        <p className="text-[12px] text-[var(--color-text-tertiary)]">
+          Primes a pre-session state with a generated 5-hour timeline. Lands you on the Home
+          tab with a Begin Session button ready to tap — for testing the substance checklist
+          and opening ritual end-to-end.
+        </p>
+
+        {isActive && (
+          <p className="text-[12px] text-[var(--accent)]">
+            A session is currently active. Launching will reset and restart.
+          </p>
+        )}
+
+        <button
+          onClick={() => setShowConfirm(true)}
+          className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+          style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+        >
+          Launch Begin Session Test
+        </button>
+      </div>
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+          <div className="w-full max-w-sm p-6 space-y-4" style={{ backgroundColor: 'var(--bg-primary)', border: '1px solid var(--border)' }}>
+            <p className="text-[12px] uppercase tracking-wider font-bold">Begin Session Test</p>
+            <p style={{ color: 'var(--text-primary)' }}>
+              This will {isActive ? 'reset the current session and ' : ''}generate a default 5-hour
+              timeline and land you on the Home tab, ready to tap Begin Session.
+            </p>
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={handleLaunch}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-80"
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--bg-primary)' }}
+              >
+                Launch
+              </button>
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="w-full py-3 text-[12px] uppercase tracking-wider transition-opacity hover:opacity-70"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 // ─── Main Debug Mode Component ──────────────────────────────────
 
 export default function DebugModeTool() {
@@ -534,6 +639,10 @@ export default function DebugModeTool() {
           Test shortcuts for jumping into specific session states.
         </p>
       </div>
+
+      <BeginSessionTest />
+
+      <div className="border-t border-[var(--color-border)]" />
 
       <ComeUpTest />
 

@@ -234,10 +234,12 @@ Section (control bar + lifecycle)
 
 | Type | Purpose | Key Config |
 |------|---------|------------|
-| `screens` | Step-through screen sequence | `screens[], hideTimer?, rightSlotViewer?, ritualFade?` |
-| `meditation` | Audio-synced meditation via `useMeditationPlayback` | `meditationId, animation?, showTranscript?, composerOptions?` |
-| `timer` | Countdown timer for music/dance/rest | `animation?, showAlarm?, recommendations?, allowAddTime?` |
-| `generate` | PNG generation with RevealOverlay | `generatorId, buttonLabel, saveToJournal?, imageName?` |
+| `screens` | Step-through screen sequence | `screens[], hideTimer?, rightSlotViewer?, ritualFade?, persistBlocks?, terminal?` |
+| `meditation` | Audio-synced meditation via `useMeditationPlayback` | `meditationId, animation?, showTranscript?, composerOptions?, terminal?` |
+| `timer` | Countdown timer for music/dance/rest | `animation?, showAlarm?, recommendations?, allowAddTime?, terminal?` |
+| `generate` | PNG generation with RevealOverlay | `generatorId, buttonLabel, saveToJournal?, imageName?, terminal?` |
+
+Any section (regardless of type) can set `terminal: true` to end the module cleanly when the user advances past it — useful when the section array contains tail detour sections that should only be reachable via routing. See "Terminal Sections" below.
 
 #### Block Types
 
@@ -327,11 +329,58 @@ In all cases, the user selects an option and clicks Continue. Without a route, t
 
 **Object with `bookmark: 'section-id'`** = re-route with custom return point. After the target completes, the flow returns to the named section.
 
+**Route-refire guard.** Choice selections persist (`choiceValues` is durable state), so back-navigating to a choice-with-route screen and pressing Continue would naively re-fire the route and trap the user. `ScreensSection.handleNext` guards against this: if the route's target section has already been visited, the route is skipped and sequential advance runs instead. Combined with the "un-visit on back" behavior, this means the user can back through a routed screen, change their selection, and re-traverse cleanly.
+
 #### Sequential Advance & Visited Section Skipping
 
 When advancing sequentially (no bookmark to pop), `advanceSection` automatically skips sections that have already been visited. This prevents replaying sections when routing creates non-linear paths.
 
 For example: checkpoint at index 2 routes to index 5 (with bookmark at index 4). After completing index 5, the bookmark returns the user to index 4. After completing index 4, sequential advance checks index 5 — already visited — skips to index 6.
+
+#### Terminal Sections
+
+A section with `terminal: true` ends the module cleanly when the user advances past it, regardless of what sits after it in the array. This exists specifically so that modules can put routed-to "tail detour" sections *after* the user's final main section without risking a sequential walk-through into them.
+
+```javascript
+sections: [
+  // ... main flow ...
+  { id: 'final-moment', type: 'screens', terminal: true, screens: [...] },
+
+  // Tail detours — reachable only via routes from earlier sections,
+  // never via sequential advance from `final-moment`
+  { id: 'optional-breath', type: 'meditation', meditationId: '...' },
+  { id: 'optional-journal', type: 'screens', screens: [...] },
+]
+```
+
+Without `terminal: true`, the user pressing Continue on `final-moment` would fall through to `optional-breath` and replay it — even if they never chose to route there earlier.
+
+#### History-Based Back Navigation
+
+Back navigation follows the user's *actual visit path*, not the section array index. A `sectionHistory` stack records every section the user came from; each forward transition (sequential advance, route, or bookmark pop) pushes the current section index onto it, and `goBackToPreviousSection` pops from it.
+
+This matters in any flow that routes non-linearly:
+
+```
+User flow: 0 → 1 → 2 (checkpoint) → routes to 5 → bookmark returns to 4 → 6
+
+sectionHistory after each step:
+  at 1: [0]
+  at 2: [0, 1]
+  at 5: [0, 1, 2]
+  at 4: [0, 1, 2, 5]
+  at 6: [0, 1, 2, 5, 4]
+
+Pressing Back from 6: pops 4 → lands at 4
+Pressing Back from 4: pops 5 → lands at 5   (NOT index 3, which is what an array-walk would do)
+Pressing Back from 5: pops 2 → lands at 2
+```
+
+**Un-visit on back.** When the user presses Back, the section they're leaving is removed from `visitedSections`. This makes forward re-traversal work smoothly — the next Continue won't skip past the section they just backed out of. Sections they didn't traverse backward remain visited, so the skip-visited logic still applies to branches they already completed.
+
+`canGoBackToPreviousSection` is simply `sectionHistory.length > 0` — Back is shown iff there's history to pop.
+
+Both MasterModule and TransitionModule use the same history-based design. In TransitionModule, `sectionHistory` is persisted to `activeNavigation` alongside the rest of navigation state, so force-closing the app mid-transition preserves Back behavior on resume.
 
 #### Conditional Content
 
@@ -356,7 +405,7 @@ Any block or screen can have a `condition` field. It only renders when the condi
 { condition: { notVisited: 'med-c' } }
 ```
 
-**Compound conditions (AND / OR):**
+**Compound conditions (AND / OR / NOT):**
 
 ```javascript
 // AND — all must be true
@@ -371,6 +420,9 @@ Any block or screen can have a `condition` field. It only renders when the condi
   { visited: 'activation-section' },
 ] } }
 
+// NOT — inverts any inner condition (wraps a single sub-condition)
+{ condition: { not: { storeValue: 'sessionProfile.holdingQuestion' } } }
+
 // Nested — heavy AND (chest OR shoulders)
 { condition: { and: [
   { key: 'mood', equals: 'heavy' },
@@ -380,6 +432,25 @@ Any block or screen can have a `condition` field. It only renders when the condi
   ] },
 ] } }
 ```
+
+**Transition-only conditions (require `storeState` / `sessionData` in context — available in TransitionModule, not MasterModule):**
+
+```javascript
+// storeValue — dot-path lookup against the full session store
+// Supports: equals, in, gte, gt, lte, lt, and (default) truthy check
+{ condition: { storeValue: 'sessionProfile.holdingQuestion' } }          // has any value
+{ condition: { storeValue: 'booster.status', equals: 'taken' } }         // exact match
+{ condition: { storeValue: 'journalCount', gte: 5 } }                    // numeric
+{ condition: { storeValue: 'modulesCompleted', in: ['values-compass'] } } // array-includes
+
+// moduleCompleted — user finished this module in the session
+{ condition: { moduleCompleted: 'values-compass' } }
+
+// helperUsedDuring — user opened the HelperModal during this phase
+{ condition: { helperUsedDuring: 'peak' } }
+```
+
+`storeValue` first resolves against `context.storeState` (the full session store snapshot) and falls back to `context.sessionData` (derived session-level data: `modulesCompleted`, `journalCount`, `helperUsedDuring`, `effectiveFocus`, etc.). Both are populated by `useTransitionModuleState` and passed through the condition context.
 
 Conditions work on:
 - **Blocks** — individual blocks within a screen are filtered; others on the same screen still render
@@ -409,12 +480,46 @@ Section visits serve three purposes:
 
 #### Journal Assembly
 
-Journal entries are built by `journalAssembler.js` on module completion. Two-layer filtering determines which prompts are included:
+Journal entries are built by `journalAssembler.js` on module/transition completion. Both MasterModule and TransitionModule use the same assembler — the same filter rules, the same output format. Two-layer filtering determines which blocks are included:
 
-1. **Section visited?** — Each block carries a `sectionId`. If the section was never visited (due to routing), all its prompts are excluded.
-2. **Condition passed?** — If a prompt has a `condition` field and it fails, the prompt is excluded.
+1. **Section visited?** — Each block carries a `sectionId`. If the section was never visited (due to routing), all its blocks are excluded.
+2. **Condition passed?** — If a block has a `condition` field and it fails, the block is excluded.
 
-Prompts that pass both filters are always included in the journal, even if the user left them blank. Empty prompts are saved as `[no entry — 3:45 PM]` with a wall-clock timestamp, supporting users who journal physically and need to cross-reference.
+Blocks that pass both filters are always included in the journal, even if the user left them blank. Empty prompts are saved as `[no entry — 3:45 PM]` with a wall-clock timestamp, supporting users who journal physically and need to cross-reference.
+
+**Captured block types:**
+
+| Block | What lands in the journal |
+|---|---|
+| `prompt` | Prompt text (or `journalLabel` override when `prompt` is empty), then the user's response (or `[no entry — time]`). |
+| `selector` | Prompt text, then the selected option label(s) comma-joined. If `journal: true`, the follow-up text is appended. |
+| `body-check-in` | `Body sensations (<phase>):` followed by the comma-joined labels of selected sensations. Reads from `storeState.transitionData.somaticCheckIns.<phase>`. Skipped in `mode: 'comparison'`. |
+| `ingestion-time` | `Substance taken at: 3:42 PM` formatted from `storeState.substanceChecklist.ingestionTime`. Only emitted by the `mode: 'record'` instance — `mode: 'confirm'` is suppressed to avoid duplicating the same timestamp. |
+| `store-display` | `<label>:` followed by the store value at `storeKey`. Label comes from `journalLabel`, or is auto-derived from the final dot-path segment. **Dedupe:** suppressed if a `prompt` with the same `storeField` was already emitted, and only one `store-display` per unique `storeKey` ever renders. |
+
+**`journalLabel` override.** Any capturable block can set `journalLabel: 'Touchstone'` to override the default label in the journal (assembler auto-appends a colon). This is especially useful for prompts that render with an empty `prompt: ''` because their UI has separate surrounding text — without an override, they'd appear in the journal with a blank label line. Example:
+
+```javascript
+{ type: 'prompt',
+  prompt: '',                                          // empty in UI — surrounding text carries it
+  placeholder: 'A word or phrase...',
+  storeField: 'transitionData.openingTouchstone',
+  journalLabel: 'Touchstone',                          // "Touchstone:" in the journal entry
+}
+```
+
+**Dedupe walkthrough** (Opening Ritual intention example). The intention shows up in three places: a `store-display` on the Crossroads, a `prompt` with `storeField: 'sessionProfile.holdingQuestion'` in the intention-review-detour, and a final `store-display` on the detour's confirmation screen. The assembler runs a first pass over all visible blocks to collect `storeField` paths used by prompts, then on the emit pass:
+
+- If the user visited the detour: the prompt wins; both `store-display`s are suppressed → intention appears once.
+- If the user didn't visit the detour but had a saved intention: the Crossroads `store-display` emits; no prompt with matching `storeField` was visible → intention appears once.
+- No intention at all: the `store-display` is conditional on the value, so nothing emits.
+
+**What's NOT captured:** `choice` block selections (branching signals — the downstream branch's prompts capture meaningful content), ingestion-time `confirm` mode (dedupe with `record`), and any `store-display` whose value is already represented by a `prompt` or earlier `store-display`.
+
+**Storing the entry.** After assembly, the entry is saved via `useJournalStore.addEntry`:
+- MasterModule passes `sessionId` so the entry binds to the session record.
+- TransitionModule omits `sessionId` (transitions may complete outside a fully-active session state); entries match to a session by timestamp window.
+- Entries shorter than two lines (title only) are skipped — no empty journal pollution.
 
 #### Fade Speed (ritualFade)
 
@@ -439,6 +544,40 @@ To use ritual fade, add `ritualFade: true` to the section config:
 
 The flag applies to all screen transitions within the section (title, animation, and body fades all use the same duration). This matches the pace used in `PreSessionIntro.jsx` for ritual moments.
 
+#### Block Persistence (persistBlocks)
+
+By default, advancing between screens in a section fades the entire body out and the new body in. For a section that wants blocks to *stay* across screens — same selector still visible, same body-check-in still showing the user's picks — set `persistBlocks: true` on the section. The body wrapper no longer fades between screens; React's keyed reconciliation reuses DOM for blocks at matching indexes, so unchanged blocks don't re-render or re-animate. Only newly-mounted blocks fade in, via the `animate-fade-in` class applied automatically when `persistBlocks` is set.
+
+```javascript
+{
+  id: 'body-check-in',
+  type: 'screens',
+  persistBlocks: true,
+  screens: [
+    // Screen 1: header + selector + closing text
+    { blocks: [
+      { type: 'header', title: 'Your Body', animation: 'sunrise' },
+      { type: 'body-check-in', phase: 'opening', prompt: '...' },
+      { type: 'text', lines: ["We'll come back to this."] },
+    ] },
+    // Screen 2: same three blocks + a new prompt that fades in below them
+    { blocks: [
+      { type: 'header', title: 'Your Body', animation: 'sunrise' },
+      { type: 'body-check-in', phase: 'opening', prompt: '...' },
+      { type: 'text', lines: ["We'll come back to this."] },
+      { type: 'prompt', prompt: 'Describe where it lives...', placeholder: '...' },
+    ] },
+  ],
+}
+```
+
+**Constraints to keep in mind:**
+- Keep identical blocks at identical indexes across screens. If you change block types at the same index (e.g., index 2 is `text` on screen 1 and `prompt` on screen 2), React unmounts and remounts, so that block re-animates — not what you want for "persistent" blocks.
+- Block state that lives in the store (body-check-in picks, prompt responses, selector values) persists regardless of screen transitions; `persistBlocks` controls only the *visual* transition, not state.
+- `persistBlocks` also skips the auto-scroll-to-top on advance, so the user stays anchored as new content appears below.
+
+When `persistBlocks` is off (default), the body crossfade runs as before — no visual change to any existing section.
+
 #### Meditation Variations
 
 Meditation sections automatically detect and render variation selectors when the meditation content defines `variations` and `assembleVariation()`. The idle screen shows variation buttons instead of a duration picker. Each variation has a label, description, and fixed duration.
@@ -458,6 +597,7 @@ All user data persists across sections in `useMasterModuleState`:
 | `selectorJournals` | `{ key: text }` | Every selector follow-up text |
 | `choiceValues` | `{ key: optionId }` | Every choice selection |
 | `visitedSections` | `string[]` | Completed section IDs (for routing, conditions, journal filtering) |
+| `sectionHistory` | `number[]` | Stack of previously-visited section indexes — drives history-based Back nav |
 | `generatedImages` | `{ generatorId: { blob, url } }` | Generated PNGs |
 
 Each block in the system also carries a `sectionId` tag linking it to its parent section, enabling the two-layer journal filtering described above.
@@ -922,6 +1062,125 @@ Both the pre-session and follow-up timelines support editing (reorder + remove) 
 - Follow-up modules (`isFollowUpModule`) blocked outside `follow-up` phase
 - Booster module (`isBoosterModule`) blocked outside `peak` and `integration` phases
 - All other modules are allowed in any phase — recommendations are expressed via `recommendedPhases` and surfaced through the Recommended filter in the library modal, not through gating
+
+---
+
+### TransitionModule Architecture
+
+TransitionModule is a parallel system to MasterModule designed for **session transitions** — the ceremonial arcs between phases (Opening Ritual, Peak Transition, Peak → Integration, Closing Ritual). It shares MasterModule's section/screen/block model and renderers but diverges on two axes: persistence (transitions span real wall-clock time and must survive app closes) and lifecycle (transitions never have an idle page — the user is already committed when it starts).
+
+#### Shared with MasterModule
+
+TransitionModule reuses the same section types (`screens`, `meditation`), the same block types, the same routing model (`to:`, `bookmark: true | 'section-id'`), the same skip-visited semantics, the same history-based back navigation, the same `terminal: true` and `persistBlocks` flags, and the same `ScreensSection` / `MeditationSection` renderers. Content authors learn one model for both systems.
+
+#### Key differences from MasterModule
+
+| Concern | MasterModule | TransitionModule |
+|---|---|---|
+| Starts at | `modulePhase: 'idle'` (user taps Begin) | `modulePhase: 'active'` (no idle screen) |
+| State storage | All `useState` — local only | Mirrored to `sessionStore.transitionData.activeNavigation` on every change |
+| Close + reopen | Starts over from the idle page | Resumes at exact section + screen + responses |
+| `sectionHistory` | Plain `useState` | Persisted in `activeNavigation` — Back works on resume |
+| Journal save | `addEntry` with `sessionId` | `addEntry` without `sessionId` + writes `transitionData.completedAt.<id>` |
+| Cross-store field mirroring | None | Prompts with `storeField: 'sessionProfile.x'` flow to that path on every advance |
+| Custom block registry | Not used | Supported — transition-only blocks register here (see below) |
+
+#### Persistence model
+
+Every navigation change writes the full `activeNavigation` blob to `sessionStore.transitionData`:
+
+```javascript
+activeNavigation: {
+  transitionId,          // which transition owns this blob ('opening-ritual', 'peak-transition', ...)
+  currentSectionIndex,
+  visitedSections,
+  routeStack,
+  sectionHistory,        // persisted; Back survives force-close
+  screenIndex,
+  responses,
+  selectorValues,
+  selectorJournals,
+  choiceValues,
+  blockReadiness,
+}
+```
+
+The session store itself persists to localStorage via Zustand's `persist` middleware, so backgrounding the app or force-closing preserves everything. On mount, `useTransitionModuleState` checks whether `persistedNav.transitionId === transitionId` and, if so, initializes all React state from the persisted blob instead of defaults.
+
+Selectors and choices write to the store immediately. Prompt responses (textareas) stay local while the user is typing and flush on blur / section advance / transition completion — the "hybrid sync strategy" that avoids per-keystroke localStorage thrash.
+
+#### Cross-store field mirroring (`storeField`)
+
+A prompt block can declare `storeField: 'sessionProfile.holdingQuestion'` to have its value mirrored to a separate store path on every advance. This is how the Opening Ritual's intention prompt populates `sessionProfile.holdingQuestion` without the ritual needing custom state logic:
+
+```javascript
+{ type: 'prompt',
+  prompt: 'Write your intention...',
+  placeholder: '...',
+  storeField: 'sessionProfile.holdingQuestion' }
+```
+
+Supported prefixes: `sessionProfile.*` (routes to `updateSessionProfile`) and `transitionData.*` (routes to `updateTransitionData`).
+
+#### Custom block registry
+
+TransitionModule passes a `customBlockRegistry` into `ScreensSection`, which falls through to it for any block type it doesn't recognize. This is where transition-specific blocks live — they interact with session store state that doesn't belong in MasterModule:
+
+| Block type | Purpose |
+|---|---|
+| `body-check-in` | 10-sensation grid (warmth, tingling, openness, lightness, energy, softness, heaviness, stillness, expansion, tension) + "Something I can't name"; writes to `transitionData.somaticCheckIns.<phase>`. Supports `mode: 'select'` (default, interactive) and `mode: 'comparison'` (read-only, shows layered picks across multiple phases via a stacked-opacity grid). |
+| `ingestion-time` | Record (`mode: 'record'`) or confirm (`mode: 'confirm'`) substance intake time. Gates Continue via `reportReady` until the user presses the button or confirms. |
+| `action` | Generic store-action button with a small allowlist (currently `recordIngestionTime`, `confirmIngestionTime`). Fires the named action and reports readiness. |
+| `store-display` | Read-only render of any dot-path store value in a styled container (`style: 'accent-box' | 'plain' | 'italic'`). Used for showing the user's saved intention, focus label, touchstone, etc. Supports `labelMap` for translating raw values to display labels. |
+| `expandable` | Collapsible text section — click-to-reveal, click-to-hide. Uses the shared `renderContentLines` utility so it supports `§` spacers and `{accent}` terms like regular text blocks. |
+| `touchstone-arc` | Presentational SVG that displays the opening + closing touchstones with a connecting arc. Reads from `transitionData.openingTouchstone` / `closingTouchstone`. |
+| `phase-recap` | Summary statistics for a phase (`come-up | peak | integration | full-session`) — duration, journal entries, optional helper-modal count. Purely presentational. |
+| `data-download` | Button that opens the existing `DataDownloadModal` for exporting session data. |
+
+Custom blocks receive a `context` prop with state reads (`responses`, `selectorValues`, `choiceValues`, `selectorJournals`, `visitedSections`, `sessionData`, `storeState`, `conditionContext`), state writers (`setPromptResponse`, `toggleSelector`, `setSelectorJournal`, `setChoiceValue`), navigation callbacks (`advanceSection`, `routeToSection`), the readiness API (`reportReady`), and utility (`accentTerms`).
+
+#### Block readiness gating
+
+Any custom block can call `context.reportReady(blockKey, isReady)` to disable the Continue button. Used by `IngestionTimeBlock` (Continue disabled until the user records/confirms their intake time) and any other block that needs to gate advance until an action is taken. Block readiness resets automatically on screen change, so blocks don't need explicit cleanup.
+
+#### Terminal + tail-detour pattern in transitions
+
+The Opening Ritual uses `terminal: true` on `begin-session` plus a Crossroads section to consolidate optional activities (centering breath, intention review, gratitude, support-person check-in) as tail detours reachable only via routing:
+
+```javascript
+sections: [
+  // ... main flow including a 'crossroads' section with choice routes ...
+  { id: 'begin-session', type: 'screens', terminal: true, screens: [...] },
+
+  // Tail detours — only entered via `bookmark: 'crossroads'` from the Crossroads
+  { id: 'centering-breath', type: 'meditation', meditationId: '...' },
+  { id: 'intention-review-detour', type: 'screens', screens: [...] },
+  { id: 'gratitude-moment', type: 'screens', screens: [...] },
+  { id: 'support-person-checkin', type: 'screens', screens: [...] },
+]
+```
+
+User flow: Crossroads → pick activity → route fires with `bookmark: 'crossroads'` → activity runs → bookmark pops back to Crossroads → pick another or Continue. The terminal flag on `begin-session` prevents sequential advance from walking into the tail detours after the session starts.
+
+#### File structure
+
+```
+src/components/session/TransitionModule/
+  TransitionModule.jsx              # Main orchestrator
+  useTransitionModuleState.js       # Central state + activeNavigation persistence
+  customBlocks/
+    BodyCheckInBlock.jsx            # Sensation grid (select + comparison modes)
+    IngestionTimeBlock.jsx          # Record/confirm substance intake
+    StoreDisplayBlock.jsx           # Read-only store-value display
+
+src/content/transitions/            # Content config files
+  openingRitualConfig.js            # Opening Ritual (pre-session → begin-session)
+  peakTransitionConfig.js           # Come-up → Peak
+  peakToIntegrationConfig.js        # Peak → Integration
+  closingRitualConfig.js            # Integration → Closing
+```
+
+Section renderers (`ScreensSection`, `MeditationSection`) are imported from MasterModule — no parallel implementation.
 
 ---
 

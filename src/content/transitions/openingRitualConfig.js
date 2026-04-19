@@ -33,7 +33,7 @@ export const openingRitualConfig = {
   },
 
   sections: [
-    // ── Screen 1: Prepare Your Space ────────────────────────────────────────
+    // ── Prepare Space ──────────────────────────────────────────────────────
     {
       id: 'prepare-space',
       type: 'screens',
@@ -56,21 +56,15 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 2: Voice Audio — Opening the Space ──────────────────────────
-    {
-      id: 'opening-audio',
-      type: 'meditation',
-      meditationId: 'transition-opening',
-      animation: 'sunrise',
-      showTranscript: true,
-      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
-    },
-
-    // ── Screen 3: Body Check-In (1st) ──────────────────────────────────────
+    // ── Body Check-In ──────────────────────────────────────────────────────
+    // Two screens, same header + same body-check-in + same closing text. On
+    // Continue, the blocks above stay mounted (persistBlocks) and the prompt
+    // on screen 2 fades in below them.
     {
       id: 'body-check-in-1',
       type: 'screens',
       ritualFade: true,
+      persistBlocks: true,
       screens: [
         {
           blocks: [
@@ -85,10 +79,29 @@ export const openingRitualConfig = {
             ] },
           ],
         },
+        {
+          blocks: [
+            { type: 'header', title: 'Your Body Right Now', animation: 'sunrise' },
+            { type: 'body-check-in',
+              phase: 'opening',
+              prompt: 'Take a moment to notice your body. What sensations are present?',
+              instruction: 'Tap any that resonate.',
+            },
+            { type: 'text', lines: [
+              "We'll come back to this throughout your session.",
+            ] },
+            { type: 'prompt',
+              prompt: 'If you\'d like, describe where these sensations live in your body — their textures, their shapes, their depths.',
+              placeholder: 'Where I feel it...',
+              storeField: 'transitionData.openingBodyLocation',
+              journalLabel: 'Where I feel it',
+            },
+          ],
+        },
       ],
     },
 
-    // ── Screen 4: Touchstone ───────────────────────────────────────────────
+    // ── Touchstone ─────────────────────────────────────────────────────────
     {
       id: 'touchstone',
       type: 'screens',
@@ -104,6 +117,7 @@ export const openingRitualConfig = {
               prompt: '',
               placeholder: 'A word or phrase...',
               storeField: 'transitionData.openingTouchstone',
+              journalLabel: 'Touchstone',
             },
             { type: 'text', lines: [
               'This will be available as an anchor you can return to at any point during your session.',
@@ -113,52 +127,47 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 5 + 6 merged: intention-moment (adaptive) ───────────────────
-    // Two screens within one section, each gated by whether holdingQuestion exists.
+    // ── Crossroads — consolidated optional activities ──────────────────────
+    // One gate, four optional activities + Continue. Each activity routes with
+    // `bookmark: 'crossroads'` so the user returns here after completing it,
+    // and can pick another (or continue) freely.
     {
-      id: 'intention-moment',
+      id: 'crossroads',
       type: 'screens',
       ritualFade: true,
       screens: [
-        // Variant A — user has an intention
         {
-          condition: { storeValue: 'sessionProfile.holdingQuestion' },
           blocks: [
-            { type: 'header', title: 'Your Intention', animation: 'sunrise' },
-            { type: 'text', lines: ['During your preparation, you wrote:'] },
+            { type: 'header', title: 'Before You Begin', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'There are a few things you can do to prepare before you take your substance. Choose what feels right, or continue when you\'re ready.',
+            ] },
+
+            // Existing intention preview — only shown if one is saved
+            { type: 'text',
+              condition: { storeValue: 'sessionProfile.holdingQuestion' },
+              lines: ['Your current intention:'],
+            },
             { type: 'store-display',
+              condition: { storeValue: 'sessionProfile.holdingQuestion' },
               storeKey: 'sessionProfile.holdingQuestion',
               emptyText: '',
               style: 'accent-box',
+              journalLabel: 'Intention',
             },
-            { type: 'text', lines: [
-              'Sit with this for a moment. Does it still feel true?',
-            ] },
-            { type: 'choice', key: 'intentionAction',
-              options: [
-                { id: 'keep', label: 'This feels right' },
-                { id: 'refine', label: "I'd like to refine it",
-                  route: { to: 'intention-review-detour', bookmark: true } },
-              ],
-            },
-          ],
-        },
 
-        // Variant B — user has no intention
-        {
-          condition: { not: { storeValue: 'sessionProfile.holdingQuestion' } },
-          blocks: [
-            { type: 'header', title: 'An Intention', animation: 'sunrise' },
-            { type: 'text', lines: [
-              'You haven\'t set an intention for this session yet. An intention is a single thread you can follow through the experience ahead — something you want to understand, release, or move toward.',
-              '§',
-              'We strongly recommend setting one before you begin. It doesn\'t need to be perfect. Even a rough direction gives the session a center of gravity to return to.',
-            ] },
-            { type: 'choice', key: 'intentionAction',
+            { type: 'choice', key: 'crossroadsChoice',
               options: [
-                { id: 'set', label: 'Set an intention',
-                  route: { to: 'intention-review-detour', bookmark: true } },
-                { id: 'skip', label: 'Continue without' },
+                { id: 'centering', label: 'A centering breath',
+                  route: { to: 'centering-breath', bookmark: 'crossroads' } },
+                { id: 'intention', label: 'Set or review your intention',
+                  route: { to: 'intention-review-detour', bookmark: 'crossroads' } },
+                { id: 'gratitude', label: 'A moment of gratitude',
+                  route: { to: 'gratitude-moment', bookmark: 'crossroads' } },
+                { id: 'support', label: 'Check in with your support',
+                  route: { to: 'support-person-checkin', bookmark: 'crossroads' } },
+                { id: 'continue', label: "I'm ready to continue",
+                  route: '_next' },
               ],
             },
           ],
@@ -166,29 +175,7 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 7: Centering Breath Detour Gate ─────────────────────────────
-    {
-      id: 'centering-breath-gate',
-      type: 'screens',
-      screens: [
-        {
-          blocks: [
-            { type: 'text', lines: [
-              'Would you like a brief centering breath before you take your substance? This is a short guided exercise, about three minutes.',
-            ] },
-            { type: 'choice', key: 'wantsCenteringBreath',
-              options: [
-                { id: 'yes', label: "Yes, I'd like that",
-                  route: { to: 'centering-breath', bookmark: true } },
-                { id: 'no', label: 'Continue without' },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 8: Letting Go ───────────────────────────────────────────────
+    // ── Letting Go ─────────────────────────────────────────────────────────
     {
       id: 'permission',
       type: 'screens',
@@ -211,7 +198,7 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 9: Take Substance ───────────────────────────────────────────
+    // ── Take Substance ─────────────────────────────────────────────────────
     {
       id: 'substance-intake-record',
       type: 'screens',
@@ -230,7 +217,7 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 10: Confirm Ingestion Time ──────────────────────────────────
+    // ── Confirm Ingestion Time ─────────────────────────────────────────────
     {
       id: 'substance-intake-confirm',
       type: 'screens',
@@ -244,11 +231,70 @@ export const openingRitualConfig = {
       ],
     },
 
-    // ── Screen 11: Begin Session ───────────────────────────────────────────
+    // ── Reassurance 1 — "What to expect" before the guided audio ───────────
+    {
+      id: 'reassurance-1',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: "You've Arrived", animation: 'sunrise' },
+            { type: 'text', lines: [
+              "The preparation is complete. The substance is with you now, beginning its quiet work.",
+              '§',
+              "It's okay if you don't feel anything yet. Onset usually takes 30 to 60 minutes, and it varies from person to person. There's nothing you need to do to make it happen.",
+              '§',
+              "In a moment, you'll hear a brief guided opening. A few minutes to settle in, arrive in your body, and open the space for what's ahead.",
+              '§',
+              "Stay open. Let it unfold.",
+            ] },
+          ],
+        },
+      ],
+    },
+
+    // ── Voice Audio — Opening the Space (core of the post-ingestion arc) ───
+    {
+      id: 'opening-audio',
+      type: 'meditation',
+      meditationId: 'transition-opening',
+      animation: 'sunrise',
+      showTranscript: true,
+      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
+    },
+
+    // ── Reassurance 2 — Debrief after the guided audio ─────────────────────
+    {
+      id: 'reassurance-2',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'Soften Into the Wait', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'The space is open. You\'ve arrived.',
+              '§',
+              "From here, there's nothing you need to do. The next 30 to 60 minutes are yours to simply be.",
+              '§',
+              'Put on music if you\'d like. Close your eyes. Lie down. Follow whatever feels natural.',
+              '§',
+              "The helper is available anytime — tap the icon at the top of the screen if anything comes up.",
+              '§',
+              'When you continue, the session formally begins.',
+            ] },
+          ],
+        },
+      ],
+    },
+
+    // ── Begin Session (terminal) ───────────────────────────────────────────
     {
       id: 'begin-session',
       type: 'screens',
       ritualFade: true,
+      terminal: true,
       screens: [
         {
           blocks: [
@@ -332,6 +378,7 @@ export const openingRitualConfig = {
               prompt: '',
               placeholder: 'Write your intention here...',
               storeField: 'sessionProfile.holdingQuestion',
+              journalLabel: 'Intention',
             },
           ],
         },
@@ -346,6 +393,57 @@ export const openingRitualConfig = {
             },
             { type: 'text', lines: [
               'This is your intention for today\'s session. You can return to it at any time.',
+            ] },
+          ],
+        },
+      ],
+    },
+
+    // ─── DETOUR: Gratitude Moment ─────────────────────────────────────────
+    {
+      id: 'gratitude-moment',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'A Moment of Gratitude', animation: 'sunrise' },
+            { type: 'text', lines: [
+              "Take a breath and bring to mind something you're grateful for as you enter this session.",
+              '§',
+              "It could be a person, a place, a support you're carrying with you. Something steady beneath you.",
+              '§',
+              "Name it here if you'd like, or simply hold it in your mind.",
+            ] },
+            { type: 'prompt',
+              prompt: '',
+              placeholder: 'Something I\'m grateful for...',
+            },
+            { type: 'text', lines: [
+              'Continue when you\'re ready.',
+            ] },
+          ],
+        },
+      ],
+    },
+
+    // ─── DETOUR: Support-Person Check-In ──────────────────────────────────
+    {
+      id: 'support-person-checkin',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'Your Support', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'If someone is sitting with you today, this is a good moment to check in with them.',
+              '§',
+              "Let them know you're about to begin. Share anything you want them to know — a signal you might use if you need them, a reminder about what would be helpful, anything that would make you feel held.",
+              '§',
+              "If you're alone, consider sending a brief message to someone who knows what you're doing today. You don't have to go into detail — just let them know you're starting.",
+              '§',
+              "Take as long as you need. Continue when you're ready.",
             ] },
           ],
         },

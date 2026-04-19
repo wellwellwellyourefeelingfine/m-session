@@ -464,6 +464,7 @@ export const useSessionStore = create(
           currentSectionIndex: 0,
           visitedSections: [],
           routeStack: [],
+          sectionHistory: [],         // back-nav path; pops on Back
           screenIndex: 0,
           responses: {},
           selectorValues: {},
@@ -3067,6 +3068,7 @@ export const useSessionStore = create(
               currentSectionIndex: 0,
               visitedSections: [],
               routeStack: [],
+              sectionHistory: [],
               screenIndex: 0,
               responses: {},
               selectorValues: {},
@@ -3780,6 +3782,7 @@ export function migrateSessionState(persistedState, version) {
               currentSectionIndex: 0,
               visitedSections: [],
               routeStack: [],
+              sectionHistory: [],
               screenIndex: 0,
               responses: {},
               selectorValues: {},

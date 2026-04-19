@@ -238,6 +238,23 @@ export default function ScreensSection({
       const sameAnimation = headerBlock && nextHeader
         && (headerBlock.animation || 'ascii-moon') === (nextHeader.animation || 'ascii-moon');
 
+      // persistBlocks: keep the body mounted across screens in this section.
+      // React's keyed reconciliation reuses DOM for blocks at matching indexes,
+      // so shared blocks stay untouched; newly-mounted blocks auto-fade via
+      // `animate-fade-in`. Skip the scroll-to-top so the user stays in place.
+      if (section.persistBlocks) {
+        if (!sameTitle) setIsTitleVisible(false);
+        if (!sameAnimation) setIsAnimationVisible(false);
+        setTimeout(() => {
+          setScreenIndex(nextVisible);
+          if (nextHeader) {
+            setIsTitleVisible(true);
+            setIsAnimationVisible(true);
+          }
+        }, (sameTitle && sameAnimation) ? 0 : FADE_MS);
+        return;
+      }
+
       // Fade out body always; fade title/animation only if they change
       setIsBodyVisible(false);
       if (!sameTitle) setIsTitleVisible(false);
@@ -254,7 +271,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS]);
+  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
@@ -271,6 +288,20 @@ export default function ScreensSection({
     const sameAnimation = headerBlock && prevHeader
       && (headerBlock.animation || 'ascii-moon') === (prevHeader.animation || 'ascii-moon');
 
+    // persistBlocks: same rationale as handleNext — keep the body mounted.
+    if (section.persistBlocks) {
+      if (!sameTitle) setIsTitleVisible(false);
+      if (!sameAnimation) setIsAnimationVisible(false);
+      setTimeout(() => {
+        setScreenIndex(prevVisible);
+        if (prevHeader) {
+          setIsTitleVisible(true);
+          setIsAnimationVisible(true);
+        }
+      }, (sameTitle && sameAnimation) ? 0 : FADE_MS);
+      return;
+    }
+
     setIsBodyVisible(false);
     if (!sameTitle) setIsTitleVisible(false);
     if (!sameAnimation) setIsAnimationVisible(false);
@@ -284,7 +315,7 @@ export default function ScreensSection({
         setIsAnimationVisible(true);
       }
     }, FADE_MS);
-  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader, FADE_MS]);
+  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader, FADE_MS, section.persistBlocks]);
 
   const handleChoiceSelect = useCallback((key, optionId) => {
     onChoiceSelect(key, optionId);
@@ -441,13 +472,21 @@ export default function ScreensSection({
             </div>
           )}
 
-          {/* Body blocks — fade together on screen transition */}
+          {/* Body blocks — fade together on screen transition, unless
+              `section.persistBlocks` is set, in which case the wrapper stays
+              opaque across screens and newly-mounted blocks fade themselves in
+              via `animate-fade-in`. React's keyed reconciliation preserves
+              DOM for blocks at matching indexes, so unchanged blocks don't
+              re-animate. */}
           <div
             className={`transition-opacity ${isBodyVisible ? 'opacity-100' : 'opacity-0'}`}
             style={{ transitionDuration: `${FADE_MS}ms`, paddingBottom: '6rem' }}
           >
             {bodyBlocks.map((block, i) => (
-              <div key={i} className={i > 0 ? 'mt-4' : ''}>
+              <div
+                key={i}
+                className={`${i > 0 ? 'mt-4' : ''}${section.persistBlocks ? ' animate-fade-in' : ''}`}
+              >
                 {renderBlock(block, i)}
               </div>
             ))}

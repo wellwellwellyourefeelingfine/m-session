@@ -52,6 +52,14 @@ export default function useTransitionModuleState(config) {
     isResuming ? persistedNav.screenIndex : 0
   );
 
+  // Back-navigation history — ordered list of section indexes the user came
+  // through. Every section transition (advance or route) pushes the section
+  // being left. `goBackToPreviousSection` pops from this stack. Persisted to
+  // activeNavigation so Back works on resume after a force-close mid-transition.
+  const [sectionHistory, setSectionHistory] = useState(
+    isResuming ? (persistedNav.sectionHistory || []) : []
+  );
+
   // ── Data state (local during editing, persisted per sync strategy) ──────────
   const [responses, setResponses] = useState(
     isResuming ? { ...persistedNav.responses } : {}
@@ -83,6 +91,7 @@ export default function useTransitionModuleState(config) {
         currentSectionIndex: 0,
         visitedSections: [],
         routeStack: [],
+        sectionHistory: [],
         screenIndex: 0,
         responses: {},
         selectorValues: {},
@@ -207,6 +216,7 @@ export default function useTransitionModuleState(config) {
       currentSectionIndex,
       visitedSections,
       routeStack,
+      sectionHistory,
       screenIndex,
       responses,
       selectorValues,
@@ -321,6 +331,12 @@ export default function useTransitionModuleState(config) {
       );
     }
 
+    // Terminal sections end the module regardless of what sits after them.
+    if (currentSection?.terminal === true) {
+      setModulePhase('complete');
+      return;
+    }
+
     // Pop from route stack if returning from a routed section.
     // After a bookmark pop we DO skip already-visited sections — this prevents
     // replaying the section we routed to when sequential advance catches up.
@@ -334,19 +350,24 @@ export default function useTransitionModuleState(config) {
       if (nextIndex >= sections.length) {
         setModulePhase('complete');
       } else {
+        setSectionHistory((prev) => [...prev, currentSectionIndex]);
         setCurrentSectionIndex(nextIndex);
         setScreenIndex(0);
       }
       return;
     }
 
-    // Normal sequential advance — step forward exactly one section. We do NOT
-    // skip already-visited sections here, so back-nav-then-forward proceeds
-    // linearly through each section as the user expects.
-    const nextIndex = currentSectionIndex + 1;
+    // Normal sequential advance — skip already-visited sections. Back-nav
+    // un-visits the section being left, so pressing Back then Continue still
+    // re-traverses linearly without the skip kicking in.
+    let nextIndex = currentSectionIndex + 1;
+    while (nextIndex < sections.length && visitedSections.includes(sections[nextIndex]?.id)) {
+      nextIndex++;
+    }
     if (nextIndex >= sections.length) {
       setModulePhase('complete');
     } else {
+      setSectionHistory((prev) => [...prev, currentSectionIndex]);
       setCurrentSectionIndex(nextIndex);
       setScreenIndex(0);
     }
@@ -382,29 +403,31 @@ export default function useTransitionModuleState(config) {
       }
     }
 
+    setSectionHistory((prev) => [...prev, currentSectionIndex]);
     setCurrentSectionIndex(targetIndex);
     setScreenIndex(0);
   }, [currentSection, currentSectionIndex, sections, sectionIndexById, advanceSection, flushResponses]);
 
   const goBackToPreviousSection = useCallback(() => {
-    for (let i = currentSectionIndex - 1; i >= 0; i--) {
-      if (sections[i].type === 'screens') {
-        setCurrentSectionIndex(i);
-        setScreenIndex(0);
-        return;
-      }
-      break;
+    if (sectionHistory.length === 0) return;
+
+    // Un-visit the section we're leaving so the next forward Continue doesn't
+    // skip past it. Forward skip-visited still applies to earlier sections
+    // that remain visited.
+    const currentId = currentSection?.id;
+    if (currentId) {
+      setVisitedSections((prev) => prev.filter((id) => id !== currentId));
     }
-  }, [currentSectionIndex, sections]);
+
+    const prevIndex = sectionHistory[sectionHistory.length - 1];
+    setSectionHistory((prev) => prev.slice(0, -1));
+    setCurrentSectionIndex(prevIndex);
+    setScreenIndex(0);
+  }, [sectionHistory, currentSection]);
 
   const canGoBackToPreviousSection = useMemo(() => {
-    if (currentSectionIndex === 0) return false;
-    for (let i = currentSectionIndex - 1; i >= 0; i--) {
-      if (sections[i].type === 'screens') return true;
-      break;
-    }
-    return false;
-  }, [currentSectionIndex, sections]);
+    return sectionHistory.length > 0;
+  }, [sectionHistory]);
 
   // Screen-change callback from ScreensSection (for progress + persistence)
   const handleScreenChange = useCallback((position, _total) => {
@@ -430,7 +453,8 @@ export default function useTransitionModuleState(config) {
         responses,
         selectorValues,
         selectorJournals,
-        conditionContext: { choiceValues, selectorValues, visitedSections },
+        conditionContext: { choiceValues, selectorValues, visitedSections, storeState },
+        storeState,
       });
       if (entryText.split('\n').length > 1) {
         addEntry({
@@ -443,7 +467,7 @@ export default function useTransitionModuleState(config) {
   }, [
     flushResponses, transitionId, config, allBlocksWithPromptIndex,
     responses, selectorValues, selectorJournals, choiceValues, visitedSections,
-    updateTransitionData, addEntry,
+    storeState, updateTransitionData, addEntry,
   ]);
 
   const clearActiveNavigation = useCallback(() => {
@@ -452,6 +476,7 @@ export default function useTransitionModuleState(config) {
       currentSectionIndex: 0,
       visitedSections: [],
       routeStack: [],
+      sectionHistory: [],
       screenIndex: 0,
       responses: {},
       selectorValues: {},

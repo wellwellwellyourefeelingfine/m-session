@@ -18,21 +18,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSessionStore } from '../../../../stores/useSessionStore';
-
-// ── Sensation options (10 + "Something I can't name") ──────────────────────
-const SENSATIONS = [
-  { id: 'warmth', label: 'Warmth' },
-  { id: 'tingling', label: 'Tingling' },
-  { id: 'openness', label: 'Openness' },
-  { id: 'lightness', label: 'Lightness' },
-  { id: 'energy', label: 'Energy' },
-  { id: 'softness', label: 'Softness' },
-  { id: 'heaviness', label: 'Heaviness' },
-  { id: 'stillness', label: 'Stillness' },
-  { id: 'expansion', label: 'Expansion' },
-];
-
-const UNNAMED_SENSATION = { id: 'unnamed', label: "Something I can't name" };
+import { SENSATIONS, UNNAMED_SENSATION, PHASE_LABELS } from '../../../../content/transitions/somaticSensations';
 
 // ── Opacity tiers by phase count (leftmost = earliest = lightest,
 //                                   rightmost = latest = darkest).
@@ -44,14 +30,6 @@ const OPACITY_TIERS = {
   2: [0.30, 0.75],
   3: [0.25, 0.50, 0.75],
   4: [0.20, 0.40, 0.60, 0.75],
-};
-
-// ── Phase labels for the legend ────────────────────────────────────────────
-const PHASE_LABELS = {
-  'opening': 'Opening',
-  'peak': 'Peak',
-  'integration': 'Synthesis',    // user-facing name
-  'closing': 'Closing',
 };
 
 export default function BodyCheckInBlock({ block, context }) {

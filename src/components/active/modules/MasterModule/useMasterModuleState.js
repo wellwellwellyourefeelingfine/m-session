@@ -33,6 +33,12 @@ export default function useMasterModuleState(content, module) {
   // When the routed section completes, we pop and resume from the continuation.
   const [routeStack, setRouteStack] = useState([]);
 
+  // Back-navigation history — ordered list of section indexes the user came
+  // through. Every section transition (advance or route) pushes the section
+  // being left. `goBackToPreviousSection` pops from this stack, so Back traces
+  // the user's actual visit path rather than walking backward by array index.
+  const [sectionHistory, setSectionHistory] = useState([]);
+
   // ── Data collection state ─────────────────────────────────────────────────
 
   const [responses, setResponses] = useState({});           // { promptIndex: text }
@@ -117,17 +123,10 @@ export default function useMasterModuleState(content, module) {
     return sections.findIndex((s) => s.id === id);
   }, [sections]);
 
-  // Check if back navigation can go to a previous screens section
+  // Back is enabled whenever we have a visit-history entry to pop.
   const canGoBackToPreviousSection = useMemo(() => {
-    if (currentSectionIndex === 0) return false;
-    // Only go back to a previous 'screens' section (not meditation/timer)
-    for (let i = currentSectionIndex - 1; i >= 0; i--) {
-      if (sections[i].type === 'screens') return true;
-      // Stop at non-screens sections (don't cross meditation/timer boundaries)
-      break;
-    }
-    return false;
-  }, [currentSectionIndex, sections]);
+    return sectionHistory.length > 0;
+  }, [sectionHistory]);
 
   // ── Journal store ─────────────────────────────────────────────────────────
 
@@ -153,11 +152,18 @@ export default function useMasterModuleState(content, module) {
       );
     }
 
+    // Terminal sections end the module regardless of what sits after them.
+    if (currentSection?.terminal === true) {
+      setModulePhase('complete');
+      return;
+    }
+
     // Check if we should pop from route stack (returning from a routed section)
     if (routeStack.length > 0) {
       const continuationIndex = routeStack[routeStack.length - 1];
       setRouteStack((prev) => prev.slice(0, -1));
       if (continuationIndex < sections.length) {
+        setSectionHistory((prev) => [...prev, currentSectionIndex]);
         setCurrentSectionIndex(continuationIndex);
         return;
       }
@@ -171,9 +177,10 @@ export default function useMasterModuleState(content, module) {
     if (nextIndex >= sections.length) {
       setModulePhase('complete');
     } else {
+      setSectionHistory((prev) => [...prev, currentSectionIndex]);
       setCurrentSectionIndex(nextIndex);
     }
-  }, [currentSectionIndex, sections, routeStack, visitedSections]);
+  }, [currentSectionIndex, currentSection, sections, routeStack, visitedSections]);
 
   const routeToSection = useCallback((routeConfig) => {
     // Normalize: string → skip-ahead (no bookmark), object passes through
@@ -209,6 +216,7 @@ export default function useMasterModuleState(content, module) {
       }
     }
 
+    setSectionHistory((prev) => [...prev, currentSectionIndex]);
     setCurrentSectionIndex(targetIndex);
   }, [sectionIndexById, currentSectionIndex, advanceSection, currentSection, sections.length]);
 
@@ -222,6 +230,7 @@ export default function useMasterModuleState(content, module) {
         selectorValues,
         selectorJournals,
         conditionContext: { choiceValues, selectorValues, visitedSections },
+        storeState: useSessionStore.getState(),
       });
 
       if (entryText.split('\n').length > 1) {
@@ -236,14 +245,20 @@ export default function useMasterModuleState(content, module) {
   }, [content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId]);
 
   const goBackToPreviousSection = useCallback(() => {
-    for (let i = currentSectionIndex - 1; i >= 0; i--) {
-      if (sections[i].type === 'screens') {
-        setCurrentSectionIndex(i);
-        return;
-      }
-      break;
+    if (sectionHistory.length === 0) return;
+
+    // Un-visit the section we're leaving so the next forward Continue doesn't
+    // skip past it. Forward skip-visited still applies to earlier sections
+    // that remain visited.
+    const currentId = currentSection?.id;
+    if (currentId) {
+      setVisitedSections((prev) => prev.filter((id) => id !== currentId));
     }
-  }, [currentSectionIndex, sections]);
+
+    const prevIndex = sectionHistory[sectionHistory.length - 1];
+    setSectionHistory((prev) => prev.slice(0, -1));
+    setCurrentSectionIndex(prevIndex);
+  }, [sectionHistory, currentSection]);
 
   // ── Response handlers ─────────────────────────────────────────────────────
 
@@ -323,6 +338,7 @@ export default function useMasterModuleState(content, module) {
         selectorValues,
         selectorJournals,
         conditionContext: { choiceValues, selectorValues, visitedSections },
+        storeState: useSessionStore.getState(),
       });
       if (entryText.split('\n').length > 1) {
         addEntry({

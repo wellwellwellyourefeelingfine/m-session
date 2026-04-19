@@ -170,6 +170,7 @@ export function IdleScreen({
   title,
   description,
   duration,
+  animation,
 }) {
   return (
     <div className="space-y-4 animate-fadeIn px-6">
@@ -183,7 +184,7 @@ export function IdleScreen({
       )}
 
       <div className="flex justify-center">
-        <AsciiMoon />
+        {animation || <AsciiMoon />}
       </div>
 
       {description && (

@@ -22,6 +22,8 @@ export const routingTestModuleContent = {
     bookmark: 'bookmark',
   },
 
+  idleAnimation: 'full-sun',
+
   completion: {
     title: 'Routing test complete',
     message: 'The routing and bookmark system worked correctly.',
@@ -38,16 +40,16 @@ export const routingTestModuleContent = {
       id: 'index-0-intro',
       type: 'screens',
       screens: [
-        // Screen 1: "Header Fade Test" + Wave
+        // Screen 1: "Header Fade Test" + Sunrise
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
+            { type: 'header', title: 'Header Fade Test', animation: 'sunrise' },
             { type: 'text', lines: [
               'Screen 1 of 4 in this section.',
               '§',
-              'Header: "Header Fade Test" + Wave.',
+              'Header: "Header Fade Test" + Sunrise.',
               '§',
-              'Showcasing the new wave animation across these screens.',
+              'Previewing the new sunrise animation across these screens.',
               'Next screen has the SAME title and SAME animation.',
               'Expected: nothing in the header should fade.',
             ] },
@@ -56,11 +58,11 @@ export const routingTestModuleContent = {
         // Screen 2: Same title + same animation → header should NOT fade
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
+            { type: 'header', title: 'Header Fade Test', animation: 'sunrise' },
             { type: 'text', lines: [
               'Screen 2 of 4.',
               '§',
-              'Header: "Header Fade Test" + Wave (same as screen 1).',
+              'Header: "Header Fade Test" + Sunrise (same as screen 1).',
               '§',
               'Next screen has the SAME title and SAME animation.',
               'Expected: nothing in the header should fade.',
@@ -70,11 +72,11 @@ export const routingTestModuleContent = {
         // Screen 3: Same title + same animation → header should still NOT fade
         {
           blocks: [
-            { type: 'header', title: 'Header Fade Test', animation: 'wave' },
+            { type: 'header', title: 'Header Fade Test', animation: 'sunrise' },
             { type: 'text', lines: [
               'Screen 3 of 4.',
               '§',
-              'Header: "Header Fade Test" + Wave (same as screen 2).',
+              'Header: "Header Fade Test" + Sunrise (same as screen 2).',
               '§',
               'Next screen has a DIFFERENT title but the SAME animation.',
               'Expected: animation stays, title fades to new text.',
@@ -84,11 +86,11 @@ export const routingTestModuleContent = {
         // Screen 4: Different title + same animation → only title should fade
         {
           blocks: [
-            { type: 'header', title: 'Routing Overview', animation: 'wave' },
+            { type: 'header', title: 'Routing Overview', animation: 'sunrise' },
             { type: 'text', lines: [
               'Screen 4 of 4.',
               '§',
-              'Header: "Routing Overview" + Wave (title changed, animation same).',
+              'Header: "Routing Overview" + Sunrise (title changed, animation same).',
               '§',
               'This module tests the {routing} and {bookmark} system.',
               'Expected flow: 0 → 1 → 2 → 5 → 4 → 6',
@@ -209,6 +211,7 @@ export const routingTestModuleContent = {
     {
       id: 'index-6-final',
       type: 'screens',
+      terminal: true,
       screens: [
         {
           blocks: [

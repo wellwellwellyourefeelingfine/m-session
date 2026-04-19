@@ -20,6 +20,7 @@ import ModuleLayout, { CompletionScreen, IdleScreen } from '../../capabilities/M
 import ModuleControlBar from '../../capabilities/ModuleControlBar';
 import RevealOverlay from '../../capabilities/animations/RevealOverlay';
 import ImageViewerModal from '../../capabilities/ImageViewerModal';
+import { ANIMATION_MAP } from './blockRenderers/HeaderBlock';
 
 export default function MasterModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
@@ -135,6 +136,7 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
   // ── Idle Phase ────────────────────────────────────────────────────────────
 
   if (state.modulePhase === 'idle') {
+    const IdleAnimation = content?.idleAnimation ? ANIMATION_MAP[content.idleAnimation] : null;
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
@@ -143,6 +145,7 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
               title={module.title}
               description={libraryModule?.description}
               duration={module.duration}
+              animation={IdleAnimation ? <IdleAnimation /> : null}
             />
           </div>
         </ModuleLayout>
