@@ -24,6 +24,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AsciiMoon from '../../active/capabilities/animations/AsciiMoon';
 
 const FADE_MS = 700;
@@ -82,14 +83,19 @@ export default function TransitionOverlay({ phase, onCovered, onComplete }) {
     };
   }, [phase, onCovered, onComplete]);
 
-  return (
+  // Rendered via portal to document.body so the overlay DOM sits outside the
+  // tab/phase React tree. This is the same pattern HomeView's Begin Session
+  // overlay uses — it keeps the overlay visible across tab switches (tabs use
+  // `display: none`, which would hide anything rendered inside them) and
+  // survives TransitionModule remounts driven by store-state changes.
+  return createPortal(
     <>
       {/* Background overlay — covers the full viewport including header + tabbar */}
       <div
         className="fixed inset-0"
         style={{
           zIndex: 60,
-          backgroundColor: 'var(--color-bg-primary)',
+          backgroundColor: 'var(--color-bg)',
           opacity: overlayOpacity,
           transition: `opacity ${FADE_MS}ms ease-in-out`,
           pointerEvents: 'none',
@@ -109,6 +115,7 @@ export default function TransitionOverlay({ phase, onCovered, onComplete }) {
       >
         <AsciiMoon />
       </div>
-    </>
+    </>,
+    document.body
   );
 }

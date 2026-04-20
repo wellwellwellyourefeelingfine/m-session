@@ -47,12 +47,28 @@ export default function TransitionModule({ config }) {
   } = state;
 
   const handleExitComplete = useCallback(() => {
-    // Clear activeNavigation before firing completion — prevents a stale
-    // resume on the next transition.
+    // config.onComplete() fires earlier, at `onCovered` — see handleExitCovered
+    // below. That lets startSession / tab swap happen while the overlay is
+    // fully opaque, so when the overlay fades out the user sees the new state
+    // (home tab with timeline) already rendered beneath, not a stale snapshot.
+    // Here we just clear the persisted navigation, which triggers TransitionModule
+    // unmount via ActiveView's activeNavigation.transitionId check.
     clearActiveNavigation();
+  }, [clearActiveNavigation]);
+
+  // Exit-overlay `onCovered` — called when the overlay reaches full opacity.
+  // MUST be stable across renders: TransitionOverlay's timer-scheduling effect
+  // depends on the callback's identity, so an inline arrow function would make
+  // the effect re-run on every TransitionModule render (which happens as a
+  // side effect of the state changes we're making here), endlessly resetting
+  // the overlay's fade/hold/exit timers.
+  const handleExitCovered = useCallback(() => {
+    if (config.landingTab) {
+      useAppStore.getState().setCurrentTab(config.landingTab);
+    }
     const store = useSessionStore.getState();
     config.onComplete?.(store);
-  }, [config, clearActiveNavigation]);
+  }, [config]);
 
   // ── Auto-trigger exit overlay when the state machine completes ───────────
   useEffect(() => {
@@ -258,18 +274,20 @@ export default function TransitionModule({ config }) {
 
       {/* Exit overlay — mounts when state machine completes.
           `onCovered` fires when the overlay has fully faded in, which is the
-          safe moment to switch the active tab (if `config.landingTab` is set):
-          the user is fully covered so the tab swap is invisible, and when the
-          overlay fades out at the end they land directly on the new tab. */}
+          safe window to do every state change we want hidden from the user:
+          - switch the active tab (if `config.landingTab` is set), and
+          - fire `config.onComplete` so the session state advances (startSession
+            / transitionToPeak / completeSession / etc.) while the overlay is
+            fully opaque. By the time the overlay starts fading out, the new
+            state is already rendered underneath — no stale-state flash.
+          TransitionModule stays mounted through the fade-out via ActiveView's
+          `activeNavigation.transitionId` check; `clearActiveNavigation()` in
+          `handleExitComplete` is what finally unmounts it. */}
       {overlayPhase === 'exiting' && (
         <TransitionOverlay
           animation={config.animation}
           phase="exiting"
-          onCovered={() => {
-            if (config.landingTab) {
-              useAppStore.getState().setCurrentTab(config.landingTab);
-            }
-          }}
+          onCovered={handleExitCovered}
           onComplete={handleExitComplete}
         />
       )}

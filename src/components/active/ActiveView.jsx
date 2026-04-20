@@ -64,6 +64,7 @@ export default function ActiveView() {
   const timeline = useSessionStore((state) => state.timeline);
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
   const phaseTransitions = useSessionStore((state) => state.phaseTransitions);
+  const transitionData = useSessionStore((state) => state.transitionData);
   const booster = useSessionStore((state) => state.booster);
   const peakCheckIn = useSessionStore((state) => state.peakCheckIn);
   const closingCheckIn = useSessionStore((state) => state.closingCheckIn);
@@ -299,6 +300,19 @@ export default function ActiveView() {
   };
 
   const renderContent = () => {
+    // If a transition is mid-overlay, keep rendering its TransitionModule even
+    // after sessionPhase / activeTransition has advanced. This lets the exit
+    // overlay keep running (fading out) while the new phase state is already
+    // live — avoids a stale-state flash when the overlay reveals. The transition's
+    // lifecycle ends when clearActiveNavigation() fires in handleExitComplete,
+    // which nulls activeNavigation.transitionId and falls through to the normal
+    // phase-based rendering below.
+    const overlayTransitionId = transitionData?.activeNavigation?.transitionId;
+    if (overlayTransitionId === 'opening-ritual') return <TransitionModule config={openingRitualConfig} />;
+    if (overlayTransitionId === 'peak-transition') return <TransitionModule config={peakTransitionConfig} />;
+    if (overlayTransitionId === 'peak-to-integration') return <TransitionModule config={peakToIntegrationConfig} />;
+    if (overlayTransitionId === 'closing-ritual') return <TransitionModule config={closingRitualConfig} />;
+
     // Check for active follow-up modules first (rendered in Active tab)
     if (activeFollowUpModule === 'checkIn') return <FollowUpCheckIn />;
     if (activeFollowUpModule === 'revisit') return <FollowUpRevisit />;
