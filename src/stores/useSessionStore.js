@@ -1259,6 +1259,21 @@ export const useSessionStore = create(
         });
       },
 
+      // Clears the recorded/confirmed ingestion state. Used when the user
+      // changes their planned dose mid-flow — the substance intake is treated
+      // as not-yet-taken and they re-run the record + confirm steps from a
+      // clean slate.
+      resetSubstanceIntake: () => {
+        set({
+          substanceChecklist: {
+            ...get().substanceChecklist,
+            hasTakenSubstance: false,
+            ingestionTime: null,
+            ingestionTimeConfirmed: false,
+          },
+        });
+      },
+
       startSubstanceChecklist: () => {
         set({ sessionPhase: 'substance-checklist' });
       },

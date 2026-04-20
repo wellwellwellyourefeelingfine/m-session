@@ -64,6 +64,7 @@ export default function ToolPanel({ toolId, ToolComponent, isLast = false }) {
                   : 'text-app-gray-400 dark:text-app-gray-600 cursor-not-allowed'
                 }
               `}
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
               aria-label="Close tool"
             >
               ×

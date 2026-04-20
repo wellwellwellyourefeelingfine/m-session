@@ -181,7 +181,7 @@ export default function ModuleCard({
             {/* Description row: FireIcon + description text */}
             <div className="flex items-start gap-3.5 -mt-0.5">
               <FireIcon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />
-              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider line-clamp-3 min-w-0">
+              <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider line-clamp-3 min-w-0">
                 {booster.status === 'taken' && booster.boosterTakenAt
                   ? <>Booster of {boosterDoseMg}mg<br />taken at {formatTimestamp(booster.boosterTakenAt)}</>
                   : 'Optional supplemental dose at the peak to extend your session.'}
@@ -254,7 +254,7 @@ export default function ModuleCard({
               (statusText || libraryModule?.description) && (
                 <div className="flex items-start gap-3.5 -mt-0.5">
                   {statusIcon || (() => { const Icon = getModuleIcon(module.libraryId, libraryModule?.category); return <Icon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />; })()}
-                  <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider line-clamp-3 min-w-0">
+                  <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider line-clamp-3 min-w-0">
                     {statusText || libraryModule.description}
                   </p>
                 </div>

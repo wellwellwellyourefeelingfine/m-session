@@ -342,7 +342,7 @@ export default function SessionMenu() {
             rel="noopener noreferrer"
             onClick={closeMenu}
             className="block w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors no-underline"
-            style={{ fontFamily: 'Azeret Mono, monospace', color: 'inherit' }}
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Give Feedback <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
           </a>
@@ -353,7 +353,7 @@ export default function SessionMenu() {
             rel="noopener noreferrer"
             onClick={closeMenu}
             className="block w-full px-4 py-3 text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-secondary)] transition-colors no-underline"
-            style={{ fontFamily: 'Azeret Mono, monospace', color: 'inherit' }}
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Landing Page <ArrowUpRightIcon size={12} strokeWidth={2.5} className="inline-block ml-0.5 -mt-px text-[var(--color-text-tertiary)]" />
           </a>

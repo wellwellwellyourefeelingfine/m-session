@@ -59,7 +59,7 @@ export default function PromptBlock({
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={screen.placeholder || 'Write freely...'}
-        rows={6}
+        rows={screen.rows || 6}
         className={`w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
           focus:outline-none focus:border-[var(--accent)]
           text-[var(--color-text-primary)] leading-relaxed

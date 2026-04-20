@@ -14,6 +14,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 import ModuleStatusBar, { formatTime } from '../../active/ModuleStatusBar';
 import { ScreensSection, MeditationSection } from '../../active/modules/MasterModule/sectionRenderers';
@@ -37,7 +38,13 @@ export default function TransitionModule({ config }) {
   // Pull specific stable members out of state so deps don't include the whole
   // state object (which is a new reference every render and would thrash every
   // downstream useCallback/useEffect that depended on it).
-  const { flushCaptures, clearActiveNavigation, handleScreenChange: stateHandleScreenChange } = state;
+  const {
+    flushCaptures,
+    clearActiveNavigation,
+    handleScreenChange: stateHandleScreenChange,
+    routeStack,
+    advanceSection,
+  } = state;
 
   const handleExitComplete = useCallback(() => {
     // Clear activeNavigation before firing completion — prevents a stale
@@ -56,12 +63,36 @@ export default function TransitionModule({ config }) {
   }, [state.modulePhase, overlayPhase, flushCaptures]);
 
   // ── Skip handler ─────────────────────────────────────────────────────────
+  // Context-aware:
+  //   - In a bookmark-routed detour (routeStack has entries): advance the
+  //     section so the bookmark pops and the user returns to the gate. Skip
+  //     means "abandon this detour activity," not "abandon the whole transition."
+  //   - In main flow (no bookmark): end the entire transition — this is the
+  //     "skip the whole ritual" escape hatch for users who want to jump ahead.
+  //     Gated by `config.skip.requireVisited` if set.
+  const skipRequireVisited = config.skip?.requireVisited;
+  const skipRequirementMet = !skipRequireVisited
+    || state.visitedSections.includes(skipRequireVisited);
+
   const handleSkip = useCallback(() => {
     flushCaptures();
-    clearActiveNavigation();
-    const store = useSessionStore.getState();
-    config.onComplete?.(store);
-  }, [config, flushCaptures, clearActiveNavigation]);
+
+    if (routeStack.length > 0) {
+      advanceSection();
+      return;
+    }
+
+    // Defense in depth: if a gate is configured but unmet, block silently.
+    // The UI should already hide Skip in this case (see skipEnabled below).
+    if (skipRequireVisited && !skipRequirementMet) {
+      return;
+    }
+
+    // Route Skip through the same ritual exit overlay as natural completion.
+    // handleExitComplete will fire config.onComplete + clearActiveNavigation
+    // after the ritual fade finishes — no need to call them here.
+    setOverlayPhase('exiting');
+  }, [flushCaptures, routeStack, advanceSection, skipRequireVisited, skipRequirementMet]);
 
   // ── Progress reporting ───────────────────────────────────────────────────
   // Progress is computed by ScreensSection internally for screens sections.
@@ -83,13 +114,25 @@ export default function TransitionModule({ config }) {
   const sections = config.sections || [];
   const currentSection = state.currentSection;
 
-  // Cumulative visited-section progress (identical formula to MasterModule)
+  // Cumulative visited-section progress (identical formula to MasterModule).
+  //
+  // Tail-detour sections (placed after a `terminal: true` section in the
+  // config array) are only reachable via bookmark routing from earlier in
+  // the flow. Once the user has passed the routing gate, they can't be
+  // reached sequentially, so they must not inflate the progress denominator.
+  // We slice `sections` at the first terminal entry for unvisitedRemaining.
+  // Detours the user HAS visited are still counted via `visitedSections` →
+  // `visitedCount`, so taking a detour doesn't penalize progress.
   const progressPercent = (() => {
     if (state.modulePhase === 'complete') return 100;
     if (!currentSection) return 0;
     const currentId = currentSection.id;
     const visitedCount = state.visitedSections.length;
-    const unvisitedRemaining = sections
+    const firstTerminalIdx = sections.findIndex((s) => s.terminal === true);
+    const mainFlowSections = firstTerminalIdx >= 0
+      ? sections.slice(0, firstTerminalIdx + 1)
+      : sections;
+    const unvisitedRemaining = mainFlowSections
       .filter((s) => s.id !== currentId && !state.visitedSections.includes(s.id)).length;
     const expectedTotal = visitedCount + 1 + unvisitedRemaining;
     const sectionBase = visitedCount / expectedTotal;
@@ -129,8 +172,13 @@ export default function TransitionModule({ config }) {
   // ── Render ───────────────────────────────────────────────────────────────
   const renderCurrentSection = () => {
     if (!currentSection) return null;
-    if (state.modulePhase === 'complete') return null;
-
+    // Do NOT early-return when modulePhase === 'complete'. The last section
+    // must keep rendering through the exit sequence so the ModuleControlBar
+    // stays visible while the exit overlay fades in to cover it. Otherwise
+    // the section (and its MCB) unmounts a frame before the overlay begins
+    // its fade-in, producing a visible "button vanishes then overlay appears"
+    // gap. The whole section unmounts cleanly when TransitionModule itself
+    // unmounts at the end of the exit sequence.
     switch (currentSection.type) {
       case 'screens':
         return (
@@ -159,8 +207,19 @@ export default function TransitionModule({ config }) {
             customBlockRegistry={TRANSITION_CUSTOM_BLOCKS}
             sessionData={state.sessionData}
             storeState={state.storeState}
-            skipEnabled={config.skip?.allowed !== false}
-            skipConfirmMessage={config.skip?.confirmMessage || 'Skip the transition?'}
+            skipEnabled={
+              // Detour skip is always enabled — it pops the bookmark and
+              // returns the user to the gate, which is always a valid action.
+              // Main-flow skip respects both `skip.allowed` and any
+              // `skip.requireVisited` gate.
+              routeStack.length > 0
+              || ((config.skip?.allowed !== false) && skipRequirementMet)
+            }
+            skipConfirmMessage={
+              routeStack.length > 0
+                ? 'Skip this activity?'
+                : (config.skip?.confirmMessage || 'Skip the transition?')
+            }
           />
         );
 
@@ -171,10 +230,11 @@ export default function TransitionModule({ config }) {
             section={currentSection}
             module={{ instanceId: `transition-${config.id}-${currentSection.id}`, title: currentSection.title }}
             onSectionComplete={state.advanceSection}
-            onSkip={state.advanceSection}
             onProgressUpdate={(mode, elapsed, total) => {
               if (mode === 'timer') setTimerProgress({ elapsed, total });
             }}
+            canGoBackToPreviousSection={state.canGoBackToPreviousSection}
+            onBackToPreviousSection={state.goBackToPreviousSection}
           />
         );
 
@@ -196,18 +256,35 @@ export default function TransitionModule({ config }) {
         />
       )}
 
-      {/* Exit overlay — mounts when state machine completes */}
+      {/* Exit overlay — mounts when state machine completes.
+          `onCovered` fires when the overlay has fully faded in, which is the
+          safe moment to switch the active tab (if `config.landingTab` is set):
+          the user is fully covered so the tab swap is invisible, and when the
+          overlay fades out at the end they land directly on the new tab. */}
       {overlayPhase === 'exiting' && (
         <TransitionOverlay
           animation={config.animation}
           phase="exiting"
+          onCovered={() => {
+            if (config.landingTab) {
+              useAppStore.getState().setCurrentTab(config.landingTab);
+            }
+          }}
           onComplete={handleExitComplete}
         />
       )}
 
-      {/* Main content — status bar + current section */}
+      {/* Main content — status bar + current section.
+          Opacity is driven by BOTH contentVisible (entrance reveal) and
+          overlayPhase (exit). During exit the bars fade out in parallel
+          with the TransitionOverlay fading in — duration-700 matches the
+          overlay's 700ms fade-in so the two animations finish together,
+          giving a clean dissolve instead of a "bars hang around while the
+          overlay slowly covers them" effect. The background beneath the
+          bars is the same color as the overlay, so there's no visible gap
+          even in the few frames where both are partly transparent. */}
       <div
-        className="transition-opacity duration-500"
+        className="transition-opacity duration-700"
         style={{ opacity: contentVisible && overlayPhase !== 'exiting' ? 1 : 0 }}
       >
         <ModuleStatusBar
@@ -226,12 +303,16 @@ export default function TransitionModule({ config }) {
           className="fixed left-0 right-0 flex flex-col overflow-hidden"
           style={{ top: 'var(--header-plus-status)', bottom: 'var(--tabbar-height)' }}
         >
-          {/* Keyed wrapper — remounts on section change, triggering the
-              animate-fadeIn CSS keyframe. Gives each section a smooth entrance
-              regardless of whether we're going screens→meditation or vice versa. */}
+          {/* Keyed wrapper — remounts on section change so ScreensSection /
+              MeditationSection get a fresh state instance. No animate-fadeIn
+              here: the wrapper contains the ModuleControlBar (via ScreensSection's
+              fragment return), and a wrapper-level fade would ramp the Continue
+              button from opacity 0→1 on every section transition, producing
+              a visible flash. Content inside ScreensSection handles its own
+              fade-in via isBodyVisible / isTitleVisible / isAnimationVisible. */}
           <div
             key={currentSection?.id || 'empty'}
-            className="flex-1 overflow-auto animate-fadeIn"
+            className="flex-1 overflow-auto"
           >
             {renderCurrentSection()}
           </div>

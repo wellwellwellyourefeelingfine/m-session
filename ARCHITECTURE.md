@@ -329,7 +329,7 @@ In all cases, the user selects an option and clicks Continue. Without a route, t
 
 **Object with `bookmark: 'section-id'`** = re-route with custom return point. After the target completes, the flow returns to the named section.
 
-**Route-refire guard.** Choice selections persist (`choiceValues` is durable state), so back-navigating to a choice-with-route screen and pressing Continue would naively re-fire the route and trap the user. `ScreensSection.handleNext` guards against this: if the route's target section has already been visited, the route is skipped and sequential advance runs instead. Combined with the "un-visit on back" behavior, this means the user can back through a routed screen, change their selection, and re-traverse cleanly.
+**Persisted choices.** `choiceValues` is durable — a selection made on one visit persists across back-navigation and bookmark returns. If a user back-navigates to a choice screen, their prior selection stays visible (the selected option's button remains in the "selected" state). Pressing Continue re-fires whatever route is currently selected. This is by design: the UI honestly reflects what will happen, and re-traversing a previously-taken branch is a valid user action. Gate patterns like the Opening Ritual Crossroads rely on this behavior — a user can complete a detour, return to the gate, re-select the same option, and revisit it cleanly. The "un-visit on back" rule covers the complementary case: when a user backs all the way out of a branch, every section they pass through gets unvisited, so a clean back-and-retry works the same as a first-time traversal.
 
 #### Sequential Advance & Visited Section Skipping
 
@@ -357,30 +357,47 @@ Without `terminal: true`, the user pressing Continue on `final-moment` would fal
 
 #### History-Based Back Navigation
 
-Back navigation follows the user's *actual visit path*, not the section array index. A `sectionHistory` stack records every section the user came from; each forward transition (sequential advance, route, or bookmark pop) pushes the current section index onto it, and `goBackToPreviousSection` pops from it.
+Back navigation follows the user's *actual visit path*, not the section array index. A `sectionHistory` stack records the sections the user came from, and `goBackToPreviousSection` pops it. Sequential advances and routes push the current section index; bookmark pops (the return leg of a routed round-trip) are treated as "closing a side trip" — they don't push the completed detour, and they pop the gate's entry if the round-trip ended where it started. A completed detour leaves no residue in history.
 
 This matters in any flow that routes non-linearly:
 
 ```
-User flow: 0 → 1 → 2 (checkpoint) → routes to 5 → bookmark returns to 4 → 6
+User flow: 0 → 1 → 2 (gate, user picks detour) → routes to 5 (bookmark: 2) → returns to 2 → 6
 
 sectionHistory after each step:
   at 1: [0]
   at 2: [0, 1]
-  at 5: [0, 1, 2]
-  at 4: [0, 1, 2, 5]
-  at 6: [0, 1, 2, 5, 4]
+  at 5: [0, 1, 2]      ← routeToSection pushes the gate (2) on entry
+  at 2: [0, 1]         ← bookmark-pop: continuationIndex (2) matches top, pop it
+  at 6: [0, 1, 2]      ← sequential advance pushes 2
 
-Pressing Back from 6: pops 4 → lands at 4
-Pressing Back from 4: pops 5 → lands at 5   (NOT index 3, which is what an array-walk would do)
-Pressing Back from 5: pops 2 → lands at 2
+Pressing Back from 6: pops 2 → lands at 2   (back at the gate, without re-entering the detour)
+Pressing Back from 2: pops 1 → lands at 1
 ```
 
+For bookmarks whose return target isn't the current section (e.g. `bookmark: true`, which returns to the section *after* the gate), the bookmark-pop leaves history unchanged — Back from the post-detour section retraces to the branching point, skipping over the side trip.
+
 **Un-visit on back.** When the user presses Back, the section they're leaving is removed from `visitedSections`. This makes forward re-traversal work smoothly — the next Continue won't skip past the section they just backed out of. Sections they didn't traverse backward remain visited, so the skip-visited logic still applies to branches they already completed.
+
+**Back also prunes stale route-stack entries.** If the section the user back-navigates *into* is the current top of `routeStack` (i.e. the user returned to their bookmark manually instead of letting the activity complete and pop it), the back handler drops that entry. Without this, a subsequent Continue would fire the stale pop, land the user on the section they're already on, and consume one Continue press silently.
 
 `canGoBackToPreviousSection` is simply `sectionHistory.length > 0` — Back is shown iff there's history to pop.
 
 Both MasterModule and TransitionModule use the same history-based design. In TransitionModule, `sectionHistory` is persisted to `activeNavigation` alongside the rest of navigation state, so force-closing the app mid-transition preserves Back behavior on resume.
+
+#### Context-Aware Skip
+
+The Skip button is detour-aware. When the user is inside a bookmark-routed detour (the `routeStack` is non-empty), Skip advances the section — which pops the bookmark and returns the user to the gate. Skip there means "abandon this detour activity," not "abandon the whole flow." When there's no active bookmark, Skip falls through to the parent's skip handler: in TransitionModule that ends the entire transition (fires `config.onComplete`), and in MasterModule that abandons the module (fires the `onSkip` prop).
+
+Both systems implement the same semantics — checked via `state.routeStack.length > 0` in each orchestrator's `handleSkip`. Gate-pattern content (like the Opening Ritual Crossroads) gets this behavior automatically without any per-module wiring.
+
+Skip confirmation messages also follow the context: in a detour the dialog reads "Skip this activity?"; in main flow it reads the configured message (e.g. "Skip the opening ritual?") or the module's default.
+
+**Meditation sections always advance on skip.** The context-aware skip logic above applies to `screens` sections, not `meditation` sections. MeditationSection hardcodes skip to fire `onSectionComplete` (which is `state.advanceSection` in both systems) — meditation skip never abandons the flow, regardless of detour state. In a detour it pops the bookmark back to the gate; in main flow it advances to the next section. This matches the common pattern of a user being partway through an audio meditation and wanting to move on without ending the whole ritual or module. MeditationSection does not accept an `onSkip` prop; orchestrators only pass `onSectionComplete`.
+
+**Skip-to-end gate (`skip.requireVisited`).** TransitionModule configs can gate the main-flow "end the whole transition" behavior on a specific section having been visited. When `skip.requireVisited: 'section-id'` is set, the Skip button is hidden in main flow until that section id is in `visitedSections`. This keeps users from accidentally exiting a transition before a required checkpoint — e.g., the Opening Ritual gates skip-to-end on `substance-intake-confirm` so users can't bail out before recording and confirming their substance intake, which the rest of the session depends on. Detour Skip is unaffected (it pops the bookmark regardless).
+
+**Disable main-flow skip entirely (`skip.allowed: false`).** Some transitions shouldn't be skippable to completion at all — e.g., the Closing Ritual, whose terminal section fires `completeSession()` and is the gate for follow-up activities unlocking. Setting `skip.allowed: false` on the transition config hides the Skip button in main flow everywhere, forcing the user to press Continue through to the end. Detour Skip is decoupled from this flag and still works, so a user can always exit a side trip back to its gate — what they can't do is bypass the main flow entirely.
 
 #### Conditional Content
 
@@ -748,7 +765,7 @@ src/components/active/modules/MasterModule/
   useMasterModuleState.js       # Central state (navigation, data, conditions)
   sectionRenderers/
     ScreensSection.jsx          # Step-through screens with block rendering
-    MeditationSection.jsx       # Audio-synced meditation (variable duration + variations)
+    MeditationSection.jsx       # Audio-synced meditation (variable duration, variations, back-nav)
     TimerSection.jsx            # Countdown timer + optional recommendations
     GenerateSection.jsx         # PNG generation + RevealOverlay orchestration
   blockRenderers/
@@ -1129,7 +1146,8 @@ TransitionModule passes a `customBlockRegistry` into `ScreensSection`, which fal
 | Block type | Purpose |
 |---|---|
 | `body-check-in` | 10-sensation grid (warmth, tingling, openness, lightness, energy, softness, heaviness, stillness, expansion, tension) + "Something I can't name"; writes to `transitionData.somaticCheckIns.<phase>`. Supports `mode: 'select'` (default, interactive) and `mode: 'comparison'` (read-only, shows layered picks across multiple phases via a stacked-opacity grid). |
-| `ingestion-time` | Record (`mode: 'record'`) or confirm (`mode: 'confirm'`) substance intake time. Gates Continue via `reportReady` until the user presses the button or confirms. |
+| `ingestion-time` | Self-contained substance intake flow: pristine ("I've taken it" button) → recorded (time displayed in an accent box, click to edit inline, "Confirm time" button below) → confirming (modal "Are you sure? Once confirmed you can't change it.") → confirmed (time + check icon, read-only). Gates Continue via `reportReady` until the user clicks Confirm in the modal, then auto-advances the section via `context.advanceSection()`. Reads/writes `substanceChecklist.ingestionTime` and `ingestionTimeConfirmed`; auto-resets to pristine if those values are cleared (e.g. by `editable-dose` on a dose change). No `mode` prop. |
+| `editable-dose` | Inline-editable display of `sessionProfile.plannedDosageMg`. Renders a small label and a tight accent box around the value. Tap to edit inline (number input in the same box, Save text-button + Cancel beneath). Save writes back via `updateSessionProfile`. If the new value differs from the prior one AND ingestion time was already recorded, calls `resetSubstanceIntake` to wipe the recorded/confirmed time — keeps the recorded intake coherent with the dose the user actually intends to take. |
 | `action` | Generic store-action button with a small allowlist (currently `recordIngestionTime`, `confirmIngestionTime`). Fires the named action and reports readiness. |
 | `store-display` | Read-only render of any dot-path store value in a styled container (`style: 'accent-box' | 'plain' | 'italic'`). Used for showing the user's saved intention, focus label, touchstone, etc. Supports `labelMap` for translating raw values to display labels. |
 | `expandable` | Collapsible text section — click-to-reveal, click-to-hide. Uses the shared `renderContentLines` utility so it supports `§` spacers and `{accent}` terms like regular text blocks. |
@@ -1141,7 +1159,7 @@ Custom blocks receive a `context` prop with state reads (`responses`, `selectorV
 
 #### Block readiness gating
 
-Any custom block can call `context.reportReady(blockKey, isReady)` to disable the Continue button. Used by `IngestionTimeBlock` (Continue disabled until the user records/confirms their intake time) and any other block that needs to gate advance until an action is taken. Block readiness resets automatically on screen change, so blocks don't need explicit cleanup.
+Any custom block can call `context.reportReady(blockKey, isReady)` to disable the Continue button. Used by `IngestionTimeBlock` (Continue disabled until the user records/confirms their intake time) and any other block that needs to gate advance until an action is taken. Block readiness resets automatically on screen change, so blocks don't need explicit cleanup. (The reset is applied synchronously alongside `setScreenIndex` in `handleNext` / `handleBack` — see *Module Boundary Fades* for why this matters.)
 
 #### Terminal + tail-detour pattern in transitions
 
@@ -1246,10 +1264,23 @@ progress = (sectionBase + sectionWeight × screenFraction) × 100
 ```
 
 - `visitedCount` = number of completed sections (from `visitedSections` array)
-- `unvisitedRemaining` = sections not yet visited and not the current one
+- `unvisitedRemaining` = sections not yet visited and not the current one, **restricted to sections at or before the first `terminal: true` section** (see *Terminal-awareness* below)
 - `screenFraction` = position within the current `screens` section (reported by `ScreensSection` via `onScreenChange` callback)
 
 **Why cumulative, not index-based:** Routing can visit sections out of array order (e.g., index 2 → 5 → 4 → 6). Using `currentSectionIndex / totalSections` would give "free" credit for skipped sections. The cumulative approach counts only what the user actually completed, and shrinks the denominator when sections become unreachable.
+
+**Terminal-awareness (tail detours):** When the section array contains a `terminal: true` section followed by additional "tail detour" sections (reachable only via bookmark routing from earlier), the formula slices the array at the first terminal entry before computing `unvisitedRemaining`:
+
+```js
+const firstTerminalIdx = sections.findIndex((s) => s.terminal === true);
+const mainFlowSections = firstTerminalIdx >= 0
+  ? sections.slice(0, firstTerminalIdx + 1)
+  : sections;
+const unvisitedRemaining = mainFlowSections
+  .filter((s) => s.id !== currentId && !visitedSections.includes(s.id)).length;
+```
+
+Without this, tail detours that the user can no longer reach (they've already passed the routing gate) would stay in `unvisitedRemaining` and leave permanent "dead weight" at the end of the progress bar — e.g., the opening ritual's final page would read ~71% instead of 100% because four tail detours after `reassurance-2` were being counted. Detours the user *did* visit via routing still contribute to progress via `visitedSections` → `visitedCount`, so taking a detour doesn't penalize progress — only unreachable ones are excluded. Both `MasterModule` and `TransitionModule` apply this filter identically.
 
 **Section type behavior:**
 - `screens` — progress advances per-screen within the section's weight
@@ -1265,6 +1296,81 @@ progress = (sectionBase + sectionWeight × screenFraction) × 100
 | `src/hooks/useProgressReporter.js` | Convenience hook: `step()`, `timer()`, `raw()`, `idle()` |
 | `src/components/active/ActiveView.jsx` | Orchestrates: owns `moduleProgressState`, passes `handleProgressUpdate` to `ModuleRenderer`, builds status bar labels |
 | `src/components/active/ModuleRenderer.jsx` | Passes `onProgressUpdate` as a common prop to all module components |
+
+---
+
+## Module Boundary Fades
+
+Both `ActiveView` (for MasterModule instances and follow-up library modules) and `TransitionModule` (for phase transitions) coordinate smooth fade-outs at module boundaries so the `ModuleStatusBar` and `ModuleControlBar` never disappear abruptly. Individual bar elements also fade in when they first become visible mid-module. Four mechanisms handle four situations — all use the same `animate-fadeIn` CSS keyframe (300 ms, defined in `index.css`) or short opacity transitions.
+
+### Intra-module (screen-to-screen, section-to-section)
+
+Within a single MasterModule or TransitionModule, the `ModuleControlBar` is rendered as a sibling of `ModuleLayout` inside each section renderer's fragment return. When a section changes, React commits the old renderer's unmount and the new renderer's mount in a single frame, so the Continue button appears continuous — there's no visible gap. No wrapper-level `animate-fadeIn` is applied to the keyed section-change wrapper in `TransitionModule`; a fade there would ramp the button from opacity 0→1 on every section transition and produce a visible flash.
+
+`blockReadiness` (the Continue-gating map for custom blocks like `IngestionTimeBlock`) is cleared **synchronously alongside** `setScreenIndex` inside `ScreensSection.handleNext` / `handleBack` — not via a reactive `useEffect`. Doing it in the same state-update batch avoids the child-effect-before-parent-effect race that could otherwise flip `Continue` enabled → disabled → enabled during a screen change.
+
+### MasterModule end (module → next module)
+
+`ActiveView` wraps every `ModuleStatusBar` + `ModuleRenderer` pairing in a **keyed fade wrapper**:
+
+```jsx
+<div
+  key={currentModule?.instanceId ?? 'open-space'}
+  className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+  style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+>
+  <ModuleStatusBar ... />
+  <ModuleRenderer ... onComplete={...} onSkip={...} />
+</div>
+```
+
+Four render sites use this pattern: pre-session active module, come-up phase, peak/integration phases, and follow-up library modules (all in `ActiveView.jsx`).
+
+A shared helper `fadeOutThenDo(instanceId, action)` wraps the store action that would otherwise unmount the module synchronously:
+
+1. Sets `moduleExitingId = instanceId` → wrapper fades to opacity 0 over `MODULE_EXIT_FADE_MS` (500 ms), gates `pointerEvents: 'none'` to prevent double-click on the invisible button.
+2. After 500 ms, fires the real store action (`completeModule`, `skipModule`, `completePreSessionModule`, or `abandonModule`).
+3. The store swap changes `currentModule.instanceId` → the wrapper's `key` changes → old wrapper unmounts, new wrapper mounts with `animate-fadeIn` playing from opacity 0 → 1.
+
+Every `ModuleRenderer` in `ActiveView` passes its `onComplete` and `onSkip` through `fadeOutThenDo`. Modules themselves never need to know about the fade — from inside the module, `onComplete()` still looks synchronous.
+
+### TransitionModule end (phase → next phase)
+
+`TransitionModule` has its own ritual-moon exit overlay via `TransitionOverlay` (standardized on `AsciiMoon` for all four transitions). When the last section completes or the user hits Skip in main flow, `overlayPhase` flips to `'exiting'` and the overlay mounts and fades in at z-index 60 full-viewport.
+
+When `overlayPhase === 'exiting'`, the content wrapper around `ModuleStatusBar` + the current section's `ModuleControlBar` also flips to `opacity: 0` with `transition-opacity duration-700`. The bars fade out in parallel with the overlay's 700 ms fade-in so both animations finish at roughly the same moment — no "bars hang around while the overlay slowly darkens" effect, no opacity-0 gap before unmount. The app's background color matches the overlay background, so the few frames where both are partly transparent remain visually uniform.
+
+The last section continues to render through `modulePhase === 'complete'` (there is *no* early `return null` for that state) so the `ModuleControlBar` remains mounted until `TransitionModule` itself unmounts when `handleExitComplete` fires `config.onComplete` at the end of the overlay's exit sequence.
+
+Skip in `handleSkip` routes through `setOverlayPhase('exiting')` rather than calling `config.onComplete` directly, so Skip produces the same ritual-moon fade as natural completion.
+
+### Per-element mount fade (bars and buttons)
+
+Chrome elements fade in individually **when they first mount** mid-module — not when their props change. This is handled by attaching `animate-fadeIn` to the conditionally-rendered elements themselves:
+
+| Element | File | Triggers on |
+|---|---|---|
+| `ModuleStatusBar` (whole bar) | `src/components/active/ModuleStatusBar.jsx` | Bar appears for the first time (e.g., step 2 of `SubstanceChecklist` after the index step hides it) |
+| Back button | `src/components/active/capabilities/ModuleControlBar.jsx` | `showBack` flips false → true (e.g., on screen 2+ of a `ScreensSection`) |
+| Skip button | same | `showSkip` flips false → true |
+| Seek back / forward | same | `showSeekControls` flips false → true (typically on meditation start) |
+| Volume, Transcript slot content | `src/components/active/modules/MasterModule/sectionRenderers/MeditationSection.jsx` — wrapped in `<div className="animate-fadeIn">` inside the `leftSlot` / `rightSlot` props | Meditation starts and the slot child goes from `null` to mounted |
+
+Because `animate-fadeIn` is a CSS keyframe rather than a CSS transition, it only fires on mount — prop changes on an already-mounted element never replay the animation. No fade-out is added for any of these elements; when they're no longer needed they just unmount.
+
+These per-element fades compose cleanly with the module-level fades above: on module mount, the `ActiveView` keyed wrapper's `animate-fadeIn` plays alongside `ModuleStatusBar`'s own `animate-fadeIn` (both 300 ms), producing a unified smooth entry. The global `@media (prefers-reduced-motion)` rule in `index.css` collapses both animation and transition durations to 0.01 ms, so these fades are respected automatically.
+
+### Key files
+
+| File | Role |
+|------|------|
+| `src/components/active/ActiveView.jsx` | `moduleExitingId` state, `fadeOutThenDo` helper, keyed fade wrappers at all 4 module render sites |
+| `src/components/session/TransitionModule/TransitionModule.jsx` | Exit overlay covers content (no opacity flip on the inner wrapper), Skip routed through overlay |
+| `src/components/session/TransitionModule/TransitionOverlay.jsx` | Ritual-moon entrance + exit overlay, used by every TransitionModule |
+| `src/components/active/modules/MasterModule/sectionRenderers/ScreensSection.jsx` | Synchronous `setBlockReadiness({})` alongside `setScreenIndex` in `handleNext` / `handleBack` |
+| `src/components/active/ModuleStatusBar.jsx` | `animate-fadeIn` on bar outer `<div>` for first-mount fade |
+| `src/components/active/capabilities/ModuleControlBar.jsx` | `animate-fadeIn` on Back / Skip / Seek buttons when they conditionally mount |
+| `src/components/active/modules/MasterModule/sectionRenderers/MeditationSection.jsx` | Wraps `leftSlot` / `rightSlot` children in `<div className="animate-fadeIn">` |
 
 ---
 

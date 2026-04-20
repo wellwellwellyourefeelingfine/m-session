@@ -153,7 +153,7 @@ export default function ActiveEmptyState() {
                 <span className="inline-block w-[6px] h-[6px] rounded-full border-[1.5px] border-[var(--accent)] shrink-0" />
                 {item.label}
               </div>
-              <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed">
+              <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
                 {item.body}
               </div>
             </div>
@@ -167,7 +167,7 @@ export default function ActiveEmptyState() {
           <div className="rv rv-d1 bg-[var(--bg-primary)] pt-3 pb-5 px-5">
             <div className="text-base text-[var(--accent)] opacity-70 mb-3">{'>_'}</div>
             <div className="uppercase tracking-[0.1em] text-xs text-[var(--color-text-primary)] mb-3">What This App Does</div>
-            <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed space-y-3">
+            <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-3">
               <p>
                 It holds the structure so you don't have to. When you're in an altered
                 state, the last thing you need is to be managing logistics.
@@ -186,7 +186,7 @@ export default function ActiveEmptyState() {
           <div className="rv rv-d2 bg-[var(--bg-primary)] pt-3 pb-5 px-5">
             <div className="text-base text-[var(--accent)] opacity-70 mb-3">{'//'}</div>
             <div className="uppercase tracking-[0.1em] text-xs text-[var(--color-text-primary)] mb-3">What It Doesn't Do</div>
-            <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed space-y-3">
+            <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed space-y-3">
               <p>
                 It doesn't tell you what to think. It doesn't interpret your experience
                 or tell you what it means. It doesn't push you toward any particular
@@ -214,7 +214,7 @@ export default function ActiveEmptyState() {
             >
               <div className="text-base text-[var(--accent)] opacity-70 mb-2">{p.icon}</div>
               <div className="uppercase tracking-[0.06em] text-xs text-[var(--color-text-primary)] font-medium mb-2">{p.title}</div>
-              <div className="text-[12px] text-[var(--color-text-secondary)] leading-relaxed">{p.desc}</div>
+              <div className="text-xs text-[var(--color-text-secondary)] leading-relaxed">{p.desc}</div>
             </div>
           ))}
         </div>

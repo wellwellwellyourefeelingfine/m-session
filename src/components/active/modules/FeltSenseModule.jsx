@@ -649,7 +649,7 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
                 >
                   {meditation.title}
                 </h2>
-                <p className="text-left uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
+                <p className="text-left tracking-wider text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
                   {meditation.description}
                 </p>
               </div>

@@ -583,7 +583,7 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
                 <AsciiMoon />
               </div>
 
-              <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed mb-6">
+              <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed mb-6">
                 {meditation.description}
               </p>
 

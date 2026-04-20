@@ -13,6 +13,11 @@ export const openingRitualConfig = {
   // Completion action — fired after exit overlay
   onComplete: (store) => store.startSession(),
 
+  // After the ritual completes, drop the user on the home tab (rather than
+  // staying on the active tab). The tab swap happens during the exit
+  // overlay's covered phase so it's invisible to the user.
+  landingTab: 'home',
+
   // Sun/moon animation for entrance/exit overlays + header blocks
   animation: 'sunrise',
 
@@ -24,7 +29,11 @@ export const openingRitualConfig = {
   skip: {
     allowed: true,
     confirmMessage: 'Skip the opening ritual?',
-    gateByReadiness: true,
+    // Skip-to-end is blocked until this section has been visited. Keeps users
+    // from accidentally exiting the ritual before recording and confirming
+    // their substance intake — without which the rest of the session breaks.
+    // Detour Skip (pop bookmark → gate) is unaffected.
+    requireVisited: 'substance-intake',
   },
 
   journal: {
@@ -69,6 +78,9 @@ export const openingRitualConfig = {
         {
           blocks: [
             { type: 'header', title: 'Your Body Right Now', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'MDMA is often felt strongly in the body. Paying attention to physical sensation can help you stay oriented throughout the session.',
+            ] },
             { type: 'body-check-in',
               phase: 'opening',
               prompt: 'Take a moment to notice your body. What sensations are present?',
@@ -82,6 +94,9 @@ export const openingRitualConfig = {
         {
           blocks: [
             { type: 'header', title: 'Your Body Right Now', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'MDMA is often felt strongly in the body. Paying attention to physical sensation can help you stay oriented throughout the session.',
+            ] },
             { type: 'body-check-in',
               phase: 'opening',
               prompt: 'Take a moment to notice your body. What sensations are present?',
@@ -116,12 +131,10 @@ export const openingRitualConfig = {
             { type: 'prompt',
               prompt: '',
               placeholder: 'A word or phrase...',
+              rows: 3,
               storeField: 'transitionData.openingTouchstone',
               journalLabel: 'Touchstone',
             },
-            { type: 'text', lines: [
-              'This will be available as an anchor you can return to at any point during your session.',
-            ] },
           ],
         },
       ],
@@ -158,10 +171,10 @@ export const openingRitualConfig = {
 
             { type: 'choice', key: 'crossroadsChoice',
               options: [
-                { id: 'centering', label: 'A centering breath',
-                  route: { to: 'centering-breath', bookmark: 'crossroads' } },
                 { id: 'intention', label: 'Set or review your intention',
                   route: { to: 'intention-review-detour', bookmark: 'crossroads' } },
+                { id: 'centering', label: 'A centering breath',
+                  route: { to: 'centering-breath', bookmark: 'crossroads' } },
                 { id: 'gratitude', label: 'A moment of gratitude',
                   route: { to: 'gratitude-moment', bookmark: 'crossroads' } },
                 { id: 'support', label: 'Check in with your support',
@@ -199,33 +212,28 @@ export const openingRitualConfig = {
     },
 
     // ── Take Substance ─────────────────────────────────────────────────────
+    // Single-screen flow. The `ingestion-time` block is fully self-contained:
+    // initial "I've taken it" → time display + Confirm time → confirmation modal
+    // → auto-advance on confirm. The `editable-dose` block is editable inline,
+    // and changing the dose value resets any recorded ingestion time so the
+    // user re-runs the intake from a clean state.
     {
-      id: 'substance-intake-record',
+      id: 'substance-intake',
       type: 'screens',
+      ritualFade: true,
       screens: [
         {
           blocks: [
             { type: 'header', title: "When You're Ready", animation: 'sunrise' },
-            { type: 'text', lines: [
-              'There is no rush.',
+            { type: 'editable-dose' },
+            { type: 'text', tightAbove: true, lines: [
+              'Settle into a position you can stay in for a while.',
               '§',
-              'Find a comfortable position. Take your substance with a few sips of water.',
+              'Take your substance with a few sips of water.',
+              '§',
+              "There's no rush. Move at whatever pace feels right.",
             ] },
-            { type: 'ingestion-time', mode: 'record' },
-          ],
-        },
-      ],
-    },
-
-    // ── Confirm Ingestion Time ─────────────────────────────────────────────
-    {
-      id: 'substance-intake-confirm',
-      type: 'screens',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'Start Time', animation: 'sunrise' },
-            { type: 'ingestion-time', mode: 'confirm' },
+            { type: 'ingestion-time' },
           ],
         },
       ],
@@ -239,13 +247,13 @@ export const openingRitualConfig = {
       screens: [
         {
           blocks: [
-            { type: 'header', title: "You've Arrived", animation: 'sunrise' },
+            { type: 'header', title: 'Settling In', animation: 'sunrise' },
             { type: 'text', lines: [
-              "The preparation is complete. The substance is with you now, beginning its quiet work.",
+              "The preparation is complete. The MDMA is in your system now, beginning its quiet work.",
               '§',
               "It's okay if you don't feel anything yet. Onset usually takes 30 to 60 minutes, and it varies from person to person. There's nothing you need to do to make it happen.",
               '§',
-              "In a moment, you'll hear a brief guided opening. A few minutes to settle in, arrive in your body, and open the space for what's ahead.",
+              "On the next page, you'll hear a brief guided opening. A few minutes to settle in, arrive in your body, and open the space for what's ahead.",
               '§',
               "Stay open. Let it unfold.",
             ] },
@@ -264,46 +272,33 @@ export const openingRitualConfig = {
       composerOptions: { skipOpeningGong: true, skipClosingGong: true },
     },
 
-    // ── Reassurance 2 — Debrief after the guided audio ─────────────────────
+    // ── The Session Has Begun (terminal — final ritual page) ──────────────
+    // Closes out the opening ritual. Continue advances past the last section
+    // (terminal: true) → exit overlay → onComplete fires startSession().
+    // Continue is relabeled "Complete" via `primaryLabel`.
     {
       id: 'reassurance-2',
       type: 'screens',
       ritualFade: true,
+      terminal: true,
+      primaryLabel: 'Complete',
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'Soften Into the Wait', animation: 'sunrise' },
+            { type: 'header', title: 'Your Session Has Begun', animation: 'sunrise' },
             { type: 'text', lines: [
-              'The space is open. You\'ve arrived.',
+              'The space is open.',
               '§',
-              "From here, there's nothing you need to do. The next 30 to 60 minutes are yours to simply be.",
+              'The next 30 to 60 minutes are yours to simply be.',
               '§',
               'Put on music if you\'d like. Close your eyes. Lie down. Follow whatever feels natural.',
               '§',
-              "The helper is available anytime — tap the icon at the top of the screen if anything comes up.",
-              '§',
-              'When you continue, the session formally begins.',
+              'The helper will be available any time during your session. Tap the {icon:heart} at the top of the screen if anything comes up.',
             ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Begin Session (terminal) ───────────────────────────────────────────
-    {
-      id: 'begin-session',
-      type: 'screens',
-      ritualFade: true,
-      terminal: true,
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'The Session Has Begun', animation: 'sunrise' },
-            { type: 'text', lines: [
-              'For the next 30 to 60 minutes, the MDMA will come on gradually. Some people feel it quickly. For others it takes longer. There is nothing you need to do during this time except be here.',
-              '§',
-              'You might want to put on music, close your eyes, or just sit quietly. Follow whatever feels natural.',
-            ] },
+            { type: 'header',
+              title: 'May this serve you well.',
+              titleClassName: 'text-lg font-light text-center mt-6',
+              animation: 'none' },
           ],
         },
       ],
@@ -320,23 +315,46 @@ export const openingRitualConfig = {
     },
 
     // ─── DETOUR: Intention Review ─────────────────────────────────────────
-    // 5-screen flow: brainstorm → reflection on brainstorm → pause →
+    // 6-screen flow: primer → brainstorm → reflection on brainstorm → pause →
     // write intention → confirmation.
     {
       id: 'intention-review-detour',
       type: 'screens',
       ritualFade: true,
       screens: [
-        // Screen 1: Brainstorm
+        // Screen 1: Primer — what an intention is
+        {
+          blocks: [
+            { type: 'header', title: 'Shaping an Intention', animation: 'sunrise' },
+            { type: 'text', lines: [
+              'An intention is how you want to meet what comes. A way of being — something you carry with you through the session.',
+              '§',
+              "It doesn't need to be completed or checked off. It shapes how you approach whatever arises.",
+            ] },
+            { type: 'expandable',
+              showLabel: 'See examples',
+              hideLabel: 'Hide examples',
+              lineStyle: 'italic',
+              lines: [
+                'To stay with whatever arises',
+                'To be honest about what I feel',
+                'To soften when things get hard',
+                'To trust my own experience',
+                'To let things be what they are',
+              ],
+            },
+          ],
+        },
+        // Screen 2: Brainstorm
         {
           blocks: [
             { type: 'header', title: 'Brainstorm', animation: 'sunrise' },
             { type: 'text', lines: [
-              'Before we shape an intention, take a few minutes to brainstorm.',
+              'Before shaping an intention, brainstorm.',
               '§',
-              'Write down anything that comes to mind about this session. Your hopes, what you expect, what\'s been on your mind, what you want to encounter. Nothing needs to be polished or precise — let it flow.',
+              "Write down whatever's on your mind about this session. Your hopes, your worries, what you want to encounter. Nothing needs to be polished.",
               '§',
-              'Once you have it on the page, it\'s easier to find the intention inside it.',
+              "Once it's on the page, the intention inside it becomes easier to find.",
             ] },
             { type: 'prompt',
               prompt: '',
@@ -344,7 +362,7 @@ export const openingRitualConfig = {
             },
           ],
         },
-        // Screen 2: Reflection on the brainstorm
+        // Screen 3: Reflection on the brainstorm
         {
           blocks: [
             { type: 'header', title: 'What Stands Out?', animation: 'sunrise' },
@@ -359,7 +377,7 @@ export const openingRitualConfig = {
             },
           ],
         },
-        // Screen 3: Education / pause — no input
+        // Screen 4: Education / pause — no input
         {
           blocks: [
             { type: 'header', title: 'A Pause', animation: 'sunrise' },
@@ -370,7 +388,7 @@ export const openingRitualConfig = {
             ] },
           ],
         },
-        // Screen 4: The intention itself — simple, non-directive, writes to sessionProfile.holdingQuestion
+        // Screen 5: The intention itself — simple, non-directive, writes to sessionProfile.holdingQuestion
         {
           blocks: [
             { type: 'header', title: 'My Intention', animation: 'sunrise' },
@@ -382,7 +400,7 @@ export const openingRitualConfig = {
             },
           ],
         },
-        // Screen 5: Confirmation
+        // Screen 6: Confirmation
         {
           blocks: [
             { type: 'header', title: 'Your Intention', animation: 'sunrise' },
@@ -392,7 +410,11 @@ export const openingRitualConfig = {
               style: 'accent-box',
             },
             { type: 'text', lines: [
-              'This is your intention for today\'s session. You can return to it at any time.',
+              'Setting an intention primes the experience ahead.',
+              '§',
+              "Sessions rarely unfold exactly as imagined, and that's part of how they work.",
+              '§',
+              "What you've written here is the first step toward something meaningful.",
             ] },
           ],
         },

@@ -34,10 +34,19 @@ const PHASE_CONFIG = {
 };
 
 
+// How long the status-bar + module subtree fades out before the store
+// action that unmounts it fires. Lets both bars (ModuleStatusBar rendered
+// here + ModuleControlBar rendered by the module) dissolve together instead
+// of disappearing in a single frame when the module completes.
+const MODULE_EXIT_FADE_MS = 500;
+
 export default function ActiveView() {
   const [isVisible, setIsVisible] = useState(false);
   const [followUpNow, setFollowUpNow] = useState(Date.now());
   const [sessionElapsed, setSessionElapsed] = useState('0:00');
+  // Tracks which module instance is mid-fade-out so the wrapping fade div
+  // can drop to opacity 0 before the store swap unmounts it.
+  const [moduleExitingId, setModuleExitingId] = useState(null);
 
   // Unified module progress state (passed up from modules via onProgressUpdate)
   const [moduleProgressState, setModuleProgressState] = useState({
@@ -65,6 +74,8 @@ export default function ActiveView() {
   const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
   const exitPreSessionModule = useSessionStore((state) => state.exitPreSessionModule);
   const abandonModule = useSessionStore((state) => state.abandonModule);
+  const completeModule = useSessionStore((state) => state.completeModule);
+  const skipModule = useSessionStore((state) => state.skipModule);
   const startPreSessionModule = useSessionStore((state) => state.startPreSessionModule);
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
   const getNextModule = useSessionStore((state) => state.getNextModule);
@@ -93,6 +104,22 @@ export default function ActiveView() {
     setIsVisible(false);
     const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Fade out the current module's status+control bar wrapper, then fire the
+  // store action that actually unmounts the module. Used by complete / skip
+  // handlers so the bars dissolve together over MODULE_EXIT_FADE_MS instead
+  // of vanishing in a single frame when currentModule changes.
+  const fadeOutThenDo = useCallback((instanceId, action) => {
+    if (!instanceId) {
+      action();
+      return;
+    }
+    setModuleExitingId(instanceId);
+    setTimeout(() => {
+      action();
+      setModuleExitingId(null);
+    }, MODULE_EXIT_FADE_MS);
   }, []);
 
   // Update session elapsed time every second (during active session)
@@ -282,29 +309,37 @@ export default function ActiveView() {
     if (activePreSessionModule) {
       const preSessionModule = _modules.items.find((m) => m.instanceId === activePreSessionModule);
       if (preSessionModule) {
+        const isExiting = moduleExitingId === preSessionModule.instanceId;
         return (
           <div className="relative">
-            <ModuleStatusBar
-              progress={moduleProgressState.progress}
-              isPaused={moduleProgressState.isPaused}
-              leftLabel="Pre-Session"
-              centerContent={buildTimerCenterContent()}
-              rightContent={
-                <button
-                  onClick={() => exitPreSessionModule()}
-                  className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
-                >
-                  Exit
-                </button>
-              }
-            />
-            <div className="pt-9">
-              <ModuleRenderer
-                module={preSessionModule}
-                onProgressUpdate={handleProgressUpdate}
-                onComplete={() => completePreSessionModule(preSessionModule.instanceId)}
-                onSkip={() => abandonModule(preSessionModule.instanceId)}
+            {/* Keyed fade wrapper — see fadeOutThenDo for the full pattern. */}
+            <div
+              key={preSessionModule.instanceId}
+              className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+              style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+            >
+              <ModuleStatusBar
+                progress={moduleProgressState.progress}
+                isPaused={moduleProgressState.isPaused}
+                leftLabel="Pre-Session"
+                centerContent={buildTimerCenterContent()}
+                rightContent={
+                  <button
+                    onClick={() => exitPreSessionModule()}
+                    className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    Exit
+                  </button>
+                }
               />
+              <div className="pt-9">
+                <ModuleRenderer
+                  module={preSessionModule}
+                  onProgressUpdate={handleProgressUpdate}
+                  onComplete={() => fadeOutThenDo(preSessionModule.instanceId, () => completePreSessionModule(preSessionModule.instanceId))}
+                  onSkip={() => fadeOutThenDo(preSessionModule.instanceId, () => abandonModule(preSessionModule.instanceId))}
+                />
+              </div>
             </div>
           </div>
         );
@@ -382,12 +417,20 @@ export default function ActiveView() {
       case 'completed': {
         // If a follow-up library module is actively running, render it
         if (currentModule && currentModule.phase === 'follow-up') {
+          const isExiting = moduleExitingId === currentModule.instanceId;
           return (
-            <ModuleRenderer
-              module={currentModule}
-              onProgressUpdate={handleProgressUpdate}
-              onSkip={() => abandonModule(currentModule.instanceId)}
-            />
+            <div
+              key={currentModule.instanceId}
+              className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+              style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+            >
+              <ModuleRenderer
+                module={currentModule}
+                onProgressUpdate={handleProgressUpdate}
+                onComplete={() => fadeOutThenDo(currentModule.instanceId, () => completeModule(currentModule.instanceId))}
+                onSkip={() => fadeOutThenDo(currentModule.instanceId, () => abandonModule(currentModule.instanceId))}
+              />
+            </div>
           );
         }
 
@@ -491,27 +534,40 @@ export default function ActiveView() {
 
     // Come-up phase: modules with check-in
     if (currentPhase === 'come-up') {
+      const isExiting = currentModule && moduleExitingId === currentModule.instanceId;
       return (
         <div className="relative">
-          {/* Fixed status bar below main header */}
-          <ModuleStatusBar
-            progress={moduleProgressState.progress}
-            isPaused={moduleProgressState.isPaused}
-            leftLabel={buildPhaseLabel('come-up')}
-            centerContent={buildTimerCenterContent()}
-            rightContent={sessionElapsedContent}
-          />
+          {/* Keyed fade wrapper — see fadeOutThenDo for the full pattern.
+              Key falls back to 'open-space' when no module so the wrapper
+              still remounts (and re-fires animate-fadeIn) on module ↔ OpenSpace
+              transitions. */}
+          <div
+            key={currentModule?.instanceId ?? 'open-space'}
+            className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+            style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+          >
+            {/* Fixed status bar below main header */}
+            <ModuleStatusBar
+              progress={moduleProgressState.progress}
+              isPaused={moduleProgressState.isPaused}
+              leftLabel={buildPhaseLabel('come-up')}
+              centerContent={buildTimerCenterContent()}
+              rightContent={sessionElapsedContent}
+            />
 
-          {/* Content area with padding for status bar (h-9 = 36px) */}
-          <div className="pt-9">
-            {currentModule ? (
-              <ModuleRenderer
-                module={currentModule}
-                onProgressUpdate={handleProgressUpdate}
-              />
-            ) : (
-              <OpenSpace phase="come-up" />
-            )}
+            {/* Content area with padding for status bar (h-9 = 36px) */}
+            <div className="pt-9">
+              {currentModule ? (
+                <ModuleRenderer
+                  module={currentModule}
+                  onProgressUpdate={handleProgressUpdate}
+                  onComplete={() => fadeOutThenDo(currentModule.instanceId, () => completeModule(currentModule.instanceId))}
+                  onSkip={() => fadeOutThenDo(currentModule.instanceId, () => skipModule(currentModule.instanceId))}
+                />
+              ) : (
+                <OpenSpace phase="come-up" />
+              )}
+            </div>
           </div>
 
           {/* Check-in modal (minimized or expanded) */}
@@ -524,27 +580,37 @@ export default function ActiveView() {
     }
 
     // Peak and Integration phases: Standard module flow
+    const isExiting = currentModule && moduleExitingId === currentModule.instanceId;
     return (
       <div className="relative">
-        {/* Fixed status bar below main header */}
-        <ModuleStatusBar
-          progress={moduleProgressState.progress}
-          isPaused={moduleProgressState.isPaused}
-          leftLabel={buildPhaseLabel(currentPhase)}
-          centerContent={buildTimerCenterContent()}
-          rightContent={sessionElapsedContent}
-        />
+        {/* Keyed fade wrapper — see fadeOutThenDo for the full pattern. */}
+        <div
+          key={currentModule?.instanceId ?? 'open-space'}
+          className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+          style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+        >
+          {/* Fixed status bar below main header */}
+          <ModuleStatusBar
+            progress={moduleProgressState.progress}
+            isPaused={moduleProgressState.isPaused}
+            leftLabel={buildPhaseLabel(currentPhase)}
+            centerContent={buildTimerCenterContent()}
+            rightContent={sessionElapsedContent}
+          />
 
-        {/* Content area with padding for status bar (h-9 = 36px) */}
-        <div className="pt-9">
-          {currentModule ? (
-            <ModuleRenderer
-              module={currentModule}
-              onProgressUpdate={handleProgressUpdate}
-            />
-          ) : (
-            <OpenSpace phase={currentPhase} />
-          )}
+          {/* Content area with padding for status bar (h-9 = 36px) */}
+          <div className="pt-9">
+            {currentModule ? (
+              <ModuleRenderer
+                module={currentModule}
+                onProgressUpdate={handleProgressUpdate}
+                onComplete={() => fadeOutThenDo(currentModule.instanceId, () => completeModule(currentModule.instanceId))}
+                onSkip={() => fadeOutThenDo(currentModule.instanceId, () => skipModule(currentModule.instanceId))}
+              />
+            ) : (
+              <OpenSpace phase={currentPhase} />
+            )}
+          </div>
         </div>
 
         {/* Peak phase check-in modal */}

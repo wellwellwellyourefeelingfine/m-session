@@ -22,7 +22,7 @@ export const routingTestModuleContent = {
     bookmark: 'bookmark',
   },
 
-  idleAnimation: 'full-sun',
+  idleAnimation: 'moonrise',
 
   completion: {
     title: 'Routing test complete',

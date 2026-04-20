@@ -100,7 +100,8 @@ export default function ModuleControlBar({
                 <button
                   onClick={handleBackClick}
                   className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
-                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto
+                    animate-fadeIn"
                   aria-label="Go back"
                 >
                   <BackIcon />
@@ -118,7 +119,8 @@ export default function ModuleControlBar({
               <button
                 onClick={onSeekBack}
                 className="w-8 h-8 flex items-center justify-center text-[var(--color-text-tertiary)]
-                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto
+                  animate-fadeIn"
                 aria-label="Skip back 10 seconds"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
@@ -141,7 +143,7 @@ export default function ModuleControlBar({
                     ? 'translate-x-[1px] translate-y-[1px] shadow-[1px_1px_0_rgba(0,0,0,0.2)]'
                     : 'translate-x-0 translate-y-0 shadow-[2px_2px_0_rgba(0,0,0,0.2)]'
                   }`}
-                style={{ WebkitTapHighlightColor: 'transparent' }}
+                style={{ WebkitTapHighlightColor: 'transparent', fontFamily: 'Azeret Mono, monospace' }}
               >
                 {primary.label}
               </button>
@@ -150,7 +152,7 @@ export default function ModuleControlBar({
                 disabled
                 className="px-8 py-2.5 border border-[var(--color-border)] text-[var(--color-text-tertiary)]
                   uppercase tracking-wider text-[10px] cursor-not-allowed min-w-[120px] flex items-center justify-center pointer-events-auto"
-                style={{ backgroundColor: 'var(--color-border)', opacity: 0.4 }}
+                style={{ backgroundColor: 'var(--color-border)', opacity: 0.4, fontFamily: 'Azeret Mono, monospace' }}
               >
                 {primary?.label || (
             <span className="flex items-center gap-2">
@@ -166,7 +168,8 @@ export default function ModuleControlBar({
               <button
                 onClick={onSeekForward}
                 className="w-8 h-8 flex items-center justify-center text-[var(--color-text-tertiary)]
-                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                  hover:text-[var(--color-text-secondary)] transition-colors pointer-events-auto
+                  animate-fadeIn"
                 aria-label="Skip forward 10 seconds"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
@@ -185,7 +188,8 @@ export default function ModuleControlBar({
                 <button
                   onClick={handleSkipClick}
                   className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
-                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+                    text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto
+                    animate-fadeIn"
                   aria-label="Skip module"
                 >
                   <SkipIcon />
@@ -316,7 +320,10 @@ function ConfirmationModal({
         className="bg-[var(--color-bg)] border border-[var(--color-border)] w-full max-w-xs p-6 animate-fadeIn"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="uppercase tracking-wider text-xs text-center mb-6 text-[var(--color-text-primary)]">
+        <p
+          className="uppercase tracking-wider text-xs text-center mb-6 text-[var(--color-text-primary)]"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
+        >
           {message}
         </p>
         <div className="space-y-3">
@@ -325,6 +332,7 @@ function ConfirmationModal({
             className="w-full py-3 border border-[var(--color-border)]
               text-[var(--color-text-primary)] uppercase tracking-wider text-xs
               hover:bg-[var(--color-bg-secondary)] transition-colors"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             {confirmLabel}
           </button>
@@ -332,6 +340,7 @@ function ConfirmationModal({
             onClick={onCancel}
             className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)]
               uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             {cancelLabel}
           </button>

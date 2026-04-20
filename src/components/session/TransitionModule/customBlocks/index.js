@@ -14,6 +14,7 @@ import TouchstoneArcBlock from './TouchstoneArcBlock';
 import PhaseRecapBlock from './PhaseRecapBlock';
 import IngestionTimeBlock from './IngestionTimeBlock';
 import BodyCheckInBlock from './BodyCheckInBlock';
+import EditableDoseBlock from './EditableDoseBlock';
 
 const TRANSITION_CUSTOM_BLOCKS = {
   'action': ActionBlock,
@@ -24,6 +25,7 @@ const TRANSITION_CUSTOM_BLOCKS = {
   'phase-recap': PhaseRecapBlock,
   'ingestion-time': IngestionTimeBlock,
   'body-check-in': BodyCheckInBlock,
+  'editable-dose': EditableDoseBlock,
 };
 
 export default TRANSITION_CUSTOM_BLOCKS;
@@ -37,4 +39,5 @@ export {
   PhaseRecapBlock,
   IngestionTimeBlock,
   BodyCheckInBlock,
+  EditableDoseBlock,
 };

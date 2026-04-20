@@ -370,7 +370,7 @@ export default function BoosterConsiderationModal() {
       </p>
       <button
         onClick={() => goToStep(1)}
-        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
       >
         Continue
       </button>
@@ -531,26 +531,26 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleTakeDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Take my booster dose now
         </button>
         <button
           onClick={handleEditDose}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Edit my booster dose
         </button>
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Skip the booster
         </button>
         {canSnooze && (
           <button
             onClick={handleSnoozeDecision}
-            className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+            className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
           >
             Ask me again in 10 minutes
           </button>
@@ -692,7 +692,7 @@ export default function BoosterConsiderationModal() {
           <button
             onClick={handleConfirmDose}
             disabled={!isValid}
-            className={`w-full py-4 uppercase tracking-wider text-xs transition-opacity ${
+            className={`w-full py-4 tracking-wider text-xs transition-opacity ${
               isValid
                 ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)] hover:opacity-80'
                 : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
@@ -703,7 +703,7 @@ export default function BoosterConsiderationModal() {
           <button
             onClick={handleResetDose}
             disabled={!showResetButton}
-            className={`w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs transition-opacity duration-300 ${
+            className={`w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs transition-opacity duration-300 ${
               showResetButton ? 'opacity-100 hover:opacity-80' : 'opacity-0 pointer-events-none'
             }`}
           >
@@ -736,19 +736,19 @@ export default function BoosterConsiderationModal() {
       <div className="w-full space-y-2">
         <button
           onClick={handleTakeConfirm}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           I've Taken My Booster
         </button>
         <button
           onClick={handleEditDose}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Change My Dose
         </button>
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           I decided not to take it
         </button>
@@ -798,7 +798,7 @@ export default function BoosterConsiderationModal() {
               <button
                 onClick={handleInlineTimeEdit}
                 disabled={!editedTime}
-                className={`py-2 px-4 uppercase tracking-wider text-xs ${
+                className={`py-2 px-4 tracking-wider text-xs ${
                   editedTime
                     ? 'border border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] hover:opacity-80 transition-opacity'
                     : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
@@ -839,7 +839,7 @@ export default function BoosterConsiderationModal() {
 
         <button
           onClick={handleTakenAcknowledge}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Continue
         </button>
@@ -858,7 +858,7 @@ export default function BoosterConsiderationModal() {
       </p>
       <button
         onClick={handleSkipConfirm}
-        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
       >
         Continue
       </button>
@@ -878,13 +878,13 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(2)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Continue Anyway
         </button>
@@ -901,13 +901,13 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(3)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Continue Anyway
         </button>
@@ -924,13 +924,13 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(4)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Continue Anyway
         </button>
@@ -947,13 +947,13 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={() => animateOutThen(skipBooster)}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(5)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
         >
           Take It Anyway
         </button>

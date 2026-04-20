@@ -50,6 +50,14 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
   // expectedTotal = visited + 1 (current) + all other unvisited sections.
   // Uses the full section list (not just "ahead") because routing can visit
   // sections out of array order (e.g., jump to index 5, then bookmark back to 4).
+  //
+  // Tail-detour sections (placed after a `terminal: true` section in the
+  // config array) are only reachable via bookmark routing from earlier in
+  // the flow. Once the user has passed the routing gate they can't be
+  // reached sequentially, so they must not inflate the progress denominator.
+  // We slice `sections` at the first terminal entry for unvisitedRemaining.
+  // Detours the user HAS visited are still counted via `visitedSections` →
+  // `visitedCount`, so taking a detour doesn't penalize progress.
   useEffect(() => {
     if (state.modulePhase === 'idle') {
       report.idle();
@@ -68,7 +76,11 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
 
     const currentId = state.currentSection?.id;
     const visitedCount = state.visitedSections.length;
-    const unvisitedRemaining = sections
+    const firstTerminalIdx = sections.findIndex((s) => s.terminal === true);
+    const mainFlowSections = firstTerminalIdx >= 0
+      ? sections.slice(0, firstTerminalIdx + 1)
+      : sections;
+    const unvisitedRemaining = mainFlowSections
       .filter((s) => s.id !== currentId && !state.visitedSections.includes(s.id)).length;
     const expectedTotal = visitedCount + 1 + unvisitedRemaining;
     const sectionBase = visitedCount / expectedTotal;
@@ -83,9 +95,18 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
     }
   }, [state.modulePhase, state.currentSectionIndex, state.currentSection?.type, state.visitedSections, sections, screenProgress, report]);
 
-  // ── Skip handler (wraps state.handleSkip with the onSkip callback) ────────
-
+  // ── Skip handler (context-aware) ──────────────────────────────────────────
+  // Mirrors TransitionModule's handleSkip:
+  //   - In a bookmark-routed detour (routeStack has entries): advance the
+  //     section so the bookmark pops and the user returns to the gate. Skip
+  //     means "abandon this detour activity," not "abandon the whole module."
+  //   - In main flow (no bookmark): save partial data and fire onSkip to
+  //     abandon the entire module.
   const handleSkip = useCallback(() => {
+    if (state.routeStack.length > 0) {
+      state.advanceSection();
+      return;
+    }
     state.handleSkip(onSkip);
   }, [state, onSkip]);
 
@@ -250,8 +271,9 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
           section={section}
           module={module}
           onSectionComplete={state.advanceSection}
-          onSkip={handleSkip}
           onProgressUpdate={onProgressUpdate}
+          canGoBackToPreviousSection={state.canGoBackToPreviousSection}
+          onBackToPreviousSection={state.goBackToPreviousSection}
         />
       );
       break;

@@ -1,191 +1,280 @@
 /**
- * IngestionTimeBlock — Record or confirm ingestion time.
+ * IngestionTimeBlock — Combined record + confirm flow for substance intake.
+ *
+ * State machine driven by the store (so EditableDoseBlock's reset cleanly
+ * sends us back to pristine):
+ *   - pristine    → box reads "I've taken it", click → record
+ *   - recorded    → box shows time (click to edit). A friendly acknowledgment
+ *                   text fades in beneath. Continue button (in the control bar)
+ *                   is overridden to read "Confirm time" and to open the modal
+ *                   instead of advancing directly.
+ *   - editing     → box swaps to a time input + inline "Save" button below.
+ *                   Continue stays "Confirm time" but is disabled while editing.
+ *   - confirming  → confirmation modal overlay
+ *   - confirmed   → confirmIngestionTime fires + section auto-advances
+ *
+ * Layout invariant: the central "box" has fixed dimensions across all states.
+ * Pristine, recorded, editing, and confirmed all render into the same grid
+ * cell — only opacity flips between layers, so the pristine→recorded transition
+ * (and every state change after) is a smooth crossfade with no layout shift.
  *
  * Config:
- *   { type: 'ingestion-time', mode: 'record' }    // "I've Taken It" button
- *   { type: 'ingestion-time', mode: 'confirm' }   // Shows recorded time + confirm/adjust
- *
- * Uses the block readiness API to gate Continue — the user cannot proceed until
- * they've recorded (record mode) or confirmed (confirm mode) their ingestion time.
+ *   { type: 'ingestion-time' }
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSessionStore } from '../../../../stores/useSessionStore';
+import ConfirmModal from '../../../journal/ConfirmModal';
 
-export default function IngestionTimeBlock({ block, context }) {
-  const mode = block.mode || 'record';
+const BLOCK_KEY = 'ingestion-time';
+// Locked dimensions — pristine button and recorded time box share these.
+const BOX_STYLE = { width: '10rem', height: '3.25rem' };
 
+export default function IngestionTimeBlock({ context }) {
   const ingestionTime = useSessionStore((s) => s.substanceChecklist.ingestionTime);
   const ingestionTimeConfirmed = useSessionStore((s) => s.substanceChecklist.ingestionTimeConfirmed);
   const recordIngestionTime = useSessionStore((s) => s.recordIngestionTime);
   const confirmIngestionTime = useSessionStore((s) => s.confirmIngestionTime);
 
-  const blockKey = `ingestion-time-${mode}`;
-
-  // ─── Record mode ───────────────────────────────────────────────────────
-  if (mode === 'record') {
-    return <RecordMode
-      blockKey={blockKey}
-      ingestionTime={ingestionTime}
-      recordIngestionTime={recordIngestionTime}
-      context={context}
-    />;
-  }
-
-  // ─── Confirm mode ──────────────────────────────────────────────────────
-  return <ConfirmMode
-    blockKey={blockKey}
-    ingestionTime={ingestionTime}
-    ingestionTimeConfirmed={ingestionTimeConfirmed}
-    recordIngestionTime={recordIngestionTime}
-    confirmIngestionTime={confirmIngestionTime}
-    context={context}
-  />;
-}
-
-// ── Record Mode ──────────────────────────────────────────────────────────────
-function RecordMode({ blockKey, ingestionTime, recordIngestionTime, context }) {
-  const alreadyRecorded = ingestionTime != null;
-
-  // Gate Continue until button pressed. If already recorded (resuming),
-  // mark ready immediately. No cleanup — ScreensSection resets blockReadiness
-  // on screen change, and an unconditional cleanup here was flipping readiness
-  // on every re-render (because `context` is a fresh object reference each
-  // ScreensSection render), causing an infinite loop.
-  useEffect(() => {
-    context.reportReady?.(blockKey, alreadyRecorded);
-  }, [blockKey, alreadyRecorded, context]);
-
-  const handleClick = useCallback(() => {
-    if (alreadyRecorded) return;
-    recordIngestionTime(Date.now());
-    context.reportReady?.(blockKey, true);
-  }, [alreadyRecorded, recordIngestionTime, blockKey, context]);
-
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={alreadyRecorded}
-      className={`w-full py-4 px-4 border transition-colors uppercase tracking-wider text-xs
-        ${alreadyRecorded
-          ? 'border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] cursor-default'
-          : 'border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] hover:opacity-90'
-        }`}
-    >
-      {alreadyRecorded ? '✓ Time recorded' : "I've Taken It"}
-    </button>
-  );
-}
-
-// ── Confirm Mode ─────────────────────────────────────────────────────────────
-function ConfirmMode({ blockKey, ingestionTime, ingestionTimeConfirmed, recordIngestionTime, confirmIngestionTime, context }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTime, setEditedTime] = useState(() => formatTimeForInput(ingestionTime));
-  const [confirmed, setConfirmed] = useState(ingestionTimeConfirmed);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // Gate Continue until user confirms. If already confirmed (resuming), ready.
-  // See RecordMode comment above — no cleanup, same loop-avoidance reason.
-  useEffect(() => {
-    context.reportReady?.(blockKey, confirmed);
-  }, [blockKey, confirmed, context]);
+  const containerRef = useRef(null);
+  const friendlyTextRef = useRef(null);
+  const wasPristineRef = useRef(ingestionTime == null);
 
-  const handleConfirm = useCallback(() => {
-    confirmIngestionTime();
-    setConfirmed(true);
-    context.reportReady?.(blockKey, true);
-  }, [confirmIngestionTime, blockKey, context]);
+  // Handlers ─────────────────────────────────────────────────────────────────
 
-  const handleAdjust = useCallback(() => {
+  const handleRecord = useCallback(() => {
+    recordIngestionTime(Date.now());
+  }, [recordIngestionTime]);
+
+  const handleStartEdit = useCallback(() => {
+    if (ingestionTimeConfirmed) return;
+    setEditedTime(formatTimeForInput(ingestionTime));
     setIsEditing(true);
-  }, []);
+  }, [ingestionTime, ingestionTimeConfirmed]);
 
   const handleSaveEdit = useCallback(() => {
-    // Parse editedTime (HH:MM) into a millisecond timestamp for today
     const [h, m] = editedTime.split(':').map(Number);
-    if (isNaN(h) || isNaN(m)) return;
-    const now = new Date();
-    now.setHours(h, m, 0, 0);
-    recordIngestionTime(now.getTime());
-    confirmIngestionTime();
-    setConfirmed(true);
+    if (Number.isNaN(h) || Number.isNaN(m)) return;
+    const next = new Date();
+    next.setHours(h, m, 0, 0);
+    recordIngestionTime(next.getTime());
     setIsEditing(false);
-    context.reportReady?.(blockKey, true);
-  }, [editedTime, recordIngestionTime, confirmIngestionTime, blockKey, context]);
+  }, [editedTime, recordIngestionTime]);
 
-  if (!ingestionTime) {
-    return (
-      <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider italic text-center">
-        No time recorded yet.
-      </p>
-    );
-  }
+  const handleConfirmRequest = useCallback(() => {
+    setShowConfirmModal(true);
+  }, []);
+
+  const handleConfirmFinal = useCallback(() => {
+    confirmIngestionTime();
+    setShowConfirmModal(false);
+    requestAnimationFrame(() => {
+      context.advanceSection?.();
+    });
+  }, [confirmIngestionTime, context]);
+
+  const handleEditFromModal = useCallback(() => {
+    setShowConfirmModal(false);
+    handleStartEdit();
+  }, [handleStartEdit]);
+
+  // Box-level click handler. Pristine → record, recorded display → edit.
+  // No-op while editing (the input handles its own clicks) or confirmed.
+  const handleBoxClick = useCallback(() => {
+    if (ingestionTimeConfirmed || isEditing) return;
+    if (ingestionTime == null) handleRecord();
+    else handleStartEdit();
+  }, [ingestionTime, ingestionTimeConfirmed, isEditing, handleRecord, handleStartEdit]);
+
+  // Effects ─────────────────────────────────────────────────────────────────
+
+  // Gate Continue: ready when (recorded and not editing) OR confirmed.
+  // Editing returns ready=false so Continue is disabled until inline Save.
+  useEffect(() => {
+    const isReady = ingestionTimeConfirmed
+      || (ingestionTime != null && !isEditing);
+    context.reportReady?.(BLOCK_KEY, isReady);
+  }, [ingestionTime, ingestionTimeConfirmed, isEditing, context]);
+
+  // Override Continue label + handler when recorded but not yet confirmed.
+  // Clear in pristine and confirmed states (default Continue takes over).
+  useEffect(() => {
+    if (ingestionTime != null && !ingestionTimeConfirmed) {
+      context.setPrimaryOverride?.({
+        label: 'Confirm time',
+        onClick: handleConfirmRequest,
+      });
+    } else {
+      context.setPrimaryOverride?.(null);
+    }
+  }, [ingestionTime, ingestionTimeConfirmed, handleConfirmRequest, context]);
+
+  // Reset local state when the store resets (e.g. user edits dose).
+  useEffect(() => {
+    if (ingestionTime == null) {
+      setIsEditing(false);
+      setShowConfirmModal(false);
+      setEditedTime(formatTimeForInput(null));
+    }
+  }, [ingestionTime]);
+
+  // Smooth-scroll all the way to the bottom of the section's scrollable
+  // container on the pristine → recorded transition, so the new friendly text
+  // is fully revealed and the user sees everything.
+  //
+  // Implementation notes:
+  //  - We walk up from the block container to find the actual scrollable
+  //    ancestor (`overflow-y: auto | scroll`). For TransitionModule that's the
+  //    `.flex-1.overflow-auto` wrapper; for MasterModule it's similar. Doing
+  //    this manually is more reliable than `scrollIntoView`, whose alignment
+  //    heuristics can no-op when the target is even partially visible.
+  //  - Double `requestAnimationFrame` lets React commit the new DOM (frame 1)
+  //    and the browser do its layout pass (frame 2) before we measure
+  //    `scrollHeight`. Without this, scrollHeight can be stale.
+  //  - `behavior: 'smooth'` matches the section-advance scroll feel.
+  useEffect(() => {
+    if (ingestionTime != null && wasPristineRef.current) {
+      wasPristineRef.current = false;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const start = containerRef.current;
+          if (!start) return;
+          let scrollable = start.parentElement;
+          while (scrollable) {
+            const overflowY = getComputedStyle(scrollable).overflowY;
+            if (overflowY === 'auto' || overflowY === 'scroll') break;
+            scrollable = scrollable.parentElement;
+          }
+          if (!scrollable) return;
+          scrollable.scrollTo({
+            top: scrollable.scrollHeight,
+            behavior: 'smooth',
+          });
+        });
+      });
+    }
+    if (ingestionTime == null) {
+      wasPristineRef.current = true;
+    }
+  }, [ingestionTime]);
+
+  // Render flags ────────────────────────────────────────────────────────────
+
+  const showPristine = ingestionTime == null;
+  const showTime = ingestionTime != null && !isEditing;
+  const showInput = ingestionTime != null && isEditing && !ingestionTimeConfirmed;
+  const isInteractive = !ingestionTimeConfirmed && !isEditing;
+  const showFriendlyText = ingestionTime != null && !ingestionTimeConfirmed;
 
   return (
-    <div className="space-y-4">
-      <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed text-center">
-        We&apos;ve recorded your start time as:
-      </p>
-
-      <div className="py-4 px-4 border border-[var(--accent)] bg-[var(--accent-bg)] text-center">
-        <p className="text-xl text-[var(--color-text-primary)]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-          {formatTimeForDisplay(ingestionTime)}
-        </p>
-      </div>
-
-      {!isEditing && !confirmed && (
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={handleConfirm}
-            className="w-full py-3 px-4 border border-[var(--accent)] bg-[var(--accent-bg)]
-              text-[var(--color-text-primary)] uppercase tracking-wider text-xs
-              hover:opacity-90 transition-opacity"
+    <>
+      <div ref={containerRef} className="flex flex-col items-center gap-4">
+        {/* Box wrapper — fixed dims; pristine, time, and input stack in the
+            same grid cell so transitions between states crossfade in place. */}
+        <div
+          className={`grid place-items-center
+            border border-[var(--accent)] bg-[var(--accent-bg)]
+            transition-opacity
+            ${isInteractive ? 'cursor-pointer hover:opacity-90' : ''}`}
+          style={BOX_STYLE}
+          onClick={isInteractive ? handleBoxClick : undefined}
+          role={isInteractive ? 'button' : undefined}
+          tabIndex={isInteractive ? 0 : undefined}
+          onKeyDown={isInteractive ? (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleBoxClick();
+            }
+          } : undefined}
+        >
+          {/* Pristine layer */}
+          <span
+            className={`col-start-1 row-start-1 uppercase text-xs tracking-wider
+              text-[var(--color-text-primary)]
+              transition-opacity duration-300
+              ${showPristine ? 'opacity-100' : 'opacity-0'}`}
           >
-            That&apos;s correct
-          </button>
-          <button
-            type="button"
-            onClick={handleAdjust}
-            className="w-full py-3 px-4 border border-[var(--color-border)]
-              text-[var(--color-text-secondary)] uppercase tracking-wider text-xs
-              hover:border-[var(--color-text-tertiary)] transition-colors"
+            I&apos;ve taken it
+          </span>
+
+          {/* Time layer (recorded display + confirmed) */}
+          <span
+            className={`col-start-1 row-start-1 text-xl text-[var(--color-text-primary)]
+              transition-opacity duration-300
+              ${showTime || ingestionTimeConfirmed ? 'opacity-100' : 'opacity-0'}`}
+            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
           >
-            Adjust time
-          </button>
+            {ingestionTime ? formatTimeForDisplay(ingestionTime) : ''}
+          </span>
+
+          {/* Input layer (editing) */}
+          {showInput && (
+            <input
+              type="time"
+              value={editedTime}
+              onChange={(e) => setEditedTime(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              autoFocus
+              className="col-start-1 row-start-1 bg-transparent text-xl text-center
+                text-[var(--color-text-primary)] focus:outline-none w-full px-4
+                animate-fade-in"
+              style={{ fontFamily: 'DM Serif Text, serif' }}
+            />
+          )}
         </div>
-      )}
 
-      {isEditing && (
-        <div className="space-y-3">
-          <label className="block text-xs uppercase tracking-wider text-[var(--color-text-tertiary)] text-center">
-            What time did you take your substance?
-          </label>
-          <input
-            type="time"
-            value={editedTime}
-            onChange={(e) => setEditedTime(e.target.value)}
-            className="w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
-              text-[var(--color-text-primary)] text-center text-base focus:outline-none focus:border-[var(--accent)]"
-          />
+        {/* Inline Save — only during editing. Commits the edit, exits edit
+            mode, and the control-bar Continue ("Confirm time") re-enables. */}
+        {showInput && (
           <button
             type="button"
             onClick={handleSaveEdit}
-            className="w-full py-3 px-4 border border-[var(--accent)] bg-[var(--accent-bg)]
-              text-[var(--color-text-primary)] uppercase tracking-wider text-xs
-              hover:opacity-90 transition-opacity"
+            className="text-[var(--accent)] uppercase tracking-wider text-xs px-3 py-1
+              hover:opacity-80 transition-opacity animate-fade-in"
           >
-            Confirm
+            Save
           </button>
-        </div>
-      )}
+        )}
 
-      {confirmed && (
-        <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider text-center italic">
-          Time confirmed. Continue when you&apos;re ready.
-        </p>
+        {/* Friendly acknowledgment after recording. Fades in via animate-fade-in
+            on first mount. Logistical "you can't change it later" warning lives
+            in the modal — keeping this message warm and acknowledging. */}
+        {showFriendlyText && (
+          <div
+            ref={friendlyTextRef}
+            className="w-full animate-fade-in mt-2"
+          >
+            <p
+              className="text-[var(--color-text-primary)] text-lg leading-relaxed text-center"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Your start time is saved.
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mt-3">
+              Take a moment to make sure it looks right.
+            </p>
+            <p className="text-[var(--color-text-primary)] text-sm leading-relaxed mt-3">
+              Tap the time above to adjust if needed.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {showConfirmModal && (
+        <ConfirmModal
+          title="Are you sure this is correct?"
+          message="Once you confirm your ingestion time, you won't be able to change it. This is important so we can track how far you are into the effects of your session."
+          confirmLabel="Confirm"
+          cancelLabel="Edit time"
+          onConfirm={handleConfirmFinal}
+          onCancel={handleEditFromModal}
+        />
       )}
-    </div>
+    </>
   );
 }
 

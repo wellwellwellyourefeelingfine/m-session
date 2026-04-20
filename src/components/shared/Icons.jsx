@@ -276,7 +276,7 @@ export const CircleCheckBigIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const CircleCheckIcon = ({ size = 24, className }) => (
+export const CircleCheckIcon = ({ size = 24, strokeWidth = 2, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -284,7 +284,7 @@ export const CircleCheckIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}

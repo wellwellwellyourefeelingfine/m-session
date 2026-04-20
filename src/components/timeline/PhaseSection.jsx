@@ -258,7 +258,7 @@ const PhaseSection = forwardRef(function PhaseSection(
           >
 
           {/* Phase description - compact styling */}
-          <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '16px' }}>
+          <p className="text-[var(--color-text-secondary)] text-xs" style={{ lineHeight: 1.3, marginBottom: '16px' }}>
             {PHASE_DESCRIPTIONS[phase] || ''}
           </p>
 

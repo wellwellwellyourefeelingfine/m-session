@@ -21,13 +21,14 @@ export const useAppStore = create(
       // User preferences
       preferences: {
         glassEffect: true, // Frosted glass effect on header/tab bar
-        autoAdvance: false, // Whether modules auto-advance
         notificationsEnabled: false,
         reduceMotion: false, // Disable animations
         timerSound: false, // Audio alert when timer completes
         gongSound: true, // Meditation bell at start/end of meditations
         alternateAppLogo: false, // PNG logo instead of animated text
         autoUpdate: true, // Automatic background app updates (silent install + activation on next cold launch)
+        readableFont: true, // false = Azeret Mono caps, true = Lora readable serif
+        fontSizeAdjustment: 0, // -1 | 0 | 1 | 2 — px shift applied to body text tokens
       },
       setPreference: (key, value) =>
         set((state) => ({

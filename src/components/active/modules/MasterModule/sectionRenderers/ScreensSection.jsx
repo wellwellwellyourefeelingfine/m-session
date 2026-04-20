@@ -94,10 +94,28 @@ export default function ScreensSection({
     });
   }, []);
 
-  // Reset readiness when screen changes — unmounted blocks shouldn't keep their state
-  useEffect(() => {
-    setBlockReadiness({});
-  }, [screenIndex]);
+  // Primary-button override (for custom blocks that want to relabel and
+  // intercept Continue — e.g., IngestionTimeBlock swapping Continue to
+  // "Confirm time" so the modal fires before advance). Null = use defaults.
+  const [primaryOverride, setPrimaryOverrideState] = useState(null);
+
+  const setPrimaryOverride = useCallback((next) => {
+    setPrimaryOverrideState((prev) => {
+      if (prev === next) return prev;
+      if (prev == null && next == null) return prev;
+      if (prev != null && next != null
+        && prev.label === next.label
+        && prev.onClick === next.onClick) return prev;
+      return next;
+    });
+  }, []);
+
+  // Note: blockReadiness and primaryOverride are cleared synchronously alongside
+  // setScreenIndex in handleNext / handleBack — NOT via a reactive useEffect.
+  // Using an effect here races with newly-mounted blocks' reportReady calls
+  // (child effects fire before parent effects), which briefly flipped Continue
+  // enabled→disabled→enabled during screen transitions. Clearing in the same
+  // state-update batch as setScreenIndex keeps the handoff clean.
 
   // Condition evaluation context (includes sessionData + storeState when provided)
   const conditionContext = useMemo(() => ({
@@ -186,7 +204,7 @@ export default function ScreensSection({
   }, [screens, moduleTitle, isScreenVisible, conditionContext]);
 
   const getPrimaryLabel = () => {
-    return 'Continue';
+    return section.primaryLabel || 'Continue';
   };
 
   const handleNext = useCallback(() => {
@@ -201,14 +219,11 @@ export default function ScreensSection({
       return null;
     })();
 
-    // Only fire the route if the target hasn't been visited yet. Without this
-    // guard, back-navigating to a choice-with-route screen and pressing Continue
-    // would re-fire the route (because choiceValues persist), trapping the user.
-    const visited = visitedSections || [];
-    const routeTarget = selectedRoute
-      ? (typeof selectedRoute === 'string' ? selectedRoute : selectedRoute.to)
-      : null;
-    const shouldFireRoute = selectedRoute && onRouteToSection && !visited.includes(routeTarget);
+    // Persisted choices are durable — if the user back-navigates to a choice
+    // screen, their prior selection is visible and pressing Continue re-fires
+    // it. This is deliberate: the button contract is honest, and gate patterns
+    // (Opening Ritual Crossroads) depend on re-selection working every time.
+    const shouldFireRoute = selectedRoute && onRouteToSection;
 
     if (shouldFireRoute) {
       setIsBodyVisible(false);
@@ -241,15 +256,39 @@ export default function ScreensSection({
       // persistBlocks: keep the body mounted across screens in this section.
       // React's keyed reconciliation reuses DOM for blocks at matching indexes,
       // so shared blocks stay untouched; newly-mounted blocks auto-fade via
-      // `animate-fade-in`. Skip the scroll-to-top so the user stays in place.
+      // `animate-fade-in`. We skip the hard scroll-to-top (the user stays
+      // anchored) but if any new block appears below the fold, smooth-scroll
+      // to bring its top into view.
       if (section.persistBlocks) {
+        // Count the visible body blocks the next screen will render so we can
+        // detect a "new block appears" case. Uses the same expand + condition
+        // filter as `bodyBlocks`.
+        const nextAllBlocks = expandScreenToBlocks(screens[nextVisible], moduleTitle);
+        const nextBodyBlocks = (nextAllBlocks[0]?.type === 'header' ? nextAllBlocks.slice(1) : nextAllBlocks)
+          .filter((b) => evaluateCondition(b.condition, conditionContext));
+        const firstNewIndex = bodyBlocks.length;
+        const hasNewBlock = nextBodyBlocks.length > bodyBlocks.length;
+
         if (!sameTitle) setIsTitleVisible(false);
         if (!sameAnimation) setIsAnimationVisible(false);
         setTimeout(() => {
+          // Batched with setScreenIndex — see note near `reportReady` above.
+          setBlockReadiness({});
+          setPrimaryOverrideState(null);
           setScreenIndex(nextVisible);
           if (nextHeader) {
             setIsTitleVisible(true);
             setIsAnimationVisible(true);
+          }
+          // After React commits the new DOM, smooth-scroll the newly-mounted
+          // block into view. The non-persistBlocks branch still does a hard
+          // scrollTo(0, 0); this only runs for persistBlocks transitions where
+          // the user expects existing content to remain in place.
+          if (hasNewBlock) {
+            requestAnimationFrame(() => {
+              const target = document.querySelector(`[data-block-index="${firstNewIndex}"]`);
+              target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
           }
         }, (sameTitle && sameAnimation) ? 0 : FADE_MS);
         return;
@@ -262,6 +301,9 @@ export default function ScreensSection({
 
       setTimeout(() => {
         document.querySelector('main')?.scrollTo(0, 0);
+        // Batched with setScreenIndex — see note near `reportReady` above.
+        setBlockReadiness({});
+        setPrimaryOverrideState(null);
         setScreenIndex(nextVisible);
         setIsBodyVisible(true);
         // Fade in title/animation for the new screen
@@ -271,7 +313,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks]);
+  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks, screens, moduleTitle, conditionContext]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
@@ -293,6 +335,9 @@ export default function ScreensSection({
       if (!sameTitle) setIsTitleVisible(false);
       if (!sameAnimation) setIsAnimationVisible(false);
       setTimeout(() => {
+        // Batched with setScreenIndex — see note near `reportReady` above.
+        setBlockReadiness({});
+        setPrimaryOverrideState(null);
         setScreenIndex(prevVisible);
         if (prevHeader) {
           setIsTitleVisible(true);
@@ -308,6 +353,9 @@ export default function ScreensSection({
 
     setTimeout(() => {
       document.querySelector('main')?.scrollTo(0, 0);
+      // Batched with setScreenIndex — see note near `reportReady` above.
+      setBlockReadiness({});
+      setPrimaryOverrideState(null);
       setScreenIndex(prevVisible);
       setIsBodyVisible(true);
       if (prevHeader) {
@@ -372,6 +420,7 @@ export default function ScreensSection({
             screen={block}
             selectedValue={choiceValues[block.key]}
             onChoiceSelect={handleChoiceSelect}
+            visitedSections={visitedSections}
           />
         );
 
@@ -419,6 +468,8 @@ export default function ScreensSection({
                 routeToSection: onRouteToSection,
                 // Readiness gating
                 reportReady,
+                // Primary-button override (label + onClick)
+                setPrimaryOverride,
                 // Utility
                 accentTerms,
               }}
@@ -482,25 +533,38 @@ export default function ScreensSection({
             className={`transition-opacity ${isBodyVisible ? 'opacity-100' : 'opacity-0'}`}
             style={{ transitionDuration: `${FADE_MS}ms`, paddingBottom: '6rem' }}
           >
-            {bodyBlocks.map((block, i) => (
-              <div
-                key={i}
-                className={`${i > 0 ? 'mt-4' : ''}${section.persistBlocks ? ' animate-fade-in' : ''}`}
-              >
-                {renderBlock(block, i)}
-              </div>
-            ))}
+            {bodyBlocks.map((block, i) => {
+              const topSpacing = i === 0
+                ? ''
+                : (block.tightAbove ? 'mt-2' : 'mt-4');
+              const fadeClass = section.persistBlocks ? ' animate-fade-in' : '';
+              return (
+                <div
+                  key={i}
+                  data-block-index={i}
+                  className={`${topSpacing}${fadeClass}`}
+                >
+                  {renderBlock(block, i)}
+                </div>
+              );
+            })}
           </div>
         </div>
       </ModuleLayout>
 
       <ModuleControlBar
         phase="active"
-        primary={
-          (hasChoiceBlock && !allChoicesSelected) || anyBlockNotReady
-            ? { label: getPrimaryLabel(), onClick: handleNext, disabled: true }
-            : { label: getPrimaryLabel(), onClick: handleNext }
-        }
+        primary={(() => {
+          const isDisabled = (hasChoiceBlock && !allChoicesSelected) || anyBlockNotReady;
+          if (primaryOverride) {
+            return {
+              label: primaryOverride.label,
+              onClick: primaryOverride.onClick,
+              disabled: isDisabled,
+            };
+          }
+          return { label: getPrimaryLabel(), onClick: handleNext, disabled: isDisabled };
+        })()}
         showBack={hasPreviousVisible || canGoBackToPreviewSection}
         onBack={handleBack}
         backConfirmMessage={null}

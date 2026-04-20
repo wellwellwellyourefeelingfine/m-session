@@ -13,6 +13,8 @@ import { AppUpdaterProvider } from '../shared/AppUpdaterContext';
 
 export default function AppShell({ children }) {
   const darkMode = useAppStore((state) => state.darkMode);
+  const readableFont = useAppStore((state) => state.preferences?.readableFont);
+  const fontSizeAdjustment = useAppStore((state) => state.preferences?.fontSizeAdjustment ?? 0);
   const currentTab = useAppStore((state) => state.currentTab);
   const isHelperOpen = useHelperStore((state) => state.isOpen);
   const mainRef = useRef(null);
@@ -25,6 +27,24 @@ export default function AppShell({ children }) {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Apply readable-font class to document element
+  useEffect(() => {
+    if (readableFont) {
+      document.documentElement.classList.add('font-readable');
+    } else {
+      document.documentElement.classList.remove('font-readable');
+    }
+  }, [readableFont]);
+
+  // Apply font-size adjustment to document element
+  useEffect(() => {
+    if (fontSizeAdjustment === 0) {
+      document.documentElement.removeAttribute('data-font-size');
+    } else {
+      document.documentElement.setAttribute('data-font-size', String(fontSizeAdjustment));
+    }
+  }, [fontSizeAdjustment]);
 
   // Reset scroll position when switching tabs or on initial mount
   useEffect(() => {

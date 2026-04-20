@@ -54,7 +54,7 @@ export default function ToolsView() {
               <button
                 onClick={() => handleToolClick(tool.id)}
                 className={`
-                  w-full text-left pl-3 pr-6 py-4
+                  w-full text-left pl-3 pr-6 py-4 uppercase
                   bg-app-black dark:bg-app-white
                   text-app-white dark:text-app-black
                   hover:opacity-70 transition-opacity
@@ -69,7 +69,7 @@ export default function ToolsView() {
                       isOpen ? 'opacity-100' : 'opacity-0'
                     }`}
                   />
-                  <span className="text-sm tracking-wider">{tool.label}</span>
+                  <span className="text-[13px] tracking-[0.05em]" style={{ fontFamily: 'Azeret Mono, monospace' }}>{tool.label}</span>
                 </span>
               </button>
               <ToolPanel toolId={tool.id} ToolComponent={tool.component} isLast={isLast} />

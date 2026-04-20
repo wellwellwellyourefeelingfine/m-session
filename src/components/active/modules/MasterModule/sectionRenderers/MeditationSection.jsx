@@ -32,8 +32,9 @@ export default function MeditationSection({
   section,
   module,
   onSectionComplete,
-  onSkip: _onSkip,
   onProgressUpdate,
+  canGoBackToPreviousSection = false,
+  onBackToPreviousSection,
 }) {
   const meditationId = section.meditationId;
   const meditation = getMeditationById(meditationId);
@@ -257,6 +258,13 @@ export default function MeditationSection({
               ? { label: 'Begin', onClick: handleBeginWithTransition }
               : playback.getPrimaryButton()
         }
+        showBack={canGoBackToPreviousSection && Boolean(onBackToPreviousSection)}
+        onBack={onBackToPreviousSection}
+        backConfirmMessage={
+          playback.hasStarted && !playback.isComplete && !playback.isLoading
+            ? 'Stop the meditation and go back?'
+            : null
+        }
         showSkip={!playback.isComplete}
         onSkip={() => { playback.handleSkip(); }}
         skipConfirmMessage="Skip this meditation?"
@@ -265,12 +273,18 @@ export default function MeditationSection({
         onSeekForward={() => playback.handleSeekRelative(10)}
         leftSlot={
           playback.hasStarted && !playback.isComplete ? (
-            <VolumeButton volume={playback.audio.volume} onVolumeChange={playback.audio.setVolume} />
+            // Wrapping div makes the slot content fade in when it mounts
+            // (on meditation start) rather than snapping to full opacity.
+            <div className="animate-fadeIn">
+              <VolumeButton volume={playback.audio.volume} onVolumeChange={playback.audio.setVolume} />
+            </div>
           ) : null
         }
         rightSlot={
           showTranscriptOption && playback.hasStarted && !playback.isComplete ? (
-            <SlotButton icon={<TranscriptIcon />} label="View transcript" onClick={transcript.handleOpenTranscript} />
+            <div className="animate-fadeIn">
+              <SlotButton icon={<TranscriptIcon />} label="View transcript" onClick={transcript.handleOpenTranscript} />
+            </div>
           ) : null
         }
       />

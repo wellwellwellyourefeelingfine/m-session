@@ -14,6 +14,7 @@ import { downloadSessionData, downloadSessionImages } from '../../utils/download
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
 import DebugModeTool from './DebugModeTool';
 import { APP_VERSION } from '../../constants';
+import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
 
 const EXPIRATION_OPTIONS = [
   { value: 12, label: '12 HOURS' },
@@ -62,6 +63,7 @@ export default function SettingsTool() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showRemoveKeyConfirm, setShowRemoveKeyConfirm] = useState(false);
   const [showBugReportConfirm, setShowBugReportConfirm] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showDebugMode, setShowDebugMode] = useState(false);
 
   // Show security notice on first use
@@ -165,6 +167,63 @@ export default function SettingsTool() {
           </button>
         </div>
 
+        {/* Font Style */}
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <span className="text-[12px] uppercase tracking-wider">Font Style</span>
+          <button
+            onClick={() => setPreference('readableFont', !preferences.readableFont)}
+            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
+          >
+            {preferences.readableFont ? 'SERIF' : 'MONO'}
+          </button>
+        </div>
+
+        {/* Font Size Adjustment */}
+        {(() => {
+          const current = preferences.fontSizeAdjustment ?? 0;
+          const minDisabled = current <= -1;
+          const maxDisabled = current >= 2;
+          const label = current > 0 ? `+${current}` : String(current);
+          return (
+            <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+              <span className="text-[12px] uppercase tracking-wider">Font Size</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setPreference('fontSizeAdjustment', current - 1)}
+                  disabled={minDisabled}
+                  aria-label="Decrease font size"
+                  className={`transition-opacity ${
+                    minDisabled
+                      ? 'opacity-30 cursor-default'
+                      : 'opacity-100 hover:opacity-70'
+                  }`}
+                >
+                  <CircleSkipIcon size={20} />
+                </button>
+                <span
+                  className="text-[12px] uppercase tracking-wider w-6 text-center"
+                  style={{ fontFamily: 'Azeret Mono, monospace' }}
+                >
+                  {label}
+                </span>
+                <button
+                  onClick={() => setPreference('fontSizeAdjustment', current + 1)}
+                  disabled={maxDisabled}
+                  aria-label="Increase font size"
+                  className={`transition-opacity ${
+                    maxDisabled
+                      ? 'opacity-30 cursor-default'
+                      : 'opacity-100 hover:opacity-70'
+                  }`}
+                >
+                  <CirclePlusIcon size={20} />
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Alternate App Logo */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Alternate App Logo</span>
@@ -186,18 +245,6 @@ export default function SettingsTool() {
             style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             {preferences.glassEffect ? 'ON' : 'OFF'}
-          </button>
-        </div>
-
-        {/* Auto-Advance Modules */}
-        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Auto-Advance</span>
-          <button
-            onClick={() => setPreference('autoAdvance', !preferences.autoAdvance)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.autoAdvance ? 'ON' : 'OFF'}
           </button>
         </div>
 
@@ -298,247 +345,6 @@ export default function SettingsTool() {
           </div>
         </div>
 
-        {/* ============================================ */}
-        {/* AI ASSISTANT */}
-        {/* ============================================ */}
-        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="block text-[12px] uppercase tracking-wider mb-4">
-            AI Assistant
-          </span>
-
-          {/* Security Notice */}
-          {showSecurityNotice && (
-            <div className="mb-4 p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
-              <p className="text-[11px] leading-relaxed mb-4">
-                Your API key is encrypted and stored locally on this device. It will
-                automatically expire after your chosen time period. We recommend setting a
-                spending limit on your API key through your provider&apos;s dashboard.
-              </p>
-              <button
-                onClick={handleDismissSecurityNotice}
-                className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity underline"
-              >
-                I understand
-              </button>
-            </div>
-          )}
-
-          {/* Provider Selection */}
-          <div className="mb-4">
-            <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
-              Provider
-            </span>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleProviderChange('anthropic')}
-                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
-                  selectedProvider === 'anthropic'
-                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
-                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
-                }`}
-              >
-                Anthropic
-              </button>
-              <button
-                onClick={() => handleProviderChange('openai')}
-                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
-                  selectedProvider === 'openai'
-                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
-                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
-                }`}
-              >
-                OpenAI
-              </button>
-              <button
-                onClick={() => handleProviderChange('openrouter')}
-                className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
-                  selectedProvider === 'openrouter'
-                    ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
-                    : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
-                }`}
-              >
-                OpenRouter
-              </button>
-            </div>
-            <p className="mt-2 text-[9px] text-[var(--text-tertiary)]">
-              {getProviderInfo(selectedProvider).description}
-            </p>
-          </div>
-
-          {/* API Key Input */}
-          <div className="mb-4">
-            <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
-              API Key
-            </span>
-
-            {isKeyValid ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 text-[11px] tracking-wider text-[var(--text-tertiary)]">
-                    {getMaskedKey()}
-                  </div>
-                </div>
-                <p className="text-[10px] text-[var(--accent)]">
-                  Key validated • Expires in {getKeyExpirationRemaining()}
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex gap-2">
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    value={apiKeyInput}
-                    onChange={(e) => setApiKeyInput(e.target.value)}
-                    placeholder={getProviderInfo(selectedProvider).keyPlaceholder}
-                    className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 bg-transparent text-[11px] tracking-wider focus:outline-none focus:border-app-black dark:focus:border-app-white"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleValidateKey();
-                    }}
-                  />
-                  <button
-                    onClick={handleValidateKey}
-                    disabled={!apiKeyInput.trim() || isValidating}
-                    className="py-2 px-4 text-[11px] uppercase tracking-wider border border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isValidating ? '...' : 'Validate'}
-                  </button>
-                </div>
-                {validationError && (
-                  <p className="text-[10px] text-[var(--accent)]">{validationError}</p>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* AI Settings - only show when key is valid */}
-          {isKeyValid && (
-            <>
-              {/* Save Conversations */}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-[11px] uppercase tracking-wider">
-                  Save Conversations
-                </span>
-                <button
-                  onClick={() =>
-                    updateSettings({
-                      persistConversations: !aiSettings.persistConversations,
-                    })
-                  }
-                  className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-                >
-                  {aiSettings.persistConversations ? 'ON' : 'OFF'}
-                </button>
-              </div>
-
-              {/* Key Expiration */}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-[11px] uppercase tracking-wider">
-                  Key Expiration
-                </span>
-                <select
-                  value={aiSettings.keyExpirationHours}
-                  onChange={(e) =>
-                    updateSettings({ keyExpirationHours: Number(e.target.value) })
-                  }
-                  className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer"
-                >
-                  {EXPIRATION_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Model Selection */}
-              <div className="flex items-center justify-between py-2">
-                <span className="text-[11px] uppercase tracking-wider">Model</span>
-                <select
-                  value={aiSettings.modelPreference}
-                  onChange={(e) => updateSettings({ modelPreference: e.target.value })}
-                  className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer max-w-[180px]"
-                >
-                  {availableModels.map((model) => (
-                    <option key={model.id} value={model.id}>
-                      {model.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Clear Conversations */}
-              {conversations.length > 0 && (
-                <div className="pt-3">
-                  {showClearConfirm ? (
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
-                        Clear {conversations.length} conversation
-                        {conversations.length > 1 ? 's' : ''}?
-                      </span>
-                      <button
-                        onClick={() => {
-                          clearAllConversations();
-                          setShowClearConfirm(false);
-                        }}
-                        className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
-                      >
-                        Yes
-                      </button>
-                      <button
-                        onClick={() => setShowClearConfirm(false)}
-                        className="text-[10px] uppercase tracking-wider hover:opacity-70"
-                      >
-                        No
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowClearConfirm(true)}
-                      className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
-                    >
-                      Clear All Conversations
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Remove API Key */}
-              <div className="pt-3">
-                {showRemoveKeyConfirm ? (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
-                      Remove API key?
-                    </span>
-                    <button
-                      onClick={() => {
-                        clearApiKey();
-                        setShowRemoveKeyConfirm(false);
-                      }}
-                      className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
-                    >
-                      Yes
-                    </button>
-                    <button
-                      onClick={() => setShowRemoveKeyConfirm(false)}
-                      className="text-[10px] uppercase tracking-wider hover:opacity-70"
-                    >
-                      No
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setShowRemoveKeyConfirm(true)}
-                    className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
-                  >
-                    Remove API Key
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-
         {/* Reset Current Session */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Reset Session</span>
@@ -573,6 +379,257 @@ export default function SettingsTool() {
           >
             FEEDBACK
           </button>
+        </div>
+
+        {/* AI Assistant */}
+        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <button
+            onClick={() => setShowAIAssistant(!showAIAssistant)}
+            className="w-full flex items-center justify-between hover:opacity-70 transition-opacity"
+          >
+            <span className="text-[12px] uppercase tracking-wider">AI Assistant</span>
+            <span
+              className="text-[12px] tracking-wider transition-transform duration-200"
+              style={{ fontFamily: 'Azeret Mono, monospace', transform: showAIAssistant ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            >
+              +
+            </span>
+          </button>
+          {showAIAssistant && (
+            <div className="mt-4">
+              {/* Security Notice */}
+              {showSecurityNotice && (
+                <div className="mb-4 p-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
+                  <p className="text-[11px] leading-relaxed mb-4">
+                    Your API key is encrypted and stored locally on this device. It will
+                    automatically expire after your chosen time period. We recommend setting a
+                    spending limit on your API key through your provider&apos;s dashboard.
+                  </p>
+                  <button
+                    onClick={handleDismissSecurityNotice}
+                    className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity underline"
+                  >
+                    I understand
+                  </button>
+                </div>
+              )}
+
+              {/* Provider Selection */}
+              <div className="mb-4">
+                <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
+                  Provider
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => handleProviderChange('anthropic')}
+                    className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                      selectedProvider === 'anthropic'
+                        ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                        : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                    }`}
+                  >
+                    Anthropic
+                  </button>
+                  <button
+                    onClick={() => handleProviderChange('openai')}
+                    className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                      selectedProvider === 'openai'
+                        ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                        : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                    }`}
+                  >
+                    OpenAI
+                  </button>
+                  <button
+                    onClick={() => handleProviderChange('openrouter')}
+                    className={`flex-1 min-w-[80px] py-2 px-3 text-[10px] uppercase tracking-wider border transition-colors ${
+                      selectedProvider === 'openrouter'
+                        ? 'border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black'
+                        : 'border-app-gray-300 dark:border-app-gray-700 hover:opacity-70'
+                    }`}
+                  >
+                    OpenRouter
+                  </button>
+                </div>
+                <p className="mt-2 text-[9px] text-[var(--text-tertiary)]">
+                  {getProviderInfo(selectedProvider).description}
+                </p>
+              </div>
+
+              {/* API Key Input */}
+              <div className="mb-4">
+                <span className="block text-[11px] uppercase tracking-wider mb-3 text-[var(--text-secondary)]">
+                  API Key
+                </span>
+
+                {isKeyValid ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 text-[11px] tracking-wider text-[var(--text-tertiary)]">
+                        {getMaskedKey()}
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-[var(--accent)]">
+                      Key validated • Expires in {getKeyExpirationRemaining()}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        autoComplete="off"
+                        value={apiKeyInput}
+                        onChange={(e) => setApiKeyInput(e.target.value)}
+                        placeholder={getProviderInfo(selectedProvider).keyPlaceholder}
+                        className="flex-1 py-2 px-3 border border-app-gray-300 dark:border-app-gray-700 bg-transparent text-[11px] tracking-wider focus:outline-none focus:border-app-black dark:focus:border-app-white"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleValidateKey();
+                        }}
+                      />
+                      <button
+                        onClick={handleValidateKey}
+                        disabled={!apiKeyInput.trim() || isValidating}
+                        className="py-2 px-4 text-[11px] uppercase tracking-wider border border-app-black dark:border-app-white bg-app-black dark:bg-app-white text-app-white dark:text-app-black hover:opacity-70 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isValidating ? '...' : 'Validate'}
+                      </button>
+                    </div>
+                    {validationError && (
+                      <p className="text-[10px] text-[var(--accent)]">{validationError}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* AI Settings - only show when key is valid */}
+              {isKeyValid && (
+                <>
+                  {/* Save Conversations */}
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[11px] uppercase tracking-wider">
+                      Save Conversations
+                    </span>
+                    <button
+                      onClick={() =>
+                        updateSettings({
+                          persistConversations: !aiSettings.persistConversations,
+                        })
+                      }
+                      className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+                    >
+                      {aiSettings.persistConversations ? 'ON' : 'OFF'}
+                    </button>
+                  </div>
+
+                  {/* Key Expiration */}
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[11px] uppercase tracking-wider">
+                      Key Expiration
+                    </span>
+                    <select
+                      value={aiSettings.keyExpirationHours}
+                      onChange={(e) =>
+                        updateSettings({ keyExpirationHours: Number(e.target.value) })
+                      }
+                      className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer"
+                    >
+                      {EXPIRATION_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Model Selection */}
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-[11px] uppercase tracking-wider">Model</span>
+                    <select
+                      value={aiSettings.modelPreference}
+                      onChange={(e) => updateSettings({ modelPreference: e.target.value })}
+                      className="py-1 px-2 text-[11px] uppercase tracking-wider bg-transparent border border-app-gray-300 dark:border-app-gray-700 focus:outline-none cursor-pointer max-w-[180px]"
+                    >
+                      {availableModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Clear Conversations */}
+                  {conversations.length > 0 && (
+                    <div className="pt-3">
+                      {showClearConfirm ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                            Clear {conversations.length} conversation
+                            {conversations.length > 1 ? 's' : ''}?
+                          </span>
+                          <button
+                            onClick={() => {
+                              clearAllConversations();
+                              setShowClearConfirm(false);
+                            }}
+                            className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setShowClearConfirm(false)}
+                            className="text-[10px] uppercase tracking-wider hover:opacity-70"
+                          >
+                            No
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setShowClearConfirm(true)}
+                          className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
+                        >
+                          Clear All Conversations
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Remove API Key */}
+                  <div className="pt-3">
+                    {showRemoveKeyConfirm ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">
+                          Remove API key?
+                        </span>
+                        <button
+                          onClick={() => {
+                            clearApiKey();
+                            setShowRemoveKeyConfirm(false);
+                          }}
+                          className="text-[10px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70"
+                        >
+                          Yes
+                        </button>
+                        <button
+                          onClick={() => setShowRemoveKeyConfirm(false)}
+                          className="text-[10px] uppercase tracking-wider hover:opacity-70"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowRemoveKeyConfirm(true)}
+                        className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity text-[var(--text-secondary)]"
+                      >
+                        Remove API Key
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Debug Mode */}

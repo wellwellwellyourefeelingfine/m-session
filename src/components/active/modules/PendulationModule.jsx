@@ -631,7 +631,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
               <AsciiMoon />
             </div>
 
-            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
               A guided somatic experiencing practice for working with activation in the nervous system.
             </p>
 

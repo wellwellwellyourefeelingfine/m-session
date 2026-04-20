@@ -155,7 +155,7 @@ export function CompletionScreen({
         <AsciiMoon />
       </div>
 
-      <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-secondary)]">
+      <p className="tracking-wider text-[10px] text-[var(--color-text-secondary)]">
         {message}
       </p>
     </div>
@@ -188,7 +188,7 @@ export function IdleScreen({
       </div>
 
       {description && (
-        <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed text-left">
+        <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed text-left">
           {description}
         </p>
       )}

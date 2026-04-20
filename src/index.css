@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;700&family=DM+Serif+Text:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;700&family=DM+Serif+Text:wght@400&family=Lora:wght@400;700&display=swap');
 
 @import "tailwindcss";
 
@@ -27,6 +27,21 @@
     --accent: #E8A87C;
     --accent-muted: #E8A87C80;
     --accent-bg: #E8A87C20;
+
+    /* Body font tokens — overridden by html.font-readable */
+    --font-body: 'Azeret Mono', monospace;
+    --font-body-transform: uppercase;
+    --font-body-leading: 1.6;
+
+    /* User font-size adjustment in pixels (-1, 0, +1, +2) — set by data-font-size attribute */
+    --font-size-adjust: 0;
+
+    /* Mono-mode body size tokens — calc() lets --font-size-adjust shift each tier by ±1px */
+    --text-xs: calc(0.75rem + var(--font-size-adjust) * 0.0625rem);    /* 12px base */
+    --text-sm: calc(0.8125rem + var(--font-size-adjust) * 0.0625rem);  /* 13px base */
+    --text-base: calc(1rem + var(--font-size-adjust) * 0.0625rem);     /* 16px base */
+    --text-lg: calc(1.125rem + var(--font-size-adjust) * 0.0625rem);   /* 18px base */
+    --text-xl: calc(1.25rem + var(--font-size-adjust) * 0.0625rem);    /* 20px base */
 
     /* Functional Colors - all use accent */
     --warning: var(--accent);
@@ -91,6 +106,60 @@
     --accent-bg: #9D8CD920;
   }
 
+  /* User font-size adjustment — sets --font-size-adjust which feeds into the
+     calc()-based body size tokens above */
+  html[data-font-size="-1"] { --font-size-adjust: -1; }
+  html[data-font-size="1"]  { --font-size-adjust: 1; }
+  html[data-font-size="2"]  { --font-size-adjust: 2; }
+
+  /* Readable Mode — Lora body, lowercase, per-tier size bump */
+  html.font-readable {
+    --font-body: 'Lora', Georgia, serif;
+    --font-body-transform: none;
+    --font-body-leading: 1.55;
+
+    /* Tailwind v4 token overrides — calc() form keeps the user's font-size
+       adjustment applied on top of the readable baselines */
+    --text-xs: calc(0.8125rem + var(--font-size-adjust) * 0.0625rem);  /* 13px base */
+    --text-sm: calc(1rem + var(--font-size-adjust) * 0.0625rem);       /* 16px base */
+    --text-base: calc(1.125rem + var(--font-size-adjust) * 0.0625rem); /* 18px base */
+    --text-lg: calc(1.25rem + var(--font-size-adjust) * 0.0625rem);    /* 20px base */
+    --text-xl: calc(1.375rem + var(--font-size-adjust) * 0.0625rem);   /* 22px base */
+    /* text-2xl and larger unchanged — already comfortable in Lora */
+
+    /* Lora doesn't need the heavy 0.05em tracking that mono caps does */
+    --tracking-wider: 0.005em;
+    --tracking-wide: 0.005em;
+    --tracking-widest: 0.01em;
+  }
+
+  /* In readable mode, anything explicitly marked with the Tailwind
+     `uppercase` class is intentional chrome (buttons, tabs, status pills,
+     section labels) — pin it to Azeret Mono so it doesn't drift into Lora.
+     Content paragraphs that were uppercase only because the body was
+     globally uppercased should have the `uppercase` class removed at the
+     component level so they inherit the body font.
+
+     Also lock the font-size, letter-spacing, and line-height tokens to
+     their mono-mode values so chrome looks identical between modes — same
+     character spacing, same line height, same per-class size. Without
+     this, e.g. text-sm + tracking-wider chrome would render at 16px with
+     0.005em spacing in readable mode and 13px with 0.05em in mono mode. */
+  html.font-readable .uppercase {
+    font-family: 'Azeret Mono', monospace;
+    /* Mono-mode baselines + user adjustment — chrome stays font-locked but
+       still scales with the user's font-size preference */
+    --text-xs: calc(0.75rem + var(--font-size-adjust) * 0.0625rem);
+    --text-sm: calc(0.8125rem + var(--font-size-adjust) * 0.0625rem);
+    --text-base: calc(1rem + var(--font-size-adjust) * 0.0625rem);
+    --text-lg: calc(1.125rem + var(--font-size-adjust) * 0.0625rem);
+    --text-xl: calc(1.25rem + var(--font-size-adjust) * 0.0625rem);
+    --tracking-wider: 0.05em;
+    --tracking-wide: 0.025em;
+    --tracking-widest: 0.1em;
+    line-height: 1.6;
+  }
+
   /* Base Styles */
   * {
     margin: 0;
@@ -105,15 +174,15 @@
   }
 
   body {
-    font-family: 'Azeret Mono', monospace;
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 400;
-    line-height: 1.6;
+    line-height: var(--font-body-leading);
     color: var(--text-primary);
     background-color: var(--bg-primary);
     min-height: 100vh;
     margin: 0;
-    text-transform: uppercase;
+    text-transform: var(--font-body-transform);
   }
 
   /* iOS Overscroll Prevention - removes rubber-band bounce effect */
@@ -130,14 +199,14 @@
     overflow: hidden;
   }
 
-  /* Typography Base - Azeret Mono uppercase for all text */
+  /* Typography Base — body font tokens; flips with html.font-readable */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Azeret Mono', monospace;
+    font-family: var(--font-body);
     font-size: 12px;
     font-weight: 400;
-    line-height: 1.6;
+    line-height: var(--font-body-leading);
     margin-bottom: var(--space-4);
-    text-transform: uppercase;
+    text-transform: var(--font-body-transform);
   }
 
   p {
@@ -159,6 +228,10 @@
     border: none;
     background: none;
     font-family: inherit;
+    /* Browsers' user-agent CSS sets text-transform: none on buttons, breaking
+       inheritance from body's --font-body-transform. Force inherit so buttons
+       without an explicit uppercase class follow the current font mode. */
+    text-transform: inherit;
     cursor: pointer;
     padding: 0;
   }

@@ -751,7 +751,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
               <AsciiMoon />
             </div>
 
-            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+            <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
               {FRAMING_CONTENT.description}
             </p>
 

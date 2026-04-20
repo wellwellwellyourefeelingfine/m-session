@@ -280,7 +280,7 @@ export default function SessionHistoryModal({ onClose, onLoad }) {
                         }`}
                       />
                       <span className="flex-1 flex items-center gap-2">
-                        <span className="text-sm tracking-wider">{displayDate}</span>
+                        <span className="text-sm tracking-wider" style={{ fontFamily: 'Azeret Mono, monospace' }}>{displayDate}</span>
                         <span className="text-[10px] opacity-30">—</span>
                         <span
                           className={`text-[10px] uppercase tracking-wider ${statusColor}`}
@@ -474,7 +474,7 @@ function SessionDetail({ sessionState, metadata }) {
           >
             {row.label}
           </p>
-          <p className="text-sm text-[var(--color-text-primary)]">
+          <p className="text-sm text-[var(--color-text-primary)]" style={{ fontFamily: 'Azeret Mono, monospace' }}>
             {row.value}
           </p>
         </div>

@@ -281,7 +281,7 @@ export default function SubstanceChecklist() {
           <div className="space-y-8">
             {/* Header at top */}
             <h2
-              className="text-lg text-[var(--color-text-primary)] text-center"
+              className="text-2xl text-[var(--color-text-primary)] text-center"
               style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
             >
               Journal Friendly
@@ -301,7 +301,10 @@ export default function SubstanceChecklist() {
 
             {/* Body copy — primary font inherits the app's uppercase default */}
             <div className="space-y-4">
-              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
+              <p
+                className="text-xl mb-3 text-[var(--color-text-primary)] leading-relaxed text-center"
+                style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+              >
                 m-session is designed to work alongside a physical journal.
               </p>
               <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
@@ -320,7 +323,7 @@ export default function SubstanceChecklist() {
                 </p>
               </div>
 
-              <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">
+              <p className="text-[var(--color-text-secondary)] text-xs leading-relaxed">
                 Whether you type, write by hand, or both, follow what feels natural.
               </p>
             </div>
@@ -348,7 +351,7 @@ export default function SubstanceChecklist() {
                   updateSessionProfile('hasSubstance', true);
                   handleNext();
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-xs"
               >
                 Yes, I have it ready
               </button>
@@ -356,7 +359,7 @@ export default function SubstanceChecklist() {
                 onClick={() => {
                   updateSessionProfile('hasSubstance', false);
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)]"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-[var(--color-text-tertiary)] text-xs"
               >
                 Not yet
               </button>
@@ -385,7 +388,7 @@ export default function SubstanceChecklist() {
                   updateSessionProfile('hasTestedSubstance', true);
                   handleNext();
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-xs"
               >
                 Yes, I&apos;ve tested it
               </button>
@@ -394,7 +397,7 @@ export default function SubstanceChecklist() {
                   updateSessionProfile('hasTestedSubstance', false);
                   handleNext();
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-xs"
               >
                 No, but I&apos;m confident in my source
               </button>
@@ -511,7 +514,7 @@ export default function SubstanceChecklist() {
                   updateBoosterPrepared('yes');
                   handleNext();
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-xs"
               >
                 Yes, I have it ready
               </button>
@@ -520,7 +523,7 @@ export default function SubstanceChecklist() {
                   updateBoosterPrepared('no');
                   handleNext();
                 }}
-                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4"
+                className="w-full py-4 border border-[var(--color-border)] hover:bg-[var(--color-bg-secondary)] transition-colors text-left px-4 text-xs"
               >
                 No, I&apos;ll prepare it now
               </button>
@@ -675,13 +678,13 @@ export default function SubstanceChecklist() {
 
             {/* Primary affirmation — each sentence on its own line, centered */}
             <div className="space-y-1">
-              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
                 The setting is prepared.
               </p>
-              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
                 Your substance is on hand.
               </p>
-              <p className="text-[var(--color-text-primary)] text-base leading-relaxed">
+              <p className="text-[var(--color-text-primary)] text-sm leading-relaxed">
                 Your safety measures are in place.
               </p>
             </div>

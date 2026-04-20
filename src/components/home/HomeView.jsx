@@ -237,7 +237,7 @@ export default function HomeView() {
                 <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-1">
                   Intake
                 </p>
-                <p className="text-xs leading-relaxed text-[var(--color-text-secondary)] uppercase tracking-wider">
+                <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] tracking-wider">
                   A brief questionnaire to understand your intentions and preferences, best completed a few days before your session.
                 </p>
               </div>
@@ -457,29 +457,28 @@ export default function HomeView() {
               ritual pacing. */}
           <div style={{
             position: 'fixed',
-            top: 'var(--header-height)',
-            left: 0,
-            right: 0,
-            bottom: 'var(--tabbar-height)',
+            inset: 0,
             backgroundColor: 'var(--color-bg)',
-            zIndex: 10,
+            // Must sit above Header (z-40), ModuleStatusBar (z-30),
+            // ModuleControlBar (z-30), and the volume-slider popup (z-40)
+            // so the entire app chrome is covered during the begin-session
+            // ritual. Kept below modal backdrops (z-50) so urgent modals
+            // can still appear on top if needed.
+            zIndex: 45,
             opacity: (transitionStep === 'moon-enter' || transitionStep === 'reveal') ? 0 : 1,
             transition: 'opacity 700ms ease',
             pointerEvents: 'none',
           }} />
 
-          {/* Moon animation — floats above overlay, centered in content area */}
+          {/* Moon animation — floats above overlay, centered on the full viewport */}
           {transitionStep?.startsWith('moon') && (
             <div style={{
               position: 'fixed',
-              top: 'var(--header-height)',
-              left: 0,
-              right: 0,
-              bottom: 'var(--tabbar-height)',
+              inset: 0,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              zIndex: 20,
+              zIndex: 46,
               pointerEvents: 'none',
             }}>
               <div style={{

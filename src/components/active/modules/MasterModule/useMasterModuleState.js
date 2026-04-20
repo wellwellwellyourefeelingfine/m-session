@@ -158,12 +158,21 @@ export default function useMasterModuleState(content, module) {
       return;
     }
 
-    // Check if we should pop from route stack (returning from a routed section)
+    // Check if we should pop from route stack (returning from a routed section).
+    // Bookmark-pop closes a "side trip" rather than taking a new forward step.
+    // Don't push the completed detour onto sectionHistory, and pop the gate's
+    // entry that `routeToSection` wrote on entry. The net effect: the round-trip
+    // leaves no history residue, so Back from the gate returns to what was
+    // before the gate, not back into the completed detour.
     if (routeStack.length > 0) {
       const continuationIndex = routeStack[routeStack.length - 1];
       setRouteStack((prev) => prev.slice(0, -1));
       if (continuationIndex < sections.length) {
-        setSectionHistory((prev) => [...prev, currentSectionIndex]);
+        setSectionHistory((prev) => (
+          prev.length > 0 && prev[prev.length - 1] === continuationIndex
+            ? prev.slice(0, -1)
+            : prev
+        ));
         setCurrentSectionIndex(continuationIndex);
         return;
       }
@@ -257,8 +266,17 @@ export default function useMasterModuleState(content, module) {
 
     const prevIndex = sectionHistory[sectionHistory.length - 1];
     setSectionHistory((prev) => prev.slice(0, -1));
+
+    // If we're back-navigating into a section that's currently the top of
+    // `routeStack`, drop that stale entry — otherwise a subsequent Continue
+    // would trigger the pop and silently land the user on the section they're
+    // already on. Matches the same-named guard in useTransitionModuleState.
+    if (routeStack.length > 0 && routeStack[routeStack.length - 1] === prevIndex) {
+      setRouteStack((prev) => prev.slice(0, -1));
+    }
+
     setCurrentSectionIndex(prevIndex);
-  }, [sectionHistory, currentSection]);
+  }, [sectionHistory, currentSection, routeStack]);
 
   // ── Response handlers ─────────────────────────────────────────────────────
 
@@ -359,6 +377,7 @@ export default function useMasterModuleState(content, module) {
     currentSectionIndex,
     currentSectionScreens,
     isLeaving,
+    routeStack,
     canGoBackToPreviousSection,
 
     // Data

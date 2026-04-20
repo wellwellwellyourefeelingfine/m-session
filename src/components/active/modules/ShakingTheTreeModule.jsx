@@ -857,7 +857,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onPro
                 </button>
               </div>
 
-              <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-center mb-4">
+              <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-center mb-4">
                 A guided movement practice. Pick 2-3 tracks — start with something gentle, end with something that settles.
               </p>
 

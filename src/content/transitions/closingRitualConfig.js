@@ -21,8 +21,12 @@ export const closingRitualConfig = {
   },
 
   skip: {
-    allowed: true,
-    confirmMessage: 'Skip the closing ritual and complete your session?',
+    // Main-flow skip disabled — the closing ritual fires completeSession() on
+    // its terminal section, and that completion is the gate for follow-up
+    // activities. Users must Continue through to the end rather than skipping
+    // past it. Detour skip (e.g., exiting the extended-letter side trip) is
+    // decoupled from this flag and still works.
+    allowed: false,
   },
 
   journal: {

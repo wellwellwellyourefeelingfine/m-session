@@ -264,7 +264,7 @@ export default function ModuleDetailModal({
               >
                 Activity Summary:
               </p>
-              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+              <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                 A guided check-in to help you decide whether a supplemental dose is right for you at this point in your session.
               </p>
             </div>
@@ -307,26 +307,26 @@ export default function ModuleDetailModal({
                   }}
                 >
                   <div>
-                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">How it works</p>
-                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                    <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider mb-1">How it works</p>
+                    <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                       The booster check-in is automatically placed in the peak phase and will prompt you around the 90-minute mark after ingestion, or 30 minutes after you report feeling fully arrived — whichever comes first.
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Timing window</p>
-                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                    <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider mb-1">Timing window</p>
+                    <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                       Opens as early as 60 minutes and closes at 150 minutes after ingestion. After 180 minutes the booster will not appear.
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Dosage</p>
-                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                    <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider mb-1">Dosage</p>
+                    <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                       The recommended booster is approximately half your initial dose, in the range of 30–75mg. Most harm reduction guidance suggests keeping total session dosage under 200mg.
                     </p>
                   </div>
                   <div>
-                    <p className="text-[var(--color-text-tertiary)] text-xs uppercase tracking-wider mb-1">Good to know</p>
-                    <ul className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed space-y-1 list-disc pl-4">
+                    <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider mb-1">Good to know</p>
+                    <ul className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed space-y-1 list-disc pl-4">
                       <li>A booster extends the peak phase by approximately 1–2 hours.</li>
                       <li>It is entirely optional — many meaningful sessions happen with a single dose.</li>
                       <li>Not recommended for first-time experiences.</li>
@@ -349,7 +349,7 @@ export default function ModuleDetailModal({
                 >
                   Activity Summary:
                 </p>
-                <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                   {libraryModule.description}
                 </p>
               </div>
@@ -392,7 +392,7 @@ export default function ModuleDetailModal({
                       transition: 'opacity 200ms ease-in-out',
                     }}
                   >
-                    <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+                    <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                       {libraryModule.content.instructions}
                     </p>
                   </div>
@@ -426,7 +426,7 @@ export default function ModuleDetailModal({
               >
                 Window:
               </p>
-              <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
+              <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                 The booster check-in pops up between 60 and 150 minutes after ingestion — the window in which a supplemental dose can still meaningfully extend your peak.
               </p>
             </div>
@@ -493,6 +493,7 @@ export default function ModuleDetailModal({
             <button
               onClick={() => { onAdd?.(); handleClose(); }}
               className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
               Add to Timeline
             </button>
@@ -568,6 +569,7 @@ export default function ModuleDetailModal({
               <button
                 onClick={() => { onGoToBooster?.(); handleClose(); }}
                 className="w-full py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+                style={{ fontFamily: 'Azeret Mono, monospace' }}
               >
                 Go to Booster
               </button>
@@ -575,6 +577,7 @@ export default function ModuleDetailModal({
             <button
               onClick={handleClose}
               className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
               Close
             </button>
@@ -584,6 +587,7 @@ export default function ModuleDetailModal({
             <button
               onClick={handleClose}
               className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
               Close
             </button>

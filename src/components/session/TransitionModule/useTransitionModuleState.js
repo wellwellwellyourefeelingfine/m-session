@@ -337,22 +337,31 @@ export default function useTransitionModuleState(config) {
       return;
     }
 
-    // Pop from route stack if returning from a routed section.
-    // After a bookmark pop we DO skip already-visited sections — this prevents
-    // replaying the section we routed to when sequential advance catches up.
+    // Pop from route stack if returning from a routed section. Go directly
+    // to `continuationIndex` — the content author explicitly bookmarked that
+    // section as the return point, so skip-visited must NOT walk past it.
+    // (Skip-visited still applies on the subsequent sequential advance from
+    // the bookmark target; see the next branch.) Required for the Crossroads
+    // pattern where the bookmark target is already visited.
+    //
+    // History handling: bookmark-pop closes a "side trip" rather than taking
+    // a new forward step. Don't push the completed detour onto sectionHistory,
+    // and pop the gate's entry that `routeToSection` wrote on entry. The net
+    // effect: the round-trip leaves no history residue, so Back from the gate
+    // returns to what was before the gate, not back into the completed detour.
     if (routeStack.length > 0) {
       const continuationIndex = routeStack[routeStack.length - 1];
       setRouteStack((prev) => prev.slice(0, -1));
-      let nextIndex = continuationIndex;
-      while (nextIndex < sections.length && visitedSections.includes(sections[nextIndex]?.id)) {
-        nextIndex++;
-      }
-      if (nextIndex >= sections.length) {
-        setModulePhase('complete');
-      } else {
-        setSectionHistory((prev) => [...prev, currentSectionIndex]);
-        setCurrentSectionIndex(nextIndex);
+      if (continuationIndex < sections.length) {
+        setSectionHistory((prev) => (
+          prev.length > 0 && prev[prev.length - 1] === continuationIndex
+            ? prev.slice(0, -1)
+            : prev
+        ));
+        setCurrentSectionIndex(continuationIndex);
         setScreenIndex(0);
+      } else {
+        setModulePhase('complete');
       }
       return;
     }
@@ -421,9 +430,19 @@ export default function useTransitionModuleState(config) {
 
     const prevIndex = sectionHistory[sectionHistory.length - 1];
     setSectionHistory((prev) => prev.slice(0, -1));
+
+    // If we're back-navigating into a section that's currently the top of
+    // `routeStack` (i.e. the user is returning to their bookmark manually
+    // rather than via advanceSection's pop), drop that stale stack entry.
+    // Otherwise a subsequent Continue would trigger the pop and land the
+    // user on the section they're already on (a silent no-op advance).
+    if (routeStack.length > 0 && routeStack[routeStack.length - 1] === prevIndex) {
+      setRouteStack((prev) => prev.slice(0, -1));
+    }
+
     setCurrentSectionIndex(prevIndex);
     setScreenIndex(0);
-  }, [sectionHistory, currentSection]);
+  }, [sectionHistory, currentSection, routeStack]);
 
   const canGoBackToPreviousSection = useMemo(() => {
     return sectionHistory.length > 0;
@@ -493,6 +512,7 @@ export default function useTransitionModuleState(config) {
     currentSectionIndex,
     currentSectionScreens,
     visitedSections,
+    routeStack,
     canGoBackToPreviousSection,
 
     // Data

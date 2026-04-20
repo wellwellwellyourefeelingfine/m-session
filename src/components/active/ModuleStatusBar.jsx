@@ -54,7 +54,11 @@ export default function ModuleStatusBar({
   return (
     <>
       <ModuleProgressBar progress={progress} isPaused={isPaused} />
-      <div className="fixed left-0 right-0 z-30" style={{ top: 'var(--header-height)' }}>
+      {/* animate-fadeIn fires once on mount — gives the bar a smooth entry
+          when it first appears (e.g., step 2 of SubstanceChecklist after
+          being hidden on the index step). Already-mounted prop changes
+          (progress, labels) don't replay the animation. */}
+      <div className="fixed left-0 right-0 z-30 animate-fadeIn" style={{ top: 'var(--header-height)' }}>
         {/* Status content */}
         <div className="flex items-center px-4 py-2 gap-3">
           {/* Left: Label */}
