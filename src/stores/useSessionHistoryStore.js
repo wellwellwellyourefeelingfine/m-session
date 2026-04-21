@@ -46,7 +46,6 @@ function cleanTransientState(sessionState) {
       startedAt: null,
       accumulatedTime: 0,
     },
-    activeFollowUpModule: null,
     activePreSessionModule: null,
     // Reset transient UI flags within nested objects
     comeUpCheckIn: {

@@ -37,7 +37,7 @@ export default function AnimationBlock({ screen, accentTerms }) {
     <div className="text-center">
       {screen.header && (
         <p
-          className="text-lg mb-4 text-[var(--color-text-primary)]"
+          className="text-base mb-4 text-[var(--color-text-primary)]"
           style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
           {screen.header}

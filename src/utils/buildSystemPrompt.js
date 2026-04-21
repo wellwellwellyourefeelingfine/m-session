@@ -400,7 +400,6 @@ export function buildCompletedSessionPrompt(sessionState, journalState, contextS
 
   const sessionProfile = sessionState?.sessionProfile || {};
   const session = sessionState?.session || {};
-  const followUp = sessionState?.followUp || {};
   const transitionCaptures = sessionState?.transitionCaptures || {};
   const recentJournalEntries = journalState?.entries || [];
 
@@ -441,21 +440,6 @@ export function buildCompletedSessionPrompt(sessionState, journalState, contextS
     }
   }
 
-  // Follow-up module status
-  const followUpParts = [];
-  const fModules = followUp.modules || {};
-  for (const [key, mod] of Object.entries(fModules)) {
-    if (mod.status === 'completed') {
-      const details = [];
-      if (key === 'checkIn' && mod.feeling) details.push(`feeling: ${mod.feeling}`);
-      if (key === 'integration' && mod.commitmentStatus) details.push(`commitment: ${mod.commitmentStatus}`);
-      followUpParts.push(`- ${key}: completed${details.length > 0 ? ` (${details.join(', ')})` : ''}`);
-    } else if (mod.status === 'available') {
-      followUpParts.push(`- ${key}: available (not yet started)`);
-    }
-    // Skip 'locked' modules
-  }
-
   // Build optional sections
   const optionalSections = [];
 
@@ -467,9 +451,6 @@ export function buildCompletedSessionPrompt(sessionState, journalState, contextS
   }
   if (closingParts.length > 0) {
     optionalSections.push(`## Closing Ritual\n${closingParts.join('\n')}`);
-  }
-  if (followUpParts.length > 0) {
-    optionalSections.push(`## Follow-Up Progress\n${followUpParts.join('\n')}`);
   }
   if (ctx.includeJournal) {
     optionalSections.push(`## Recent Journal Entries\n${buildJournalSummary(recentJournalEntries)}`);

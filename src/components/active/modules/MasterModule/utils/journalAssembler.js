@@ -72,12 +72,23 @@ export function assembleJournalEntry({
   // store value twice when the same display appears on multiple screens.
   const emittedStoreKeys = new Set();
 
+  // Dedupe emitters for block types that can repeat in progressive-reveal
+  // sections (same object reference appearing across multiple screens to
+  // build the reveal). Without these sets, each appearance would print its
+  // prompt/question + response again.
+  const emittedPromptIndices = new Set();
+  const emittedSelectorKeys = new Set();
+  const emittedBodyCheckInPhases = new Set();
+
   // ── Pass 2: emit content ──────────────────────────────────────────────────
 
   allScreens.forEach((block) => {
     if (!isVisible(block)) return;
 
     if (block.type === 'prompt') {
+      if (emittedPromptIndices.has(block.promptIndex)) return;
+      emittedPromptIndices.add(block.promptIndex);
+
       // Label: prompt text if present, else journalLabel (with auto colon), else skip label line.
       const naturalLabel = block.prompt;
       const overrideLabel = block.journalLabel ? `${block.journalLabel}:` : '';
@@ -92,6 +103,9 @@ export function assembleJournalEntry({
     }
 
     if (block.type === 'selector') {
+      if (emittedSelectorKeys.has(block.key)) return;
+      emittedSelectorKeys.add(block.key);
+
       const label = block.prompt || (block.journalLabel ? `${block.journalLabel}:` : '');
       if (label) content += `\n${label}\n`;
       const selected = selectorValues[block.key];
@@ -117,8 +131,10 @@ export function assembleJournalEntry({
     if (block.type === 'body-check-in' && storeState) {
       if (block.mode === 'comparison') return;  // read-only overlay, no data to log
       const phase = block.phase || 'opening';
+      if (emittedBodyCheckInPhases.has(phase)) return;
       const selected = storeState?.transitionData?.somaticCheckIns?.[phase];
       if (!Array.isArray(selected) || selected.length === 0) return;
+      emittedBodyCheckInPhases.add(phase);
       const labels = selected.map(sensationLabelById);
       const defaultLabel = `Body sensations (${PHASE_LABELS[phase] || phase})`;
       const label = block.journalLabel ? block.journalLabel : defaultLabel;
@@ -148,6 +164,30 @@ export function assembleJournalEntry({
       const label = block.journalLabel || defaultLabelFromStoreKey(key);
       content += `\n${label}:\n${value}\n`;
       emittedStoreKeys.add(key);
+      return;
+    }
+
+    // `touchstone-prompt` writes directly to a store path (block.storeField)
+    // rather than into the local `responses` map, so it needs its own emit.
+    // Matches the physical-journal-friendly pattern: the label always prints,
+    // and an empty value gets the `[no entry — time]` placeholder.
+    if (block.type === 'touchstone-prompt' && storeState) {
+      const key = block.storeField;
+      if (!key) return;
+      if (emittedStoreKeys.has(key)) return;
+      emittedStoreKeys.add(key);
+
+      const label = block.journalLabel
+        ? `${block.journalLabel}:`
+        : defaultLabelFromStoreKey(key) + ':';
+      content += `\n${label}\n`;
+
+      const value = resolvePath(key, storeState);
+      if (value != null && String(value).trim() !== '') {
+        content += `${String(value).trim()}\n`;
+      } else {
+        content += `[no entry — ${timestamp}]\n`;
+      }
       return;
     }
   });

@@ -11,6 +11,11 @@
  *     emptyText: 'No intention was set',
  *     style: 'accent-box',                    // 'accent-box' | 'plain' | 'italic'
  *     labelMap: { ... },                      // optional: map raw values to display labels
+ *     leftLabel: 'Opening Ritual Touchstone', // optional: small uppercase
+ *                                              //   label rendered above the
+ *                                              //   accent box, left-aligned.
+ *                                              //   Only applies to the
+ *                                              //   'accent-box' style.
  *   }
  */
 
@@ -33,7 +38,7 @@ export default function StoreDisplayBlock({ block }) {
   const style = block.style || 'accent-box';
 
   if (style === 'accent-box') {
-    return (
+    const accentBox = (
       <div className="py-4 px-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
         <p
           className={`text-[var(--color-text-primary)] text-sm leading-relaxed text-center ${hasValue ? '' : 'italic opacity-70'}`}
@@ -43,6 +48,23 @@ export default function StoreDisplayBlock({ block }) {
         </p>
       </div>
     );
+
+    // When `leftLabel` is set (used by the Closing Ritual touchstone cairn),
+    // stack a small left-aligned uppercase subheader above the accent box.
+    // Keeps alignment consistent across stacked touchstones of varying label
+    // lengths — side-by-side layout squishes on mobile.
+    if (block.leftLabel) {
+      return (
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-[var(--color-text-tertiary)] mb-1">
+            {block.leftLabel}
+          </p>
+          {accentBox}
+        </div>
+      );
+    }
+
+    return accentBox;
   }
 
   if (style === 'italic') {

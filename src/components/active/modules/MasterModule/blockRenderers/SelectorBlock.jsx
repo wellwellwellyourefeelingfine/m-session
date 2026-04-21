@@ -57,7 +57,7 @@ export default function SelectorBlock({
       )}
 
       <p
-        className="text-lg text-[var(--color-text-primary)]"
+        className="text-base text-[var(--color-text-primary)]"
         style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
       >
         {screen.prompt}

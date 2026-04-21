@@ -22,6 +22,37 @@ import ClockNoteModal from './ClockNoteModal';
 import TimelineTutorial from './TimelineTutorial';
 import { getTutorialDelay } from './tutorialRevealFlag';
 
+const BOOSTER_TARGET_TIME = 90; // minutes from session start
+
+// The booster card is positioned by elapsed time, not by which phase the user originally
+// added it to. Walks peak modules cumulatively from the end of come-up; if the 90-min mark
+// crosses inside peak, the booster slots in there. Otherwise the walk continues into
+// integration. Sessions shorter than 90 min total pin the booster to the end of integration.
+function computeBoosterPlacement(comeUpDuration, nonBoosterPeak, nonBoosterIntegration) {
+  // Edge case: come-up alone already crosses the 90-min mark
+  if (comeUpDuration >= BOOSTER_TARGET_TIME) {
+    return { phase: 'peak', index: 0 };
+  }
+
+  let cumulative = comeUpDuration;
+  for (let i = 0; i < nonBoosterPeak.length; i++) {
+    if (cumulative >= BOOSTER_TARGET_TIME) {
+      return { phase: 'peak', index: i };
+    }
+    cumulative += nonBoosterPeak[i].duration;
+  }
+
+  for (let i = 0; i < nonBoosterIntegration.length; i++) {
+    if (cumulative >= BOOSTER_TARGET_TIME) {
+      return { phase: 'integration', index: i };
+    }
+    cumulative += nonBoosterIntegration[i].duration;
+  }
+
+  // Session total < 90 min — pin to end of integration
+  return { phase: 'integration', index: nonBoosterIntegration.length };
+}
+
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(null);
@@ -31,10 +62,11 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [selectedAddedFollowUpModule, setSelectedAddedFollowUpModule] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Pre-session collapse state (mirrors PhaseSection pattern)
-  const [preSessionCollapsed, setPreSessionCollapsed] = useState(false);
-  const [preSessionContentVisible, setPreSessionContentVisible] = useState(true);
-  const [preSessionHeightCollapsed, setPreSessionHeightCollapsed] = useState(false);
+  // Pre-session collapse state (mirrors PhaseSection pattern).
+  // Completed sessions default to collapsed alongside the phase cards.
+  const [preSessionCollapsed, setPreSessionCollapsed] = useState(isCompletedSession);
+  const [preSessionContentVisible, setPreSessionContentVisible] = useState(!isCompletedSession);
+  const [preSessionHeightCollapsed, setPreSessionHeightCollapsed] = useState(isCompletedSession);
 
   const handleTogglePreSessionCollapse = () => {
     if (!preSessionCollapsed) {
@@ -55,6 +87,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [preSessionExpanded, setPreSessionExpanded] = useState(true);
   const [clockNoteOpen, setClockNoteOpen] = useState(false);
   const [frozenTime, setFrozenTime] = useState('');
+  // Mirrors PhaseSection's swap animation so follow-up reorders give the same visual feedback.
+  const [swappingFollowUp, setSwappingFollowUp] = useState(null); // { movingId, direction }
 
   // Get current tab to detect tab switches
   const currentTab = useAppStore((state) => state.currentTab);
@@ -101,12 +135,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
   const modules = useSessionStore((state) => state.modules);
   const timeline = useSessionStore((state) => state.timeline);
+  const activeTransition = useSessionStore((state) => state.phaseTransitions?.activeTransition);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
   const booster = useSessionStore((state) => state.booster);
   const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const session = useSessionStore((state) => state.session);
   const followUp = useSessionStore((state) => state.followUp);
-  const checkFollowUpAvailability = useSessionStore((state) => state.checkFollowUpAvailability);
   const getEntryById = useJournalStore((state) => state.getEntryById);
   const addModule = useSessionStore((state) => state.addModule);
   const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
@@ -121,7 +155,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
   const moduleItems = modules?.items || [];
   const comeUpModules = moduleItems.filter((m) => m.phase === 'come-up').sort((a, b) => a.order - b.order);
-  const integrationModules = moduleItems.filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order);
 
   // Pre-session and follow-up: completed modules sort to top (display-only,
   // store order values unchanged). Within each group, original order preserved.
@@ -142,41 +175,38 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const integrationDuration = getPhaseDuration('integration');
   const totalDuration = getTotalDuration();
 
-  // Dynamically position booster module in peak phase based on 90-minute mark
-  const BOOSTER_TARGET_TIME = 90; // minutes from session start
+  // Booster placement is phase-agnostic: the card always renders at the cumulative 90-min
+  // mark, regardless of whether it was originally added to peak or integration. Stored
+  // `phase` and `order` are bookkeeping; the visual slot below overrides them.
+  const isBooster = (m) => m.isBoosterModule || m.libraryId === 'booster-consideration';
   const peakModulesRaw = moduleItems.filter((m) => m.phase === 'peak').sort((a, b) => a.order - b.order);
+  const integrationModulesRaw = moduleItems.filter((m) => m.phase === 'integration').sort((a, b) => a.order - b.order);
 
-  // Separate booster from other peak modules
-  const boosterModule = peakModulesRaw.find((m) => m.isBoosterModule || m.libraryId === 'booster-consideration');
-  const nonBoosterPeakModules = peakModulesRaw.filter((m) => !m.isBoosterModule && m.libraryId !== 'booster-consideration');
+  const boosterModule = peakModulesRaw.find(isBooster) || integrationModulesRaw.find(isBooster);
+  const nonBoosterPeakModules = peakModulesRaw.filter((m) => !isBooster(m));
+  const nonBoosterIntegrationModules = integrationModulesRaw.filter((m) => !isBooster(m));
 
-  // Calculate where booster should be inserted based on cumulative time
   let peakModules = nonBoosterPeakModules;
+  let integrationModules = nonBoosterIntegrationModules;
   if (boosterModule) {
-    let cumulativeTime = comeUpDuration; // Start from end of come-up phase
-    let boosterInsertIndex = 0;
-
-    // Find the position where cumulative time first reaches or exceeds 90 minutes
-    for (let i = 0; i < nonBoosterPeakModules.length; i++) {
-      if (cumulativeTime >= BOOSTER_TARGET_TIME) {
-        boosterInsertIndex = i;
-        break;
-      }
-      cumulativeTime += nonBoosterPeakModules[i].duration;
-      boosterInsertIndex = i + 1; // Insert after this module if we haven't hit 90 yet
+    const placement = computeBoosterPlacement(
+      comeUpDuration,
+      nonBoosterPeakModules,
+      nonBoosterIntegrationModules,
+    );
+    if (placement.phase === 'peak') {
+      peakModules = [
+        ...nonBoosterPeakModules.slice(0, placement.index),
+        boosterModule,
+        ...nonBoosterPeakModules.slice(placement.index),
+      ];
+    } else {
+      integrationModules = [
+        ...nonBoosterIntegrationModules.slice(0, placement.index),
+        boosterModule,
+        ...nonBoosterIntegrationModules.slice(placement.index),
+      ];
     }
-
-    // If come-up already >= 90 min, booster goes at the start of peak
-    if (comeUpDuration >= BOOSTER_TARGET_TIME) {
-      boosterInsertIndex = 0;
-    }
-
-    // Insert booster at the calculated position
-    peakModules = [
-      ...nonBoosterPeakModules.slice(0, boosterInsertIndex),
-      boosterModule,
-      ...nonBoosterPeakModules.slice(boosterInsertIndex),
-    ];
   }
 
   // Safe access to phase durations with defaults
@@ -211,14 +241,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     return () => clearInterval(interval);
   }, [isActiveSession, isCompletedSession, substanceChecklist?.ingestionTime, session?.finalDurationSeconds]);
 
-  // Check follow-up availability for completed sessions
-  useEffect(() => {
-    if (!isCompletedSession) return;
-    checkFollowUpAvailability();
-    const interval = setInterval(checkFollowUpAvailability, 60000);
-    return () => clearInterval(interval);
-  }, [isCompletedSession, checkFollowUpAvailability]);
-
   // Format elapsed time as HH:MM:SS
   const formatElapsedClock = (totalSeconds) => {
     const hours = Math.floor(totalSeconds / 3600);
@@ -239,13 +261,21 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
     if (!isActiveSession) return true; // Pre-session: all phases editable
 
-    // During session: only future phases are editable
+    // During session: only future phases are editable.
+    // While a transition is running, treat the originating phase as already
+    // "left" — its Add Activity should disable even though timeline.currentPhase
+    // hasn't advanced yet (the store flips it after the transition completes).
     const phaseOrder = { 'come-up': 0, peak: 1, integration: 2 };
-    const currentPhaseOrder = phaseOrder[currentPhase] ?? -1;
+    const transitionAdvancement = {
+      'come-up-to-peak': 1,      // come-up is being left → effective floor is peak
+      'peak-to-integration': 2,  // peak is being left → effective floor is integration
+      'session-closing': 3,      // integration is being left → no phase remains editable
+    };
+    const baseOrder = phaseOrder[currentPhase] ?? -1;
+    const effectiveOrder = Math.max(baseOrder, transitionAdvancement[activeTransition] ?? -1);
     const targetPhaseOrder = phaseOrder[phase] ?? -1;
 
-    // Can edit current phase (future modules) or future phases
-    return targetPhaseOrder >= currentPhaseOrder;
+    return targetPhaseOrder >= effectiveOrder;
   };
 
   // Check if a specific module can be removed (must be upcoming, not active or completed, and not current)
@@ -366,6 +396,19 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     swapModuleOrder(instanceId, targetModule.order);
   };
 
+  // Animated wrapper used by the follow-up timeline so reorders match PhaseSection's bump.
+  const handleFollowUpMoveWithAnimation = (instanceId, direction) => {
+    setSwappingFollowUp({ movingId: instanceId, direction });
+    setTimeout(() => {
+      if (direction === 'up') {
+        handleMoveModuleUp(instanceId);
+      } else {
+        handleMoveModuleDown(instanceId);
+      }
+      setTimeout(() => setSwappingFollowUp(null), 50);
+    }, 150);
+  };
+
   // Get phase status for visual styling
   const getPhaseStatus = (phase) => {
     // Completed sessions show all phases as completed
@@ -478,7 +521,11 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             <div className="relative flex">
               {/* Timeline node and vertical bar */}
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 mt-2 ${
+                  isCompletedSession
+                    ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+                    : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
+                }`} />
                 <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
               </div>
 
@@ -638,7 +685,11 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             {/* Ending node for pre-session timeline */}
             <div className="relative flex">
               <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
-                <div className="w-3 h-3 rounded-full border-2 flex-shrink-0 bg-[var(--color-bg)] border-[var(--color-text-primary)]" />
+                <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+                  isCompletedSession
+                    ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+                    : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
+                }`} />
               </div>
             </div>
           </div>
@@ -809,17 +860,22 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                     const isFirst = index === 0;
                     const isLast = index === followUpModules.length - 1;
 
+                    const isSwapping = swappingFollowUp?.movingId === module.instanceId;
+                    const swapAnimationClass = isSwapping
+                      ? (swappingFollowUp.direction === 'up' ? 'animate-swap-up' : 'animate-swap-down')
+                      : '';
+
                     return (
                       <div
                         key={module.instanceId}
-                        className="relative flex items-start"
+                        className={`relative flex items-start ${swapAnimationClass}`}
                       >
                         {/* Reorder arrows */}
-                        {canEdit && hasMultipleEditable && (
+                        {canEdit && hasMultipleEditable && !swappingFollowUp && (
                           <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
                             <button
                               type="button"
-                              onClick={() => handleMoveModuleUp(module.instanceId)}
+                              onClick={() => handleFollowUpMoveWithAnimation(module.instanceId, 'up')}
                               disabled={isFirst}
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
                                 isFirst
@@ -832,7 +888,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleMoveModuleDown(module.instanceId)}
+                              onClick={() => handleFollowUpMoveWithAnimation(module.instanceId, 'down')}
                               disabled={isLast}
                               className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
                                 isLast

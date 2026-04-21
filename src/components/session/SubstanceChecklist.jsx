@@ -302,7 +302,7 @@ export default function SubstanceChecklist() {
             {/* Body copy — primary font inherits the app's uppercase default */}
             <div className="space-y-4">
               <p
-                className="text-xl mb-3 text-[var(--color-text-primary)] leading-relaxed text-center"
+                className="text-lg mb-3 text-[var(--color-text-primary)] leading-relaxed text-center"
                 style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
               >
                 m-session is designed to work alongside a physical journal.
@@ -311,10 +311,19 @@ export default function SubstanceChecklist() {
                 When you answer a prompt by hand, note the time in your journal. m-session records a timestamp for any prompt you skip on screen, so you can line your handwritten entries up with the moment each prompt came up.
               </p>
 
-              {/* Example block — shows the literal journal-entry marker so the
-                  user knows exactly what a "timestamp" looks like. textTransform:
-                  'none' preserves the real casing of the journal output. */}
-              <div className="py-2 px-4 border border-[var(--color-border)]">
+              {/* Example block — shows an example prompt + the literal
+                  journal-entry marker so the user knows exactly what a
+                  "timestamp" looks like when a prompt is left unanswered.
+                  textTransform: 'none' preserves the real casing. Asymmetric
+                  padding tightens the timestamp to the bottom border so it
+                  reads more like a footer marker under the prompt. */}
+              <div className="pt-2 pb-1 px-4 border border-[var(--color-border)]">
+                <p
+                  className="text-sm text-[var(--color-text-secondary)] mb-2 text-left"
+                  style={{ textTransform: 'none' }}
+                >
+                  As an example question, what is your favorite color?
+                </p>
                 <p
                   className="text-center text-sm text-[var(--color-text-secondary)]"
                   style={{ textTransform: 'none' }}
@@ -762,12 +771,16 @@ export default function SubstanceChecklist() {
         />
       )}
 
-      {/* Main content container */}
+      {/* Main content container. Starts at the header line regardless of
+          whether the status bar is shown — when it is shown, paddingTop
+          reserves initial space for it and scrolling content can pass
+          behind the transparent status bar, clipping only at the header. */}
       <div
         className="fixed left-0 right-0 overflow-auto"
         style={{
-          top: showStatusBar ? 'var(--header-plus-status)' : 'var(--header-height)',
+          top: 'var(--header-height)',
           bottom: 'var(--bottom-chrome)',
+          paddingTop: showStatusBar ? 'var(--status-bar-height)' : 0,
         }}
       >
         <div className="max-w-md mx-auto px-6 py-6">

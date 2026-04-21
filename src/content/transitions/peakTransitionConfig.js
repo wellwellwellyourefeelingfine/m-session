@@ -15,7 +15,7 @@ export const peakTransitionConfig = {
   animation: 'full-sun',
 
   statusBar: {
-    leftLabel: 'Transition',
+    leftLabel: 'Peak Transition',
     showSessionElapsed: true,
   },
 
@@ -67,26 +67,46 @@ export const peakTransitionConfig = {
       ],
     },
 
-    // ── Screen 3: One Word ────────────────────────────────────────────────
+    // ── Screen 3: Touchstone 2 ────────────────────────────────────────────
+    // Mirrors the Opening Ritual's Touchstone page. User writes a word or
+    // phrase; first Continue press saves it (via touchstone-prompt's
+    // setPrimaryOverride) and transforms the textarea into an accent display.
+    // Comparison text + expandable 1st-touchstone reveal fade in beneath
+    // (gated on both touchstones being set). Second Continue advances.
     {
-      id: 'one-word',
+      id: 'peak-touchstone',
       type: 'screens',
       ritualFade: true,
+      persistBlocks: true,
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'One Word', animation: 'full-sun' },
+            { type: 'header', title: 'Touchstone Two', animation: 'full-sun' },
             { type: 'text', lines: [
-              "If you could name what you're feeling right now in a single word or phrase, what would it be?",
+              "Let's follow up with another touchstone.",
             ] },
-            { type: 'prompt',
-              prompt: '',
-              placeholder: "What's here right now...",
-              storeField: 'transitionData.oneWord',
-            },
-            { type: 'text', lines: [
-              'This is just for you. You can look back on it later.',
-            ] },
+            // DM Serif question, rendered via TextBlock's `header` field (same
+            // styling as the prompt-question font used elsewhere).
+            { type: 'text',
+              header: "Is there a word or phrase that captures what feels most important to you right now?" },
+            { type: 'touchstone-prompt',
+              storeField: 'transitionData.peakTouchstone',
+              placeholder: 'A word or phrase...',
+              rows: 3,
+              journalLabel: 'Touchstone 2' },
+            // Comparison text + expandable reveal — gated only on the 2nd
+            // touchstone being saved. ExpandableStoreDisplayBlock handles the
+            // empty-opening-touchstone case internally.
+            { type: 'text',
+              condition: { storeValue: 'transitionData.peakTouchstone' },
+              lines: [
+                "If you'd like to, you can take a look at your touchstone from the opening ritual to compare to your touchstone now.",
+              ] },
+            { type: 'expandable-store-display',
+              condition: { storeValue: 'transitionData.peakTouchstone' },
+              storeKey: 'transitionData.openingTouchstone',
+              showLabel: 'see 1st Touchstone',
+              hideLabel: 'hide 1st Touchstone' },
           ],
         },
       ],
@@ -141,7 +161,7 @@ export const peakTransitionConfig = {
             { type: 'text', lines: [
               'The intensity of this moment can be surprising. You might feel a rush of energy or emotion. You might feel jaw tension, nausea, or a change in temperature. You might feel a quiet shift, or nothing dramatic at all.',
               '§',
-              'All of this is the substance finding its way through your body. It is not a sign that something is wrong. It is a sign that something is working.',
+              'All of this is the MDMA finding its way through your body. It is not a sign that something is wrong. It is a sign that something is working.',
               '§',
               'You are safe. If it feels like a lot, know that it will soon settle into something workable.',
             ] },

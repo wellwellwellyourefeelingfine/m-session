@@ -26,6 +26,7 @@ import {
 import { ANIMATION_MAP } from '../blockRenderers/HeaderBlock';
 import expandScreenToBlocks from '../utils/expandScreenToBlocks';
 import evaluateCondition from '../utils/evaluateCondition';
+import { smoothScrollToElement } from '../../../../../utils/smoothScroll';
 
 // Fade speeds: default (snappy) for most content, ritual (slower, more intentional)
 // for sections with `ritualFade: true` in their config.
@@ -192,16 +193,32 @@ export default function ScreensSection({
     return blocks[0]?.type === 'header' ? blocks[0] : null;
   }, [screens, moduleTitle]);
 
-  // Count all visible prompt blocks across all visible screens
-  const totalVisiblePrompts = useMemo(() => {
-    return screens.reduce((count, screen) => {
-      if (!isScreenVisible(screen)) return count;
+  // Ordered list of unique `promptIndex` values visible across this section.
+  // Counts each prompt ONCE even if it appears on multiple screens (the
+  // progressive-reveal pattern in `persistBlocks` sections spreads a single
+  // prompt across several screens so it stays on page as the user advances).
+  // Without this dedupe the "X of Y" counter below each prompt inflates to
+  // the sum of appearances — e.g. the inner-dialogue activity reported "20 of
+  // 20" instead of "5 of 5".
+  const orderedUniquePromptIndices = useMemo(() => {
+    const seen = new Set();
+    const order = [];
+    for (const screen of screens) {
+      if (!isScreenVisible(screen)) continue;
       const blocks = expandScreenToBlocks(screen, moduleTitle);
-      return count + blocks.filter((b) =>
-        b.type === 'prompt' && evaluateCondition(b.condition, conditionContext)
-      ).length;
-    }, 0);
+      for (const b of blocks) {
+        if (b.type !== 'prompt') continue;
+        if (!evaluateCondition(b.condition, conditionContext)) continue;
+        const idx = b.promptIndex;
+        if (idx == null || seen.has(idx)) continue;
+        seen.add(idx);
+        order.push(idx);
+      }
+    }
+    return order;
   }, [screens, moduleTitle, isScreenVisible, conditionContext]);
+
+  const totalVisiblePrompts = orderedUniquePromptIndices.length;
 
   const getPrimaryLabel = () => {
     return section.primaryLabel || 'Continue';
@@ -281,13 +298,17 @@ export default function ScreensSection({
             setIsAnimationVisible(true);
           }
           // After React commits the new DOM, smooth-scroll the newly-mounted
-          // block into view. The non-persistBlocks branch still does a hard
-          // scrollTo(0, 0); this only runs for persistBlocks transitions where
-          // the user expects existing content to remain in place.
+          // block into view. Uses a custom cubic ease-out over 700ms rather
+          // than native `scrollIntoView({ behavior: 'smooth' })` — the
+          // browser default felt abrupt alongside the 500ms block fade-in,
+          // especially on mobile. Controlled easing makes the scroll lead the
+          // eye to the new content without rushing. The non-persistBlocks
+          // branch still does a hard scrollTo(0, 0); this only runs for
+          // persistBlocks transitions where existing content stays in place.
           if (hasNewBlock) {
             requestAnimationFrame(() => {
               const target = document.querySelector(`[data-block-index="${firstNewIndex}"]`);
-              target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              smoothScrollToElement(target, { duration: 700 });
             });
           }
         }, (sameTitle && sameAnimation) ? 0 : FADE_MS);
@@ -376,21 +397,11 @@ export default function ScreensSection({
         return <TextBlock screen={block} accentTerms={accentTerms} />;
 
       case 'prompt': {
-        const visiblePromptsBeforeThisScreen = (() => {
-          let count = 0;
-          for (let i = 0; i < screenIndex; i++) {
-            if (!isScreenVisible(screens[i])) continue;
-            const blocks = expandScreenToBlocks(screens[i], moduleTitle);
-            count += blocks.filter((b) =>
-              b.type === 'prompt' && evaluateCondition(b.condition, conditionContext)
-            ).length;
-          }
-          return count;
-        })();
-        const promptsBeforeThisBlock = bodyBlocks
-          .slice(0, blockIndex)
-          .filter((b) => b.type === 'prompt').length;
-        const promptNumber = visiblePromptsBeforeThisScreen + promptsBeforeThisBlock + 1;
+        // Position in the ordered list of unique visible prompts for this
+        // section — stable across screens, so a prompt that persists through
+        // a progressive reveal keeps the same number.
+        const uniquePos = orderedUniquePromptIndices.indexOf(block.promptIndex);
+        const promptNumber = uniquePos >= 0 ? uniquePos + 1 : null;
 
         return (
           <PromptBlock
@@ -414,15 +425,23 @@ export default function ScreensSection({
           />
         );
 
-      case 'choice':
+      case 'choice': {
+        // Filter options by per-option `condition` so content authors can gate
+        // which options appear based on session state (e.g. show "keep —
+        // relationship" only when effectiveFocus === 'relationship'). Mirrors
+        // the block-level filter in `bodyBlocks` above.
+        const visibleOptions = (block.options || [])
+          .filter((opt) => evaluateCondition(opt.condition, conditionContext));
+        if (visibleOptions.length === 0) return null;
         return (
           <ChoiceBlock
-            screen={block}
+            screen={{ ...block, options: visibleOptions }}
             selectedValue={choiceValues[block.key]}
             onChoiceSelect={handleChoiceSelect}
             visitedSections={visitedSections}
           />
         );
+      }
 
       case 'animation':
         return <AnimationBlock screen={block} accentTerms={accentTerms} />;

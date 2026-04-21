@@ -359,6 +359,7 @@ export const openingRitualConfig = {
             { type: 'prompt',
               prompt: '',
               placeholder: 'Anything that comes to mind...',
+              journalLabel: 'Brainstorm',
             },
           ],
         },
@@ -374,6 +375,7 @@ export const openingRitualConfig = {
             { type: 'prompt',
               prompt: '',
               placeholder: 'What I notice...',
+              journalLabel: 'What stands out',
             },
           ],
         },
@@ -440,6 +442,7 @@ export const openingRitualConfig = {
             { type: 'prompt',
               prompt: '',
               placeholder: 'Something I\'m grateful for...',
+              journalLabel: 'Gratitude',
             },
             { type: 'text', lines: [
               'Continue when you\'re ready.',

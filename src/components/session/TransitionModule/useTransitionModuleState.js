@@ -102,16 +102,23 @@ export default function useTransitionModuleState(config) {
 
       // Pre-populate prompt responses from `storeField` paths (e.g. holdingQuestion)
       // so the textarea shows existing values if the user is editing pre-existing data.
+      // Dedupe by block reference so prompts that appear on multiple screens via
+      // persistBlocks progressive reveal share a single promptIndex (see indexing
+      // notes on `allBlocksWithPromptIndex` / `sectionScreensMap` below).
       const prepopulated = {};
       const blocks = collectAllBlocks(config);
+      const seenPromptIndices = new Map();
       let promptCounter = 0;
       blocks.forEach((b) => {
-        if (b.type === 'prompt') {
-          if (b.storeField) {
-            const value = resolveStorePath(b.storeField, storeState);
-            if (value) prepopulated[promptCounter] = value;
-          }
-          promptCounter++;
+        if (b.type !== 'prompt') return;
+        let idx = seenPromptIndices.get(b);
+        if (idx === undefined) {
+          idx = promptCounter++;
+          seenPromptIndices.set(b, idx);
+        }
+        if (b.storeField) {
+          const value = resolveStorePath(b.storeField, storeState);
+          if (value) prepopulated[idx] = value;
         }
       });
       if (Object.keys(prepopulated).length > 0) {
@@ -123,44 +130,55 @@ export default function useTransitionModuleState(config) {
   }, []);
 
   // ── Derived: all blocks indexed + per-section screens map ───────────────────
-  const allBlocksWithPromptIndex = useMemo(() => {
+  //
+  // Prompt-index assignment: prompts are keyed by OBJECT REFERENCE. A single
+  // prompt block shared across multiple screens (the progressive-reveal
+  // pattern in `persistBlocks` sections — e.g. the tailored synthesis
+  // activities) gets ONE stable `promptIndex` across every appearance, so
+  // the user's response at `responses[index]` follows the block wherever it's
+  // rendered. Without this dedupe, each screen's copy would get a fresh index
+  // and the textarea would read `responses[undefined]` on the next screen.
+  //
+  // Content configs should therefore define prompts as module-level consts and
+  // spread the same reference into multiple screens, not inline-literal a
+  // fresh object per screen.
+  //
+  // `allBlocksWithPromptIndex` and `sectionScreensMap` share the same counter
+  // + seen-map so both views agree on which prompt owns which index.
+  const { allBlocksWithPromptIndex, sectionScreensMap } = useMemo(() => {
     const blocks = [];
-    let promptCounter = 0;
-    (config.sections || []).forEach((section) => {
-      if (section.type === 'screens' && section.screens) {
-        section.screens.forEach((screen) => {
-          const expanded = expandScreenToBlocks(screen, '');
-          expanded.forEach((block) => {
-            if (block.type === 'prompt') {
-              blocks.push({ ...block, promptIndex: promptCounter++, sectionId: section.id });
-            } else {
-              blocks.push({ ...block, sectionId: section.id });
-            }
-          });
-        });
-      }
-    });
-    return blocks;
-  }, [config]);
-
-  const sectionScreensMap = useMemo(() => {
     const map = {};
+    const promptIndexByBlock = new Map();
     let promptCounter = 0;
-    (config.sections || []).forEach((section) => {
-      if (section.type === 'screens' && section.screens) {
-        map[section.id] = section.screens.map((screen) => {
-          const expanded = expandScreenToBlocks(screen, '');
-          const indexedBlocks = expanded.map((block) => {
-            if (block.type === 'prompt') {
-              return { ...block, promptIndex: promptCounter++ };
-            }
-            return block;
-          });
-          return { ...screen, blocks: indexedBlocks };
-        });
+
+    const assignPromptIndex = (block) => {
+      let idx = promptIndexByBlock.get(block);
+      if (idx === undefined) {
+        idx = promptCounter++;
+        promptIndexByBlock.set(block, idx);
       }
+      return idx;
+    };
+
+    (config.sections || []).forEach((section) => {
+      if (section.type !== 'screens' || !section.screens) return;
+
+      map[section.id] = section.screens.map((screen) => {
+        const expanded = expandScreenToBlocks(screen, '');
+        const indexedBlocks = expanded.map((block) => {
+          if (block.type === 'prompt') {
+            const promptIndex = assignPromptIndex(block);
+            blocks.push({ ...block, promptIndex, sectionId: section.id });
+            return { ...block, promptIndex };
+          }
+          blocks.push({ ...block, sectionId: section.id });
+          return block;
+        });
+        return { ...screen, blocks: indexedBlocks };
+      });
     });
-    return map;
+
+    return { allBlocksWithPromptIndex: blocks, sectionScreensMap: map };
   }, [config]);
 
   const sections = config.sections || [];
@@ -206,9 +224,16 @@ export default function useTransitionModuleState(config) {
   }), [choiceValues, selectorValues, visitedSections, sessionData, storeState]);
 
   // ── Persist navigation state to activeNavigation whenever it changes ────────
-  // Also mirrors any prompts with `storeField` to their target store locations
-  // at the same cadence — so when a user advances a screen, values flow from
-  // local state into sessionProfile/transitionData before the next screen renders.
+  // Also mirrors any prompts/selectors with `storeField` to their target store
+  // locations at the same cadence — so when a user advances a screen, values
+  // flow from local state into sessionProfile/transitionData before the next
+  // screen renders.
+  //
+  // Selectors use the same `storeField` convention as prompts. The config is
+  // expected to point selectors at *new* paths (e.g. `transitionData.newFocus`)
+  // rather than overwriting existing intake values like `sessionProfile.primaryFocus`
+  // — the intake answer stays preserved for session export, and any in-session
+  // override is read via the `effectiveFocus` derivation above.
   useEffect(() => {
     if (!didInitialize.current) return;
     updateTransitionData('activeNavigation', {
@@ -225,11 +250,27 @@ export default function useTransitionModuleState(config) {
       blockReadiness: persistedNav?.blockReadiness || {},
     });
 
-    // Mirror storeField prompts (e.g. intention → sessionProfile.holdingQuestion)
+    // Mirror storeField prompts + selectors. Dedupe by storeField path so
+    // content configs that repeat a selector across multiple conditional
+    // screens (e.g. per-focus sub-type selectors sharing the same key) don't
+    // issue redundant store writes.
+    const writtenPaths = new Set();
     allBlocksWithPromptIndex.forEach((block) => {
-      if (block.type !== 'prompt' || !block.storeField) return;
-      const value = responses[block.promptIndex];
+      if (!block.storeField) return;
+      if (writtenPaths.has(block.storeField)) return;
+
+      let value;
+      if (block.type === 'prompt') {
+        value = responses[block.promptIndex];
+      } else if (block.type === 'selector') {
+        value = selectorValues[block.key];
+      } else {
+        return;
+      }
       if (value == null || value === '') return;
+      if (Array.isArray(value) && value.length === 0) return;
+
+      writtenPaths.add(block.storeField);
       if (block.storeField.startsWith('sessionProfile.')) {
         const field = block.storeField.slice('sessionProfile.'.length);
         updateSessionProfile(field, value);
@@ -293,17 +334,30 @@ export default function useTransitionModuleState(config) {
     setChoiceValues((prev) => ({ ...prev, [key]: optionId }));
   }, []);
 
-  // ── Flush responses (prompt values) to store + storeField paths ─────────────
+  // ── Flush responses (prompt + selector values) to store + storeField paths ──
   const flushResponses = useCallback(() => {
     updateTransitionData('activeNavigation.responses', responses);
 
-    // Mirror any prompts with storeField to their target store location
+    // Mirror any prompts or selectors with storeField to their target store
+    // location. Dedupe by storeField path — selectors sharing a key across
+    // conditional screens (e.g. per-focus sub-type selectors) emit once.
+    const writtenPaths = new Set();
     allBlocksWithPromptIndex.forEach((block) => {
-      if (block.type !== 'prompt' || !block.storeField) return;
-      const value = responses[block.promptIndex];
-      if (value == null) return;
+      if (!block.storeField) return;
+      if (writtenPaths.has(block.storeField)) return;
 
-      // Only sessionProfile.* paths are supported via updateSessionProfile
+      let value;
+      if (block.type === 'prompt') {
+        value = responses[block.promptIndex];
+      } else if (block.type === 'selector') {
+        value = selectorValues[block.key];
+      } else {
+        return;
+      }
+      if (value == null) return;
+      if (Array.isArray(value) && value.length === 0) return;
+
+      writtenPaths.add(block.storeField);
       if (block.storeField.startsWith('sessionProfile.')) {
         const field = block.storeField.slice('sessionProfile.'.length);
         updateSessionProfile(field, value);
@@ -312,7 +366,7 @@ export default function useTransitionModuleState(config) {
         updateTransitionData(path, value);
       }
     });
-  }, [responses, allBlocksWithPromptIndex, updateTransitionData, updateSessionProfile]);
+  }, [responses, selectorValues, allBlocksWithPromptIndex, updateTransitionData, updateSessionProfile]);
 
   // ── Navigation actions ──────────────────────────────────────────────────────
 
@@ -540,7 +594,8 @@ export default function useTransitionModuleState(config) {
     setChoiceValue,
 
     // Lifecycle
-    flushCaptures,
+    flushResponses,    // persist pending responses only (no journal entry write)
+    flushCaptures,     // flushResponses + timestamp + journal entry
     clearActiveNavigation,
     setModulePhase,
   };

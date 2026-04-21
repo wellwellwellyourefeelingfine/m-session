@@ -137,7 +137,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
               >
                 {meditation.title}
               </h2>
-              <p className="text-left tracking-wider text-[10px] text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-left text-sm text-[var(--color-text-secondary)] leading-relaxed">
                 {meditation.description}
               </p>
             </div>

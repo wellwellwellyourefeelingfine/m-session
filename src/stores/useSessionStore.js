@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 26;
+export const SESSION_STORE_VERSION = 29;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -251,6 +251,7 @@ export const useSessionStore = create(
         isMinimized: true,            // Is it in minimized state above tabs
         promptCount: 0,               // How many times we've asked
         lastPromptAt: null,
+        nextPromptAt: null,           // Snooze deadline — bar reanimates in once Date.now() >= this
         responses: [],                // History of responses with timestamps
         currentResponse: null,        // 'waiting' | 'starting' | 'fully-arrived'
         introCompleted: true,         // No longer used for intro gating (PreSessionIntro handles pre-session)
@@ -421,8 +422,14 @@ export const useSessionStore = create(
           closing: [],
         },
 
-        // Touchstones
+        // Touchstones — peakTouchstone is written via the touchstone-prompt
+        // block during the peak transition and created on demand via
+        // updateTransitionData; synthesisTouchstone is its counterpart for
+        // the peak-to-integration transition. Declared explicitly so the
+        // closing ritual's touchstone cairn can reliably read all four.
         openingTouchstone: null,
+        peakTouchstone: null,
+        synthesisTouchstone: null,
         closingTouchstone: null,
         touchstoneArcReflection: null,
 
@@ -436,8 +443,16 @@ export const useSessionStore = create(
         },
 
         // Focus (peak-to-integration)
+        // `newFocus` is the user's updated focus if they changed it during
+        // synthesis — does NOT overwrite `sessionProfile.primaryFocus` so the
+        // original intake answer stays preserved for export. `focusSubtype`
+        // is the per-focus sub-type picked after the progressive reveal in
+        // focus-edit (or the relationship-type detour on the keep path).
+        // `newRelationshipType` is legacy — kept for backward-compat with
+        // sessions archived before v27; no new content writes to it.
         focusChanged: false,
         newFocus: null,
+        focusSubtype: null,
         newRelationshipType: null,
 
         // Tailored activity (peak-to-integration)
@@ -504,52 +519,12 @@ export const useSessionStore = create(
       // FOLLOW-UP SESSION STATE
       // ============================================
       followUp: {
-        // Unlock times calculated from session.closedAt
-        unlockTimes: {
-          checkIn: null,      // closedAt + 8 hours
-          revisit: null,      // closedAt + 8 hours
-          integration: null,  // closedAt + 8 hours
-          valuesCompassFollowUp: null, // closedAt + 8 hours (only if VC completed)
-        },
-        modules: {
-          checkIn: {
-            status: 'locked', // 'locked' | 'available' | 'completed'
-            completedAt: null,
-            feeling: null,    // 'settled' | 'processing' | 'low' | 'tender' | 'energized' | 'mixed'
-            bodyFeeling: null, // 'relaxed' | 'heavy' | 'tense' | 'normal'
-            note: null,
-          },
-          revisit: {
-            status: 'locked',
-            completedAt: null,
-            reflection: null,
-          },
-          integration: {
-            status: 'locked',
-            completedAt: null,
-            emerged: null,
-            commitmentStatus: null,  // 'following' | 'trying' | 'not-started' | 'reconsidered' | 'forgot'
-            commitmentResponse: null,
-          },
-          valuesCompassFollowUp: {
-            status: 'locked',
-            completedAt: null,
-            matrixEdited: false,
-            editedQuadrants: null,
-            matrixRevisit: null,
-            noticingAway: null,
-            noticingToward: null,
-            stuckLoopCheckin: null,
-            towardMoveStatus: { selection: null, response: null },
-            timeSpent: { selection: null, response: null },
-            messageResponse: null,
-            currentScreen: null,
-          },
-        },
+        // Single phase-wide 8-hour lock set at session close. Follow-up
+        // activities are regular library modules (isFollowUpModule: true)
+        // rendered in the timeline; their locked state is derived from
+        // this timestamp.
+        phaseUnlockTime: null,
       },
-
-      // Active follow-up module (renders in Active tab)
-      activeFollowUpModule: null, // 'checkIn' | 'revisit' | 'integration' | 'valuesCompassFollowUp' | null
 
       // Active pre-session module (renders in Active tab before session starts)
       activePreSessionModule: null, // instanceId | null
@@ -1664,11 +1639,14 @@ export const useSessionStore = create(
           },
           comeUpCheckIn: {
             ...state.comeUpCheckIn,
-            isVisible: false, // Hidden until first module completes or 10 min elapsed
+            isVisible: false, // Hidden until first module completes or snooze poll fires
             isMinimized: true,
             introCompleted: true,
             promptCount: 0,
             lastPromptAt: now,
+            // Seed the snooze deadline so the polling effect surfaces the bar 10 min into the phase.
+            // Same mechanism handles initial appearance and post-snooze re-appearance.
+            nextPromptAt: now + 10 * 60 * 1000,
           },
         });
       },
@@ -1677,11 +1655,28 @@ export const useSessionStore = create(
       // COME-UP CHECK-IN ACTIONS
       // ============================================
 
-      minimizeCheckIn: () => {
+      // Hide bar + modal entirely and arm a 10-min re-prompt. Used by every modal close path
+      // (close button, backdrop, "Remain Here – Snooze", reassurance auto-close) so the user
+      // gets uninterrupted time after dismissing the check-in.
+      snoozeCheckIn: () => {
         set({
           comeUpCheckIn: {
             ...get().comeUpCheckIn,
+            isVisible: false,
             isMinimized: true,
+            nextPromptAt: Date.now() + 10 * 60 * 1000,
+          },
+        });
+      },
+
+      // Re-show the bar after a snooze elapses. Bar only — modal stays closed until the user taps it.
+      endComeUpCheckInSnooze: () => {
+        set({
+          comeUpCheckIn: {
+            ...get().comeUpCheckIn,
+            isVisible: true,
+            isMinimized: true,
+            nextPromptAt: null,
           },
         });
       },
@@ -1691,6 +1686,7 @@ export const useSessionStore = create(
           comeUpCheckIn: {
             ...get().comeUpCheckIn,
             isMinimized: false,
+            nextPromptAt: null,
           },
         });
       },
@@ -1714,8 +1710,8 @@ export const useSessionStore = create(
               ...state.comeUpCheckIn.responses,
               { response, timestamp: now, minutesSinceIngestion },
             ],
-            // Don't auto-minimize here - let the component handle showing reassurance first
-            // The component will call minimizeCheckIn() after the reassurance is dismissed
+            // Don't auto-minimize here — let the component show reassurance first.
+            // The component will call snoozeCheckIn() once the reassurance is dismissed.
           },
         };
 
@@ -1796,9 +1792,27 @@ export const useSessionStore = create(
       // ============================================
 
       // Begin the come-up to peak transition (shows transition component)
+      //
+      // Stamps `comeUp.endedAt` at transition start so the come-up phase is
+      // properly bounded while the peak transition itself is running. Mirrors
+      // `beginIntegrationTransition` — same rationale for keeping phase-
+      // bounded derivations (e.g. helper-usage classification) accurate
+      // during the transition window. `transitionToPeak` will re-stamp the
+      // value at completion; both writes are semantically consistent.
       beginPeakTransition: () => {
         const state = get();
+        const now = Date.now();
         set({
+          timeline: {
+            ...state.timeline,
+            phases: {
+              ...state.timeline.phases,
+              comeUp: {
+                ...state.timeline.phases.comeUp,
+                endedAt: state.timeline.phases.comeUp?.endedAt ?? now,
+              },
+            },
+          },
           phaseTransitions: {
             ...state.phaseTransitions,
             activeTransition: 'come-up-to-peak',
@@ -1808,6 +1822,7 @@ export const useSessionStore = create(
             ...state.comeUpCheckIn,
             isVisible: false,
             isMinimized: true,
+            nextPromptAt: null,
           },
         });
       },
@@ -1862,9 +1877,31 @@ export const useSessionStore = create(
       },
 
       // Begin the peak to integration transition (shows IntegrationTransition component)
+      //
+      // Also stamps `peak.endedAt` now so the peak phase is properly bounded
+      // DURING the synthesis transition itself. Without this, phase-bounded
+      // derivations (e.g. `classifyHelperUsageByPhase` in
+      // `useTransitionModuleState`) treat peak as still ongoing — which
+      // causes adaptive content like "Reaching Out" (gated on
+      // `helperUsedDuring: 'peak'`) to flash in during the transition even
+      // when helper usage was actually from an earlier phase or didn't
+      // happen at all. `transitionToIntegration` re-stamps `peak.endedAt`
+      // at completion; both writes are semantically consistent (peak ends
+      // when the transition starts; the value is harmless to overwrite).
       beginIntegrationTransition: () => {
         const state = get();
+        const now = Date.now();
         set({
+          timeline: {
+            ...state.timeline,
+            phases: {
+              ...state.timeline.phases,
+              peak: {
+                ...state.timeline.phases.peak,
+                endedAt: state.timeline.phases.peak?.endedAt ?? now,
+              },
+            },
+          },
           phaseTransitions: {
             ...state.phaseTransitions,
             activeTransition: 'peak-to-integration',
@@ -2117,7 +2154,18 @@ export const useSessionStore = create(
 
       beginClosingRitual: () => {
         const state = get();
+        const now = Date.now();
         set({
+          timeline: {
+            ...state.timeline,
+            phases: {
+              ...state.timeline.phases,
+              integration: {
+                ...state.timeline.phases.integration,
+                endedAt: state.timeline.phases.integration?.endedAt ?? now,
+              },
+            },
+          },
           phaseTransitions: {
             ...state.phaseTransitions,
             activeTransition: 'session-closing',
@@ -2138,9 +2186,6 @@ export const useSessionStore = create(
         const finalDurationSeconds = ingestionTime
           ? Math.floor((now - ingestionTime) / 1000)
           : null;
-
-        // Check if Values Compass was completed during this session
-        const vcCompleted = state.transitionCaptures.valuesCompass?.completedAt != null;
 
         // Auto-add integration reflection journal to follow-up phase
         const irLib = getModuleById('integration-reflection-journal');
@@ -2195,12 +2240,6 @@ export const useSessionStore = create(
           followUp: {
             ...state.followUp,
             phaseUnlockTime: now + 8 * HOUR_MS,
-            unlockTimes: {
-              checkIn: now + 8 * HOUR_MS,
-              revisit: now + 8 * HOUR_MS,
-              integration: now + 8 * HOUR_MS,
-              ...(vcCompleted ? { valuesCompassFollowUp: now + 8 * HOUR_MS } : {}),
-            },
           },
         });
       },
@@ -2210,92 +2249,6 @@ export const useSessionStore = create(
         set((state) => ({
           session: { ...state.session, dataExportedAt: Date.now() },
         }));
-      },
-
-      // ============================================
-      // FOLLOW-UP SESSION ACTIONS
-      // ============================================
-
-      // Check and update follow-up module availability based on phase unlock time
-      checkFollowUpAvailability: () => {
-        const state = get();
-        const now = Date.now();
-        const { phaseUnlockTime, modules } = state.followUp;
-
-        if (!phaseUnlockTime) return;
-        if (now < phaseUnlockTime) return; // Phase still locked
-
-        // Phase is unlocked — set all locked modules to available
-        const updates = {};
-        ['checkIn', 'revisit', 'integration', 'valuesCompassFollowUp'].forEach((moduleId) => {
-          const module = modules[moduleId];
-          if (module && module.status === 'locked') {
-            updates[moduleId] = { ...module, status: 'available' };
-          }
-        });
-
-        if (Object.keys(updates).length > 0) {
-          set({
-            followUp: {
-              ...state.followUp,
-              modules: {
-                ...state.followUp.modules,
-                ...updates,
-              },
-            },
-          });
-        }
-      },
-
-      // Update a follow-up module's data
-      updateFollowUpModule: (moduleId, data) => {
-        const state = get();
-        set({
-          followUp: {
-            ...state.followUp,
-            modules: {
-              ...state.followUp.modules,
-              [moduleId]: {
-                ...state.followUp.modules[moduleId],
-                ...data,
-              },
-            },
-          },
-        });
-      },
-
-      // Complete a follow-up module
-      completeFollowUpModule: (moduleId, data) => {
-        const state = get();
-        set({
-          followUp: {
-            ...state.followUp,
-            modules: {
-              ...state.followUp.modules,
-              [moduleId]: {
-                ...state.followUp.modules[moduleId],
-                ...data,
-                status: 'completed',
-                completedAt: Date.now(),
-              },
-            },
-          },
-          activeFollowUpModule: null,
-        });
-        // Navigate back to home
-        useAppStore.getState().setCurrentTab('home');
-      },
-
-      // Start a follow-up module (renders in Active tab)
-      startFollowUpModule: (moduleId) => {
-        set({ activeFollowUpModule: moduleId });
-        useAppStore.getState().setCurrentTab('active');
-      },
-
-      // Exit follow-up module without completing (return to Home)
-      exitFollowUpModule: () => {
-        set({ activeFollowUpModule: null });
-        useAppStore.getState().setCurrentTab('home');
       },
 
       // ============================================
@@ -2506,8 +2459,8 @@ export const useSessionStore = create(
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
                 isVisible: true,
-
                 isMinimized: false,
+                nextPromptAt: null,
               },
             });
           } else {
@@ -2526,6 +2479,7 @@ export const useSessionStore = create(
                 isMinimized: false,
                 promptCount: state.comeUpCheckIn.promptCount + 1,
                 lastPromptAt: now,
+                nextPromptAt: null,
               },
             });
           }
@@ -2606,8 +2560,8 @@ export const useSessionStore = create(
               comeUpCheckIn: {
                 ...state.comeUpCheckIn,
                 isVisible: true,
-
                 isMinimized: false,
+                nextPromptAt: null,
               },
             });
           } else {
@@ -2626,6 +2580,7 @@ export const useSessionStore = create(
                 isMinimized: false,
                 promptCount: state.comeUpCheckIn.promptCount + 1,
                 lastPromptAt: now,
+                nextPromptAt: null,
               },
             });
           }
@@ -2806,7 +2761,7 @@ export const useSessionStore = create(
        */
       snapshotForArchive: () => {
         const state = get();
-        const { meditationPlayback: _mp, activeFollowUpModule: _afu, activePreSessionModule: _aps, ...rest } = state;
+        const { meditationPlayback: _mp, activePreSessionModule: _aps, ...rest } = state;
         // Strip all function-valued keys (actions) — keep only data
         const snapshot = {};
         for (const [key, value] of Object.entries(rest)) {
@@ -3065,12 +3020,15 @@ export const useSessionStore = create(
           transitionData: {
             somaticCheckIns: { opening: [], peak: [], integration: [], closing: [] },
             openingTouchstone: null,
+            peakTouchstone: null,
+            synthesisTouchstone: null,
             closingTouchstone: null,
             touchstoneArcReflection: null,
             oneWord: null,
             intentionAdditions: { opening: null, integration: null },
             focusChanged: false,
             newFocus: null,
+            focusSubtype: null,
             newRelationshipType: null,
             tailoredActivityFocus: null,
             tailoredActivityResponse: {},
@@ -3107,33 +3065,8 @@ export const useSessionStore = create(
             sessionNumber: null,
           },
           followUp: {
-            unlockTimes: {
-              checkIn: null,
-              revisit: null,
-              integration: null,
-            },
-            modules: {
-              checkIn: {
-                status: 'locked',
-                completedAt: null,
-                feeling: null,
-                note: null,
-              },
-              revisit: {
-                status: 'locked',
-                completedAt: null,
-                reflection: null,
-              },
-              integration: {
-                status: 'locked',
-                completedAt: null,
-                emerged: null,
-                commitmentStatus: null,
-                commitmentResponse: null,
-              },
-            },
+            phaseUnlockTime: null,
           },
-          activeFollowUpModule: null,
           activePreSessionModule: null,
           meditationPlayback: {
             moduleInstanceId: null,
@@ -3148,7 +3081,7 @@ export const useSessionStore = create(
       version: SESSION_STORE_VERSION,
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
-        const { meditationPlayback: _meditationPlayback, activeFollowUpModule: _activeFollowUpModule, activePreSessionModule: _activePreSessionModule, ...rest } = state;
+        const { meditationPlayback: _meditationPlayback, activePreSessionModule: _activePreSessionModule, ...rest } = state;
         return {
           ...rest,
           // Reset transient flags within nested objects
@@ -3771,6 +3704,8 @@ export function migrateSessionState(persistedState, version) {
               closing: [],
             },
             openingTouchstone: null,
+            peakTouchstone: null,
+            synthesisTouchstone: null,
             closingTouchstone: null,
             touchstoneArcReflection: null,
             oneWord: oldPeak.oneWord || null,
@@ -3811,6 +3746,44 @@ export function migrateSessionState(persistedState, version) {
           if (state.transitionCaptures) {
             const { peak: _p, integration: _i, closing: _c, ...rest } = state.transitionCaptures;
             state.transitionCaptures = rest;
+          }
+        }
+
+        // Version 26 → 27: Add `transitionData.focusSubtype` — the per-focus
+        // sub-type captured in synthesis-transition focus-edit (or the
+        // relationship-type detour on the keep-relationship path). Legacy
+        // `newRelationshipType` is preserved for archives.
+        if (version < 27) {
+          if (state.transitionData) {
+            state.transitionData.focusSubtype = state.transitionData.focusSubtype ?? null;
+          }
+        }
+
+        // Version 27 → 28: Explicitly default `peakTouchstone` and
+        // `synthesisTouchstone` so the Closing Ritual's touchstone cairn
+        // can read both reliably. Values are also written on-demand by the
+        // peak and synthesis transitions; this migration just ensures the
+        // keys exist on old archives.
+        if (version < 28) {
+          if (state.transitionData) {
+            state.transitionData.peakTouchstone = state.transitionData.peakTouchstone ?? null;
+            state.transitionData.synthesisTouchstone = state.transitionData.synthesisTouchstone ?? null;
+          }
+        }
+
+        // Version 28 → 29: Remove the legacy follow-up system. The dedicated
+        // FollowUp{CheckIn,Revisit,Integration,ValuesCompass} screens and
+        // FollowUpModuleModal/FollowUpSection are deleted; follow-up
+        // activities now run as regular library modules in the timeline.
+        // Strip per-module state, per-module unlock times, and the
+        // active-follow-up routing flag. The 8-hour phase-wide lock
+        // (phaseUnlockTime) is the only follow-up field still in use.
+        if (version < 29) {
+          delete state.activeFollowUpModule;
+          if (state.followUp) {
+            state.followUp = {
+              phaseUnlockTime: state.followUp.phaseUnlockTime ?? null,
+            };
           }
         }
 

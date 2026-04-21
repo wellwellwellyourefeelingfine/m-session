@@ -1061,8 +1061,8 @@ export const moduleLibrary = [
     title: 'Booster Check-In',
     description: 'A guided check-in at the 90-minute mark to consider whether a supplemental dose is right for you.',
     defaultDuration: 5,
-    allowedPhases: ['peak'],
-    recommendedPhases: ['peak'],
+    allowedPhases: ['peak', 'integration'],
+    recommendedPhases: ['peak', 'integration'],
     isBoosterModule: true,
     content: {
       instructions: 'This module will guide you through a brief check-in about taking a supplemental dose.',
@@ -1071,102 +1071,6 @@ export const moduleLibrary = [
     framework: ['general'],
   },
 
-  // === FOLLOW-UP MODULES (Time-locked, 8-24h after session) ===
-  {
-    id: 'followup-check-in',
-    type: 'follow-up',
-    title: 'Check-In',
-    description: 'A brief check-in on how you are feeling since your session.',
-    defaultDuration: 5,
-    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
-    allowedPhases: ['follow-up'],
-    recommendedPhases: ['follow-up'],
-    isFollowUpModule: true,
-    followUpModuleId: 'checkIn',
-    content: {
-      instructions: 'Take a moment to notice how you are feeling today.',
-    },
-    tags: ['follow-up', 'check-in', 'reflection'],
-    framework: ['general'],
-  },
-  {
-    id: 'followup-revisit',
-    type: 'follow-up',
-    title: 'Revisit',
-    description: 'Read back what you wrote during your session.',
-    defaultDuration: 10,
-    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
-    allowedPhases: ['follow-up'],
-    recommendedPhases: ['follow-up'],
-    isFollowUpModule: true,
-    followUpModuleId: 'revisit',
-    content: {
-      instructions: 'Revisit the intentions and messages you wrote during your session.',
-    },
-    tags: ['follow-up', 'revisit', 'reflection'],
-    framework: ['general'],
-  },
-  {
-    id: 'followup-values-compass',
-    type: 'follow-up',
-    title: 'Values Compass Revisited',
-    description: 'Revisit your ACT Matrix with fresh eyes and practice noticing toward and away moves.',
-    defaultDuration: 15,
-    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
-    allowedPhases: ['follow-up'],
-    recommendedPhases: ['follow-up'],
-    isFollowUpModule: true,
-    followUpModuleId: 'valuesCompassFollowUp',
-    content: {
-      instructions: 'Revisit the values compass you created during your session.',
-    },
-    tags: ['follow-up', 'values-compass', 'ACT', 'matrix'],
-    framework: ['act'],
-  },
-  {
-    id: 'followup-integration',
-    type: 'follow-up',
-    title: 'Integration Reflection',
-    description: 'Deeper reflection on how insights are integrating into your life.',
-    defaultDuration: 10,
-    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
-    allowedPhases: ['follow-up'],
-    recommendedPhases: ['follow-up'],
-    isFollowUpModule: true,
-    followUpModuleId: 'integration',
-    content: {
-      instructions: 'Reflect on what has emerged since your session and how your commitment is taking shape.',
-    },
-    tags: ['follow-up', 'integration', 'commitment'],
-    framework: ['act'],
-  },
-  {
-    id: 'followup-journaling',
-    type: 'follow-up',
-    title: 'Follow-Up Journaling',
-    description: 'Open journaling space to continue processing your experience.',
-    defaultDuration: 15,
-    hidden: true, // Legacy follow-up module — replaced by integration follow-up modules
-    allowedPhases: ['follow-up'],
-    recommendedPhases: ['follow-up'],
-    isFollowUpModule: true,
-    content: {
-      instructions: 'Write freely about what has been arising since your session. What are you noticing? What feels different?',
-      prompts: [
-        'What has been on my mind since the session?',
-        'What insights are becoming clearer?',
-        'What do I want to remember?',
-      ],
-    },
-    capabilities: {
-      prompts: { type: 'static' },
-      input: { type: 'journal', saveToJournal: true, placeholder: 'Continue processing...' },
-      controls: { showBeginButton: false, showSkipButton: true, continueButtonText: 'Save & Continue' },
-      layout: { centered: false, maxWidth: 'lg' },
-    },
-    tags: ['follow-up', 'journaling', 'processing'],
-    framework: ['general'],
-  },
 ];
 
 // Derive intensity from MODULE_TYPES (single source of truth)

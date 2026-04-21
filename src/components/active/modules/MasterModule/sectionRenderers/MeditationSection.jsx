@@ -175,7 +175,7 @@ export default function MeditationSection({
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--color-text-primary)]">
+                        <p className="text-xs text-[var(--color-text-primary)]">
                           {v.label}
                         </p>
                         <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5 normal-case tracking-normal"

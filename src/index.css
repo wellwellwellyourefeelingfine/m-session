@@ -282,18 +282,26 @@
     outline-offset: 2px;
   }
 
-  /* Fade in animation */
+  /* Fade in animation — used for newly-revealed blocks in persistBlocks
+     progressive-reveal sections (e.g. tailored synthesis activities) and
+     for in-place reveals in custom blocks like IngestionTimeBlock.
+     - `ease-out` (fast start, gentle settle) feels smoother than `ease-in`,
+       which keeps the block nearly invisible until it snaps to full opacity.
+     - 500ms gives the simultaneous smooth-scroll time to settle so the eye
+       isn't chasing the block while it's still fading. */
   @keyframes fade-in {
     from {
       opacity: 0;
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
+      transform: translateY(0);
     }
   }
 
   .animate-fade-in {
-    animation: fade-in 0.3s ease-in;
+    animation: fade-in 500ms ease-out;
   }
 }
 

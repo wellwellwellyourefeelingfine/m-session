@@ -49,12 +49,6 @@ src/
 │   │   │   ├── IntentionSettingActivity.jsx  # Guided intention refinement
 │   │   │   └── LifeGraphActivity.jsx         # Lifecycle visualization + PNG export
 │   │   └── transitions/           # Transition step content & shared components
-│   ├── followup/                  # Follow-up modules (8h+ post-session, phase-level lock)
-│   │   ├── FollowUpCheckIn.jsx    # How-are-you check-in
-│   │   ├── FollowUpRevisit.jsx    # Revisit session writings
-│   │   ├── FollowUpIntegration.jsx # Integration reflection
-│   │   ├── FollowUpValuesCompass.jsx # Revisit values compass (conditional)
-│   │   └── content/              # Follow-up step content
 │   ├── ai/                        # AI Assistant components
 │   │   ├── AIAssistantModal.jsx   # Main chat interface
 │   │   ├── AIAssistantTab.jsx     # AI tab view
@@ -1060,7 +1054,8 @@ Displayed in the module detail modal as filled/unfilled dots.
 
 The follow-up phase uses a single 8-hour phase-level time lock (`followUp.phaseUnlockTime`) rather than per-module locks. All follow-up activities become available simultaneously once the phase unlocks. The lock is checked in:
 - `ActiveView.jsx` — follow-up landing page shows countdown when locked
-- `FollowUpModuleModal.jsx` / `AltSessionModuleModal.jsx` — Begin button disabled with countdown when locked
+- `AltSessionModuleModal.jsx` — Begin button disabled with countdown when locked
+- `TimelineEditor.jsx` — follow-up module cards render a lock icon when locked
 
 ### Pre-Session & Follow-Up Timeline Editing
 
@@ -1079,6 +1074,10 @@ Both the pre-session and follow-up timelines support editing (reorder + remove) 
 - Follow-up modules (`isFollowUpModule`) blocked outside `follow-up` phase
 - Booster module (`isBoosterModule`) blocked outside `peak` and `integration` phases
 - All other modules are allowed in any phase — recommendations are expressed via `recommendedPhases` and surfaced through the Recommended filter in the library modal, not through gating
+
+### Booster Card Placement
+
+The booster is the only module whose visual position is computed at render time rather than from its stored `order`. `TimelineEditor.computeBoosterPlacement()` walks cumulative durations starting from the end of come-up, through peak modules, then through integration modules, and slots the booster card at the first index where elapsed time crosses the 90-min mark. Whichever phase contains the crossover gets the card — so the user can add the booster to either peak or integration and the placement is identical. Sessions shorter than 90 min total pin the card to the end of integration. The trigger logic (`shouldShowBooster`) is independent: it always fires at `min(90, fullyArrivedAt + 30)` minutes since ingestion, ignoring `module.phase` entirely.
 
 ---
 
@@ -1418,7 +1417,7 @@ TIMELINE_CONFIGS[focus][guidanceLevel] = {
 2. Looks up the matching configuration from `TIMELINE_CONFIGS`
 3. Builds module instances from the config (assigns `instanceId`, `order`, `phase`, library content)
 4. Resolves linked module groups (e.g., `'protector'` → shared `linkedGroupId`)
-5. Inserts booster check-in as post-processing (after first peak module, if applicable)
+5. Inserts booster check-in as post-processing — auto-seeded into peak at order 1. The stored `phase`/`order` is bookkeeping only; visual placement is recomputed at render time (see "Booster Card Placement").
 6. Calculates phase durations and precaches audio
 
 ---
@@ -1997,7 +1996,7 @@ All stores use Zustand with `persist` middleware for localStorage backup.
     history: [/* completed/skipped modules */]
   },
 
-  comeUpCheckIn: { responses, currentResponse, hasIndicatedFullyArrived, ... },
+  comeUpCheckIn: { responses, currentResponse, hasIndicatedFullyArrived, nextPromptAt, ... },
 
   booster: {
     considerBooster, status: 'pending' | 'prompted' | 'taken' | 'skipped' | 'snoozed' | 'expired',
@@ -2037,7 +2036,6 @@ All stores use Zustand with `persist` middleware for localStorage backup.
 - `recordCheckInResponse()`, `recordIngestionTime()`, `confirmIngestionTime()`
 - `setSubstanceChecklistSubPhase()`, `completePreSubstanceActivity()`
 - `updateTransitionCapture()`, `updateClosingCapture()`, `completeSession()`
-- `completeFollowUpModule()`, `updateFollowUpModule()`
 
 ### `sessionProfile` — design rationale
 
@@ -2304,10 +2302,8 @@ A reusable transition screen for smooth flow between sections:
 | Closing ritual content | `src/components/session/transitions/content/closingRitualContent.js` |
 | Data download modal | `src/components/session/DataDownloadModal.jsx` |
 | Data export utility | `src/utils/downloadSessionData.js` |
-| Follow-up: Check-in | `src/components/followup/FollowUpCheckIn.jsx` |
-| Follow-up: Revisit | `src/components/followup/FollowUpRevisit.jsx` |
-| Follow-up: Integration | `src/components/followup/FollowUpIntegration.jsx` |
-| Follow-up: Values Compass | `src/components/followup/FollowUpValuesCompass.jsx` |
+| Follow-up activities | Library modules with `isFollowUpModule: true` in `src/content/modules/library.js` (run via `JournalingModule`) |
+| Follow-up module modal | `src/components/home/AltSessionModuleModal.jsx` (shared with pre-session) |
 | AI assistant | `src/components/ai/AIAssistantModal.jsx` |
 | Helper Modal orchestrator | `src/components/helper/HelperModal.jsx` |
 | Helper Modal trigger button | `src/components/helper/HelperButton.jsx` |

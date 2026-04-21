@@ -370,7 +370,8 @@ export default function BoosterConsiderationModal() {
       </p>
       <button
         onClick={() => goToStep(1)}
-        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+        style={{ fontFamily: 'Azeret Mono, monospace' }}
       >
         Continue
       </button>
@@ -531,26 +532,30 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleTakeDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Take my booster dose now
         </button>
         <button
           onClick={handleEditDose}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Edit my booster dose
         </button>
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Skip the booster
         </button>
         {canSnooze && (
           <button
             onClick={handleSnoozeDecision}
-            className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+            className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Ask me again in 10 minutes
           </button>
@@ -692,20 +697,22 @@ export default function BoosterConsiderationModal() {
           <button
             onClick={handleConfirmDose}
             disabled={!isValid}
-            className={`w-full py-4 tracking-wider text-xs transition-opacity ${
+            className={`w-full py-4 uppercase tracking-wider text-xs transition-opacity ${
               isValid
                 ? 'bg-[var(--color-text-primary)] text-[var(--color-bg)] hover:opacity-80'
                 : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
             }`}
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Confirm Dose
           </button>
           <button
             onClick={handleResetDose}
             disabled={!showResetButton}
-            className={`w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs transition-opacity duration-300 ${
+            className={`w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs transition-opacity duration-300 ${
               showResetButton ? 'opacity-100 hover:opacity-80' : 'opacity-0 pointer-events-none'
             }`}
+            style={{ fontFamily: 'Azeret Mono, monospace' }}
           >
             Reset to Recommended ({calculatedBoosterMg}mg)
           </button>
@@ -736,19 +743,22 @@ export default function BoosterConsiderationModal() {
       <div className="w-full space-y-2">
         <button
           onClick={handleTakeConfirm}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           I've Taken My Booster
         </button>
         <button
           onClick={handleEditDose}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Change My Dose
         </button>
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           I decided not to take it
         </button>
@@ -798,11 +808,12 @@ export default function BoosterConsiderationModal() {
               <button
                 onClick={handleInlineTimeEdit}
                 disabled={!editedTime}
-                className={`py-2 px-4 tracking-wider text-xs ${
+                className={`py-2 px-4 uppercase tracking-wider text-xs ${
                   editedTime
                     ? 'border border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--color-text-primary)] hover:opacity-80 transition-opacity'
                     : 'bg-[var(--color-border)] text-[var(--color-text-tertiary)] cursor-not-allowed'
                 }`}
+                style={{ fontFamily: 'Azeret Mono, monospace' }}
               >
                 Confirm
               </button>
@@ -839,7 +850,8 @@ export default function BoosterConsiderationModal() {
 
         <button
           onClick={handleTakenAcknowledge}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Continue
         </button>
@@ -858,7 +870,8 @@ export default function BoosterConsiderationModal() {
       </p>
       <button
         onClick={handleSkipConfirm}
-        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+        style={{ fontFamily: 'Azeret Mono, monospace' }}
       >
         Continue
       </button>
@@ -878,13 +891,15 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(2)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Continue Anyway
         </button>
@@ -901,13 +916,15 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(3)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Continue Anyway
         </button>
@@ -924,13 +941,15 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={handleSkipDecision}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(4)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Continue Anyway
         </button>
@@ -947,13 +966,15 @@ export default function BoosterConsiderationModal() {
       <div className="space-y-2">
         <button
           onClick={() => animateOutThen(skipBooster)}
-          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Skip Booster
         </button>
         <button
           onClick={() => goToStep(5)}
-          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] tracking-wider text-xs hover:opacity-80 transition-opacity"
+          className="w-full py-4 border border-[var(--color-text-primary)] text-[var(--color-text-primary)] uppercase tracking-wider text-xs hover:opacity-80 transition-opacity"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
         >
           Take It Anyway
         </button>
@@ -1003,42 +1024,40 @@ export default function BoosterConsiderationModal() {
         style={{ height: modalHeight, transition: 'height 300ms ease-out' }}
       >
         {/* Header — sticky */}
-        <div className="grid grid-cols-[auto_1fr_auto] items-center px-6 pt-4 pb-3 border-b border-[var(--color-border)] gap-3">
-          {(() => {
-            const noHistory = stepHistory.length === 0;
+        <div className="relative px-6 pt-4 pb-3">
+          {stepHistory.length > 0 && (() => {
             const isCommitted = booster.status === 'taken';
-            const backDisabled = noHistory || isCommitted;
             return (
               <button
                 onClick={goBack}
-                disabled={backDisabled}
-                className={`p-2 -m-2 transition-opacity ${
-                  noHistory
-                    ? 'invisible'
-                    : isCommitted
-                      ? 'text-[var(--color-text-tertiary)] opacity-30 cursor-not-allowed'
-                      : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                disabled={isCommitted}
+                className={`absolute top-4 left-4 p-2 -m-2 z-10 transition-opacity ${
+                  isCommitted
+                    ? 'text-[var(--color-text-tertiary)] opacity-30 cursor-not-allowed'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
                 }`}
+                aria-label="Back"
               >
                 <ChevronLeftIcon size={22} />
               </button>
             );
           })()}
-          <div className="flex flex-col items-center text-center">
+          <button
+            onClick={handleMinimizeOrSnooze}
+            className="absolute top-4 right-4 p-2 -m-2 z-10 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+            aria-label="Minimize"
+          >
+            <CircleSkipIcon size={22} />
+          </button>
+          <div className={`flex flex-col items-start text-left ${stepHistory.length > 0 ? 'pl-8' : ''} pr-8`}>
             <div className="flex items-center space-x-2">
-              <FireIcon size={28} className="text-[var(--accent)] flex-shrink-0" />
-              <h3 className="text-2xl text-[var(--color-text-primary)] mb-0" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Booster Check-In</h3>
+              <FireIcon size={24} className="text-[var(--accent)] flex-shrink-0" />
+              <h3 className="text-xl text-[var(--color-text-primary)] mb-0" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Booster Check-In</h3>
             </div>
             <p className="text-[var(--color-text-tertiary)] text-sm mb-0">
               {liveMinutes} minutes since ingestion
             </p>
           </div>
-          <button
-            onClick={handleMinimizeOrSnooze}
-            className="p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
-          >
-            <CircleSkipIcon size={22} />
-          </button>
         </div>
 
         {/* Content — scrollable */}

@@ -18,8 +18,7 @@ export default function DataDownloadBlock({ block }) {
       <button
         type="button"
         onClick={() => setShowModal(true)}
-        className="w-full py-3 border border-[var(--color-text-tertiary)] text-[var(--color-text-primary)]
-          text-sm hover:border-[var(--color-text-primary)] transition-colors"
+        className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-xs"
       >
         {label}
       </button>

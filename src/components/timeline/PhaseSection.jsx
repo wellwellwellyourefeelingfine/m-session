@@ -151,8 +151,9 @@ const PhaseSection = forwardRef(function PhaseSection(
     return 'opacity-100';
   };
 
-  // Determine if this phase's node should be filled (active or completed)
-  const isNodeFilled = isActiveSession && (phaseStatus === 'active' || phaseStatus === 'completed');
+  // Determine if this phase's node should be filled (active or completed).
+  // Completed sessions force a filled node since every phase is finished.
+  const isNodeFilled = isCompletedSession || (isActiveSession && (phaseStatus === 'active' || phaseStatus === 'completed'));
 
   // Top connector should match the previous phase's opacity, not this phase's
   const getPrevPhaseOpacity = () => {
@@ -372,6 +373,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                     module={module}
                     onRemove={() => handleDeleteWithAnimation(module.instanceId)}
                     isActiveSession={isActiveSession}
+                    isCompletedSession={isCompletedSession}
                     isCurrentModule={module.instanceId === currentModuleId}
                     canRemove={canRemoveModule(module)}
                     isEditMode={canShowEditMode}

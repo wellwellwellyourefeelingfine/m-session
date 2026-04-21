@@ -128,7 +128,7 @@ export default function ComeUpCheckIn() {
 
   const comeUpCheckIn = useSessionStore((state) => state.comeUpCheckIn);
   const recordCheckInResponse = useSessionStore((state) => state.recordCheckInResponse);
-  const minimizeCheckIn = useSessionStore((state) => state.minimizeCheckIn);
+  const snoozeCheckIn = useSessionStore((state) => state.snoozeCheckIn);
   const maximizeCheckIn = useSessionStore((state) => state.maximizeCheckIn);
   const getElapsedMinutes = useSessionStore((state) => state.getElapsedMinutes);
   const beginPeakTransition = useSessionStore((state) => state.beginPeakTransition);
@@ -193,7 +193,8 @@ export default function ComeUpCheckIn() {
     clearAutoClose();
     setIsAnimatingOut(true);
     setTimeout(() => {
-      minimizeCheckIn();
+      // Hides bar + arms 10-min snooze. The bar will reanimate in via the ActiveView poll effect.
+      snoozeCheckIn();
       // Reset local state so next expansion is fresh
       setIsAnimatingOut(false);
       setView('selection');

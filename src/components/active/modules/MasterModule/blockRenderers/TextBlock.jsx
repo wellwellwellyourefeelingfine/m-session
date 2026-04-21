@@ -12,7 +12,7 @@ export default function TextBlock({ screen, accentTerms }) {
     <div>
       {screen.header && (
         <p
-          className="text-lg mb-3 text-[var(--color-text-primary)]"
+          className="text-base mb-3 text-[var(--color-text-primary)]"
           style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
           {screen.header}

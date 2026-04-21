@@ -9,6 +9,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useToolsStore } from '../../stores/useToolsStore';
 import { useAppStore } from '../../stores/useAppStore';
+import { getModuleById } from '../../content/modules';
 
 // ─── Come-Up Test ───────────────────────────────────────────────
 
@@ -145,7 +146,6 @@ function FollowUpTest() {
     setTimeout(() => {
       const store = useSessionStore.getState();
       const now = Date.now();
-      const DAY_MS = 24 * 60 * 60 * 1000;
       const HOURS_49 = 49 * 60 * 60 * 1000;
 
       // Simulate: session closed 49 hours ago, lasted ~4 hours
@@ -196,7 +196,24 @@ function FollowUpTest() {
         },
       });
 
-      // 4. Set session as completed 26 hours ago with follow-up unlocks
+      // 4. Set session as completed 49 hours ago with the phase-wide
+      //    follow-up lock already elapsed, and auto-add the
+      //    integration-reflection-journal follow-up module (mirrors what
+      //    completeSession does in the live flow).
+      const irLib = getModuleById('integration-reflection-journal');
+      const followUpInstance = {
+        instanceId: `${Date.now()}-debug-followup`,
+        libraryId: 'integration-reflection-journal',
+        phase: 'follow-up',
+        title: irLib?.title || 'Integration Reflection',
+        duration: irLib?.defaultDuration || 25,
+        status: 'upcoming',
+        order: 0,
+        content: irLib?.content || {},
+        startedAt: null,
+        completedAt: null,
+      };
+      const currentModules = useSessionStore.getState().modules;
       useSessionStore.setState({
         sessionPhase: 'completed',
         phaseTransitions: {
@@ -237,33 +254,13 @@ function FollowUpTest() {
           finalDurationSeconds: Math.floor(sessionDurationMs / 1000),
         },
         followUp: {
-          unlockTimes: {
-            checkIn: closedAt + DAY_MS,         // 24h after close — already passed (26h ago)
-            revisit: closedAt + DAY_MS,         // 24h after close — already passed
-            integration: closedAt + 2 * DAY_MS, // 48h after close — still locked
-          },
-          modules: {
-            checkIn: {
-              status: 'available',
-              completedAt: null,
-              feeling: null,
-              note: null,
-            },
-            revisit: {
-              status: 'available',
-              completedAt: null,
-              reflection: null,
-            },
-            integration: {
-              status: 'available',
-              completedAt: null,
-              emerged: null,
-              commitmentStatus: null,
-              commitmentResponse: null,
-            },
-          },
+          // Phase-wide 8h lock already elapsed (session ended 49h ago)
+          phaseUnlockTime: closedAt + 8 * 60 * 60 * 1000,
         },
-        activeFollowUpModule: null,
+        modules: {
+          ...currentModules,
+          items: [...currentModules.items, followUpInstance],
+        },
       });
 
       setShowConfirm(false);
@@ -275,8 +272,9 @@ function FollowUpTest() {
       <div className="space-y-3">
         <p className="text-sm text-[var(--color-text-primary)]">Follow-Up Test</p>
         <p className="text-[12px] text-[var(--color-text-tertiary)]">
-          Simulates a completed session 49 hours ago. All three follow-up
-          modules (check-in, revisit, integration) will be unlocked.
+          Simulates a completed session 49 hours ago with the 8-hour
+          follow-up phase lock already elapsed. The Integration Reflection
+          follow-up module is auto-added to the timeline.
         </p>
 
         {isActive && (
@@ -300,8 +298,9 @@ function FollowUpTest() {
             <p className="text-[12px] uppercase tracking-wider font-bold">Follow-Up Test</p>
             <p style={{ color: 'var(--text-primary)' }}>
               This will {isActive ? 'reset the current session and ' : ''}simulate a completed session
-              from 49 hours ago. All three follow-up modules will be available.
-              Closing ritual captures will be pre-filled with test data.
+              from 49 hours ago. The Integration Reflection follow-up module
+              will be available. Closing ritual captures will be pre-filled
+              with test data.
             </p>
             <div className="space-y-2 pt-2">
               <button
@@ -346,6 +345,18 @@ function BoosterPeakTest() {
       const ninetyMinutesAgo = now - 90 * 60 * 1000;
       const comeUpStarted = ninetyMinutesAgo;
       const comeUpEnded = ninetyMinutesAgo + 45 * 60 * 1000;
+      // Synthetic peak-phase timestamps used by the simulated completed
+      // modules + helper-modal journal entry below. All fall inside the
+      // peak window (comeUpEnded → now) so the synthesis transition's
+      // adaptive section sees them as "during peak".
+      const peakPhaseStart = comeUpEnded;
+      const valuesCompassStartedAt = peakPhaseStart + 5 * 60 * 1000;
+      const valuesCompassCompletedAt = peakPhaseStart + 15 * 60 * 1000;
+      const protectorStartedAt = peakPhaseStart + 18 * 60 * 1000;
+      const protectorCompletedAt = peakPhaseStart + 28 * 60 * 1000;
+      const stayWithItStartedAt = peakPhaseStart + 30 * 60 * 1000;
+      const stayWithItCompletedAt = peakPhaseStart + 40 * 60 * 1000;
+      const helperModalEntryAt = peakPhaseStart + 22 * 60 * 1000;
 
       // Create intention journal entry
       const intentionEntry = useJournalStore.getState().addEntry({
@@ -354,6 +365,22 @@ function BoosterPeakTest() {
         moduleTitle: 'Pre-Substance Intention',
         isEdited: false,
       });
+
+      // Simulate a Helper Modal usage during peak so `helperUsedDuring.peak`
+      // evaluates true in the synthesis transition — triggers the "Reaching
+      // Out" adaptive screen. Override createdAt after adding because
+      // addEntry hard-codes `Date.now()`.
+      const helperEntry = useJournalStore.getState().addEntry({
+        content: 'HELPER MODAL · Peak\n\nCategory: Feeling overwhelmed\nAction chosen: Simple Grounding',
+        source: 'session',
+        moduleTitle: 'Helper Modal',
+        isEdited: false,
+      });
+      useJournalStore.setState((s) => ({
+        entries: s.entries.map((e) =>
+          e.id === helperEntry.id ? { ...e, createdAt: helperModalEntryAt, updatedAt: helperModalEntryAt } : e
+        ),
+      }));
 
       useSessionStore.setState({
         sessionProfile: {
@@ -400,6 +427,60 @@ function BoosterPeakTest() {
         const idx = updatedItems.findIndex((m) => m.instanceId === firstPeakModule.instanceId);
         updatedItems[idx] = { ...firstPeakModule, status: 'active', startedAt: now };
       }
+
+      // Simulated completed modules during peak — so the synthesis
+      // transition's adaptive section shows all 4 gated screens:
+      //   - "Your Values" (values-compass)
+      //   - "Parts That Spoke" (protector-dialogue)
+      //   - "Staying With It" (stay-with-it)
+      //   - "Reaching Out" (helperUsedDuring: 'peak' — covered by the
+      //     helper-modal journal entry above)
+      // These entries live only in `modules.history` (what
+      // `useTransitionModuleState.sessionData.modulesCompleted` reads),
+      // not in `modules.items`, so they don't pollute the live timeline.
+      const simulatedPeakHistory = [
+        {
+          instanceId: `debug-values-compass-${now}`,
+          libraryId: 'values-compass',
+          phase: 'peak',
+          title: 'Values Compass',
+          status: 'completed',
+          order: 90,
+          startedAt: valuesCompassStartedAt,
+          completedAt: valuesCompassCompletedAt,
+          actualDuration: Math.floor((valuesCompassCompletedAt - valuesCompassStartedAt) / 1000),
+          duration: 15,
+          content: {},
+        },
+        {
+          instanceId: `debug-protector-dialogue-${now}`,
+          // Adaptive conditions check `moduleCompleted: 'protector-dialogue'`
+          // literally, so we use the parent id (not the -p1/-p2 variants).
+          libraryId: 'protector-dialogue',
+          phase: 'peak',
+          title: 'Protector Dialogue',
+          status: 'completed',
+          order: 91,
+          startedAt: protectorStartedAt,
+          completedAt: protectorCompletedAt,
+          actualDuration: Math.floor((protectorCompletedAt - protectorStartedAt) / 1000),
+          duration: 10,
+          content: {},
+        },
+        {
+          instanceId: `debug-stay-with-it-${now}`,
+          libraryId: 'stay-with-it',
+          phase: 'peak',
+          title: 'Stay With It',
+          status: 'completed',
+          order: 92,
+          startedAt: stayWithItStartedAt,
+          completedAt: stayWithItCompletedAt,
+          actualDuration: Math.floor((stayWithItCompletedAt - stayWithItStartedAt) / 1000),
+          duration: 10,
+          content: {},
+        },
+      ];
 
       useSessionStore.setState({
         sessionPhase: 'active',
@@ -459,6 +540,13 @@ function BoosterPeakTest() {
           ...useSessionStore.getState().modules,
           items: updatedItems,
           activeModuleId: firstPeakModule?.instanceId || null,
+          // Merge the simulated peak completions into history. Any prior
+          // history entries are preserved (reset should have cleared them,
+          // but spread defensively in case a future change adds defaults).
+          history: [
+            ...(useSessionStore.getState().modules.history || []),
+            ...simulatedPeakHistory,
+          ],
         },
       });
 
@@ -472,7 +560,9 @@ function BoosterPeakTest() {
         <p className="text-sm text-[var(--color-text-primary)]">Booster Peak Test</p>
         <p className="text-[12px] text-[var(--color-text-tertiary)]">
           Jumps into the peak phase with a pending booster, ingestion set to 90 minutes ago,
-          and a pre-filled intention.
+          and a pre-filled intention. Also seeds simulated peak-phase history so the synthesis
+          transition's adaptive section shows all four gated screens: Values Compass, Protector
+          Dialogue, Stay With It, and Reaching Out (via a faux Helper Modal entry).
         </p>
 
         {isActive && (

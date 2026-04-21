@@ -4,19 +4,137 @@
  * Triggered when phaseTransitions.activeTransition === 'session-closing'.
  * Completion fires completeSession() on the session store.
  *
+ * Shape of the ritual:
+ *   1. Honor → Pause (tea) → Session summary
+ *   2. Body check-in + comparison (adjacent) → Closing touchstone →
+ *      Touchstone cairn (all 4 touchstones layered) → Intention reflection
+ *   3. Pre-reflection setup → Guided closing audio → Post-audio debrief
+ *   4. Reflections crossroads: user picks which closing reflections to write
+ *   5. Adaptive session-specific observations
+ *   6. Permission (integration + follow-up framing) → Before you go →
+ *      Close (terminal)
+ *
+ * Tail detours (reached from the reflections crossroads, each bookmarks
+ * back so the user can pick another activity or continue):
+ *   - self-gratitude
+ *   - future-letter (combined basic message + extended letter prompts)
+ *   - commitment
+ *
  * Full copy in transition-copy-document.md → Closing Ritual.
  */
+
+// ─── Shared blocks used inside the tail-detour progressive reveals ──────────
+
+// Reflection prompts — defined as module-level consts so the same object
+// reference is shared across a detour's multiple screens. This is the same
+// pattern the synthesis-transition tailored activities use, and it's what
+// keeps `promptIndex` stable across a persistBlocks progressive reveal (see
+// the dedupe note in useTransitionModuleState).
+
+const SELF_GRATITUDE_PROMPT = {
+  type: 'prompt',
+  prompt: 'Right now, in this moment, what is one thing about yourself that you appreciate?',
+  placeholder: 'One thing about myself I appreciate...',
+  storeField: 'transitionData.selfGratitude',
+  journalLabel: 'One thing about myself I appreciate',
+};
+
+const FUTURE_MESSAGE_PROMPT = {
+  type: 'prompt',
+  prompt: 'What do you want that version of you to remember from today?',
+  placeholder: 'What I want to remember...',
+  storeField: 'transitionData.futureMessage',
+  journalLabel: 'A message forward',
+};
+
+const EXTENDED_LETTER_PROMPTS = [
+  { type: 'prompt',
+    prompt: 'What do you most want to remember about how you feel right now?',
+    placeholder: 'Right now, I feel...',
+    journalLabel: 'How I feel right now' },
+  { type: 'prompt',
+    prompt: "What did you learn today that you don't want to forget?",
+    placeholder: 'What I learned...',
+    journalLabel: "What I don't want to forget" },
+  { type: 'prompt',
+    prompt: 'What would you say to yourself on a hard day?',
+    placeholder: 'On a hard day, remember...',
+    journalLabel: 'On a hard day' },
+];
+
+const COMMITMENT_PROMPT = {
+  type: 'prompt',
+  prompt: 'As you return to your life, is there one thing you want to do differently? Not a whole life change. Just one thing.',
+  placeholder: 'One thing I want to do differently...',
+  storeField: 'transitionData.commitment',
+  journalLabel: 'One thing I want to do differently',
+};
+
+const COMMITMENT_EXAMPLES = { type: 'expandable',
+  showLabel: 'Examples',
+  icon: 'circle-plus',
+  lineStyle: 'italic',
+  lines: [
+    'Pause before reacting when I feel triggered',
+    'Reach out to someone this week',
+    'Spend ten minutes each morning in stillness',
+    "Stop saying yes to things I don't want to do",
+    "Tell someone what I'm actually feeling",
+  ],
+};
+
+const CLOSING_TOUCHSTONE_PROMPT = {
+  type: 'prompt',
+  prompt: "What word or phrase captures what you're carrying forward?",
+  placeholder: "What I'm carrying forward...",
+  storeField: 'transitionData.closingTouchstone',
+  journalLabel: 'Closing touchstone',
+};
+
+const TOUCHSTONE_ARC_REFLECTION = {
+  type: 'prompt',
+  prompt: 'What do you notice when you see them side by side?',
+  placeholder: 'What I notice...',
+  storeField: 'transitionData.touchstoneArcReflection',
+  journalLabel: 'Touchstone arc reflection',
+};
+
+// Body-across-the-session reflection — used in the main flow's
+// body-comparison-4 progressive reveal.
+const BODY_ACROSS_SESSION_INTRO = { type: 'text', lines: [
+  'A lot can change in the body through a session.',
+  '§',
+  'There is intelligence there — things that are felt but can\'t easily be put into words.',
+  '§',
+  'Take a moment to notice how those sensations have shifted.',
+] };
+const BODY_ACROSS_SESSION_PROMPT = {
+  type: 'prompt',
+  prompt: 'Do you notice any pattern or insight you want to carry into the days and weeks ahead?',
+  placeholder: 'What I notice...',
+  journalLabel: 'Body across the session',
+};
 
 export const closingRitualConfig = {
   id: 'closing-ritual',
 
   onComplete: (store) => store.completeSession(),
 
+  // After the ritual completes, drop the user on the home tab so they see
+  // their completed session state rather than the leftover active-tab view.
+  // Tab swap happens during the exit overlay's covered phase (invisible to
+  // the user) — same mechanism as the opening ritual.
+  landingTab: 'home',
+
   animation: 'moonrise',
 
   statusBar: {
-    // Per-section statusLabel overrides this
-    leftLabel: 'Closing',
+    // Single consistent label across the whole ritual — matches the
+    // per-transition pattern used by opening-ritual, peak-transition, and
+    // synthesis-transition. No per-section `statusLabel` overrides here;
+    // keeping it uniform reads clearer in the progress bar than bouncing
+    // between "Closing" / "Reflections" / "Practical" etc.
+    leftLabel: 'Closing Ritual',
     showSessionElapsed: true,
   },
 
@@ -24,7 +142,7 @@ export const closingRitualConfig = {
     // Main-flow skip disabled — the closing ritual fires completeSession() on
     // its terminal section, and that completion is the gate for follow-up
     // activities. Users must Continue through to the end rather than skipping
-    // past it. Detour skip (e.g., exiting the extended-letter side trip) is
+    // past it. Detour skip (e.g., exiting a reflection side trip) is
     // decoupled from this flag and still works.
     allowed: false,
   },
@@ -35,12 +153,11 @@ export const closingRitualConfig = {
   },
 
   sections: [
-    // ── Screen 1: Honoring ─────────────────────────────────────────────────
+    // ── 1. Honoring ────────────────────────────────────────────────────────
     {
       id: 'honoring',
       type: 'screens',
       ritualFade: true,
-      statusLabel: 'Closing',
       screens: [
         {
           blocks: [
@@ -48,47 +165,47 @@ export const closingRitualConfig = {
             { type: 'text', lines: [
               "You've moved through something meaningful today. Before we close, let's take some time to honor what you experienced and create a bridge to the days ahead.",
               '§',
-              'There is no rush through what comes next. Take it at whatever pace feels right.',
+              'There is no need to rush through what comes next. Take it at whatever pace feels right.',
             ] },
           ],
         },
       ],
     },
 
-    // ── Screen 2: Tea Ritual (with expandable recommendations) ───────────────
+    // ── 2. Tea Ritual ──────────────────────────────────────────────────────
+    // Two paragraphs of body copy, then the expandable recommendations at
+    // the very end so the user sees the affordance after reading the setup.
     {
       id: 'tea',
       type: 'screens',
-      statusLabel: 'Closing',
       screens: [
         {
           blocks: [
             { type: 'header', title: 'A Moment to Pause', animation: 'moonrise' },
             { type: 'text', lines: [
-              'This might be a good time to step away and make yourself something warm to drink. Go slowly. We\'ll be here when you come back.',
+              "This might be a good time to step away and make yourself something warm to drink. Maybe some herbal tea?",
+            ] },
+            { type: 'text', lines: [
+              "Continue whenever you're ready.",
             ] },
             { type: 'expandable',
               showLabel: 'Recommendations',
-              hideLabel: 'Hide recommendations',
+              icon: 'circle-plus',
               lines: [
-                'Chamomile is calming and gentle on the stomach. Peppermint can help if you\'re feeling any residual nausea. Ginger is warming and grounding. Any caffeine-free tea or warm drink will do.',
+                "Chamomile is calming and gentle on the stomach. Peppermint can help if you're feeling any residual nausea. Ginger is warming and grounding. Any caffeine-free tea or warm drink will do.",
                 '§',
                 'Avoid coffee or caffeinated tea for now. Your body is still processing, and stimulants can interfere with the natural wind-down.',
               ],
             },
-            { type: 'text', lines: [
-              "Continue whenever you're ready. There's no timer.",
-            ] },
           ],
         },
       ],
     },
 
-    // ── Screen 3: Session Summary ───────────────────────────────────────────
+    // ── 3. Session Summary ─────────────────────────────────────────────────
     {
       id: 'session-summary',
       type: 'screens',
-      statusLabel: 'Your Session',
       screens: [
         {
           blocks: [
@@ -102,11 +219,10 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── Screen 4: Body Check-In (4th) ──────────────────────────────────────
+    // ── 4. Body Check-In (4th) ─────────────────────────────────────────────
     {
       id: 'body-check-in-4',
       type: 'screens',
-      statusLabel: 'Check In',
       screens: [
         {
           blocks: [
@@ -123,107 +239,222 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── Screen 5: Body Comparison — Full Session ────────────────────────────
+    // ── 5. Body Comparison — Full Session (with progressive reveal) ────────
+    // Sits directly after "Your Body Now" so the two body pages read as a
+    // single beat: pick sensations now, then see them layered across the
+    // whole session. Same persistBlocks pattern used elsewhere — the
+    // comparison grid stays mounted while a reflection text + journal
+    // prompt fade in beneath on Continue.
     {
       id: 'body-comparison-4',
       type: 'screens',
-      statusLabel: 'Check In',
+      persistBlocks: true,
+      screens: [
+        { blocks: [
+          { type: 'header', title: 'Your Body Across the Session', animation: 'moonrise' },
+          { type: 'body-check-in',
+            mode: 'comparison',
+            comparisonPhases: ['opening', 'peak', 'integration', 'closing'],
+          },
+        ] },
+        { blocks: [
+          { type: 'header', title: 'Your Body Across the Session', animation: 'moonrise' },
+          { type: 'body-check-in',
+            mode: 'comparison',
+            comparisonPhases: ['opening', 'peak', 'integration', 'closing'],
+          },
+          BODY_ACROSS_SESSION_INTRO,
+          BODY_ACROSS_SESSION_PROMPT,
+        ] },
+      ],
+    },
+
+    // ── 6. Closing Touchstone ──────────────────────────────────────────────
+    // User writes a final word/phrase that captures where they are now.
+    // Value is read back on the cairn page below.
+    {
+      id: 'closing-touchstone-write',
+      type: 'screens',
+      ritualFade: true,
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'Your Body Across the Session', animation: 'moonrise' },
-            { type: 'body-check-in',
-              mode: 'comparison',
-              comparisonPhases: ['opening', 'peak', 'integration', 'closing'],
+            { type: 'header', title: 'Closing Touchstone', animation: 'moonrise' },
+            { type: 'text', lines: [
+              "Write a word or phrase that captures how you feel as this session comes to a close.",
+            ] },
+            CLOSING_TOUCHSTONE_PROMPT,
+          ],
+        },
+      ],
+    },
+
+    // ── 7. Touchstone Cairn ────────────────────────────────────────────────
+    // Progressive reveal: all four touchstones (opening → peak → synthesis →
+    // closing) fade in one at a time. Final screen adds a reflection prompt
+    // asking the user to read them together.
+    {
+      id: 'touchstone-cairn',
+      type: 'screens',
+      persistBlocks: true,
+      ritualFade: true,
+      screens: (() => {
+        const HEADER = { type: 'header', title: 'Touchstone Cairn', animation: 'moonrise' };
+        const INTRO = { type: 'text', lines: [
+          "Let's take a look at the touchstones you've created throughout this session.",
+        ] };
+        const TOUCHSTONE_OPENING = { type: 'store-display',
+          storeKey: 'transitionData.openingTouchstone',
+          leftLabel: 'Opening Ritual',
+          emptyText: '(no touchstone)',
+          style: 'accent-box' };
+        const TOUCHSTONE_PEAK = { type: 'store-display',
+          storeKey: 'transitionData.peakTouchstone',
+          leftLabel: 'Peak Transition',
+          emptyText: '(no touchstone)',
+          style: 'accent-box' };
+        const TOUCHSTONE_SYNTHESIS = { type: 'store-display',
+          storeKey: 'transitionData.synthesisTouchstone',
+          leftLabel: 'Synthesis Transition',
+          emptyText: '(no touchstone)',
+          style: 'accent-box' };
+        const TOUCHSTONE_CLOSING = { type: 'store-display',
+          storeKey: 'transitionData.closingTouchstone',
+          leftLabel: 'Closing Ritual',
+          emptyText: '(no touchstone)',
+          style: 'accent-box' };
+        const REFLECTION_INTRO = { type: 'text', lines: [
+          'Touchstones can be a useful way to quickly chart your gut feeling throughout a session. When you see them stacked here as a progression from opening to closing, you might notice a pattern or gain an insight.',
+        ] };
+        const REFLECTION_PROMPT = {
+          type: 'prompt',
+          prompt: 'What do the touchstones say about your session when read together?',
+          placeholder: 'What I notice...',
+          journalLabel: 'Touchstone cairn reflection',
+          storeField: 'transitionData.touchstoneArcReflection',
+        };
+        const BASE = [HEADER, INTRO];
+        return [
+          { blocks: [...BASE] },
+          { blocks: [...BASE, TOUCHSTONE_OPENING] },
+          { blocks: [...BASE, TOUCHSTONE_OPENING, TOUCHSTONE_PEAK] },
+          { blocks: [...BASE, TOUCHSTONE_OPENING, TOUCHSTONE_PEAK, TOUCHSTONE_SYNTHESIS] },
+          { blocks: [...BASE, TOUCHSTONE_OPENING, TOUCHSTONE_PEAK, TOUCHSTONE_SYNTHESIS, TOUCHSTONE_CLOSING] },
+          { blocks: [...BASE, TOUCHSTONE_OPENING, TOUCHSTONE_PEAK, TOUCHSTONE_SYNTHESIS, TOUCHSTONE_CLOSING,
+            REFLECTION_INTRO, REFLECTION_PROMPT] },
+        ];
+      })(),
+    },
+
+    // ── 8. Intention Reflection ────────────────────────────────────────────
+    // Shows the user's original intention alongside a reflection prompt so
+    // they can see their arc from the beginning of the session to the end.
+    {
+      id: 'intention-reflection',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'Your Intention', animation: 'moonrise' },
+            { type: 'text', lines: [
+              "Take a look at the intention you set at the beginning of this session.",
+              '§',
+              'Intentions can change or manifest in unexpected ways. Take a moment to appreciate what happened, and to reflect on the journey from that first intention to where you are now.',
+            ] },
+            { type: 'store-display',
+              storeKey: 'sessionProfile.holdingQuestion',
+              emptyText: '(No intention was set at the start of the session.)',
+              style: 'accent-box',
+              journalLabel: 'Original intention',
+            },
+            { type: 'prompt',
+              prompt: 'What thoughts come to mind when reflecting on your intention?',
+              placeholder: 'What comes to mind...',
+              journalLabel: 'Intention reflection',
+              storeField: 'transitionData.intentionReflection',
             },
           ],
         },
       ],
     },
 
-    // ── Screen 6: Voice Audio — Closing Reflection ──────────────────────────
+    // ── 9. Prepare for the Guided Closing ──────────────────────────────────
+    {
+      id: 'pre-reflection-setup',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'A Guided Closing', animation: 'moonrise' },
+            { type: 'text', lines: [
+              'A brief guided reflection is ahead. It will help you close out the space you opened today.',
+              '§',
+              'Find a comfortable position — somewhere you can sit and take in the instructions without needing to move.',
+              '§',
+              "Continue when you're ready.",
+            ] },
+          ],
+        },
+      ],
+    },
+
+    // ── 10. Voice Audio — Closing Reflection ───────────────────────────────
     {
       id: 'closing-audio',
       type: 'meditation',
       meditationId: 'transition-closing',
       animation: 'moonrise',
       showTranscript: true,
-      statusLabel: 'Reflection',
       composerOptions: { skipOpeningGong: true, skipClosingGong: true },
     },
 
-    // ── Screen 7: Self-Gratitude ────────────────────────────────────────────
+    // ── 11. Post-Audio Debrief ─────────────────────────────────────────────
     {
-      id: 'self-gratitude',
+      id: 'closing-debrief',
       type: 'screens',
       ritualFade: true,
-      statusLabel: 'Gratitude',
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'One Thing About Yourself', animation: 'moonrise' },
+            { type: 'header', title: 'Bridging the Space', animation: 'moonrise' },
             { type: 'text', lines: [
-              "Gratitude is easier when it's specific.",
+              'We hope this has helped you begin to bridge the space between today\'s session and your daily life.',
               '§',
-              'Right now, in this moment, what is one thing about yourself that you appreciate?',
-            ] },
-            { type: 'prompt',
-              prompt: '',
-              placeholder: 'One thing about myself I appreciate...',
-              storeField: 'transitionData.selfGratitude',
-            },
-            { type: 'text', lines: [
-              "This doesn't need to be grand. Something small and true is enough.",
+              'For now, a few small reflections to plant the seeds for integration.',
             ] },
           ],
         },
       ],
     },
 
-    // ── Screen 8: A Message Forward ─────────────────────────────────────────
+    // ── 12. Reflections Crossroads ─────────────────────────────────────────
+    // One gate offering the user a list of short writing activities. Each
+    // option routes to a tail detour with `bookmark: 'reflections-crossroads'`
+    // so they return here afterward and can pick another — or "I'm ready to
+    // continue" to advance. Mirrors the opening-ritual Crossroads pattern.
     {
-      id: 'future-message',
+      id: 'reflections-crossroads',
       type: 'screens',
       ritualFade: true,
-      statusLabel: 'Future Self',
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'A Message Forward', animation: 'moonrise' },
+            { type: 'header', title: 'Reflections', animation: 'moonrise' },
             { type: 'text', lines: [
-              "Imagine yourself one week from now. You're back in ordinary life. The demands, the routines, the noise.",
-              '§',
-              'What do you want that version of you to remember from today?',
+              'The following activities can help close out the session. Choose what feels right — or continue when you\'re ready.',
             ] },
-            { type: 'prompt',
-              prompt: '',
-              placeholder: 'What I want to remember...',
-              storeField: 'transitionData.futureMessage',
-            },
-            { type: 'text', lines: [
-              "Write as if you're leaving a note for yourself to find.",
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 9: Extended Letter Detour Gate ───────────────────────────────
-    {
-      id: 'letter-gate',
-      type: 'screens',
-      statusLabel: 'Future Self',
-      screens: [
-        {
-          blocks: [
-            { type: 'text', lines: [
-              "Would you like to take more time to write to your future self? This is a longer, guided version of what you just started.",
-            ] },
-            { type: 'choice', key: 'wantsExtendedLetter',
+            { type: 'choice', key: 'closingReflectionsChoice',
               options: [
-                { id: 'yes', label: "Yes, I'd like to write more",
-                  route: { to: 'extended-letter', bookmark: true } },
-                { id: 'no', label: 'Continue' },
+                { id: 'self-gratitude', label: 'One thing about yourself',
+                  route: { to: 'reflection-self-gratitude', bookmark: 'reflections-crossroads' } },
+                { id: 'future-letter', label: 'Notes to your future self',
+                  route: { to: 'reflection-future-letter', bookmark: 'reflections-crossroads' } },
+                { id: 'commitment', label: 'One thing different',
+                  route: { to: 'reflection-commitment', bookmark: 'reflections-crossroads' } },
+                { id: 'continue', label: "I'm ready to continue",
+                  route: '_next' },
               ],
             },
           ],
@@ -231,100 +462,10 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── Screen 10: One Thing Different (Commitment) ─────────────────────────
-    {
-      id: 'commitment',
-      type: 'screens',
-      ritualFade: true,
-      statusLabel: 'Commitment',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'One Thing Different', animation: 'moonrise' },
-            { type: 'text', lines: [
-              'Integration happens through action. Small, specific action.',
-              '§',
-              'As you return to your life, is there one thing you want to do differently? Not a whole life change. Just one thing.',
-            ] },
-            { type: 'prompt',
-              prompt: '',
-              placeholder: 'One thing I want to do differently...',
-              storeField: 'transitionData.commitment',
-            },
-            { type: 'expandable',
-              showLabel: 'See examples',
-              hideLabel: 'Hide examples',
-              lineStyle: 'italic',
-              lines: [
-                'Pause before reacting when I feel triggered',
-                'Reach out to someone this week',
-                'Spend ten minutes each morning in stillness',
-                'Stop saying yes to things I don\'t want to do',
-                'Tell someone what I\'m actually feeling',
-              ],
-            },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 11: Closing Touchstone ───────────────────────────────────────
-    {
-      id: 'closing-touchstone',
-      type: 'screens',
-      ritualFade: true,
-      statusLabel: 'Touchstone',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'A New Touchstone', animation: 'moonrise' },
-            { type: 'text', lines: [
-              'At the beginning of your session, you chose a touchstone. A word that captured what felt most important before you began.',
-              '§',
-              'Now, after everything you\'ve experienced, what word or phrase captures what you\'re carrying forward?',
-            ] },
-            { type: 'prompt',
-              prompt: '',
-              placeholder: "What I'm carrying forward...",
-              storeField: 'transitionData.closingTouchstone',
-            },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 12: Touchstone Arc ───────────────────────────────────────────
-    {
-      id: 'touchstone-arc',
-      type: 'screens',
-      ritualFade: true,
-      statusLabel: 'Touchstone',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'Your Arc', animation: 'moonrise' },
-            { type: 'touchstone-arc' },
-            { type: 'text', lines: [
-              'Look at these two words together. The distance between them is the work you did today.',
-            ] },
-            { type: 'prompt',
-              prompt: 'What do you notice when you see them side by side?',
-              placeholder: 'What I notice...',
-              storeField: 'transitionData.touchstoneArcReflection',
-            },
-            { type: 'text', lines: [
-              'You made this arc. Be proud of it.',
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 13: Adaptive Content ─────────────────────────────────────────
+    // ── 13. Adaptive Content ───────────────────────────────────────────────
     {
       id: 'adaptive',
       type: 'screens',
-      statusLabel: 'Closing',
       screens: [
         // Booster was taken
         {
@@ -334,6 +475,16 @@ export const closingRitualConfig = {
             { type: 'text', lines: [
               'You chose to extend the session with a second dose. Notice how the two waves felt different. The second often brings a gentler clarity.',
             ] },
+            // Same condition as the screen, so the journal assembler also
+            // filters this prompt out for users who didn't take a booster
+            // (screen-level conditions aren't inherited by the assembler).
+            { type: 'prompt',
+              condition: { storeValue: 'booster.status', equals: 'taken' },
+              prompt: 'How did the booster dose affect your session?',
+              placeholder: 'What I noticed...',
+              storeField: 'transitionData.secondWaveReflection',
+              journalLabel: 'Second wave reflection',
+            },
           ],
         },
         // Many journal entries (5+)
@@ -359,12 +510,11 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── Screen 14: Permission to Be Unfinished ──────────────────────────────
+    // ── 14. Permission to Be Unfinished ────────────────────────────────────
     {
       id: 'permission',
       type: 'screens',
       ritualFade: true,
-      statusLabel: 'Closing',
       screens: [
         {
           blocks: [
@@ -372,18 +522,19 @@ export const closingRitualConfig = {
             { type: 'text', lines: [
               "You don't need to have it all figured out. The work you did today will continue in you. In dreams. In quiet moments. In conversations you haven't had yet.",
               '§',
-              "Integration is not a single event. It's a process that unfolds over days and weeks. Some of the most important realizations from today will arrive when you're not looking for them.",
+              "Integration is not a single event. It's a process that unfolds over time. Some of the most important realizations from today will arrive when you're not looking for them.",
+              '§',
+              'Follow-up activities will be available here 8 hours from now, designed to support you in the days, weeks, and months ahead.',
             ] },
           ],
         },
       ],
     },
 
-    // ── Screen 15: Before You Go ────────────────────────────────────────────
+    // ── 15. Before You Go ──────────────────────────────────────────────────
     {
       id: 'before-you-go',
       type: 'screens',
-      statusLabel: 'Practical',
       screens: [
         {
           blocks: [
@@ -399,34 +550,13 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── Screen 16: Integration Takes Time ───────────────────────────────────
-    {
-      id: 'integration-time',
-      type: 'screens',
-      ritualFade: true,
-      statusLabel: 'Integration',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'Integration Takes Time', animation: 'moonrise' },
-            { type: 'text', lines: [
-              'The insights from today will continue to clarify over the coming days. Sometimes in unexpected moments. A conversation, a walk, a dream.',
-              '§',
-              'We encourage you to return to this app in a day or two. There is a short follow-up session designed to help you process what you experienced.',
-              '§',
-              'The follow-up will be available on your home screen after your session closes.',
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 17: Take Care / Close ────────────────────────────────────────
+    // ── 16. Take Care / Close (terminal) ───────────────────────────────────
     {
       id: 'close',
       type: 'screens',
       ritualFade: true,
-      statusLabel: 'Complete',
+      terminal: true,
+      primaryLabel: 'Complete',
       screens: [
         {
           blocks: [
@@ -445,40 +575,86 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── DETOUR: Extended Letter to Future Self ──────────────────────────────
+    // ─── TAIL DETOURS ──────────────────────────────────────────────────────
+    // Reached only via the reflections-crossroads choice block. Each detour
+    // is a single section with a bookmark back to the crossroads, so the
+    // user can complete an activity and return to pick another.
+
+    // ── Self-Gratitude ─────────────────────────────────────────────────────
     {
-      id: 'extended-letter',
+      id: 'reflection-self-gratitude',
       type: 'screens',
+      ritualFade: true,
       screens: [
         {
           blocks: [
-            { type: 'header', title: 'A Longer Letter', animation: 'moonrise' },
+            { type: 'header', title: 'One Thing About Yourself', animation: 'moonrise' },
             { type: 'text', lines: [
-              'Take your time with this. Write to the version of you who will read this in a week, a month, or longer.',
+              "Gratitude is easier when it's specific.",
             ] },
-            { type: 'prompt',
-              prompt: 'What do you most want to remember about how you feel right now?',
-              placeholder: 'Right now, I feel...',
-            },
-          ],
-        },
-        {
-          blocks: [
-            { type: 'prompt',
-              prompt: "What did you learn today that you don't want to forget?",
-              placeholder: 'What I learned...',
-            },
-          ],
-        },
-        {
-          blocks: [
-            { type: 'prompt',
-              prompt: 'What would you say to yourself on a hard day?',
-              placeholder: 'On a hard day, remember...',
-            },
+            SELF_GRATITUDE_PROMPT,
+            { type: 'text', lines: [
+              "This doesn't need to be grand. Something small and true is enough.",
+            ] },
           ],
         },
       ],
     },
+
+    // ── Future Letter (combined basic message + extended letter) ──────────
+    // Single section, progressive reveal. The basic "message forward"
+    // question is the first reveal; pressing Continue expands three longer
+    // letter prompts beneath it. User can stop at any point by returning
+    // to the crossroads via the Skip button (detour skip pops the bookmark).
+    {
+      id: 'reflection-future-letter',
+      type: 'screens',
+      persistBlocks: true,
+      ritualFade: true,
+      screens: (() => {
+        const HEADER = { type: 'header', title: 'Notes to Your Future Self', animation: 'moonrise' };
+        const INTRO = { type: 'text', lines: [
+          "Imagine yourself one week from now. You're back in ordinary life — the demands, the routines, the noise.",
+        ] };
+        const BASE = [HEADER, INTRO];
+        return [
+          { blocks: [...BASE, FUTURE_MESSAGE_PROMPT] },
+          { blocks: [...BASE, FUTURE_MESSAGE_PROMPT, EXTENDED_LETTER_PROMPTS[0]] },
+          { blocks: [...BASE, FUTURE_MESSAGE_PROMPT, EXTENDED_LETTER_PROMPTS[0], EXTENDED_LETTER_PROMPTS[1]] },
+          { blocks: [...BASE, FUTURE_MESSAGE_PROMPT, EXTENDED_LETTER_PROMPTS[0], EXTENDED_LETTER_PROMPTS[1], EXTENDED_LETTER_PROMPTS[2]] },
+          { blocks: [
+            ...BASE, FUTURE_MESSAGE_PROMPT, ...EXTENDED_LETTER_PROMPTS,
+            { type: 'text',
+              header: 'Leaving a note',
+              lines: [
+                "You've left a note for yourself to find. Come back to it when you need to remember today.",
+              ] },
+          ] },
+        ];
+      })(),
+    },
+
+    // ── Commitment ─────────────────────────────────────────────────────────
+    {
+      id: 'reflection-commitment',
+      type: 'screens',
+      ritualFade: true,
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'One Thing Different', animation: 'moonrise' },
+            { type: 'text', lines: [
+              'Integration happens through action. Small, specific action.',
+            ] },
+            COMMITMENT_PROMPT,
+            COMMITMENT_EXAMPLES,
+          ],
+        },
+      ],
+    },
+
+    // (The closing-touchstone + cairn + intention-reflection live in the
+    //  main flow — see the three main-flow sections placed directly after
+    //  `body-check-in-4`. The old detour version has been removed.)
   ],
 };

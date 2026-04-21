@@ -11,6 +11,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import DurationPicker from '../shared/DurationPicker';
+import { LeafIcon, LockIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function AltSessionModuleModal({ module, onClose, onBegin, mode = 'follow-up' }) {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
@@ -82,48 +83,65 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
   };
 
   return (
-    <div
-      className={`fixed inset-0 bg-black/25 flex items-end justify-center z-50 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
-      onClick={handleCloseAnimated}
-    >
+    // Backdrop and modal sheet are siblings (not parent/child) so the
+    // backdrop's fade in/out doesn't cascade opacity onto the sheet — the
+    // sheet only slides.
+    <div className="fixed inset-0 flex items-end justify-center z-50">
       <div
-        className={`bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`}
+        className={`absolute inset-0 bg-black/25 ${closing ? 'animate-fadeOut' : 'animate-fadeIn'}`}
+        onClick={handleCloseAnimated}
+      />
+      <div
+        className={`relative bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 ${closing ? 'animate-slideDownOut' : 'animate-slideUp'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Top row: title + close button on same line */}
-        <div className="flex items-start justify-between">
-          <h3
-            className="text-xl text-[var(--color-text-primary)]"
-            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-          >
-            {module.title}
-          </h3>
+        {/* Top row: accent icon + title/duration on left, close button on right.
+            Icon flips between LockIcon (time-locked) and LeafIcon (available). */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-4 min-w-0">
+            {isLocked ? (
+              <LockIcon size={28} strokeWidth={2.5} className="flex-shrink-0 text-[var(--accent)] mt-1" />
+            ) : (
+              <LeafIcon size={28} strokeWidth={2.5} className="flex-shrink-0 text-[var(--accent)] mt-1" />
+            )}
+            <div className="min-w-0">
+              <h3
+                className="mb-0 text-xl text-[var(--color-text-primary)]"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                {module.title}
+              </h3>
+              {/* Duration - clickable if variable duration */}
+              <div style={{ marginTop: '2px' }}>
+                {hasVariableDuration && isUnlocked && !isCompleted ? (
+                  <button
+                    onClick={() => setShowDurationPicker(true)}
+                    className="text-[var(--color-text-secondary)] text-sm underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
+                  >
+                    {formatDuration(module.duration)}
+                  </button>
+                ) : (
+                  <p className="text-[var(--color-text-tertiary)] text-xs mb-0">
+                    {formatDuration(module.duration)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
           <button
             onClick={handleCloseAnimated}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-1 -m-1 flex-shrink-0 ml-4"
+            className="flex-shrink-0 p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            <span className="text-xl">−</span>
+            <CircleSkipIcon size={22} />
           </button>
         </div>
 
-        {/* Duration - clickable if variable duration */}
-        <div className="mb-3">
-          {hasVariableDuration && isUnlocked && !isCompleted ? (
-            <button
-              onClick={() => setShowDurationPicker(true)}
-              className="text-[var(--color-text-secondary)] text-sm underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
-            >
-              {formatDuration(module.duration)}
-            </button>
-          ) : (
-            <p className="text-[var(--color-text-tertiary)] text-xs">
-              {formatDuration(module.duration)}
-            </p>
-          )}
-        </div>
-
-        {/* Description */}
-        <p className="text-[var(--color-text-primary)] mb-4 leading-relaxed text-sm uppercase tracking-wider">
+        {/* Description — `uppercase` is removed so the paragraph inherits
+            text-transform from the body tokens. Mono mode: Azeret Mono,
+            uppercase (body inherited), wide tracking. Readable mode: Lora,
+            lowercase, tight tracking (via --tracking-wider override in
+            html.font-readable). */}
+        <p className="text-[var(--color-text-primary)] mt-4 mb-4 leading-relaxed text-sm tracking-wider">
           {libraryModule?.description || (isPreSession
             ? 'A pre-session activity to try before your session begins.'
             : 'A follow-up activity to continue your integration.')}

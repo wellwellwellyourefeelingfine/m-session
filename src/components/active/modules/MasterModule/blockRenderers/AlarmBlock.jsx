@@ -29,7 +29,7 @@ export default function AlarmBlock({ screen }) {
   return (
     <div className="text-center space-y-6">
       <p
-        className="text-lg text-[var(--color-text-primary)]"
+        className="text-base text-[var(--color-text-primary)]"
         style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
       >
         Set a phone alarm?

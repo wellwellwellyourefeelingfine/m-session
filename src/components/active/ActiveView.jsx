@@ -22,17 +22,12 @@ import { closingRitualConfig } from '../../content/transitions/closingRitualConf
 import OpenSpace from './OpenSpace';
 import AsciiMoon from './capabilities/animations/AsciiMoon';
 import ActiveEmptyState from './ActiveEmptyState';
-import FollowUpCheckIn from '../followup/FollowUpCheckIn';
-import FollowUpRevisit from '../followup/FollowUpRevisit';
-import FollowUpIntegration from '../followup/FollowUpIntegration';
-import FollowUpValuesCompass from '../followup/FollowUpValuesCompass';
 
 const PHASE_CONFIG = {
   'come-up': { number: 1, name: 'Come-Up' },
   peak: { number: 2, name: 'Peak' },
   integration: { number: 3, name: 'Synthesis' },
 };
-
 
 // How long the status-bar + module subtree fades out before the store
 // action that unmounts it fires. Lets both bars (ModuleStatusBar rendered
@@ -69,7 +64,6 @@ export default function ActiveView() {
   const peakCheckIn = useSessionStore((state) => state.peakCheckIn);
   const closingCheckIn = useSessionStore((state) => state.closingCheckIn);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
-  const activeFollowUpModule = useSessionStore((state) => state.activeFollowUpModule);
   const followUp = useSessionStore((state) => state.followUp);
   const activePreSessionModule = useSessionStore((state) => state.activePreSessionModule);
   const completePreSessionModule = useSessionStore((state) => state.completePreSessionModule);
@@ -83,6 +77,7 @@ export default function ActiveView() {
   const startModule = useSessionStore((state) => state.startModule);
   const showBoosterModal = useSessionStore((state) => state.showBoosterModal);
   const expireBooster = useSessionStore((state) => state.expireBooster);
+  const endComeUpCheckInSnooze = useSessionStore((state) => state.endComeUpCheckInSnooze);
   // Subscribe to modules state to trigger re-renders when modules are added/changed
 
   const _modules = useSessionStore((state) => state.modules);
@@ -201,28 +196,26 @@ export default function ActiveView() {
   // eslint-disable-next-line react-hooks/exhaustive-deps -- specific properties listed, full objects too broad
   }, [sessionPhase, booster.considerBooster, booster.status, booster.isModalVisible, booster.nextPromptAt, substanceChecklist.ingestionTime, comeUpCheckIn, showBoosterModal, expireBooster]);
 
-  // Activate come-up check-in 10 minutes after session starts (if not already visible)
-  const comeUpStartedAt = timeline.phases?.comeUp?.startedAt;
+  // Come-up check-in snooze poll. Surfaces the "How are you feeling?" bar (not the modal)
+  // once `comeUpCheckIn.nextPromptAt` has elapsed. Same mechanism handles both the initial
+  // 10-min appearance (seeded by startComeUpPhase) and post-snooze re-appearance after the
+  // user dismisses the modal. Won't interrupt an active module — module completion has its
+  // own path via completeModule/skipModule.
   useEffect(() => {
     if (sessionPhase !== 'active' || currentPhase !== 'come-up') return;
-    if (comeUpCheckIn.isVisible || !comeUpStartedAt) return;
 
-    const remaining = comeUpStartedAt + 10 * 60 * 1000 - Date.now();
-
-    const activate = () => {
-      const { modules, comeUpCheckIn: c } = useSessionStore.getState();
-      if (!modules.currentModuleInstanceId && !c.isVisible) {
-        useSessionStore.setState({
-          comeUpCheckIn: { ...c, isVisible: true, isMinimized: true },
-        });
-      }
+    const checkSnooze = () => {
+      const { comeUpCheckIn: c, modules } = useSessionStore.getState();
+      if (c.isVisible) return;
+      if (!c.nextPromptAt || Date.now() < c.nextPromptAt) return;
+      if (modules.currentModuleInstanceId) return;
+      endComeUpCheckInSnooze();
     };
 
-    if (remaining <= 0) { activate(); return; }
-
-    const timer = setTimeout(activate, remaining);
-    return () => clearTimeout(timer);
-  }, [sessionPhase, currentPhase, comeUpCheckIn.isVisible, comeUpStartedAt, currentModule]);
+    checkSnooze();
+    const id = setInterval(checkSnooze, 60000);
+    return () => clearInterval(id);
+  }, [sessionPhase, currentPhase, endComeUpCheckInSnooze]);
 
   // Auto-start next module when appropriate
   useEffect(() => {
@@ -312,12 +305,6 @@ export default function ActiveView() {
     if (overlayTransitionId === 'peak-transition') return <TransitionModule config={peakTransitionConfig} />;
     if (overlayTransitionId === 'peak-to-integration') return <TransitionModule config={peakToIntegrationConfig} />;
     if (overlayTransitionId === 'closing-ritual') return <TransitionModule config={closingRitualConfig} />;
-
-    // Check for active follow-up modules first (rendered in Active tab)
-    if (activeFollowUpModule === 'checkIn') return <FollowUpCheckIn />;
-    if (activeFollowUpModule === 'revisit') return <FollowUpRevisit />;
-    if (activeFollowUpModule === 'integration') return <FollowUpIntegration />;
-    if (activeFollowUpModule === 'valuesCompassFollowUp') return <FollowUpValuesCompass />;
 
     // Check for active pre-session module (renders in Active tab before session starts)
     if (activePreSessionModule) {

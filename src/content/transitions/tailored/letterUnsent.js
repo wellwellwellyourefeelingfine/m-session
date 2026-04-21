@@ -2,105 +2,73 @@
  * Tailored Activity: A Letter You Don't Have to Send
  * Focus: relationship
  *
- * Write to someone as if they could truly hear you. Not to send — to clarify
- * what's true for you. 4-screen flow: intro → write → review → closing.
+ * Single section, progressive-reveal pattern (`persistBlocks: true`).
+ * Each Continue reveals the next writing prompt beneath the previous one.
+ * The user's earlier responses stay visible as they work through the letter.
+ *
+ * Flow:
+ *   [0] header + intro
+ *   [1] + "Who are you writing to?"
+ *   [2] + "What I've never told you..."
+ *   [3] + "What I wish you understood..."
+ *   [4] + "What I see now that I couldn't see before..."
+ *   [5] + "What I need from you..."
+ *   [6] + closing reflection — "How does it feel?"
  */
+
+const HEADER = { type: 'header', title: "A Letter You Don't Have to Send", animation: 'sunset' };
+
+const INTRO = { type: 'text', lines: [
+  'Write to them as if they could truly hear you.',
+  '§',
+  "You don't have to send this. You don't have to show anyone. This is just for you — a way to understand what you really want to say.",
+] };
+
+const PROMPTS = [
+  { type: 'prompt',
+    prompt: 'Who are you writing to?',
+    placeholder: 'Dear...',
+    journalLabel: 'Dear' },
+  { type: 'prompt',
+    prompt: "What I've never told you...",
+    placeholder: 'Write freely...',
+    journalLabel: "What I've never told you" },
+  { type: 'prompt',
+    prompt: 'What I wish you understood...',
+    placeholder: 'Write freely...',
+    journalLabel: 'What I wish you understood' },
+  { type: 'prompt',
+    prompt: "What I see now that I couldn't see before...",
+    placeholder: 'Write freely...',
+    journalLabel: "What I see now that I couldn't see before" },
+  { type: 'prompt',
+    prompt: 'What I need from you...',
+    placeholder: 'Write freely...',
+    journalLabel: 'What I need from you' },
+];
+
+const CLOSING_PROMPT = {
+  type: 'prompt',
+  prompt: 'How does it feel, having said what you needed to say?',
+  placeholder: 'It feels...',
+  journalLabel: 'How it feels',
+};
+
+// Build the screens array progressively — [0] intro; [n] intro + first n
+// prompts; [final] intro + all prompts + closing.
+const BASE = [HEADER, INTRO];
+const screens = [
+  { blocks: BASE },
+  ...PROMPTS.map((_, i) => ({ blocks: [...BASE, ...PROMPTS.slice(0, i + 1)] })),
+  { blocks: [...BASE, ...PROMPTS, CLOSING_PROMPT] },
+];
 
 export const letterUnsentSections = [
   {
-    id: 'letter-intro',
+    id: 'letter-unsent',
     type: 'screens',
+    persistBlocks: true,
     ritualFade: true,
-    screens: [
-      {
-        blocks: [
-          { type: 'header', title: "A Letter You Don't Have to Send", animation: 'sunset' },
-          { type: 'text', lines: [
-            'Write to them as if they could truly hear you.',
-            '§',
-            "You don't have to send this. You don't have to show anyone. This is just for you — a way to understand what you really want to say.",
-          ] },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'letter-write',
-    type: 'screens',
-    screens: [
-      {
-        blocks: [
-          { type: 'header', title: 'Dear...', animation: 'sunset' },
-          { type: 'prompt',
-            prompt: 'Who are you writing to?',
-            placeholder: 'Dear...',
-          },
-        ],
-      },
-      {
-        blocks: [
-          { type: 'prompt',
-            prompt: "What I've never told you...",
-            placeholder: 'Write freely...',
-          },
-        ],
-      },
-      {
-        blocks: [
-          { type: 'prompt',
-            prompt: 'What I wish you understood...',
-            placeholder: 'Write freely...',
-          },
-        ],
-      },
-      {
-        blocks: [
-          { type: 'prompt',
-            prompt: "What I see now that I couldn't see before...",
-            placeholder: 'Write freely...',
-          },
-        ],
-      },
-      {
-        blocks: [
-          { type: 'prompt',
-            prompt: 'What I need from you...',
-            placeholder: 'Write freely...',
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'letter-review',
-    type: 'screens',
-    ritualFade: true,
-    screens: [
-      {
-        blocks: [
-          { type: 'header', title: 'Read What You Wrote', animation: 'sunset' },
-          { type: 'text', lines: [
-            'Take a moment with what you\'ve written. You don\'t have to change anything.',
-          ] },
-          { type: 'review', assembleFrom: [0, 1, 2, 3, 4], editable: true },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'letter-closing',
-    type: 'screens',
-    ritualFade: true,
-    screens: [
-      {
-        blocks: [
-          { type: 'header', title: 'Closing', animation: 'sunset' },
-          { type: 'prompt',
-            prompt: 'How does it feel, having said what you needed to say?',
-            placeholder: 'It feels...',
-          },
-        ],
-      },
-    ],
+    screens,
   },
 ];

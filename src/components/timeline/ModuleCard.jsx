@@ -41,6 +41,7 @@ export default function ModuleCard({
   module,
   onRemove,
   isActiveSession = false,
+  isCompletedSession = false,
   isCurrentModule = false,
   canRemove = true,
   isEditMode = false,
@@ -75,11 +76,13 @@ export default function ModuleCard({
   const isBooster = module.isBoosterModule || module.libraryId === 'booster-consideration';
   const booster = useSessionStore((state) => state.booster);
 
-  // For booster modules, gray-out is based on the booster decision status, not module status
-  const isCompleted = isActiveSession && (isBooster
+  // For booster modules, gray-out is based on the booster decision status, not module status.
+  // Completed-session view treats every finished module the same as active-session display.
+  const showsLiveStatus = isActiveSession || isCompletedSession;
+  const isCompleted = showsLiveStatus && (isBooster
     ? booster.status === 'taken'
     : module.status === 'completed');
-  const isSkipped = isActiveSession && (isBooster
+  const isSkipped = showsLiveStatus && (isBooster
     ? (booster.status === 'skipped' || booster.status === 'expired')
     : module.status === 'skipped');
   // Non-active-session graying (pre-session and follow-up timelines)
@@ -239,15 +242,17 @@ export default function ModuleCard({
             </div>
 
             {/* Description or completion times */}
-            {isActiveSession && (isCompleted || isSkipped) && module.startedAt ? (
+            {showsLiveStatus && (isCompleted || isSkipped) ? (
               <div className="flex items-center gap-2 -mt-2 overflow-visible" style={{ height: '16px' }}>
                 {isCompleted
                   ? <CircleCheckIcon size={24} className="text-[var(--accent)] flex-shrink-0 -mt-2.5" />
                   : <CircleSkipIcon size={24} className="text-[var(--color-text-tertiary)] flex-shrink-0 -mt-2.5" />
                 }
                 <p className="text-[var(--color-text-tertiary)] text-xs" style={{ transform: 'translateY(2.5px)' }}>
-                  {formatTimestamp(module.startedAt)}
-                  {module.completedAt && ` – ${formatTimestamp(module.completedAt)}`}
+                  {module.startedAt
+                    ? <>{formatTimestamp(module.startedAt)}{module.completedAt && ` – ${formatTimestamp(module.completedAt)}`}</>
+                    : 'Skipped'
+                  }
                 </p>
               </div>
             ) : (

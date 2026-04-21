@@ -21,7 +21,7 @@ import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { AwardIcon, CirclePlusIcon, CircleXIcon } from '../shared/Icons';
-import { downloadSessionData } from '../../utils/downloadSessionData';
+import DataDownloadModal from '../session/DataDownloadModal';
 
 /**
  * Format date nicely
@@ -68,7 +68,7 @@ export default function HomeView() {
 
   const journalEntries = useJournalStore((s) => s.entries);
 
-  const recordDataExport = useSessionStore((state) => state.recordDataExport);
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   // Lock in session number on first completed render
   useEffect(() => {
@@ -383,7 +383,7 @@ export default function HomeView() {
                   <p>Session data: {exportDate
                     ? `Exported on ${exportDate}`
                     : <button
-                        onClick={() => { downloadSessionData(); recordDataExport(); }}
+                        onClick={() => setDownloadModalOpen(true)}
                         className="inline-flex items-center gap-1 hover:opacity-80 transition-opacity"
                         style={{ textTransform: 'none' }}
                       >
@@ -440,6 +440,12 @@ export default function HomeView() {
           module={{ libraryId: previewModule.id, title: previewModule.title, duration: previewModule.defaultDuration }}
           mode="info"
         />
+      )}
+
+      {/* Session Data Download Modal — reuses the closing-ritual modal so the
+          flow is consistent whether the user exports during closing or after. */}
+      {downloadModalOpen && (
+        <DataDownloadModal onClose={() => setDownloadModalOpen(false)} />
       )}
 
       {/* Background overlay + moon animation — portaled to document.body so

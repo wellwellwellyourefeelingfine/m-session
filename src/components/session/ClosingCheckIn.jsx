@@ -5,6 +5,7 @@
  */
 
 import { useSessionStore } from '../../stores/useSessionStore';
+import { OrigamiIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function ClosingCheckIn() {
   const dismissClosingCheckIn = useSessionStore((state) => state.dismissClosingCheckIn);
@@ -27,24 +28,29 @@ export default function ClosingCheckIn() {
         className="bg-[var(--color-bg)] w-full max-w-md rounded-t-2xl p-6 pb-8 animate-slideUp"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-end mb-4">
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div className="flex items-center gap-4 min-w-0">
+            <OrigamiIcon size={28} strokeWidth={2.5} className="flex-shrink-0 text-[var(--accent)]" />
+            <h3
+              className="mb-0 text-lg text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              Ready to Close Your Session?
+            </h3>
+          </div>
           <button
             onClick={handleStayHere}
-            className="text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
+            className="flex-shrink-0 p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            <span className="text-xl">−</span>
+            <CircleSkipIcon size={22} />
           </button>
         </div>
 
-        <h3 className="mb-4 text-[var(--color-text-primary)]">
-          Ready to Close Your Session?
-        </h3>
-
-        <p className="text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+        <p className="text-[var(--color-text-secondary)] text-sm mb-4 leading-relaxed">
           You&apos;ve completed your scheduled activities. Would you like to begin the closing ritual?
         </p>
 
-        <p className="text-[var(--color-text-tertiary)] mb-8 text-sm leading-relaxed">
+        <p className="text-[var(--color-text-tertiary)] mb-8 text-xs leading-relaxed">
           The closing ritual is a gentle way to honor what you experienced and create a bridge to the days ahead.
         </p>
 

@@ -39,6 +39,7 @@ export default function TransitionModule({ config }) {
   // state object (which is a new reference every render and would thrash every
   // downstream useCallback/useEffect that depended on it).
   const {
+    flushResponses,
     flushCaptures,
     clearActiveNavigation,
     handleScreenChange: stateHandleScreenChange,
@@ -91,9 +92,15 @@ export default function TransitionModule({ config }) {
     || state.visitedSections.includes(skipRequireVisited);
 
   const handleSkip = useCallback(() => {
-    flushCaptures();
-
+    // Detour skip is "abandon this activity, return to the gate" — the whole
+    // transition keeps going, so we must NOT write a journal entry here (one
+    // entry per transition, saved at real completion). `flushResponses` still
+    // persists anything the user typed inside the detour before they bailed.
+    //
+    // Main-flow skip is "end the whole transition" — full `flushCaptures`
+    // writes the journal entry + completion timestamp, same as natural finish.
     if (routeStack.length > 0) {
+      flushResponses();
       advanceSection();
       return;
     }
@@ -104,11 +111,13 @@ export default function TransitionModule({ config }) {
       return;
     }
 
+    flushCaptures();
+
     // Route Skip through the same ritual exit overlay as natural completion.
     // handleExitComplete will fire config.onComplete + clearActiveNavigation
     // after the ritual fade finishes — no need to call them here.
     setOverlayPhase('exiting');
-  }, [flushCaptures, routeStack, advanceSection, skipRequireVisited, skipRequirementMet]);
+  }, [flushResponses, flushCaptures, routeStack, advanceSection, skipRequireVisited, skipRequirementMet]);
 
   // ── Progress reporting ───────────────────────────────────────────────────
   // Progress is computed by ScreensSection internally for screens sections.
@@ -308,7 +317,7 @@ export default function TransitionModule({ config }) {
         <ModuleStatusBar
           progress={progressPercent}
           leftLabel={leftLabel}
-          centerContent={
+          rightContent={
             showSessionElapsed && ingestionTime ? (
               <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
                 {sessionElapsed}
@@ -317,9 +326,15 @@ export default function TransitionModule({ config }) {
           }
         />
 
+        {/* Outer wrapper starts at the header line (not below the status bar)
+            so the scroll clip happens at the header edge. The inner scroll
+            container gets padding-top equal to the status-bar height so
+            initial content still appears below the bar — but as the user
+            scrolls, content travels up behind the transparent status bar
+            and only disappears once it reaches the header. */}
         <div
           className="fixed left-0 right-0 flex flex-col overflow-hidden"
-          style={{ top: 'var(--header-plus-status)', bottom: 'var(--tabbar-height)' }}
+          style={{ top: 'var(--header-height)', bottom: 'var(--tabbar-height)' }}
         >
           {/* Keyed wrapper — remounts on section change so ScreensSection /
               MeditationSection get a fresh state instance. No animate-fadeIn
@@ -331,6 +346,7 @@ export default function TransitionModule({ config }) {
           <div
             key={currentSection?.id || 'empty'}
             className="flex-1 overflow-auto"
+            style={{ paddingTop: 'var(--status-bar-height)' }}
           >
             {renderCurrentSection()}
           </div>

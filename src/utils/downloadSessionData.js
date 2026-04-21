@@ -61,7 +61,6 @@ function getSessionData() {
     session,
     booster,
     comeUpCheckIn,
-    followUp,
     modules,
     timeline,
     lifeGraph,
@@ -119,25 +118,19 @@ function getSessionData() {
       startedAt: item.startedAt,
       completedAt: item.completedAt,
     })) : null,
-    // Include follow-up module responses
-    followUp: followUp?.modules ? {
-      checkIn: followUp.modules.checkIn?.status === 'completed' ? {
-        completedAt: followUp.modules.checkIn.completedAt,
-        feeling: followUp.modules.checkIn.feeling,
-        bodyFeeling: followUp.modules.checkIn.bodyFeeling,
-        note: followUp.modules.checkIn.note,
-      } : null,
-      revisit: followUp.modules.revisit?.status === 'completed' ? {
-        completedAt: followUp.modules.revisit.completedAt,
-        reflection: followUp.modules.revisit.reflection,
-      } : null,
-      integration: followUp.modules.integration?.status === 'completed' ? {
-        completedAt: followUp.modules.integration.completedAt,
-        emerged: followUp.modules.integration.emerged,
-        commitmentStatus: followUp.modules.integration.commitmentStatus,
-        commitmentResponse: followUp.modules.integration.commitmentResponse,
-      } : null,
-    } : null,
+    // Include follow-up module data (follow-up activities run as regular
+    // library modules with phase='follow-up'; their responses flow through
+    // the shared module history and journalEntries sections above).
+    followUpModules: modules?.items?.filter((m) => m.phase === 'follow-up').length > 0
+      ? modules.items.filter((m) => m.phase === 'follow-up').map((item) => ({
+          title: item.title,
+          libraryId: item.libraryId,
+          duration: item.duration,
+          status: item.status,
+          startedAt: item.startedAt,
+          completedAt: item.completedAt,
+        }))
+      : null,
     // Include pre-session module data
     preSessionModules: modules?.items?.filter((m) => m.phase === 'pre-session').length > 0
       ? modules.items.filter((m) => m.phase === 'pre-session').map((item) => ({
@@ -254,8 +247,8 @@ ${centerText(`Exported ${exportDate}`)}
   const sessionCompleted = data.moduleHistory
     ? data.moduleHistory.filter((m) => m.phase !== 'pre-session' && m.phase !== 'follow-up' && m.status === 'completed').length
     : 0;
-  const followUpCompleted = ['checkIn', 'revisit', 'integration'].filter(
-    (id) => data.followUp?.[id]
+  const followUpCompleted = (data.followUpModules || []).filter(
+    (m) => m.status === 'completed'
   ).length;
   const longestModule = data.moduleHistory
     ? data.moduleHistory.reduce((longest, m) => {
@@ -318,21 +311,13 @@ ${centerText(`Exported ${exportDate}`)}
       });
     }
 
-    // Follow-up in timeline
-    const defaultFollowUps = [
-      { title: 'Check-In', data: data.followUp?.checkIn },
-      { title: 'Revisit', data: data.followUp?.revisit },
-      { title: 'Integration Reflection', data: data.followUp?.integration },
-    ];
-    const addedFollowUps = data.followUpModules || [];
-    const allFollowUps = [
-      ...defaultFollowUps.map((f) => ({ title: f.title, completed: !!f.data })),
-      ...addedFollowUps.map((f) => ({ title: f.title, completed: f.status === 'completed' })),
-    ];
-    if (allFollowUps.length > 0) {
+    // Follow-up in timeline (library modules with phase='follow-up')
+    const followUps = data.followUpModules || [];
+    if (followUps.length > 0) {
       text += `\n  Follow-Up:\n`;
-      allFollowUps.forEach((f) => {
-        text += `    • ${f.title}  [${f.completed ? 'completed' : 'not yet'}]\n`;
+      followUps.forEach((f) => {
+        const completed = f.status === 'completed';
+        text += `    • ${f.title}  [${completed ? 'completed' : 'not yet'}]\n`;
       });
     }
   }
@@ -609,13 +594,22 @@ ${centerText(`Exported ${exportDate}`)}
   }
 
   // ── Integration transition ─────────────────────────────
+  // New source of truth: `transitionData` (store v26+). Falls back to the
+  // legacy `transitionCaptures.integration` for pre-v26 archives.
 
-  const integration = data.transitionCaptures?.integration;
-  if (integration && (integration.editedIntention || integration.tailoredActivityResponse)) {
+  const td = data.transitionData || {};
+  const integration = data.transitionCaptures?.integration || {};
+  const intentionAddition = td.intentionAdditions?.integration || integration.editedIntention;
+  const newFocus = td.newFocus || integration.newFocus;
+  const focusSubtype = td.focusSubtype || td.newRelationshipType || integration.newRelationshipType;
+  const tailoredActivityResponse = integration.tailoredActivityResponse;
+
+  if (intentionAddition || newFocus || focusSubtype || tailoredActivityResponse) {
     text += `\n\n\n${section('SYNTHESIS TRANSITION')}\n`;
-    if (integration.editedIntention) text += `\n  Intention Addition:  ${integration.editedIntention}`;
-    if (integration.newFocus) text += `\n  Focus Changed To:    ${integration.newFocus}`;
-    const ar = integration.tailoredActivityResponse;
+    if (intentionAddition) text += `\n  Intention Addition:  ${intentionAddition}`;
+    if (newFocus) text += `\n  Focus Changed To:    ${newFocus}`;
+    if (focusSubtype) text += `\n  Focus Detail:        ${focusSubtype}`;
+    const ar = tailoredActivityResponse;
     if (ar && typeof ar === 'object' && Object.keys(ar).length > 0) {
       text += `\n\n  Tailored Activity Response:`;
       Object.entries(ar).forEach(([key, value]) => {
@@ -644,37 +638,11 @@ ${centerText(`Exported ${exportDate}`)}
     }
   }
 
-  // ── Follow-up reflections (24-48h after) ────────────────
-
-  const hasFollowUp = data.followUp?.checkIn || data.followUp?.revisit || data.followUp?.integration;
-  if (hasFollowUp) {
-    text += `\n\n\n${section('FOLLOW-UP REFLECTIONS')}\n`;
-    if (data.followUp.checkIn) {
-      text += `\n  [Check-In — ${formatDate(data.followUp.checkIn.completedAt)}]`;
-      if (data.followUp.checkIn.feeling) {
-        const fLabels = { 'settled': 'Settled', 'processing': 'Still processing', 'low': 'Low or flat', 'tender': 'Tender', 'energized': 'Energized', 'mixed': 'Mixed' };
-        text += `\n  Feeling:       ${fLabels[data.followUp.checkIn.feeling] || data.followUp.checkIn.feeling}`;
-      }
-      if (data.followUp.checkIn.bodyFeeling) {
-        const bLabels = { 'relaxed': 'Relaxed', 'heavy': 'Heavy', 'tense': 'Tense', 'normal': 'Normal' };
-        text += `\n  Body Feeling:  ${bLabels[data.followUp.checkIn.bodyFeeling] || data.followUp.checkIn.bodyFeeling}`;
-      }
-      if (data.followUp.checkIn.note) text += `\n  Note:          ${data.followUp.checkIn.note}`;
-    }
-    if (data.followUp.revisit) {
-      text += `\n\n  [Revisit — ${formatDate(data.followUp.revisit.completedAt)}]`;
-      if (data.followUp.revisit.reflection) text += `\n  Reflection: ${data.followUp.revisit.reflection}`;
-    }
-    if (data.followUp.integration) {
-      text += `\n\n  [Integration — ${formatDate(data.followUp.integration.completedAt)}]`;
-      if (data.followUp.integration.emerged) text += `\n  What's Emerged: ${data.followUp.integration.emerged}`;
-      if (data.followUp.integration.commitmentStatus) {
-        const sLabels = { 'following': 'Following through', 'trying': 'Trying to follow through', 'not-started': "Haven't started yet", 'reconsidered': 'Reconsidered the commitment', 'forgot': 'Forgot about it' };
-        text += `\n  Commitment Status:   ${sLabels[data.followUp.integration.commitmentStatus] || data.followUp.integration.commitmentStatus}`;
-      }
-      if (data.followUp.integration.commitmentResponse) text += `\n  Commitment Response: ${data.followUp.integration.commitmentResponse}`;
-    }
-  }
+  // Follow-up activities are library modules (phase='follow-up') with their
+  // own module entries in moduleHistory and journalEntries. Their completed
+  // run metadata is rendered via the timeline/activity sections above, and
+  // any user-written reflections live in the journalEntries section below —
+  // no dedicated "FOLLOW-UP REFLECTIONS" section is needed.
 
   // ── Journal entries (manual + any session entries not rendered inline) ──────────
 

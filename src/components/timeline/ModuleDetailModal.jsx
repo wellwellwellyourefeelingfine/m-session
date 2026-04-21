@@ -309,7 +309,7 @@ export default function ModuleDetailModal({
                   <div>
                     <p className="text-[var(--color-text-tertiary)] text-xs tracking-wider mb-1">How it works</p>
                     <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
-                      The booster check-in is automatically placed in the peak phase and will prompt you around the 90-minute mark after ingestion, or 30 minutes after you report feeling fully arrived — whichever comes first.
+                      The booster check-in is automatically positioned around the 90-minute mark — whether that lands in the peak or integration phase — and will prompt you at that time, or 30 minutes after you report feeling fully arrived, whichever comes first.
                     </p>
                   </div>
                   <div>
