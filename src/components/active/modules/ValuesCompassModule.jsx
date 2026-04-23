@@ -1023,7 +1023,17 @@ export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpda
     const base = { showSkip: true, onSkip: handleSkip, skipConfirmMessage: 'Skip this exercise?', rightSlot: matrixSlot };
 
     if (phase === 'idle') {
-      return { ...base, phase: 'idle', primary: { label: 'Begin', onClick: () => fadeToPhase('intro-a') } };
+      return {
+        ...base,
+        phase: 'idle',
+        primary: {
+          label: 'Begin',
+          onClick: () => {
+            useSessionStore.getState().beginModule(module.instanceId);
+            fadeToPhase('intro-a');
+          },
+        },
+      };
     }
     if (phase === 'intro-a') {
       return { ...base, phase: 'active', primary: { label: 'Continue', onClick: () => fadeToPhase('intro-b') } };

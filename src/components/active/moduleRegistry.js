@@ -81,6 +81,9 @@ export const CUSTOM_MODULES = {
   // Basic grounding (short 5-min version) — reuses SimpleGroundingModule
   'short-grounding': SimpleGroundingModule,
 
+  // Centering Breath — reuses SimpleGroundingModule (idle screen uses WaveLoop)
+  'centering-breath': SimpleGroundingModule,
+
   // Music listening has duration picker, alarm prompt, and recommendations
   'music-listening': MusicListeningModule,
 
@@ -168,6 +171,7 @@ export const MODULE_CATEGORIES = {
     'self-compassion',
     'simple-grounding',
     'short-grounding',
+    'centering-breath',
   ],
   journaling: [
     'journaling',

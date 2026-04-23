@@ -534,6 +534,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onPro
 
   // ── Idle handlers ──
   const handleIdleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsIdleVisible(false);
     setTimeout(() => {
       setPhase('intro');
@@ -541,7 +542,7 @@ export default function ShakingTheTreeModule({ module, onComplete, onSkip, onPro
       setIsIntroBodyVisible(true);
       setIsIntroHeaderVisible(true);
     }, FADE_MS);
-  }, []);
+  }, [module.instanceId]);
 
   // ── Intro handlers ──
   const handleIntroContinue = useCallback(() => {

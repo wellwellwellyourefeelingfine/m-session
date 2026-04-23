@@ -24,6 +24,7 @@ import {
 } from '../../../content/meditations';
 import { useWakeLock } from '../../../hooks/useWakeLock';
 import useSyncedDuration from '../../../hooks/useSyncedDuration';
+import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleControlBar, { SlotButton, VolumeButton } from '../capabilities/ModuleControlBar';
@@ -289,6 +290,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onP
   const handleBegin = useCallback(() => {
     if (isWaitingForIdleComplete) return;
 
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsWaitingForIdleComplete(true);
     idleStartTimeRef.current = Date.now();
 
@@ -309,7 +311,7 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onP
     };
 
     idleAnimationRef.current = requestAnimationFrame(checkIdlePhase);
-  }, [isWaitingForIdleComplete, breathController]);
+  }, [isWaitingForIdleComplete, breathController, module.instanceId]);
 
   // Cleanup animation frame on unmount
   useEffect(() => {

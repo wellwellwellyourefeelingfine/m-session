@@ -10,7 +10,7 @@
  *
  * Routing model:
  *   - Main flow is linear: softening → phase-recap → body-check-ins →
- *     intention-checkin → focus-confirm → bridge → adaptive → nourish →
+ *     intention-checkin → focus-confirm → bridge → nourish →
  *     begin-integration (terminal).
  *   - focus-confirm routes to one of two tail detours depending on choice:
  *     - keep + relationship focus → relationship-type detour (sub-type only)
@@ -20,7 +20,7 @@
  *   - bridge routes to the focus-specific tailored activity (one of 5) via
  *     `bookmark: true`. Each tailored activity is a single section with
  *     multiple screens so the bookmark pops only once the full activity
- *     completes; the user returns to `adaptive` afterward.
+ *     completes; the user returns to `nourish` afterward.
  *
  * Full copy in transition-copy-document.md → Synthesis Transition.
  */
@@ -417,53 +417,7 @@ export const peakToIntegrationConfig = {
       ],
     },
 
-    // ── 9. Adaptive Content ────────────────────────────────────────────────
-    {
-      id: 'adaptive',
-      type: 'screens',
-      screens: [
-        {
-          condition: { moduleCompleted: 'values-compass' },
-          blocks: [
-            { type: 'header', title: 'Your Values', animation: 'sunset' },
-            { type: 'text', lines: [
-              'Earlier, you mapped what matters most to you. As you move into a quieter phase, notice if those values feel different now. Sometimes the peak reshapes what we thought we knew about ourselves.',
-            ] },
-          ],
-        },
-        {
-          condition: { moduleCompleted: 'protector-dialogue' },
-          blocks: [
-            { type: 'header', title: 'Parts That Spoke', animation: 'sunset' },
-            { type: 'text', lines: [
-              'You met a part of yourself today. As the session softens, that part might still have something to say. You don\'t need to seek it out. Just notice if it surfaces.',
-            ] },
-          ],
-        },
-        {
-          condition: { moduleCompleted: 'stay-with-it' },
-          blocks: [
-            { type: 'header', title: 'Staying With It', animation: 'sunset' },
-            { type: 'text', lines: [
-              'You practiced staying with difficulty during the peak. That skill stays with you beyond this session. It becomes easier to access with time.',
-            ] },
-          ],
-        },
-        {
-          condition: { helperUsedDuring: 'peak' },
-          blocks: [
-            { type: 'header', title: 'Reaching Out', animation: 'sunset' },
-            { type: 'text', lines: [
-              'During the peak, you reached out for support. That is not weakness. Knowing when to ask for help is one of the most important skills you can carry out of this session.',
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── 10. Nourish Yourself ──────────────────────────────────────────────
-    // (Bridge is 8, Adaptive is 9, Nourish is 10 — the comment was already
-    //  correct for its final position.)
+    // ── 9. Nourish Yourself ────────────────────────────────────────────────
     {
       id: 'nourish',
       type: 'screens',
@@ -481,7 +435,7 @@ export const peakToIntegrationConfig = {
       ],
     },
 
-    // ── 11. Enter Synthesis Phase (terminal) ───────────────────────────────
+    // ── 10. Enter Synthesis Phase (terminal) ───────────────────────────────
     // `terminal: true` stops sequential advance from walking into the tail
     // detours (focus-edit, relationship-type, tailored activities) that
     // follow in the array. Continue is relabeled to "Complete".
@@ -549,7 +503,7 @@ export const peakToIntegrationConfig = {
     // Tailored activities (one per focus; reached from bridge with
     // `bookmark: true`). Each is a single section with multiple screens so
     // the bookmark only pops once the whole activity completes, returning
-    // the user to `adaptive` (the section after bridge in main flow).
+    // the user to `nourish` (the section after bridge in main flow).
     ...letterUnsentSections,
     ...innerDialogueSections,
     ...releaseKeepSections,

@@ -171,6 +171,7 @@ export default function CommittedActionLetterModule({ module, onComplete, onSkip
 
   // Navigation
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setIsBodyVisible(false);
@@ -182,7 +183,7 @@ export default function CommittedActionLetterModule({ module, onComplete, onSkip
         setIsBodyVisible(true);
       }, 50);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   const handleNext = useCallback(() => {
     // Assemble when advancing to review

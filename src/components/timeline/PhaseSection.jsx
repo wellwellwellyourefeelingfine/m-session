@@ -279,38 +279,57 @@ const PhaseSection = forwardRef(function PhaseSection(
               // Check if this is the current module (should not be editable during active session)
               const isCurrentModuleItem = module.instanceId === currentModuleId;
 
+              // Active-idle = current module the user hasn't pressed Begin on yet.
+              // These CAN be edited (delete / reorder) from Home — swapping transfers
+              // the active designation to the module that moves into its position,
+              // and deleting falls through to the next upcoming module or OpenSpace.
+              const isActiveIdle = module.status === 'active' && !module.startedAt;
+
               // Determine if this module can be reordered
               // Booster modules can never be reordered
-              // Current module and completed/skipped modules cannot be edited during active session
+              // Completed/skipped modules and begun active modules cannot be edited during active session
               const canEditModule = isEditMode && !isBooster && (
-                !isActiveSession || (module.status === 'upcoming' && !isCurrentModuleItem)
+                !isActiveSession
+                  || (module.status === 'upcoming' && !isCurrentModuleItem)
+                  || isActiveIdle
               );
 
               // Booster modules can be deleted (but not reordered), so pass edit mode through
               const canShowEditMode = isEditMode && (
-                !isActiveSession || (module.status === 'upcoming' && !isCurrentModuleItem)
+                !isActiveSession
+                  || (module.status === 'upcoming' && !isCurrentModuleItem)
+                  || isActiveIdle
               );
 
               // Check position constraints
               const isFirst = index === 0;
               const isLastModule = index === modules.length - 1;
 
-              // During active session, can't move modules above the current module
-              // currentModuleIndex is -1 if current module is not in this phase
+              // During active session, normally can't move modules above the current module.
+              // But if the current module is active-idle (not yet begun), allow free
+              // reordering — the swap will transfer the active designation.
+              const currentModuleItem = currentModuleId
+                ? modules.find((m) => m.instanceId === currentModuleId)
+                : null;
+              const currentIsActiveIdle = currentModuleItem
+                && currentModuleItem.status === 'active'
+                && !currentModuleItem.startedAt;
+
               const canMoveUp = isFirst ? false : (
-                isActiveSession && currentModuleIndex >= 0
+                isActiveSession && currentModuleIndex >= 0 && !currentIsActiveIdle
                   ? index > currentModuleIndex + 1 // Can only move up if we're at least 2 positions below current
                   : true
               );
               const canMoveDown = isLastModule ? false : true;
 
-              // Count editable modules (non-booster, and upcoming during active session) to determine if arrows should show
+              // Count editable modules (non-booster, upcoming or active-idle during active session) to determine if arrows should show
               const editableModules = modules.filter((m) => {
                 const mIsBooster = m.isBoosterModule || m.libraryId === 'booster-consideration';
                 const mIsCurrentModule = m.instanceId === currentModuleId;
                 if (mIsBooster) return false;
                 if (isActiveSession) {
-                  return m.status === 'upcoming' && !mIsCurrentModule;
+                  const mIsActiveIdle = m.status === 'active' && !m.startedAt;
+                  return (m.status === 'upcoming' && !mIsCurrentModule) || mIsActiveIdle;
                 }
                 return true;
               });

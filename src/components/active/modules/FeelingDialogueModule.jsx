@@ -187,6 +187,7 @@ export default function FeelingDialogueModule({ module, onComplete, onSkip, onPr
 
   // Navigation
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setIsBodyVisible(false);
@@ -198,7 +199,7 @@ export default function FeelingDialogueModule({ module, onComplete, onSkip, onPr
         setIsBodyVisible(true);
       }, 50);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   const handleNext = useCallback(() => {
     // Assemble dialogue when advancing to review

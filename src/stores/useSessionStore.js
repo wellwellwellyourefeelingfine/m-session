@@ -1107,6 +1107,22 @@ export const useSessionStore = create(
           },
         };
 
+        // If removing the current active module (only reachable when it's idle —
+        // the edit UI blocks delete once startedAt is set), clear the pointer and
+        // reset meditation playback. ActiveView's auto-start useEffect will
+        // promote the next upcoming module, or fall back to <OpenSpace/>.
+        if (state.modules.currentModuleInstanceId
+            && idsToRemove.includes(state.modules.currentModuleInstanceId)) {
+          updates.modules.currentModuleInstanceId = null;
+          updates.meditationPlayback = {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          };
+        }
+
         // If removing the booster module, disable considerBooster
         if (moduleToRemove.libraryId === 'booster-consideration') {
           updates.booster = {
@@ -1126,37 +1142,66 @@ export const useSessionStore = create(
         const oldOrder = module.order;
         const phase = module.phase;
 
+        // If the reordered module is the current active-idle module, demote it
+        // so the auto-start useEffect promotes whichever module now sits at the
+        // lowest order. Same pattern as swapModuleOrder.
+        const currentId = state.modules.currentModuleInstanceId;
+        const shouldDemote = currentId === instanceId
+          && module.status === 'active'
+          && !module.startedAt;
+
         const updatedItems = state.modules.items.map((m) => {
           if (m.phase !== phase) return m;
+          let next = m;
           if (m.instanceId === instanceId) {
-            return { ...m, order: newOrder };
-          }
-          // Shift other modules
-          if (newOrder < oldOrder) {
+            next = { ...next, order: newOrder };
+            if (shouldDemote) {
+              next = { ...next, status: 'upcoming', startedAt: null };
+            }
+          } else if (newOrder < oldOrder) {
             // Moving up: shift modules in between down
             if (m.order >= newOrder && m.order < oldOrder) {
-              return { ...m, order: m.order + 1 };
+              next = { ...next, order: m.order + 1 };
             }
           } else {
             // Moving down: shift modules in between up
             if (m.order > oldOrder && m.order <= newOrder) {
-              return { ...m, order: m.order - 1 };
+              next = { ...next, order: m.order - 1 };
             }
           }
-          return m;
+          return next;
         });
 
-        set({
+        const updates = {
           modules: {
             ...state.modules,
             items: updatedItems,
           },
-        });
+        };
+
+        if (shouldDemote) {
+          updates.modules.currentModuleInstanceId = null;
+          updates.meditationPlayback = {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          };
+        }
+
+        set(updates);
       },
 
       /**
        * Swap module order with an adjacent module (for up/down reordering UI)
-       * This is a simple swap between two adjacent positions
+       * This is a simple swap between two adjacent positions.
+       *
+       * If either swap participant is the current active-idle module (active
+       * but not yet begun), demote it back to 'upcoming' and clear the active
+       * pointer. ActiveView's auto-start useEffect will then promote whichever
+       * module is now at the lowest order — effectively transferring the idle
+       * page to the swapped-in activity.
        */
       swapModuleOrder: (instanceId, newOrder) => {
         const state = get();
@@ -1173,23 +1218,47 @@ export const useSessionStore = create(
 
         if (!targetModule) return;
 
-        // Swap the orders
+        // Detect whether we need to demote the current active-idle module
+        const currentId = state.modules.currentModuleInstanceId;
+        const swapTouchesCurrent = currentId
+          && (currentId === instanceId || currentId === targetModule.instanceId);
+        const currentModuleItem = swapTouchesCurrent
+          ? state.modules.items.find((m) => m.instanceId === currentId)
+          : null;
+        const shouldDemote = currentModuleItem
+          && currentModuleItem.status === 'active'
+          && !currentModuleItem.startedAt;
+
+        // Swap the orders, and demote the active-idle module if needed
         const updatedItems = state.modules.items.map((m) => {
-          if (m.instanceId === instanceId) {
-            return { ...m, order: newOrder };
+          let next = m;
+          if (m.instanceId === instanceId) next = { ...next, order: newOrder };
+          if (m.instanceId === targetModule.instanceId) next = { ...next, order: oldOrder };
+          if (shouldDemote && m.instanceId === currentId) {
+            next = { ...next, status: 'upcoming', startedAt: null };
           }
-          if (m.instanceId === targetModule.instanceId) {
-            return { ...m, order: oldOrder };
-          }
-          return m;
+          return next;
         });
 
-        set({
+        const updates = {
           modules: {
             ...state.modules,
             items: updatedItems,
           },
-        });
+        };
+
+        if (shouldDemote) {
+          updates.modules.currentModuleInstanceId = null;
+          updates.meditationPlayback = {
+            moduleInstanceId: null,
+            isPlaying: false,
+            hasStarted: false,
+            startedAt: null,
+            accumulatedTime: 0,
+          };
+        }
+
+        set(updates);
       },
 
       updateModuleDuration: (instanceId, duration) => {
@@ -1878,16 +1947,11 @@ export const useSessionStore = create(
 
       // Begin the peak to integration transition (shows IntegrationTransition component)
       //
-      // Also stamps `peak.endedAt` now so the peak phase is properly bounded
-      // DURING the synthesis transition itself. Without this, phase-bounded
-      // derivations (e.g. `classifyHelperUsageByPhase` in
-      // `useTransitionModuleState`) treat peak as still ongoing — which
-      // causes adaptive content like "Reaching Out" (gated on
-      // `helperUsedDuring: 'peak'`) to flash in during the transition even
-      // when helper usage was actually from an earlier phase or didn't
-      // happen at all. `transitionToIntegration` re-stamps `peak.endedAt`
-      // at completion; both writes are semantically consistent (peak ends
-      // when the transition starts; the value is harmless to overwrite).
+      // Also stamps `peak.endedAt` now so any phase-boundary consumer sees
+      // the peak as properly bounded DURING the synthesis transition itself.
+      // `transitionToIntegration` re-stamps `peak.endedAt` at completion;
+      // both writes are semantically consistent (peak ends when the
+      // transition starts; the value is harmless to overwrite).
       beginIntegrationTransition: () => {
         const state = get();
         const now = Date.now();
@@ -2405,13 +2469,31 @@ export const useSessionStore = create(
             inOpenSpace: false, // Clear open space when user explicitly starts a module
             items: state.modules.items.map((m) =>
               m.instanceId === instanceId
-                ? { ...m, status: 'active', startedAt: Date.now() }
+                ? { ...m, status: 'active' }
                 : m
             ),
           },
         };
 
         set(updates);
+      },
+
+      // Stamp startedAt when the user actually presses Begin on the idle page.
+      // Every Begin press overwrites startedAt so actualDuration reflects the
+      // latest engagement window, not an earlier abandoned attempt.
+      beginModule: (instanceId) => {
+        const state = get();
+        const module = state.modules.items.find((m) => m.instanceId === instanceId);
+        if (!module || module.isBoosterModule) return;
+        if (module.status !== 'active') return;
+        set({
+          modules: {
+            ...state.modules,
+            items: state.modules.items.map((m) =>
+              m.instanceId === instanceId ? { ...m, startedAt: Date.now() } : m
+            ),
+          },
+        });
       },
 
       completeModule: (instanceId) => {
@@ -2484,7 +2566,9 @@ export const useSessionStore = create(
             });
           }
         } else if (nextModule) {
-          // For peak/integration phases, auto-start next module
+          // For peak/integration phases, auto-promote next module into the active slot.
+          // Do NOT set startedAt here — the user hasn't pressed Begin yet.
+          // startedAt is stamped by beginModule() when they engage.
           set({
             modules: {
               ...state.modules,
@@ -2492,7 +2576,7 @@ export const useSessionStore = create(
               inOpenSpace: false, // Clear open space when starting a module
               items: updatedItems.map((m) =>
                 m.instanceId === nextModule.instanceId
-                  ? { ...m, status: 'active', startedAt: now }
+                  ? { ...m, status: 'active' }
                   : m
               ),
               history: [...state.modules.history, historyEntry],
@@ -2585,7 +2669,9 @@ export const useSessionStore = create(
             });
           }
         } else if (nextModule) {
-          // For peak/integration phases, auto-start next module
+          // For peak/integration phases, auto-promote next module into the active slot.
+          // Do NOT set startedAt here — the user hasn't pressed Begin yet.
+          // startedAt is stamped by beginModule() when they engage.
           set({
             modules: {
               ...state.modules,
@@ -2593,7 +2679,7 @@ export const useSessionStore = create(
               inOpenSpace: false, // Clear open space when starting a module
               items: updatedItems.map((m) =>
                 m.instanceId === nextModule.instanceId
-                  ? { ...m, status: 'active', startedAt: now }
+                  ? { ...m, status: 'active' }
                   : m
               ),
               history: [...state.modules.history, historyEntry],

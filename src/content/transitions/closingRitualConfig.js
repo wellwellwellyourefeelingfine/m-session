@@ -10,8 +10,7 @@
  *      Touchstone cairn (all 4 touchstones layered) → Intention reflection
  *   3. Pre-reflection setup → Guided closing audio → Post-audio debrief
  *   4. Reflections crossroads: user picks which closing reflections to write
- *   5. Adaptive session-specific observations
- *   6. Permission (integration + follow-up framing) → Before you go →
+ *   5. Permission (integration + follow-up framing) → Before you go →
  *      Close (terminal)
  *
  * Tail detours (reached from the reflections crossroads, each bookmarks
@@ -462,55 +461,7 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── 13. Adaptive Content ───────────────────────────────────────────────
-    {
-      id: 'adaptive',
-      type: 'screens',
-      screens: [
-        // Booster was taken
-        {
-          condition: { storeValue: 'booster.status', equals: 'taken' },
-          blocks: [
-            { type: 'header', title: 'The Second Wave', animation: 'moonrise' },
-            { type: 'text', lines: [
-              'You chose to extend the session with a second dose. Notice how the two waves felt different. The second often brings a gentler clarity.',
-            ] },
-            // Same condition as the screen, so the journal assembler also
-            // filters this prompt out for users who didn't take a booster
-            // (screen-level conditions aren't inherited by the assembler).
-            { type: 'prompt',
-              condition: { storeValue: 'booster.status', equals: 'taken' },
-              prompt: 'How did the booster dose affect your session?',
-              placeholder: 'What I noticed...',
-              storeField: 'transitionData.secondWaveReflection',
-              journalLabel: 'Second wave reflection',
-            },
-          ],
-        },
-        // Many journal entries (5+)
-        {
-          condition: { storeValue: 'journalCount', gte: 5 },
-          blocks: [
-            { type: 'header', title: 'What You Wrote', animation: 'moonrise' },
-            { type: 'text', lines: [
-              "You wrote a lot today. Those words are yours, and they'll mean different things when you read them tomorrow, or next week. That's part of the work.",
-            ] },
-          ],
-        },
-        // Protector Dialogue completed
-        {
-          condition: { moduleCompleted: 'protector-dialogue' },
-          blocks: [
-            { type: 'header', title: 'Parts That Spoke', animation: 'moonrise' },
-            { type: 'text', lines: [
-              "You spent time with parts of yourself that don't always get heard. That conversation doesn't end here. Those parts may show up again in the coming days, and when they do, you'll know how to listen.",
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── 14. Permission to Be Unfinished ────────────────────────────────────
+    // ── 13. Permission to Be Unfinished ────────────────────────────────────
     {
       id: 'permission',
       type: 'screens',
@@ -531,7 +482,7 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── 15. Before You Go ──────────────────────────────────────────────────
+    // ── 14. Before You Go ──────────────────────────────────────────────────
     {
       id: 'before-you-go',
       type: 'screens',
@@ -550,7 +501,7 @@ export const closingRitualConfig = {
       ],
     },
 
-    // ── 16. Take Care / Close (terminal) ───────────────────────────────────
+    // ── 15. Take Care / Close (terminal) ───────────────────────────────────
     {
       id: 'close',
       type: 'screens',

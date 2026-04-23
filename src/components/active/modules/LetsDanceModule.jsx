@@ -433,8 +433,9 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onProgress
 
   // Begin flow: show alarm prompt
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setShowAlarmPrompt(true);
-  }, []);
+  }, [module.instanceId]);
 
   // After alarm prompt: start timer
   const handleAlarmProceed = useCallback(() => {

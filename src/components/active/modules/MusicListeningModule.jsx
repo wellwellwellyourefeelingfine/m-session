@@ -426,8 +426,9 @@ export default function MusicListeningModule({ module, onComplete, onSkip, onPro
 
   // Begin flow: show alarm prompt
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setShowAlarmPrompt(true);
-  }, []);
+  }, [module.instanceId]);
 
   // After alarm prompt: start timer
   const handleAlarmProceed = useCallback(() => {

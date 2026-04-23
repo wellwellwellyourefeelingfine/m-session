@@ -211,40 +211,7 @@ export const peakTransitionConfig = {
       ],
     },
 
-    // ── Screen 9: Adaptive Content ─────────────────────────────────────────
-    {
-      id: 'adaptive',
-      type: 'screens',
-      screens: [
-        // Grounding meditation completed in come-up
-        {
-          condition: {
-            or: [
-              { moduleCompleted: 'simple-grounding' },
-              { moduleCompleted: 'short-grounding' },
-            ],
-          },
-          blocks: [
-            { type: 'header', title: 'Returning', animation: 'full-sun' },
-            { type: 'text', lines: [
-              'You grounded yourself during the come-up. That steadiness is still in your body. You can return to your breath at any time during this phase.',
-            ] },
-          ],
-        },
-        // Music listening during come-up
-        {
-          condition: { moduleCompleted: 'music-listening' },
-          blocks: [
-            { type: 'header', title: 'Sound', animation: 'full-sun' },
-            { type: 'text', lines: [
-              'Music can work differently now that the effects have deepened. You might find that what you were listening to earlier lands in a new way.',
-            ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 10: Begin Peak ──────────────────────────────────────────────
+    // ── Screen 9: Begin Peak ───────────────────────────────────────────────
     {
       id: 'begin-peak',
       type: 'screens',

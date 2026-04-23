@@ -520,9 +520,10 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
 
   // Fade out idle screen before starting composition
   const handleBeginWithTransition = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => playback.handleStart(), 300);
-  }, [playback]);
+  }, [playback, module.instanceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {

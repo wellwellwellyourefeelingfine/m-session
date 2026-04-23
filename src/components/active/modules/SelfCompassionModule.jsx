@@ -18,6 +18,7 @@ import {
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
+import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
@@ -78,9 +79,10 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
 
   // Fade out idle screen before starting composition
   const handleBeginWithTransition = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => playback.handleStart(), 300);
-  }, [playback]);
+  }, [playback, module.instanceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {

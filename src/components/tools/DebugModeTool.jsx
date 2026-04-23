@@ -345,18 +345,6 @@ function BoosterPeakTest() {
       const ninetyMinutesAgo = now - 90 * 60 * 1000;
       const comeUpStarted = ninetyMinutesAgo;
       const comeUpEnded = ninetyMinutesAgo + 45 * 60 * 1000;
-      // Synthetic peak-phase timestamps used by the simulated completed
-      // modules + helper-modal journal entry below. All fall inside the
-      // peak window (comeUpEnded → now) so the synthesis transition's
-      // adaptive section sees them as "during peak".
-      const peakPhaseStart = comeUpEnded;
-      const valuesCompassStartedAt = peakPhaseStart + 5 * 60 * 1000;
-      const valuesCompassCompletedAt = peakPhaseStart + 15 * 60 * 1000;
-      const protectorStartedAt = peakPhaseStart + 18 * 60 * 1000;
-      const protectorCompletedAt = peakPhaseStart + 28 * 60 * 1000;
-      const stayWithItStartedAt = peakPhaseStart + 30 * 60 * 1000;
-      const stayWithItCompletedAt = peakPhaseStart + 40 * 60 * 1000;
-      const helperModalEntryAt = peakPhaseStart + 22 * 60 * 1000;
 
       // Create intention journal entry
       const intentionEntry = useJournalStore.getState().addEntry({
@@ -365,22 +353,6 @@ function BoosterPeakTest() {
         moduleTitle: 'Pre-Substance Intention',
         isEdited: false,
       });
-
-      // Simulate a Helper Modal usage during peak so `helperUsedDuring.peak`
-      // evaluates true in the synthesis transition — triggers the "Reaching
-      // Out" adaptive screen. Override createdAt after adding because
-      // addEntry hard-codes `Date.now()`.
-      const helperEntry = useJournalStore.getState().addEntry({
-        content: 'HELPER MODAL · Peak\n\nCategory: Feeling overwhelmed\nAction chosen: Simple Grounding',
-        source: 'session',
-        moduleTitle: 'Helper Modal',
-        isEdited: false,
-      });
-      useJournalStore.setState((s) => ({
-        entries: s.entries.map((e) =>
-          e.id === helperEntry.id ? { ...e, createdAt: helperModalEntryAt, updatedAt: helperModalEntryAt } : e
-        ),
-      }));
 
       useSessionStore.setState({
         sessionProfile: {
@@ -427,60 +399,6 @@ function BoosterPeakTest() {
         const idx = updatedItems.findIndex((m) => m.instanceId === firstPeakModule.instanceId);
         updatedItems[idx] = { ...firstPeakModule, status: 'active', startedAt: now };
       }
-
-      // Simulated completed modules during peak — so the synthesis
-      // transition's adaptive section shows all 4 gated screens:
-      //   - "Your Values" (values-compass)
-      //   - "Parts That Spoke" (protector-dialogue)
-      //   - "Staying With It" (stay-with-it)
-      //   - "Reaching Out" (helperUsedDuring: 'peak' — covered by the
-      //     helper-modal journal entry above)
-      // These entries live only in `modules.history` (what
-      // `useTransitionModuleState.sessionData.modulesCompleted` reads),
-      // not in `modules.items`, so they don't pollute the live timeline.
-      const simulatedPeakHistory = [
-        {
-          instanceId: `debug-values-compass-${now}`,
-          libraryId: 'values-compass',
-          phase: 'peak',
-          title: 'Values Compass',
-          status: 'completed',
-          order: 90,
-          startedAt: valuesCompassStartedAt,
-          completedAt: valuesCompassCompletedAt,
-          actualDuration: Math.floor((valuesCompassCompletedAt - valuesCompassStartedAt) / 1000),
-          duration: 15,
-          content: {},
-        },
-        {
-          instanceId: `debug-protector-dialogue-${now}`,
-          // Adaptive conditions check `moduleCompleted: 'protector-dialogue'`
-          // literally, so we use the parent id (not the -p1/-p2 variants).
-          libraryId: 'protector-dialogue',
-          phase: 'peak',
-          title: 'Protector Dialogue',
-          status: 'completed',
-          order: 91,
-          startedAt: protectorStartedAt,
-          completedAt: protectorCompletedAt,
-          actualDuration: Math.floor((protectorCompletedAt - protectorStartedAt) / 1000),
-          duration: 10,
-          content: {},
-        },
-        {
-          instanceId: `debug-stay-with-it-${now}`,
-          libraryId: 'stay-with-it',
-          phase: 'peak',
-          title: 'Stay With It',
-          status: 'completed',
-          order: 92,
-          startedAt: stayWithItStartedAt,
-          completedAt: stayWithItCompletedAt,
-          actualDuration: Math.floor((stayWithItCompletedAt - stayWithItStartedAt) / 1000),
-          duration: 10,
-          content: {},
-        },
-      ];
 
       useSessionStore.setState({
         sessionPhase: 'active',
@@ -540,13 +458,6 @@ function BoosterPeakTest() {
           ...useSessionStore.getState().modules,
           items: updatedItems,
           activeModuleId: firstPeakModule?.instanceId || null,
-          // Merge the simulated peak completions into history. Any prior
-          // history entries are preserved (reset should have cleared them,
-          // but spread defensively in case a future change adds defaults).
-          history: [
-            ...(useSessionStore.getState().modules.history || []),
-            ...simulatedPeakHistory,
-          ],
         },
       });
 
@@ -560,9 +471,7 @@ function BoosterPeakTest() {
         <p className="text-sm text-[var(--color-text-primary)]">Booster Peak Test</p>
         <p className="text-[12px] text-[var(--color-text-tertiary)]">
           Jumps into the peak phase with a pending booster, ingestion set to 90 minutes ago,
-          and a pre-filled intention. Also seeds simulated peak-phase history so the synthesis
-          transition's adaptive section shows all four gated screens: Values Compass, Protector
-          Dialogue, Stay With It, and Reaching Out (via a faux Helper Modal entry).
+          and a pre-filled intention.
         </p>
 
         {isActive && (

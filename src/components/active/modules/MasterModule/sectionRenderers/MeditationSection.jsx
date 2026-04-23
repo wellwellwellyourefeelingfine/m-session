@@ -143,10 +143,14 @@ export default function MeditationSection({
     );
   }
 
-  // Display duration for idle screen
+  // Display duration for idle screen — prefer explicit fixedDuration (in seconds)
+  // when the meditation declares one (e.g. transition-opening, transition-closing),
+  // otherwise fall back to the module's synced duration.
   const displayDuration = hasVariations
     ? Math.round((meditation.variations[selectedVariation]?.duration || 0) / 60)
-    : duration.selected;
+    : meditation.fixedDuration
+      ? Math.round(meditation.fixedDuration / 60)
+      : duration.selected;
 
   return (
     <>

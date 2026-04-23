@@ -377,6 +377,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
   // ─── idle → intro ──────────────────────────────────────────────────
 
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setPhase('intro');
@@ -384,7 +385,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
       setIsIntroVisible(true);
       setIsLeaving(false);
     }, FADE_MS);
-  }, []);
+  }, [module.instanceId]);
 
   // ─── Intro navigation ─────────────────────────────────────────────
 

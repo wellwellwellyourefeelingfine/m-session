@@ -137,12 +137,13 @@ export default function useMasterModuleState(content, module) {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   const begin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setModulePhase('active');
       setIsLeaving(false);
     }, FADE_MS);
-  }, []);
+  }, [module.instanceId]);
 
   const advanceSection = useCallback(() => {
     // Track that we completed this section

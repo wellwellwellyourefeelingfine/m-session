@@ -391,7 +391,7 @@ export default function ScreensSection({
   }, [onChoiceSelect]);
 
   // Render a single block by type
-  const renderBlock = (block, blockIndex) => {
+  const renderBlock = (block, _blockIndex) => {
     switch (block.type) {
       case 'text':
         return <TextBlock screen={block} accentTerms={accentTerms} />;

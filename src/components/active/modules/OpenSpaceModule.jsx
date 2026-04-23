@@ -77,8 +77,9 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onProgress
 
   // Begin: start timer directly (background audio handles alerting)
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     timer.handleStart();
-  }, [timer]);
+  }, [timer, module.instanceId]);
 
   // Control bar phase
   const getControlPhase = () => {

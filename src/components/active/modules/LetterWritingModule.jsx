@@ -228,6 +228,7 @@ export default function LetterWritingModule({ module, onComplete, onSkip, onProg
 
   // Navigation
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setIsBodyVisible(false);
@@ -239,7 +240,7 @@ export default function LetterWritingModule({ module, onComplete, onSkip, onProg
         setIsBodyVisible(true);
       }, 50);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   const handleNext = useCallback(() => {
     // When advancing to review screen, assemble the letter

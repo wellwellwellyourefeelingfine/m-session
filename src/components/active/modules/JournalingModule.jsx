@@ -177,6 +177,7 @@ export default function JournalingModule({ module, onComplete, onSkip, onProgres
 
   // Phase transitions
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setIsBodyVisible(false);
@@ -188,7 +189,7 @@ export default function JournalingModule({ module, onComplete, onSkip, onProgres
         setIsBodyVisible(true);
       }, 50);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   const handleNext = useCallback(() => {
     if (screenIndex === lastSaveableIndex) {

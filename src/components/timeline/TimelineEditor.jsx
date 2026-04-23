@@ -278,12 +278,14 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     return targetPhaseOrder >= effectiveOrder;
   };
 
-  // Check if a specific module can be removed (must be upcoming, not active or completed, and not current)
+  // Check if a specific module can be removed.
+  // During active session: upcoming (and not current) OR active-but-not-yet-begun.
+  // Active-idle = current module the user hasn't pressed Begin on yet (startedAt === null).
   const canRemoveModule = (module) => {
     if (!isActiveSession) return true;
-    // During active session: must be upcoming AND not the current module
     const isCurrentModuleItem = module.instanceId === currentModule?.instanceId;
-    return module.status === 'upcoming' && !isCurrentModuleItem;
+    const isActiveIdle = module.status === 'active' && !module.startedAt;
+    return (module.status === 'upcoming' && !isCurrentModuleItem) || isActiveIdle;
   };
 
   const handleAddModuleClick = (phase) => {

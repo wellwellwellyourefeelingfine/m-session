@@ -213,6 +213,7 @@ export default function InnerChildLetterModule({ module, onComplete, onSkip, onP
 
   // Navigation
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => {
       setIsBodyVisible(false);
@@ -224,7 +225,7 @@ export default function InnerChildLetterModule({ module, onComplete, onSkip, onP
         setIsBodyVisible(true);
       }, 50);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   const handleNext = useCallback(() => {
     if (stepIndex === 3) {

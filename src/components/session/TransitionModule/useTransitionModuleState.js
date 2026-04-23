@@ -191,9 +191,7 @@ export default function useTransitionModuleState(config) {
   const sessionData = useMemo(() => {
     const modules = storeState.modules || {};
     const history = modules.history || [];
-    const journalEntries = useJournalStore.getState().entries || [];
     const sessionProfile = storeState.sessionProfile || {};
-    const timeline = storeState.timeline || {};
     const booster = storeState.booster || {};
 
     // Effective focus: transitionData override or sessionProfile.primaryFocus
@@ -203,13 +201,8 @@ export default function useTransitionModuleState(config) {
       modulesCompleted: history
         .filter((m) => m.status === 'completed')
         .map((m) => m.libraryId),
-      modulesSkipped: history
-        .filter((m) => m.status === 'skipped')
-        .map((m) => m.libraryId),
       boosterStatus: booster.status,
       boosterTaken: booster.status === 'taken',
-      journalCount: journalEntries.length,
-      helperUsedDuring: classifyHelperUsageByPhase(journalEntries, timeline.phases),
       primaryFocus: sessionProfile.primaryFocus,
       effectiveFocus,
     };
@@ -642,43 +635,3 @@ function mapTransitionIdToDataKey(transitionId) {
   }
 }
 
-/**
- * Derives a per-phase boolean for "did the user use the HelperModal during this phase?"
- * by scanning journal entries for helper entries and classifying each by timestamp
- * against the timeline's phase boundaries.
- *
- * Helper entries are identified by source: 'session' and moduleTitle starting with
- * 'HELPER MODAL' or similar markers (HelperModal writes `moduleTitle: 'Helper Modal'`).
- */
-function classifyHelperUsageByPhase(journalEntries, phases) {
-  const result = { comeUp: false, peak: false, integration: false };
-  if (!phases) return result;
-
-  const comeUpStart = phases.comeUp?.startedAt;
-  const comeUpEnd = phases.comeUp?.endedAt;
-  const peakStart = phases.peak?.startedAt;
-  const peakEnd = phases.peak?.endedAt;
-  const integrationStart = phases.integration?.startedAt;
-  const integrationEnd = phases.integration?.endedAt;
-
-  for (const entry of journalEntries) {
-    const title = (entry.moduleTitle || '').toLowerCase();
-    const isHelperEntry = title.includes('helper modal') || title.includes('helper');
-    if (!isHelperEntry) continue;
-
-    const ts = entry.createdAt || entry.timestamp;
-    if (!ts) continue;
-
-    if (comeUpStart && (!comeUpEnd || ts <= comeUpEnd) && ts >= comeUpStart) {
-      result.comeUp = true;
-    }
-    if (peakStart && (!peakEnd || ts <= peakEnd) && ts >= peakStart) {
-      result.peak = true;
-    }
-    if (integrationStart && (!integrationEnd || ts <= integrationEnd) && ts >= integrationStart) {
-      result.integration = true;
-    }
-  }
-
-  return result;
-}

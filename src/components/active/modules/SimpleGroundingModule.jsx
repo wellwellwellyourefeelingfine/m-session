@@ -16,12 +16,20 @@ import {
 import { getModuleById } from '../../../content/modules/library';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
+import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
+import WaveLoop from '../capabilities/animations/WaveLoop';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+
+// Optional idle-screen animations, opted into via `meditation.idleAnimation`.
+// When undefined, IdleScreen falls back to its default (AsciiMoon).
+const IDLE_ANIMATIONS = {
+  wave: WaveLoop,
+};
 
 export default function SimpleGroundingModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
@@ -59,9 +67,10 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
 
   // Fade out idle screen before starting composition
   const handleBeginWithTransition = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLeaving(true);
     setTimeout(() => playback.handleStart(), 300);
-  }, [playback]);
+  }, [playback, module.instanceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {
@@ -109,19 +118,25 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
         {/* Idle state */}
-        {!playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={meditation.title}
-              description={meditation.description}
-            />
+        {!playback.hasStarted && !playback.isLoading && (() => {
+          const IdleAnimationComp = meditation.idleAnimation
+            ? IDLE_ANIMATIONS[meditation.idleAnimation]
+            : null;
+          return (
+            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+              <IdleScreen
+                title={meditation.title}
+                description={meditation.description}
+                animation={IdleAnimationComp ? <IdleAnimationComp /> : undefined}
+              />
 
-            {/* Fixed duration display */}
-            <p className="mt-6 text-[var(--color-text-tertiary)] text-sm">
-              ~{Math.round(meditation.fixedDuration / 60)} min
-            </p>
-          </div>
-        )}
+              {/* Fixed duration display */}
+              <p className="mt-6 text-[var(--color-text-tertiary)] text-sm">
+                ~{Math.round(meditation.fixedDuration / 60)} min
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Loading state — composing meditation audio */}
         {playback.isLoading && (

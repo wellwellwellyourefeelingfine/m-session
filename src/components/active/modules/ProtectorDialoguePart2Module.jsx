@@ -54,11 +54,12 @@ export default function ProtectorDialoguePart2Module({ _module, onComplete, onSk
   const [isLandingVisible, setIsLandingVisible] = useState(true);
 
   const handleBegin = useCallback(() => {
+    useSessionStore.getState().beginModule(module.instanceId);
     setIsLandingVisible(false);
     setTimeout(() => {
       setHasStarted(true);
     }, 400);
-  }, []);
+  }, [module.instanceId]);
 
   // ── Step navigation ──
   const [currentStepIndex, setCurrentStepIndex] = useState(0);

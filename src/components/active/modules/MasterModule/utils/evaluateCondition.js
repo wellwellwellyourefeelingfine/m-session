@@ -18,9 +18,8 @@
  * Transition-module extensions (read from context.sessionData when present):
  *   { storeValue: 'sessionProfile.holdingQuestion' }      — dot-path truthy check (has any value)
  *   { storeValue: 'booster.status', equals: 'taken' }     — dot-path equality
- *   { storeValue: 'journalCount', gte: 5 }                — numeric comparison (gte/gt/lte/lt)
+ *   { storeValue: 'transitionData.someCount', gte: 5 }    — numeric comparison (gte/gt/lte/lt)
  *   { moduleCompleted: 'values-compass' }                 — sessionData.modulesCompleted includes id
- *   { helperUsedDuring: 'peak' }                          — sessionData.helperUsedDuring.peak === true
  *
  *   undefined / null                                      — always true (no condition = show)
  *
@@ -111,11 +110,6 @@ export default function evaluateCondition(condition, context) {
   if (condition.moduleCompleted) {
     const completed = sessionData?.modulesCompleted || [];
     return completed.includes(condition.moduleCompleted);
-  }
-
-  // helperUsedDuring: derived per-phase boolean map
-  if (condition.helperUsedDuring) {
-    return sessionData?.helperUsedDuring?.[condition.helperUsedDuring] === true;
   }
 
   // Unknown condition shape → show (safe default)
