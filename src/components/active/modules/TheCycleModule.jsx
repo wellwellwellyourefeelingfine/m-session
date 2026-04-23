@@ -254,10 +254,13 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
 
   // ─── Diagram data assembly ────────────────────────────────────────────
 
-  const diagramMyMoves = myMoveId ? [myMoveId] : [];
-  const diagramPartnerMoves = mode === 'couple'
-    ? (partnerMoveId ? [partnerMoveId] : [])
-    : (theirMoveId ? [theirMoveId] : []);
+  const diagramMyMoves = useMemo(() => (myMoveId ? [myMoveId] : []), [myMoveId]);
+  const diagramPartnerMoves = useMemo(
+    () => (mode === 'couple'
+      ? (partnerMoveId ? [partnerMoveId] : [])
+      : (theirMoveId ? [theirMoveId] : [])),
+    [mode, partnerMoveId, theirMoveId]
+  );
 
   // ─── Phase transitions ────────────────────────────────────────────────
 

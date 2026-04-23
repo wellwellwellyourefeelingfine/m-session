@@ -32,6 +32,7 @@ import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+import { EggIcon } from '../../shared/Icons';
 
 // ─── Check-in options ───────────────────────────────────────────────────────
 
@@ -551,7 +552,14 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          {!playback.isLoading ? (
+          {playback.error ? (
+            <div className="text-center animate-fadeIn flex flex-col items-center">
+              <EggIcon size={48} className="text-[var(--color-text-tertiary)] mb-4" />
+              <p className="text-[var(--color-text-secondary)] text-sm uppercase tracking-wider">
+                Audio not found.
+              </p>
+            </div>
+          ) : !playback.isLoading ? (
             <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
               <IdleScreen
                 title={meditation.title}

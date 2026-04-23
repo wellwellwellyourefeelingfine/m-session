@@ -47,6 +47,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   const completePreSubstanceActivity = useSessionStore((s) => s.completePreSubstanceActivity);
   const sessionId = useSessionStore((s) => s.sessionId);
   const addEntry = useJournalStore((s) => s.addEntry);
+  const updateEntry = useJournalStore((s) => s.updateEntry);
 
   const existingIntention = sessionProfile?.holdingQuestion || '';
   const hasExistingIntention = existingIntention.trim().length > 0;
@@ -217,22 +218,29 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
     if (intentionText.trim()) {
       updateSessionProfile('holdingQuestion', intentionText.trim());
 
-      const entry = addEntry({
-        content: `INTENTION:\n\n${intentionText.trim()}`,
-        source: 'session',
-        sessionId,
-        moduleTitle: 'Pre-Session Intention Setting',
-        isEdited: false,
-      });
+      const existingEntryId = sessionProfile?.intentionJournalEntryId;
+      const content = `INTENTION:\n\n${intentionText.trim()}`;
 
-      if (entry?.id) {
-        updateSessionProfile('intentionJournalEntryId', entry.id);
+      // Update the intake-created entry if one exists so we don't duplicate.
+      if (existingEntryId) {
+        updateEntry(existingEntryId, content);
+      } else {
+        const entry = addEntry({
+          content,
+          source: 'session',
+          sessionId,
+          moduleTitle: 'Pre-Session Intention Setting',
+          isEdited: false,
+        });
+        if (entry?.id) {
+          updateSessionProfile('intentionJournalEntryId', entry.id);
+        }
       }
     }
 
     completePreSubstanceActivity('intention-setting');
     onComplete();
-  }, [intentionText, updateSessionProfile, addEntry, sessionId, completePreSubstanceActivity, onComplete]);
+  }, [intentionText, sessionProfile?.intentionJournalEntryId, updateSessionProfile, addEntry, updateEntry, sessionId, completePreSubstanceActivity, onComplete]);
 
   // ── Skip handler (saves intention if written) ──
   const handleModuleSkip = useCallback(() => {

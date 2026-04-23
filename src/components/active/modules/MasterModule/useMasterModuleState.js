@@ -110,7 +110,7 @@ export default function useMasterModuleState(content, module) {
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
-  const sections = content?.sections || [];
+  const sections = useMemo(() => content?.sections || [], [content?.sections]);
   const currentSection = sections[currentSectionIndex];
 
   // Get screens for the current section with global prompt indices applied

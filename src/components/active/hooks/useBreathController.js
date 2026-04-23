@@ -14,7 +14,7 @@
  * - Progress tracking for animations
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 /**
  * Breath phases in order
@@ -129,7 +129,10 @@ export function useBreathController({ sequences = [], onComplete, onSequenceChan
   // Get current sequence and pattern
   const currentSequence = sequences[currentSequenceIndex] || null;
   const isIdleSegment = currentSequence?.type === 'idle';
-  const currentPattern = currentSequence?.pattern || { inhale: 4, hold: 0, exhale: 4, holdAfterExhale: 0 };
+  const currentPattern = useMemo(
+    () => currentSequence?.pattern || { inhale: 4, hold: 0, exhale: 4, holdAfterExhale: 0 },
+    [currentSequence?.pattern]
+  );
 
   // Calculate total cycles in current sequence (null for duration-based)
   const totalCyclesInSequence = currentSequence?.type === 'cycles'

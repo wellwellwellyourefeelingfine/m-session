@@ -406,7 +406,7 @@ export const closingRitualConfig = {
       meditationId: 'transition-closing',
       animation: 'moonrise',
       showTranscript: true,
-      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
+      composerOptions: { skipOpeningGong: false, skipClosingGong: false },
     },
 
     // ── 11. Post-Audio Debrief ─────────────────────────────────────────────

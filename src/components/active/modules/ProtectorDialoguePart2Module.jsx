@@ -27,7 +27,7 @@ import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import useProgressReporter from '../../../hooks/useProgressReporter';
 
-export default function ProtectorDialoguePart2Module({ _module, onComplete, onSkip, onProgressUpdate }) {
+export default function ProtectorDialoguePart2Module({ module, onComplete, onSkip, onProgressUpdate }) {
   // ── Stores ──
   const protectorData = useSessionStore((s) => s.transitionCaptures?.protectorDialogue);
   const updateProtectorCapture = useSessionStore((s) => s.updateProtectorCapture);

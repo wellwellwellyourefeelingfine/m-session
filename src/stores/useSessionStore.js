@@ -439,6 +439,7 @@ export const useSessionStore = create(
         // Intention additions (preserved separately per transition)
         intentionAdditions: {
           opening: null,
+          peak: null,
           integration: null,
         },
 
@@ -611,6 +612,24 @@ export const useSessionStore = create(
         // Determine if user wants to consider a booster
         const considerBooster = profile.considerBooster === 'yes' || profile.considerBooster === 'decide-later';
 
+        // If the user set an intention during intake, persist it as a journal
+        // entry now so it's visible on the Home timeline immediately. The
+        // IntentionSettingActivity later updates this same entry rather than
+        // creating a duplicate.
+        const intentionText = profile.holdingQuestion?.trim();
+        let intentionJournalEntryId = state.sessionProfile?.intentionJournalEntryId ?? null;
+        if (intentionText && !intentionJournalEntryId) {
+          const sessionId = get().sessionId;
+          const entry = useJournalStore.getState().addEntry({
+            content: `INTENTION:\n\n${intentionText}`,
+            source: 'session',
+            sessionId,
+            moduleTitle: 'Pre-Session Intention Setting',
+            isEdited: false,
+          });
+          intentionJournalEntryId = entry?.id ?? null;
+        }
+
         set({
           intake: {
             ...state.intake,
@@ -619,6 +638,10 @@ export const useSessionStore = create(
             showMedicationWarning,
           },
           sessionPhase: 'pre-session',
+          sessionProfile: {
+            ...state.sessionProfile,
+            ...(intentionJournalEntryId ? { intentionJournalEntryId } : {}),
+          },
           timeline: {
             ...state.timeline,
             targetDuration,
@@ -767,8 +790,11 @@ export const useSessionStore = create(
 
           const linkedGroupId = generateId();
           const part1Phase = phase;
-          // Part 2 goes to integration unless both are in integration
-          const part2Phase = (phase === 'integration') ? 'integration' : 'integration';
+          // Part 2 placement rules:
+          // - peak / come-up / pre-session → separate Part 2 into integration so the
+          //   user has post-peak reflection time between the two parts.
+          // - integration / follow-up → Part 2 stays in the same phase as Part 1.
+          const part2Phase = (phase === 'integration' || phase === 'follow-up') ? phase : 'integration';
 
           // Calculate Part 1 order
           const part1PhaseModules = state.modules.items.filter(m => m.phase === part1Phase);
@@ -1937,7 +1963,7 @@ export const useSessionStore = create(
             items: firstPeakModule
               ? state.modules.items.map((m) =>
                   m.instanceId === firstPeakModule.instanceId
-                    ? { ...m, status: 'active', startedAt: now }
+                    ? { ...m, status: 'active' }
                     : m
                 )
               : state.modules.items,
@@ -2015,7 +2041,7 @@ export const useSessionStore = create(
             items: firstIntegrationModule
               ? state.modules.items.map((m) =>
                   m.instanceId === firstIntegrationModule.instanceId
-                    ? { ...m, status: 'active', startedAt: now }
+                    ? { ...m, status: 'active' }
                     : m
                 )
               : state.modules.items,
@@ -3111,7 +3137,7 @@ export const useSessionStore = create(
             closingTouchstone: null,
             touchstoneArcReflection: null,
             oneWord: null,
-            intentionAdditions: { opening: null, integration: null },
+            intentionAdditions: { opening: null, peak: null, integration: null },
             focusChanged: false,
             newFocus: null,
             focusSubtype: null,
@@ -3797,6 +3823,7 @@ export function migrateSessionState(persistedState, version) {
             oneWord: oldPeak.oneWord || null,
             intentionAdditions: {
               opening: null,
+              peak: null,
               integration: oldIntegration.editedIntention || null,
             },
             focusChanged: oldIntegration.focusChanged || false,

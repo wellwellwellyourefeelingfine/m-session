@@ -181,7 +181,7 @@ export default function useTransitionModuleState(config) {
     return { allBlocksWithPromptIndex: blocks, sectionScreensMap: map };
   }, [config]);
 
-  const sections = config.sections || [];
+  const sections = useMemo(() => config.sections || [], [config.sections]);
   const currentSection = sections[currentSectionIndex];
   const currentSectionScreens = currentSection?.type === 'screens'
     ? (sectionScreensMap[currentSection.id] || currentSection.screens || [])

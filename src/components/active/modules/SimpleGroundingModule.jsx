@@ -24,6 +24,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import WaveLoop from '../capabilities/animations/WaveLoop';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+import { EggIcon } from '../../shared/Icons';
 
 // Optional idle-screen animations, opted into via `meditation.idleAnimation`.
 // When undefined, IdleScreen falls back to its default (AsciiMoon).
@@ -117,8 +118,18 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
   return (
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+        {/* Error — audio files missing or failed to load */}
+        {playback.error && (
+          <div className="text-center animate-fadeIn flex flex-col items-center">
+            <EggIcon size={48} className="text-[var(--color-text-tertiary)] mb-4" />
+            <p className="text-[var(--color-text-secondary)] text-sm uppercase tracking-wider">
+              Audio not found.
+            </p>
+          </div>
+        )}
+
         {/* Idle state */}
-        {!playback.hasStarted && !playback.isLoading && (() => {
+        {!playback.error && !playback.hasStarted && !playback.isLoading && (() => {
           const IdleAnimationComp = meditation.idleAnimation
             ? IDLE_ANIMATIONS[meditation.idleAnimation]
             : null;
@@ -157,8 +168,8 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
             }}
           >
             <h2
-              className="text-[var(--color-text-primary)] mb-4"
-              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
+              className="text-xl font-light text-[var(--color-text-primary)] mb-4"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', marginTop: 0 }}
             >
               {meditation.title}
             </h2>

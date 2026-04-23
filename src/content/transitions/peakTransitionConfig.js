@@ -67,7 +67,44 @@ export const peakTransitionConfig = {
       ],
     },
 
-    // ── Screen 3: Touchstone 2 ────────────────────────────────────────────
+    // ── Screen 3: Body Check-In (2nd) ─────────────────────────────────────
+    {
+      id: 'body-check-in-2',
+      type: 'screens',
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: 'Your Body Now', animation: 'full-sun' },
+            { type: 'text', lines: [
+              'At the beginning of your session, we asked what you were feeling in your body. Let\'s come back to this. What sensations are present now?',
+            ] },
+            { type: 'body-check-in',
+              phase: 'peak',
+              instruction: 'Tap any that resonate.',
+            },
+          ],
+        },
+      ],
+    },
+
+    // ── Screen 4: Body Comparison ──────────────────────────────────────────
+    {
+      id: 'body-comparison-2',
+      type: 'screens',
+      screens: [
+        {
+          blocks: [
+            { type: 'header', title: "What's Changed", animation: 'full-sun' },
+            { type: 'body-check-in',
+              mode: 'comparison',
+              comparisonPhases: ['opening', 'peak'],
+            },
+          ],
+        },
+      ],
+    },
+
+    // ── Screen 5: Touchstone 2 ────────────────────────────────────────────
     // Mirrors the Opening Ritual's Touchstone page. User writes a word or
     // phrase; first Continue press saves it (via touchstone-prompt's
     // setPrimaryOverride) and transforms the textarea into an accent display.
@@ -112,44 +149,42 @@ export const peakTransitionConfig = {
       ],
     },
 
-    // ── Screen 4: Body Check-In (2nd) ─────────────────────────────────────
+    // ── Screen 6: Intention Review ─────────────────────────────────────────
+    // Progressive reveal: first Continue press reveals an "Is anything coming
+    // up?" prompt beneath the intention display, auto-scrolling into view.
+    // Mirrors the Closing Ritual's touchstone-cairn pattern (persistBlocks
+    // keeps the header + intention mounted; new blocks fade in below).
     {
-      id: 'body-check-in-2',
+      id: 'intention-review',
       type: 'screens',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: 'Your Body Now', animation: 'full-sun' },
-            { type: 'text', lines: [
-              'At the beginning of your session, we asked what you were feeling in your body. Let\'s come back to this. What sensations are present now?',
-            ] },
-            { type: 'body-check-in',
-              phase: 'peak',
-              instruction: 'Tap any that resonate.',
-            },
-          ],
-        },
-      ],
+      persistBlocks: true,
+      ritualFade: true,
+      screens: (() => {
+        const HEADER = { type: 'header', title: 'Your Intention', animation: 'full-sun' };
+        const INTRO = { type: 'text',
+          condition: { storeValue: 'sessionProfile.holdingQuestion' },
+          lines: ['Before your session, you set this intention:'] };
+        const INTENTION_DISPLAY = { type: 'store-display',
+          storeKey: 'sessionProfile.holdingQuestion',
+          emptyText: '(No intention was set at the start of the session.)',
+          style: 'accent-box' };
+        const ADD_INTRO = { type: 'text',
+          header: "Is anything coming up right now that you'd like to add?" };
+        const ADD_PROMPT = { type: 'prompt',
+          prompt: '',
+          placeholder: "What I'd like to add...",
+          storeField: 'transitionData.intentionAdditions.peak',
+          journalLabel: 'Intention addition (peak)',
+        };
+        const BASE = [HEADER, INTRO, INTENTION_DISPLAY];
+        return [
+          { blocks: [...BASE] },
+          { blocks: [...BASE, ADD_INTRO, ADD_PROMPT] },
+        ];
+      })(),
     },
 
-    // ── Screen 5: Body Comparison ──────────────────────────────────────────
-    {
-      id: 'body-comparison-2',
-      type: 'screens',
-      screens: [
-        {
-          blocks: [
-            { type: 'header', title: "What's Changed", animation: 'full-sun' },
-            { type: 'body-check-in',
-              mode: 'comparison',
-              comparisonPhases: ['opening', 'peak'],
-            },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 6: Reassurance ─────────────────────────────────────────────
+    // ── Screen 7: Reassurance ─────────────────────────────────────────────
     {
       id: 'reassurance',
       type: 'screens',
@@ -165,28 +200,6 @@ export const peakTransitionConfig = {
               '§',
               'You are safe. If it feels like a lot, know that it will soon settle into something workable.',
             ] },
-          ],
-        },
-      ],
-    },
-
-    // ── Screen 7: Quick Grounding Gate ─────────────────────────────────────
-    {
-      id: 'grounding-gate',
-      type: 'screens',
-      screens: [
-        {
-          blocks: [
-            { type: 'text', lines: [
-              "Would you like to pause for a short grounding exercise before continuing? This takes about three minutes and can help if you're feeling activated or overwhelmed.",
-            ] },
-            { type: 'choice', key: 'wantsGrounding',
-              options: [
-                { id: 'yes', label: "Yes, I'd like to pause",
-                  route: { to: 'peak-grounding', bookmark: true } },
-                { id: 'no', label: "I'm okay, continue" },
-              ],
-            },
           ],
         },
       ],
@@ -230,14 +243,5 @@ export const peakTransitionConfig = {
       ],
     },
 
-    // ── DETOUR: Peak Grounding ─────────────────────────────────────────────
-    {
-      id: 'peak-grounding',
-      type: 'meditation',
-      meditationId: 'transition-peak-grounding',
-      animation: 'full-sun',
-      showTranscript: true,
-      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
-    },
   ],
 };

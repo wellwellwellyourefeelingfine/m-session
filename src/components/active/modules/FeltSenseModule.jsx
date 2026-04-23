@@ -29,6 +29,7 @@ import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+import { EggIcon } from '../../shared/Icons';
 
 // ─── Accent term map for renderContentLines ──────────────────────────────────
 
@@ -641,7 +642,14 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          {!playback.isLoading ? (
+          {playback.error ? (
+            <div className="text-center animate-fadeIn flex flex-col items-center">
+              <EggIcon size={48} className="text-[var(--color-text-tertiary)] mb-4" />
+              <p className="text-[var(--color-text-secondary)] text-sm uppercase tracking-wider">
+                Audio not found.
+              </p>
+            </div>
+          ) : !playback.isLoading ? (
             <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
               <div className="text-center space-y-2">
                 <h2

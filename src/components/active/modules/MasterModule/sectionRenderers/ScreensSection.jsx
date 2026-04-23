@@ -68,7 +68,7 @@ export default function ScreensSection({
   skipEnabled = true,         // transition configs can disable Skip entirely
   skipConfirmMessage = 'Skip this activity?',
 }) {
-  const screens = section.screens || [];
+  const screens = useMemo(() => section.screens || [], [section.screens]);
   const FADE_MS = section.ritualFade ? FADE_RITUAL : FADE_DEFAULT;
   const [screenIndex, setScreenIndex] = useState(0);
   const [isTitleVisible, setIsTitleVisible] = useState(false);
@@ -334,7 +334,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, visitedSections, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks, screens, moduleTitle, conditionContext]);
+  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks, screens, moduleTitle, conditionContext]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);

@@ -397,7 +397,8 @@ function BoosterPeakTest() {
 
       if (firstPeakModule) {
         const idx = updatedItems.findIndex((m) => m.instanceId === firstPeakModule.instanceId);
-        updatedItems[idx] = { ...firstPeakModule, status: 'active', startedAt: now };
+        // Leave startedAt null — user hasn't pressed Begin. beginModule() stamps it on press.
+        updatedItems[idx] = { ...firstPeakModule, status: 'active' };
       }
 
       useSessionStore.setState({

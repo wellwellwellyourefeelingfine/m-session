@@ -30,6 +30,7 @@ import AsciiDiamond from '../capabilities/animations/AsciiDiamond';
 import LeafDrawV2 from '../capabilities/animations/LeafDrawV2';
 import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+import { EggIcon } from '../../shared/Icons';
 
 // ─── Reflection screen content ──────────────────────────────────────────────
 // Uses '§' for circle spacers and '{cognitive_defusion}' for accent highlighting
@@ -364,7 +365,14 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onPr
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          {!playback.isLoading ? (
+          {playback.error ? (
+            <div className="text-center animate-fadeIn flex flex-col items-center">
+              <EggIcon size={48} className="text-[var(--color-text-tertiary)] mb-4" />
+              <p className="text-[var(--color-text-secondary)] text-sm uppercase tracking-wider">
+                Audio not found.
+              </p>
+            </div>
+          ) : !playback.isLoading ? (
             <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
               <IdleScreen
                 title={meditation.title}

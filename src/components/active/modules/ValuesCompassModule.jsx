@@ -412,7 +412,7 @@ function SchematicModal({ isOpen, closing, onClose }) {
 
 // ─── Main Module Component ──────────────────────────────────────────────────
 
-export default function ValuesCompassModule({ onComplete, onSkip, onProgressUpdate }) {
+export default function ValuesCompassModule({ module, onComplete, onSkip, onProgressUpdate }) {
   // ── Phase state ──
   const [phase, setPhase] = useState('idle');
   const [isVisible, setIsVisible] = useState(true);

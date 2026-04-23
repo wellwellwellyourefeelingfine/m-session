@@ -269,7 +269,7 @@ export const openingRitualConfig = {
       meditationId: 'transition-opening',
       animation: 'sunrise',
       showTranscript: true,
-      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
+      composerOptions: { skipOpeningGong: false, skipClosingGong: false },
     },
 
     // ── The Session Has Begun (terminal — final ritual page) ──────────────
@@ -311,7 +311,7 @@ export const openingRitualConfig = {
       meditationId: 'transition-centering-breath',
       animation: 'sunrise',
       showTranscript: true,
-      composerOptions: { skipOpeningGong: true, skipClosingGong: true },
+      composerOptions: { skipOpeningGong: false, skipClosingGong: false },
     },
 
     // ─── DETOUR: Intention Review ─────────────────────────────────────────

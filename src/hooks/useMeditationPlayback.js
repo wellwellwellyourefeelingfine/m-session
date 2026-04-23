@@ -69,6 +69,7 @@ export function useMeditationPlayback({
 
   // Composition state
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const blobUrlRef = useRef(null);
   const promptTimeMapRef = useRef([]);
   const composedDurationRef = useRef(0); // Actual physical blob duration from real byte count
@@ -280,6 +281,7 @@ export function useMeditationPlayback({
 
   // Handlers
   const handleStart = useCallback(async () => {
+    setError(null);
     setIsLoading(true);
 
     try {
@@ -318,6 +320,7 @@ export function useMeditationPlayback({
       audio.storeComposedBytes(composedBytes);
     } catch (err) {
       console.error('[MeditationPlayback] Failed to compose meditation audio:', err);
+      setError('Audio not found');
       resetMeditationPlayback();
     } finally {
       setIsLoading(false);
@@ -472,6 +475,7 @@ export function useMeditationPlayback({
     hasStarted,
     isPlaying,
     isLoading,
+    error,
     isComplete,
     elapsedTime,
     currentPrompt,

@@ -18,9 +18,9 @@ import { memo, useMemo, useRef, useEffect } from 'react';
 
 export default memo(function MorphingShapes({
   className = '',
-  size = 80,
-  strokeWidth = 3,
-  duration = 10, // seconds for full cycle
+  size = 120,
+  strokeWidth = 7,
+  duration = 18, // seconds for full cycle
 }) {
   const maxRadius = (size / 2) - (strokeWidth / 2);
   const styleRef = useRef(null);

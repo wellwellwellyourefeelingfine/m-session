@@ -157,13 +157,6 @@ function getSessionData() {
       milestones: lifeGraph.milestones,
       journalEntryId: lifeGraph.journalEntryId,
     } : null,
-    // Follow-up modules added from library
-    followUpModules: modules?.items?.filter((m) => m.phase === 'follow-up').map((item) => ({
-      title: item.title,
-      status: item.status,
-      startedAt: item.startedAt,
-      completedAt: item.completedAt,
-    })) || [],
     // Phase timestamps
     phaseTimestamps: {
       comeUp: { startedAt: timeline?.phases?.comeUp?.startedAt, endedAt: timeline?.phases?.comeUp?.endedAt },

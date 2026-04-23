@@ -25,6 +25,7 @@ import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/Modu
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
+import { EggIcon } from '../../shared/Icons';
 
 export default function BodyScanModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const meditation = getMeditationById('body-scan');
@@ -123,8 +124,18 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
   return (
     <>
       <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+        {/* Error — audio files missing or failed to load */}
+        {playback.error && (
+          <div className="text-center animate-fadeIn flex flex-col items-center">
+            <EggIcon size={48} className="text-[var(--color-text-tertiary)] mb-4" />
+            <p className="text-[var(--color-text-secondary)] text-sm uppercase tracking-wider">
+              Audio not found.
+            </p>
+          </div>
+        )}
+
         {/* Idle state */}
-        {!playback.hasStarted && !playback.isLoading && (
+        {!playback.error && !playback.hasStarted && !playback.isLoading && (
           <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
             <IdleScreen
               title={meditation.title}
@@ -162,8 +173,8 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
             }}
           >
             <h2
-              className="text-[var(--color-text-primary)] mb-4"
-              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', fontSize: '18px', marginTop: 0 }}
+              className="text-xl font-light text-[var(--color-text-primary)] mb-4"
+              style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', marginTop: 0 }}
             >
               {meditation.title}
             </h2>

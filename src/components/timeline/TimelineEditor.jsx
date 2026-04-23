@@ -89,6 +89,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const [frozenTime, setFrozenTime] = useState('');
   // Mirrors PhaseSection's swap animation so follow-up reorders give the same visual feedback.
   const [swappingFollowUp, setSwappingFollowUp] = useState(null); // { movingId, direction }
+  const [swappingPreSession, setSwappingPreSession] = useState(null); // { movingId, direction }
 
   // Get current tab to detect tab switches
   const currentTab = useAppStore((state) => state.currentTab);
@@ -411,6 +412,19 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
     }, 150);
   };
 
+  // Mirrors the same bump animation for the pre-session timeline.
+  const handlePreSessionMoveWithAnimation = (instanceId, direction) => {
+    setSwappingPreSession({ movingId: instanceId, direction });
+    setTimeout(() => {
+      if (direction === 'up') {
+        handleMoveModuleUp(instanceId);
+      } else {
+        handleMoveModuleDown(instanceId);
+      }
+      setTimeout(() => setSwappingPreSession(null), 50);
+    }, 150);
+  };
+
   // Get phase status for visual styling
   const getPhaseStatus = (phase) => {
     // Completed sessions show all phases as completed
@@ -473,8 +487,12 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               let intentionText = null;
               if (intentionEntry?.content) {
                 const contentBeforeSeparator = intentionEntry.content.split('\n\n---')[0];
-                // Remove the "INTENTION:\n\n" prefix if present
-                intentionText = contentBeforeSeparator.replace(/^INTENTION:\n\n/i, '').trim();
+                // Strip the "PRE-SESSION\n\n" marker (added post-module to pre-session entries)
+                // and then the "INTENTION:\n\n" prefix.
+                intentionText = contentBeforeSeparator
+                  .replace(/^PRE-SESSION\n\n/i, '')
+                  .replace(/^INTENTION:\n\n/i, '')
+                  .trim();
               }
 
               // Fall back to sessionProfile holdingQuestion if no journal entry or empty
@@ -621,14 +639,22 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                       const isModuleDone = module.status === 'completed' || module.status === 'skipped';
                       const canEditPreSession = !isCompletedSession && isEditMode && !isModuleDone;
 
+                      const isSwapping = swappingPreSession?.movingId === module.instanceId;
+                      const swapAnimationClass = isSwapping
+                        ? (swappingPreSession.direction === 'up' ? 'animate-swap-up' : 'animate-swap-down')
+                        : '';
+
                       return (
-                        <div key={module.instanceId} className="relative flex items-start">
+                        <div
+                          key={module.instanceId}
+                          className={`relative flex items-start ${swapAnimationClass}`}
+                        >
                           {/* Reorder arrows — only in edit mode for non-completed modules */}
-                          {canEditPreSession && preSessionModules.length > 1 && (
+                          {canEditPreSession && preSessionModules.length > 1 && !swappingPreSession && (
                             <div className="absolute -left-8 top-1/2 -translate-y-1/2 flex flex-col items-center gap-0.5">
                               <button
                                 type="button"
-                                onClick={() => handleMoveModuleUp(module.instanceId)}
+                                onClick={() => handlePreSessionMoveWithAnimation(module.instanceId, 'up')}
                                 disabled={!canMoveUp}
                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
                                   !canMoveUp
@@ -641,7 +667,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleMoveModuleDown(module.instanceId)}
+                                onClick={() => handlePreSessionMoveWithAnimation(module.instanceId, 'down')}
                                 disabled={!canMoveDown}
                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-all ${
                                   !canMoveDown
