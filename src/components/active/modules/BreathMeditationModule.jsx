@@ -28,7 +28,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 
 // Shared UI components
 import ModuleControlBar, { SlotButton, VolumeButton } from '../capabilities/ModuleControlBar';
-import DurationPicker from '../../shared/DurationPicker';
+import { DurationPill } from '../capabilities/ModuleLayout';
 
 // Breath-specific components
 import BreathOrb from '../capabilities/animations/BreathOrb';
@@ -494,23 +494,34 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onP
                 {getDescription()}
               </p>
 
-              {/* Duration selector button (only for guided mode, not fixed duration) */}
-              {!hasCustomSequences && !isFixedDuration && (
-                <button
-                  onClick={() => duration.setShowPicker(true)}
-                  className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                    hover:border-[var(--color-text-tertiary)] transition-colors"
-                >
-                  <span className="text-2xl font-light">{duration.selected}</span>
-                  <span className="text-sm ml-1">min</span>
-                </button>
-              )}
+              {/* Duration selector: pill with arrows for guided variable-duration mode */}
+              {!hasCustomSequences && !isFixedDuration && (() => {
+                const steps = guidedBreathOrbMeditation.durationSteps || [];
+                const stepIndex = steps.indexOf(duration.selected);
+                const canStepBack = stepIndex > 0;
+                const canStepForward = stepIndex >= 0 && stepIndex < steps.length - 1;
+                const stepTo = (nextIndex) => {
+                  const next = steps[nextIndex];
+                  if (typeof next === 'number') duration.handleChange(next);
+                };
+                return (
+                  <DurationPill
+                    minutes={duration.selected}
+                    showArrows={true}
+                    canStepBack={canStepBack}
+                    canStepForward={canStepForward}
+                    onStepBack={() => stepTo(stepIndex - 1)}
+                    onStepForward={() => stepTo(stepIndex + 1)}
+                  />
+                );
+              })()}
 
-              {/* Show fixed duration display for fixed-duration meditations */}
+              {/* Display-only pill for fixed-duration breath variants (e.g. CalmingBreath 15min) */}
               {isFixedDuration && meditationContent?.duration && (
-                <div className="text-[var(--color-text-tertiary)] text-sm">
-                  {Math.floor(meditationContent.duration / 60)} minutes
-                </div>
+                <DurationPill
+                  minutes={Math.floor(meditationContent.duration / 60)}
+                  showArrows={false}
+                />
               )}
             </div>
           )}
@@ -556,18 +567,6 @@ export default function BreathMeditationModule({ module, onComplete, onSkip, onP
         rightSlot={rightSlotContent}
       />
 
-      {/* Duration picker modal (only for guided mode, not fixed duration) */}
-      {!hasCustomSequences && !isFixedDuration && (
-        <DurationPicker
-          isOpen={duration.showPicker}
-          onClose={() => duration.setShowPicker(false)}
-          onSelect={duration.handleChange}
-          currentDuration={duration.selected}
-          durationSteps={guidedBreathOrbMeditation.durationSteps}
-          minDuration={guidedBreathOrbMeditation.minDuration / 60}
-          maxDuration={guidedBreathOrbMeditation.maxDuration / 60}
-        />
-      )}
     </>
   );
 }

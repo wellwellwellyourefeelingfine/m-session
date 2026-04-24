@@ -21,6 +21,7 @@ import ModuleControlBar from '../../capabilities/ModuleControlBar';
 import RevealOverlay from '../../capabilities/animations/RevealOverlay';
 import ImageViewerModal from '../../capabilities/ImageViewerModal';
 import { ANIMATION_MAP } from './blockRenderers/HeaderBlock';
+import MASTER_CUSTOM_BLOCKS from './customBlocks';
 
 export default function MasterModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
@@ -260,6 +261,7 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
           onOpenViewer={state.openViewer}
           onRouteToSection={state.routeToSection}
           onScreenChange={handleScreenChange}
+          customBlockRegistry={MASTER_CUSTOM_BLOCKS}
         />
       );
       break;

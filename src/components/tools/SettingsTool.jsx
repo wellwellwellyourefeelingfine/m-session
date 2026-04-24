@@ -3,7 +3,7 @@
  * Accessibility, app preferences, and AI assistant configuration
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
@@ -12,6 +12,9 @@ import { useAIStore } from '../../stores/useAIStore';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { downloadSessionData, downloadSessionImages } from '../../utils/downloadSessionData';
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
+import { getAvailableVoices } from '../../content/meditations';
+import { precacheAudioForTimeline } from '../../services/audioCacheService';
+import { audioPath } from '../../utils/audioPath';
 import DebugModeTool from './DebugModeTool';
 import { APP_VERSION } from '../../constants';
 import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
@@ -30,8 +33,114 @@ export default function SettingsTool() {
   const toggleDarkMode = useAppStore((state) => state.toggleDarkMode);
   const preferences = useAppStore((state) => state.preferences);
   const setPreference = useAppStore((state) => state.setPreference);
+  const currentTab = useAppStore((state) => state.currentTab);
   const resetSession = useSessionStore((state) => state.resetSession);
   const hasImages = useJournalStore((state) => state.entries.some((e) => e.hasImage && e.source === 'session'));
+
+  // Default voice — two-state model. The cycler reads/writes a local pending
+  // value so rapid toggling doesn't touch the store or the PWA cache. The
+  // commit fires only when the user leaves the Tools tab AND the pending
+  // value differs from what's already committed.
+  const availableVoices = getAvailableVoices();
+  const [pendingVoiceId, setPendingVoiceId] = useState(
+    preferences.defaultVoiceId || availableVoices[0]?.id || 'theo'
+  );
+  const committedVoiceIdRef = useRef(preferences.defaultVoiceId);
+
+  // Re-sync local pending state when the committed value changes from outside
+  // this component (e.g. a future reset-preferences action).
+  useEffect(() => {
+    committedVoiceIdRef.current = preferences.defaultVoiceId;
+    setPendingVoiceId(preferences.defaultVoiceId || availableVoices[0]?.id || 'theo');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- availableVoices is stable
+  }, [preferences.defaultVoiceId]);
+
+  // Commit pending voice on tab-leave. Fires precache for the new voice across
+  // the current timeline so offline play works with the chosen default.
+  useEffect(() => {
+    if (currentTab === 'tools') return;
+    if (pendingVoiceId === committedVoiceIdRef.current) return;
+    setPreference('defaultVoiceId', pendingVoiceId);
+    committedVoiceIdRef.current = pendingVoiceId;
+    const modules = useSessionStore.getState().modules?.items;
+    if (Array.isArray(modules) && modules.length > 0) {
+      precacheAudioForTimeline(modules, pendingVoiceId);
+    }
+  }, [currentTab, pendingVoiceId, setPreference]);
+
+  // Voice preview playback. Plays a single sample clip from
+  // /audio/voice-previews/[voiceId].mp3. Fails silently if a preview file is
+  // missing. Cycling to a different voice or pressing Preview while playing
+  // triggers a short fade-out so the cut isn't jarring.
+  const previewAudioRef = useRef(null);
+  const previewFadeIdRef = useRef(null);
+  const [isPreviewPlaying, setIsPreviewPlaying] = useState(false);
+
+  const stopPreview = () => {
+    const audio = previewAudioRef.current;
+    if (!audio) {
+      setIsPreviewPlaying(false);
+      return;
+    }
+    // Fade volume to 0 over ~150ms, then pause. Short enough to feel snappy,
+    // long enough to avoid a pop/click cutoff.
+    if (previewFadeIdRef.current) clearInterval(previewFadeIdRef.current);
+    const startVolume = audio.volume;
+    const steps = 10;
+    const stepMs = 15;
+    let remaining = steps;
+    previewFadeIdRef.current = setInterval(() => {
+      remaining -= 1;
+      audio.volume = Math.max(0, startVolume * (remaining / steps));
+      if (remaining <= 0) {
+        clearInterval(previewFadeIdRef.current);
+        previewFadeIdRef.current = null;
+        audio.pause();
+        audio.src = '';
+        if (previewAudioRef.current === audio) {
+          previewAudioRef.current = null;
+        }
+      }
+    }, stepMs);
+    setIsPreviewPlaying(false);
+  };
+
+  const handlePreviewToggle = () => {
+    if (isPreviewPlaying) {
+      stopPreview();
+      return;
+    }
+    if (!pendingVoiceId) return;
+    const url = audioPath(`/audio/voice-previews/${pendingVoiceId}.mp3`);
+    const audio = new Audio(url);
+    previewAudioRef.current = audio;
+    audio.onended = () => {
+      if (previewAudioRef.current === audio) {
+        previewAudioRef.current = null;
+      }
+      setIsPreviewPlaying(false);
+    };
+    audio.play()
+      .then(() => setIsPreviewPlaying(true))
+      .catch(() => {
+        // Preview file not yet generated or blocked — fail silently.
+        if (previewAudioRef.current === audio) {
+          previewAudioRef.current = null;
+        }
+        setIsPreviewPlaying(false);
+      });
+  };
+
+  // Clean up any lingering preview audio / fade interval on unmount.
+  useEffect(() => () => {
+    if (previewFadeIdRef.current) clearInterval(previewFadeIdRef.current);
+    const current = previewAudioRef.current;
+    if (current) {
+      current.pause();
+      current.src = '';
+      previewAudioRef.current = null;
+    }
+  }, []);
 
   // AI store state
   const provider = useAIStore((state) => state.provider);
@@ -155,6 +264,75 @@ export default function SettingsTool() {
   return (
     <div className="py-6 px-6 max-w-xl mx-auto">
       <div className="space-y-6">
+        {/* Default Voice — two-line layout: label + preview on top, cycler centered below. */}
+        {availableVoices.length >= 2 && (() => {
+          const index = Math.max(0, availableVoices.findIndex((v) => v.id === pendingVoiceId));
+          const cycle = (delta) => {
+            // Cycling voices auto-stops any in-flight preview with a fade.
+            if (isPreviewPlaying) stopPreview();
+            const next = availableVoices[(index + delta + availableVoices.length) % availableVoices.length];
+            if (next) setPendingVoiceId(next.id);
+          };
+          return (
+            <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+              {/* Line 1: label only. Kept short (text-only, ~12px tall) so the
+                  ToolPanel's absolute "×" close button (top-2 right-3) sits cleanly
+                  in the top-right corner next to it — same visual pattern as other tools. */}
+              <div className="text-[12px] uppercase tracking-wider mb-6">Default Voice</div>
+
+              {/* Line 2: < voice cycler >  +  Preview button */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => cycle(-1)}
+                    aria-label="Previous voice"
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M9 2 L4 7 L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  <span
+                    className="text-[12px] uppercase tracking-wider min-w-[9rem] text-center"
+                    style={{ fontFamily: 'Azeret Mono, monospace' }}
+                  >
+                    {availableVoices[index]?.label}
+                  </span>
+                  <button
+                    onClick={() => cycle(1)}
+                    aria-label="Next voice"
+                    className="hover:opacity-70 transition-opacity"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M5 2 L10 7 L5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+
+                <button
+                  onClick={handlePreviewToggle}
+                  className="flex items-center gap-2 text-[12px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70 transition-opacity"
+                  style={{ fontFamily: 'Azeret Mono, monospace' }}
+                  aria-label={isPreviewPlaying ? 'Stop preview' : `Preview ${availableVoices[index]?.label}`}
+                >
+                  <span>Preview</span>
+                  {isPreviewPlaying ? (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <rect x="9" y="9" width="6" height="6" fill="currentColor" stroke="none" />
+                    </svg>
+                  ) : (
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="12" cy="12" r="10" />
+                      <polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Dark Mode */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Appearance</span>

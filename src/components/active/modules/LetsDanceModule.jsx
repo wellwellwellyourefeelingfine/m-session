@@ -15,11 +15,11 @@ import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { danceRecommendations, getInitialDanceRecommendations } from '../../../content/modules/danceRecommendations';
 
 // Shared UI components
-import ModuleLayout, { CompletionScreen } from '../capabilities/ModuleLayout';
+import ModuleLayout, { CompletionScreen, DurationPill } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../capabilities/ModuleControlBar';
-import DurationPicker from '../../shared/DurationPicker';
 import AlarmPrompt from '../../shared/AlarmPrompt';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
+import { CirclePlusIcon } from '../../shared/Icons';
 
 const DURATION_STEPS = [10, 15, 20, 25, 30, 40, 50, 60, 75, 90, 105, 120];
 
@@ -59,10 +59,11 @@ function RecommendationsWidget({ initiallyOpen = false }) {
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={() => setVisible(!visible)}
-            className="text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]
+            className="flex items-center gap-2 text-xs uppercase tracking-wider text-[var(--color-text-tertiary)]
               hover:text-[var(--color-text-secondary)] transition-colors"
           >
-            {visible ? 'Hide Recommendations' : 'Show Recommendations'}
+            <span>{visible ? 'Hide Recommendations' : 'Show Recommendations'}</span>
+            {!visible && <CirclePlusIcon size={14} />}
           </button>
 
           {visible && (
@@ -526,25 +527,37 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onProgress
               Let's Dance
             </h2>
 
-            <div className="mb-1">
+            <div className="mb-6">
               <MorphingShapes />
             </div>
 
-            {/* Duration picker button */}
-            <div className="mb-2">
-              <button
-                onClick={() => duration.setShowPicker(true)}
-                className="w-[80px] py-1 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                  hover:border-[var(--color-text-tertiary)] transition-colors text-center"
-              >
-                <span className="text-2xl font-light">{duration.selected}</span>
-                <span className="text-sm ml-1">min</span>
-              </button>
-            </div>
-
-            <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] leading-snug max-w-sm text-left mb-2">
+            <p className="tracking-wider text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-sm text-left mb-4">
               Set a duration, pick a song or choose from our recommendations, and move your body.
             </p>
+
+            {/* Duration pill with arrows — below description, above recommendations */}
+            <div className="mb-6">
+              {(() => {
+                const steps = DURATION_STEPS;
+                const stepIndex = steps.indexOf(duration.selected);
+                const canStepBack = stepIndex > 0;
+                const canStepForward = stepIndex >= 0 && stepIndex < steps.length - 1;
+                const stepTo = (nextIndex) => {
+                  const next = steps[nextIndex];
+                  if (typeof next === 'number') duration.handleChange(next);
+                };
+                return (
+                  <DurationPill
+                    minutes={duration.selected}
+                    showArrows={true}
+                    canStepBack={canStepBack}
+                    canStepForward={canStepForward}
+                    onStepBack={() => stepTo(stepIndex - 1)}
+                    onStepForward={() => stepTo(stepIndex + 1)}
+                  />
+                );
+              })()}
+            </div>
 
             {/* Recommendations widget */}
             <div className="w-full flex justify-center pb-40">
@@ -609,17 +622,6 @@ export default function LetsDanceModule({ module, onComplete, onSkip, onProgress
         isOpen={showAllRecs}
         closing={allRecsClosing}
         onClose={handleCloseAllRecs}
-      />
-
-      {/* Duration picker modal */}
-      <DurationPicker
-        isOpen={duration.showPicker}
-        onClose={() => duration.setShowPicker(false)}
-        onSelect={duration.handleChange}
-        currentDuration={duration.selected}
-        durationSteps={DURATION_STEPS}
-        minDuration={10}
-        maxDuration={120}
       />
 
       {/* Alarm prompt */}

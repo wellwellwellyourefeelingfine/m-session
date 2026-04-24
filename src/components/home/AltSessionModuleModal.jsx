@@ -10,11 +10,9 @@ import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
-import DurationPicker from '../shared/DurationPicker';
 import { LeafIcon, LockIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function AltSessionModuleModal({ module, onClose, onBegin, mode = 'follow-up' }) {
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [closing, setClosing] = useState(false);
 
@@ -24,7 +22,6 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
   };
 
   const followUp = useSessionStore((state) => state.followUp);
-  const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
   const setCurrentTab = useAppStore((state) => state.setCurrentTab);
 
   const libraryModule = getModuleById(module.libraryId);
@@ -63,8 +60,6 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
   }
 
   // Duration picker settings
-  const hasVariableDuration = libraryModule?.hasVariableDuration === true;
-  const durationSteps = libraryModule?.durationSteps || [10, 15, 20, 25, 30];
 
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -111,20 +106,11 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
               >
                 {module.title}
               </h3>
-              {/* Duration - clickable if variable duration */}
+              {/* Duration display — read-only. Changes happen in ModuleDetailModal. */}
               <div style={{ marginTop: '2px' }}>
-                {hasVariableDuration && isUnlocked && !isCompleted ? (
-                  <button
-                    onClick={() => setShowDurationPicker(true)}
-                    className="text-[var(--color-text-secondary)] text-sm underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
-                  >
-                    {formatDuration(module.duration)}
-                  </button>
-                ) : (
-                  <p className="text-[var(--color-text-tertiary)] text-xs mb-0">
-                    {formatDuration(module.duration)}
-                  </p>
-                )}
+                <p className="text-[var(--color-text-tertiary)] text-xs mb-0">
+                  {formatDuration(module.duration)}
+                </p>
               </div>
             </div>
           </div>
@@ -223,21 +209,6 @@ export default function AltSessionModuleModal({ module, onClose, onBegin, mode =
           </button>
         </div>
       </div>
-
-      {/* Duration Picker Modal */}
-      {showDurationPicker && (
-        <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={(newDuration) => {
-            updateModuleDuration(module.instanceId, newDuration);
-          }}
-          currentDuration={module.duration}
-          durationSteps={durationSteps}
-          minDuration={libraryModule?.minDuration || 10}
-          maxDuration={libraryModule?.maxDuration || 30}
-        />
-      )}
     </div>
   );
 }

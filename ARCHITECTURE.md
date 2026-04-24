@@ -167,8 +167,7 @@ public/
 - `OpenAwarenessModule` — Audio-synced guided meditation (shared `useMeditationPlayback` hook)
 - `BodyScanModule` — Audio-synced body scan (shared `useMeditationPlayback` hook)
 - `SelfCompassionModule` — Audio-synced self-compassion with variation selector
-- `SimpleGroundingModule` — Fixed-duration grounding meditation with audio prompts
-- `SimpleGroundingModule` (reused) — Short 5-min grounding variant for come-up phase
+- `SimpleGroundingModule` — Fixed-duration grounding meditation with audio prompts (also reused as a short 5-min come-up variant)
 
 *Therapeutic Activities:*
 - `FeltSenseModule` — Audio-synced felt sense meditation with variation selector (Focusing)
@@ -613,6 +612,41 @@ All user data persists across sections in `useMasterModuleState`:
 
 Each block in the system also carries a `sectionId` tag linking it to its parent section, enabling the two-layer journal filtering described above.
 
+#### Custom Block Registry
+
+`MasterModule` passes a `customBlockRegistry` into `ScreensSection`, which falls through to it for any block `type` not handled by the standard renderers. The registry lives at `src/components/active/modules/MasterModule/customBlocks/index.js` and is **empty by default** — it exists as an extension point for future module-specific blocks (e.g. a block that lets a module refine `sessionProfile.holdingQuestion`).
+
+Register a new block by adding it to the map keyed by the string `type` used in content configs:
+
+```javascript
+import RefineIntentionBlock from './RefineIntentionBlock';
+
+const MASTER_CUSTOM_BLOCKS = {
+  'refine-intention': RefineIntentionBlock,
+};
+```
+
+A custom block receives `{ block, context }`. The `context` includes state reads (`responses`, `selectorValues`, `choiceValues`, `selectorJournals`, `visitedSections`, `conditionContext`), state writers (`setPromptResponse`, `toggleSelector`, `setSelectorJournal`, `setChoiceValue`), navigation (`advanceSection`, `routeToSection`), readiness gating (`reportReady`), primary-button override (`setPrimaryOverride`), and `accentTerms`.
+
+**Session-store access.** Unlike TransitionModule, MasterModule does not pass `storeState` or `sessionData` in the context. Custom blocks that need session-wide state subscribe to `useSessionStore` directly via selectors:
+
+```javascript
+import { useSessionStore } from '../../../../../stores/useSessionStore';
+
+const holdingQuestion = useSessionStore((s) => s.sessionProfile.holdingQuestion);
+const updateSessionProfile = useSessionStore((s) => s.updateSessionProfile);
+updateSessionProfile('holdingQuestion', value);
+```
+
+`sessionProfile` is the single source of truth for all user-entered identity, intent, and preferences data — `holdingQuestion`, `touchstone`, `primaryFocus`, `guidanceLevel`, `plannedDosageMg`, safety fields, etc. Always write through `updateSessionProfile(field, value)` so auto-derivations (like `dosageFeedback`) stay consistent; never mutate the slice directly.
+
+**Caveats.**
+- `condition: { storeValue: 'sessionProfile.X' }` does not work on MasterModule custom-block configs (the condition context doesn't include `storeState`). Subscribe to the store inside the component and branch in JSX instead.
+- Namespace `reportReady` keys per-instance (e.g. `` `refine-intention-${block.storeField}` ``) to avoid collisions with other blocks' keys.
+- If a block overrides the primary button while auto-saving on blur, clear the override with a short `setTimeout` to avoid a blur→click race — see `TouchstonePromptBlock`'s `OVERRIDE_CLEAR_DELAY_MS` for the full explanation.
+
+Working reference implementations live in TransitionModule: `EditableDoseBlock` (simplest — read field, write via `updateSessionProfile` on save) and `TouchstonePromptBlock` (edit/display mode toggle with primary-override + readiness gating).
+
 ### Adding a New Module with MasterModule
 
 **Step 1: Create the content file** in `src/content/modules/master/myModule.js`:
@@ -774,6 +808,8 @@ src/components/active/modules/MasterModule/
     MeditationAudioBlock.jsx    # Paused indicator + fading prompt text
   generators/
     registry.js                 # Generator ID → async PNG function
+  customBlocks/
+    index.js                    # Custom-block registry (empty extension point)
   utils/
     expandScreenToBlocks.js     # Shorthand → blocks conversion
     evaluateCondition.js        # Condition evaluation (choice, selector, visited)
@@ -836,139 +872,15 @@ export const meditationLibrary = {
 export { myMeditation };
 ```
 
-**Step 3: Create the component** in `src/components/active/modules/MyMeditationModule.jsx`:
+**Step 3: Create the component** in `src/components/active/modules/MyMeditationModule.jsx`.
 
-```javascript
-import { useState, useMemo } from 'react';
-import { getModuleById } from '../../../content/modules';
-import {
-  getMeditationById,
-  calculateSilenceMultiplier,
-  generateTimedSequence,
-} from '../../../content/meditations';
-import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
-import useSyncedDuration from '../../../hooks/useSyncedDuration';
-import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
-import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
-import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
-import DurationPicker from '../../shared/DurationPicker';
+The component pattern is near-identical across TTS meditation modules. Copy an existing module as a template (e.g. `OpenAwarenessModule.jsx` for a plain guided meditation, `SelfCompassionModule.jsx` if you need variations) and update:
 
-export default function MyMeditationModule({ module, onComplete, onSkip, onProgressUpdate }) {
-  const meditation = getMeditationById('my-meditation');
+1. The meditation ID passed to `getMeditationById(...)` and `useMeditationPlayback({ meditationId, ... })`.
+2. The `useMemo`-computed `[timedSequence, totalDuration]` — the only part that varies per meditation. `calculateSilenceMultiplier` + `generateTimedSequence` handle prompt pacing and audio timing; both are imported from `content/meditations/index.js`.
+3. Optional slot content: `leftSlot` for a `VolumeButton`, `rightSlot` for a `SlotButton` opening a `TranscriptModal`. For variable-duration meditations pass `durationMinutes` + step handlers to `IdleScreen` — it renders the inline `DurationPill` with `<` / `>` arrows (no modal). See `BodyScanModule.jsx` for the canonical example.
 
-  // Derive hasStarted from store (needed before useSyncedDuration call)
-  const meditationPlayback = useSessionStore((state) => state.meditationPlayback);
-  const hasStarted = meditationPlayback.moduleInstanceId === module.instanceId && meditationPlayback.hasStarted;
-
-  // Duration (synced with session store — single source of truth)
-  const duration = useSyncedDuration(module, { hasStarted });
-
-  // Build timed sequence — this is the only part unique to each meditation
-  const [timedSequence, totalDuration] = useMemo(() => {
-    if (!meditation) return [[], 0];
-    const durationSeconds = duration.selected * 60;
-    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds);
-    const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
-      audioConfig: meditation.audio,
-    });
-    const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
-    return [sequence, total];
-  }, [meditation, duration.selected]);
-
-  // Shared hook handles timer, audio-text sync, prompt progression, etc.
-  const playback = useMeditationPlayback({
-    meditationId: 'my-meditation',
-    moduleInstanceId: module.instanceId,
-    timedSequence,
-    totalDuration,
-    onComplete,
-    onSkip,
-    onProgressUpdate,
-  });
-
-  if (!meditation) {
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <p className="uppercase tracking-wider text-xs text-[var(--color-text-secondary)] text-center">
-            Meditation content not found.
-          </p>
-        </ModuleLayout>
-        <ModuleControlBar
-          phase="completed"
-          primary={{ label: 'Continue', onClick: onComplete }}
-          showSkip={false}
-        />
-      </>
-    );
-  }
-
-  return (
-    <>
-      <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-        {!playback.hasStarted && (
-          <div className="text-center animate-fadeIn">
-            <IdleScreen title={meditation.title} description={meditation.description} />
-            <button
-              onClick={() => duration.setShowPicker(true)}
-              className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                hover:border-[var(--color-text-tertiary)] transition-colors"
-            >
-              <span className="text-2xl font-light">{duration.selected}</span>
-              <span className="text-sm ml-1">min</span>
-            </button>
-          </div>
-        )}
-        {playback.hasStarted && !playback.isComplete && (
-          <div className="text-center px-4">
-            {!playback.isPlaying && (
-              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider mb-4 animate-pulse">
-                Paused
-              </p>
-            )}
-            <p className={`text-[var(--color-text-secondary)] text-sm leading-relaxed transition-opacity duration-300 ${
-              playback.promptPhase === 'visible' || playback.promptPhase === 'fading-in' ? 'opacity-100' : 'opacity-0'
-            }`}>
-              {playback.currentPrompt?.text || ''}
-            </p>
-          </div>
-        )}
-        {playback.isComplete && <CompletionScreen />}
-      </ModuleLayout>
-      <ModuleControlBar
-        phase={playback.getPhase()}
-        primary={playback.getPrimaryButton()}
-        showSkip={!playback.isComplete}
-        onSkip={playback.handleSkip}
-        skipConfirmMessage="Skip this meditation?"
-        showSeekControls={playback.hasStarted && !playback.isComplete && !playback.isLoading}
-        onSeekBack={() => playback.handleSeekRelative(-10)}
-        onSeekForward={() => playback.handleSeekRelative(10)}
-        leftSlot={
-          playback.hasStarted && !playback.isComplete ? (
-            <VolumeButton volume={playback.audio.volume} onVolumeChange={playback.audio.setVolume} />
-          ) : null
-        }
-        rightSlot={
-          playback.hasStarted && !playback.isComplete ? (
-            <SlotButton icon={<TranscriptIcon />} label="View transcript" onClick={() => {}} />
-          ) : null
-        }
-      />
-      <DurationPicker
-        isOpen={duration.showPicker}
-        onClose={() => duration.setShowPicker(false)}
-        onSelect={duration.setSelected}
-        currentDuration={duration.selected}
-        durationSteps={meditation.durationSteps}
-        minDuration={meditation.minDuration / 60}
-        maxDuration={meditation.maxDuration / 60}
-      />
-    </>
-  );
-}
-```
+Everything else — session-store integration, pause/resume, audio-text sync, seek, completion, skip, progress reporting — is handled inside `useMeditationPlayback`; the component is a thin wrapper that composes `IdleScreen`, a `MeditationLoadingScreen` (during `preparing` / `preparing-leaving` transition stages), current-prompt text, `CompletionScreen`, and `ModuleControlBar`.
 
 **Step 4: Register the component** in `src/components/active/moduleRegistry.js`:
 
@@ -1025,20 +937,18 @@ export const myContent = {
 
 ### Duration Sync Hook
 
-All modules with variable duration should use the shared `useSyncedDuration` hook for two-way sync between the module's UI and the session store:
+All modules with variable duration use the shared `useSyncedDuration` hook for two-way sync between the module's UI and the session store:
 
 ```javascript
 import useSyncedDuration from '../../../hooks/useSyncedDuration';
 
 const duration = useSyncedDuration(module, { hasStarted });
-// duration.selected       — current duration in minutes
-// duration.setSelected    — set duration (syncs to store)
-// duration.showPicker     — boolean for picker visibility
-// duration.setShowPicker  — toggle picker
-// duration.handleChange   — change handler (local + store)
+// duration.selected     — current duration in minutes
+// duration.setSelected  — set duration (updates local + syncs to store)
+// duration.handleChange — alias for setSelected, kept for caller ergonomics
 ```
 
-This ensures duration changes from the timeline card modal are reflected in the module's idle screen and vice versa.
+The idle-screen UI for variable-duration modules is an inline `DurationPill` with `<` / `>` arrows (see `ModuleLayout.jsx`), clamped at the meditation's `durationSteps` bounds. The legacy `DurationPicker` modal is retired from all idle screens; it remains only in `OpenSpaceModule` for its mid-session "tap elapsed time to extend" affordance (distinct from the idle pill). On the Home tab, `ModuleCard` and `AltSessionModuleModal` render duration as read-only text — duration edits funnel through `ModuleDetailModal`'s own ± stepper. Cross-surface sync is store-driven: any writer calls `updateModuleDuration(instanceId, minutes)` and every reader re-renders.
 
 ### Intensity Rating
 
@@ -1099,7 +1009,7 @@ TransitionModule reuses the same section types (`screens`, `meditation`), the sa
 | `sectionHistory` | Plain `useState` | Persisted in `activeNavigation` — Back works on resume |
 | Journal save | `addEntry` with `sessionId` | `addEntry` without `sessionId` + writes `transitionData.completedAt.<id>` |
 | Cross-store field mirroring | None | Prompts with `storeField: 'sessionProfile.x'` flow to that path on every advance |
-| Custom block registry | Not used | Supported — transition-only blocks register here (see below) |
+| Custom block registry | Wired through but empty by default — extension point for future module-specific blocks | Populated with transition-specific blocks (see below) |
 
 #### Persistence model
 
@@ -1140,7 +1050,7 @@ Supported prefixes: `sessionProfile.*` (routes to `updateSessionProfile`) and `t
 
 #### Custom block registry
 
-TransitionModule passes a `customBlockRegistry` into `ScreensSection`, which falls through to it for any block type it doesn't recognize. This is where transition-specific blocks live — they interact with session store state that doesn't belong in MasterModule:
+Both MasterModule and TransitionModule pass a `customBlockRegistry` into `ScreensSection`, which falls through to it for any block type not handled by the standard renderers. MasterModule's registry is empty by default (see *MasterModule → Custom Block Registry* for the extension-point pattern). TransitionModule's registry is populated with transition-specific blocks that interact with session-wide state like `substanceChecklist` and `transitionData`:
 
 | Block type | Purpose |
 |---|---|
@@ -1151,10 +1061,12 @@ TransitionModule passes a `customBlockRegistry` into `ScreensSection`, which fal
 | `store-display` | Read-only render of any dot-path store value in a styled container (`style: 'accent-box' | 'plain' | 'italic'`). Used for showing the user's saved intention, focus label, touchstone, etc. Supports `labelMap` for translating raw values to display labels. |
 | `expandable` | Collapsible text section — click-to-reveal, click-to-hide. Uses the shared `renderContentLines` utility so it supports `§` spacers and `{accent}` terms like regular text blocks. |
 | `touchstone-arc` | Presentational SVG that displays the opening + closing touchstones with a connecting arc. Reads from `transitionData.openingTouchstone` / `closingTouchstone`. |
+| `touchstone-prompt` | Prompt textarea that locks to an accent-bordered display on save (click to re-edit). Uses `setPrimaryOverride` to swap Continue → Save while editing; clears the override on a short delay to avoid blur→click races. Writes via `storeField` (`sessionProfile.*` or `transitionData.*`). |
+| `expandable-store-display` | Collapsible read-only display of a store value — combines `expandable` and `store-display` semantics. |
 | `phase-recap` | Summary statistics for a phase (`come-up | peak | integration | full-session`) — duration, journal entries, optional helper-modal count. Purely presentational. |
 | `data-download` | Button that opens the existing `DataDownloadModal` for exporting session data. |
 
-Custom blocks receive a `context` prop with state reads (`responses`, `selectorValues`, `choiceValues`, `selectorJournals`, `visitedSections`, `sessionData`, `storeState`, `conditionContext`), state writers (`setPromptResponse`, `toggleSelector`, `setSelectorJournal`, `setChoiceValue`), navigation callbacks (`advanceSection`, `routeToSection`), the readiness API (`reportReady`), and utility (`accentTerms`).
+TransitionModule custom blocks receive the same base `context` as MasterModule blocks (state reads, writers, navigation, `reportReady`, `setPrimaryOverride`, `accentTerms`) plus two TransitionModule-only additions: `sessionData` (derived session-level data — `modulesCompleted`, `journalCount`, `helperUsedDuring`, `effectiveFocus`) and `storeState` (full session store snapshot). These also feed the condition evaluator, enabling `storeValue`-based conditions at the block-config level.
 
 #### Block readiness gating
 
@@ -1186,15 +1098,26 @@ src/components/session/TransitionModule/
   TransitionModule.jsx              # Main orchestrator
   useTransitionModuleState.js       # Central state + activeNavigation persistence
   customBlocks/
+    index.js                        # Registry mapping block `type` → component
+    ActionBlock.jsx                 # Generic store-action button (allowlisted)
     BodyCheckInBlock.jsx            # Sensation grid (select + comparison modes)
+    DataDownloadBlock.jsx           # Opens DataDownloadModal
+    EditableDoseBlock.jsx           # Inline-editable plannedDosageMg
+    ExpandableBlock.jsx             # Click-to-reveal text section
+    ExpandableStoreDisplayBlock.jsx # Expandable variant of store-display
     IngestionTimeBlock.jsx          # Record/confirm substance intake
+    PhaseRecapBlock.jsx             # Phase summary stats
     StoreDisplayBlock.jsx           # Read-only store-value display
+    TouchstoneArcBlock.jsx          # Opening + closing touchstone SVG arc
+    TouchstonePromptBlock.jsx       # Prompt → accent-box display, click to edit
 
 src/content/transitions/            # Content config files
   openingRitualConfig.js            # Opening Ritual (pre-session → begin-session)
   peakTransitionConfig.js           # Come-up → Peak
   peakToIntegrationConfig.js        # Peak → Integration
   closingRitualConfig.js            # Integration → Closing
+  shared.js                         # Shared snippets reused across configs
+  somaticSensations.js              # 10-sensation list for body-check-in
 ```
 
 Section renderers (`ScreensSection`, `MeditationSection`) are imported from MasterModule — no parallel implementation.
@@ -1496,10 +1419,12 @@ Each meditation object in `src/content/meditations/<name>.js` exports:
 | `description` | string | Brief description shown on idle screen |
 | `speakingRate` | number | Words per minute for duration estimation (e.g. 150 or 90) |
 | `prompts` | array | Array of prompt objects (see above) |
-| `audio` | object | `{ basePath: '/audio/meditations/<name>/', format: 'mp3' }` |
+| `audio` | object | `{ basePath, format, [defaultVoice, voices] }` — see below |
 | `minDuration` | number | Minimum duration in seconds (for variable-duration meditations) |
 | `maxDuration` | number | Maximum duration in seconds |
 | `durationSteps` | array | Available duration steps in minutes (e.g. `[10, 15, 20, 25, 30]`) |
+
+`audio` minimum shape: `{ basePath: '/audio/meditations/<name>/', format: 'mp3' }`. Meditations that offer multiple voice readings add `defaultVoice: 'voiceId'` and `voices: [{ id, label, subfolder }]`. The default voice's clips live at `basePath` root (`subfolder: ''`); alternate voices live in nested subfolders. See **Voice System** below and `MEDITATION_AUDIO_SYSTEM.md` for the full data flow.
 
 Self-Compassion also uses: `variations`, `defaultVariation`, `assembleVariation()`, and shared clip segments instead of a flat `prompts` array.
 
@@ -1517,32 +1442,28 @@ All TTS meditation components delegate playback to this shared hook. It handles:
 8. Timer reporting to parent via `onProgressUpdate`
 9. Phase derivation (`idle` / `loading` / `active` / `completed`) and primary button state
 
-**Parameters:**
-```javascript
-useMeditationPlayback({
-  meditationId,       // 'open-awareness' | 'body-scan' | 'self-compassion'
-  moduleInstanceId,   // module.instanceId
-  timedSequence,      // pre-computed by component's useMemo
-  totalDuration,      // total duration in seconds
-  onComplete,         // callback when user clicks Continue after completion
-  onSkip,             // callback when user confirms skip
-  onProgressUpdate,      // optional callback for ModuleStatusBar
-})
-```
+**Signature:** `useMeditationPlayback({ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onProgressUpdate })` — see the hook source for the full parameter and return shapes. Notable returns: state booleans (`hasStarted`, `isPlaying`, `isComplete`), playback position (`elapsedTime`, `currentPrompt`, `promptPhase`), the nested `audio` controller, control handlers (`handleStart`, `handleBeginWithTransition`, `handlePauseResume`, `handleSkip`, `handleSeekRelative`), and UI helpers (`getPhase`, `getPrimaryButton`) that feed directly into `ModuleControlBar` props. `handleBeginWithTransition` is the modern begin flow — sequences idle-leaving → preparing (with a `MeditationLoadingScreen` fade-in and a minimum visible duration) → preparing-leaving → active, reading the current stage via the returned `transitionStage` value.
 
-**Returns:**
-```javascript
-{
-  hasStarted, isPlaying, isComplete,    // state booleans
-  elapsedTime, currentPrompt,           // playback position
-  promptPhase,                          // 'hidden' | 'fading-in' | 'visible' | 'fading-out'
-  audio,                                // useAudioPlayback instance (volume, setVolume, toggleMute)
-  handleStart, handlePauseResume,       // control handlers
-  handleComplete, handleSkip,
-  handleRestart, handleSeekRelative,    // restart from beginning, seek ±N seconds
-  getPhase, getPrimaryButton,           // UI helpers
-}
-```
+### Voice System
+
+Meditations can offer multiple voice readings of the same prompt set. Today only **Simple Grounding** ships voice variants (Thoughtful Theo + Relaxing Rachel), but the architecture scales.
+
+**Content:** Each meditation's `audio` object declares `voices: [{ id, label, subfolder }]` plus `defaultVoice`. Alternate voices live in nested subfolders under `basePath`; the default voice's clips sit at the root.
+
+**Preference:** `useAppStore.preferences.defaultVoiceId` (persisted, seeded to `'theo'` via v1 migration). Read by `precacheAudioForTimeline(modules, voiceId)` when the session store builds a timeline, so the PWA cache warms with the user's preferred voice.
+
+**Settings UI (`src/components/tools/SettingsTool.jsx`):** Default Voice row with `<` / `>` cycler + Preview button. Uses a **commit-on-tab-leave** model — the cycler writes to a local `pendingVoiceId` while the user is on the Tools tab; only when `currentTab` transitions away does the effect call `setPreference` and kick off a re-precache. Rapid toggling produces zero network work. Preview button plays `/audio/voice-previews/<voiceId>.mp3` via a plain `new Audio()` with a 150ms volume fade on stop.
+
+**Voice-preview copy standard:** Every voice uses the same preview text (see `scripts/generate-simple-grounding-audio.mjs` header comment and `MEDITATION_AUDIO_SYSTEM.md` → Voice System for the canonical wording). Same ElevenLabs settings as the voice's production meditation clips. Saved to `public/audio/voice-previews/<voiceId>.mp3`.
+
+**Idle screen voice pill:** Rendered inside `IdleScreen` (from `ModuleLayout.jsx`) when `meditation.audio.voices.length > 1`. Module owns `selectedVoiceId` local state, initialized from the preference via `resolveEffectiveVoiceId()` and kept in sync via a `useEffect`. Snapshotted at `handleBeginWithTransition` so mid-session pill toggles can't affect in-flight audio.
+
+**Key helpers (in `src/content/meditations/index.js`):**
+- `resolveVoiceBasePath(audioConfig, voiceId)` — returns `basePath + subfolder` for the voice, or plain `basePath` for meditations without voices.
+- `resolveEffectiveVoiceId(audioConfig, preferredVoiceId)` — returns the preferred voice if present in this meditation, else `defaultVoice`, else `null`.
+- `getAvailableVoices()` — deduplicated voice list across the library; used by Settings.
+- `generateTimedSequence(..., { voiceId })` — threads `voiceId` into `audioSrc` resolution so each clip URL points at the right folder.
+- `estimateMeditationDurationSeconds(meditation, { voiceId })` — voice-aware idle-screen "time: X min" estimate.
 
 ### Audio Generation
 
@@ -1566,7 +1487,8 @@ Audio files are generated using ElevenLabs TTS via scripts in `scripts/`. Each m
 | Voice | ID | Typical Settings |
 |-------|----|------------------|
 | Oliver Silk | `jfIS2w2yJi0grJZPyEsk` | stability 0.88, similarity 0.88, speed 0.70 |
-| Theo Silk | `UmQN7jS1Ee8B1czsUtQh` | stability 0.75, similarity 0.70, speed 0.69, speaker_boost on |
+| Theo Silk | `UmQN7jS1Ee8B1czsUtQh` | stability 0.65, similarity 0.70, style 0, speed 0.87, speaker_boost on |
+| Relaxing Rachel | `ROMJ9yK1NAMuu1ggrjDW` | stability 0.80, similarity 0.75, style 0.50, speed 0.81, speaker_boost on |
 
 **Usage:**
 ```bash
@@ -2016,12 +1938,7 @@ All stores use Zustand with `persist` middleware for localStorage backup.
   session: { closedAt, finalDurationSeconds },
 
   followUp: {
-    unlockTimes: { checkIn, revisit, integration },
-    modules: {
-      checkIn: { status, feeling, note },
-      revisit: { status, reflection },
-      integration: { status, emerged, commitmentStatus, commitmentResponse }
-    }
+    phaseUnlockTime: null,       // ms timestamp when follow-up modules unlock (8h post-session)
   }
 }
 ```
@@ -2045,11 +1962,7 @@ The `sessionProfile` slice is the **single source of truth for every value the u
 
 **Per-session, not global.** Each session has its own profile. Two sessions never share data. Starting a new session never pre-fills any field from a prior session — even emergency contact details. This is intentional: it lets users genuinely change their intention, focus, dosage, or contact between sessions.
 
-**Read sites.** The most-read fields are:
-- `holdingQuestion` — read by AI prompt, integration transition, both follow-up modules, session history list, timeline editor, and the export
-- `plannedDosageMg` — read by AI prompt, booster calculation, timeline display, module card, export, and session history metadata
-- `emergencyContactDetails` — read by the helper modal's emergency flow and the dedicated `EmergencyContactView`
-- `primaryFocus` + `guidanceLevel` — read by `generateTimelineFromIntake` to choose the timeline configuration
+**Read sites.** The most-read fields are `holdingQuestion`, `plannedDosageMg`, `emergencyContactDetails`, `primaryFocus`, and `guidanceLevel`. Grep `useSessionStore((s) => s.sessionProfile.*` for the live list of call sites.
 
 **What did NOT move into `sessionProfile`.** The semantic line is *answers vs. event state*: `sessionProfile` holds answers, `substanceChecklist` holds event state. So `ingestionTime`, `hasTakenSubstance`, and `ingestionTimeConfirmed` stay in `substanceChecklist` (they're captured timestamps marking the ingestion *event*, not user answers). Similarly, `intake.{currentSection, currentQuestionIndex, isComplete, showSafetyWarnings, showMedicationWarning}` stay in `intake` because they're navigation/completion flags, not answers. And `preSubstanceActivity.{substanceChecklistSubPhase, completedActivities}` stay in `preSubstanceActivity` because they track screen completion, not user answers.
 
@@ -2059,17 +1972,7 @@ The `sessionProfile` slice is the **single source of truth for every value the u
 
 ### useHelperStore (Helper Modal trigger bridge)
 
-A minimal Zustand store with no persistence — exists solely to bridge the trigger button (`HelperButton` in `Header.jsx`) and the modal mount point (`AppShell.jsx`), since they live in different component trees.
-
-```javascript
-{
-  isOpen: false,
-  openHelper: () => set({ isOpen: true }),
-  closeHelper: () => set({ isOpen: false }),
-}
-```
-
-The modal is conditionally mounted in `AppShell` via `{isHelperOpen && <HelperModal />}`, so each open is a fresh component mount with fresh `useState` initial values. State does not persist across sessions or reloads.
+Minimal unpersisted store (`{ isOpen, openHelper, closeHelper }`) that bridges the trigger button in `Header.jsx` and the modal mount point in `AppShell.jsx` — they live in separate component trees and can't share React state. The modal is conditionally mounted (`{isHelperOpen && <HelperModal />}`), so each open is a fresh mount with no leftover state.
 
 ### localStorage Keys
 
@@ -2332,18 +2235,10 @@ A reusable transition screen for smooth flow between sections:
 - Modules: `*Module.jsx` (BreathingModule)
 - Hooks: `use*.js` (useBreathController)
 
-### State Updates
-- Always use Zustand actions, never mutate directly
-- Use `set()` for updates, `get()` to read current state in actions
-
 ### Styling
 - Prefer Tailwind utilities over custom CSS
 - Use CSS variables for colors (enables dark mode)
 - Animations defined in `index.css` with `@keyframes`
-
-### Error Handling
-- Use optional chaining (`?.`) extensively
-- Provide fallbacks for missing data
 
 ---
 
@@ -2392,11 +2287,8 @@ Sessions can be archived and restored via the hamburger menu in the header.
 - **Storage**: All archived sessions are stored in localStorage under `mdma-guide-session-history`
 
 ### Hamburger Menu (`SessionMenu`)
-The header hamburger menu provides four functions:
-1. **Dark/Light mode toggle** — pill-shaped switch with accent colors
-2. **New Session** — archive current session and start fresh
-3. **Past Sessions** — browse and load archived sessions (accordion UI)
-4. **Export Session** — download current session data (text/JSON)
+
+Entry point for session lifecycle actions: dark/light toggle, New Session (archive current → reset), Past Sessions (accordion UI for browsing/loading archives), Export Session (opens `DataDownloadModal`).
 
 ### Known Limitation
 Journal images stored in IndexedDB are not included in archives. Users should download images before archiving a session.
@@ -2429,8 +2321,7 @@ Journal images stored in IndexedDB are not included in archives. Users should do
    - Why: Privacy-first; no accounts or cloud sync; user owns their data via download
 
 8. **Sheet modals use sibling backdrop+panel layout, not parent/child**
-   - Why: CSS opacity is multiplicative across the parent/child tree. If the panel is rendered inside a fading backdrop wrapper, the panel inherits the parent's opacity multiplier and visually fades alongside the backdrop — even if the panel's own slide keyframe doesn't change opacity. Both BoosterModal and HelperModal had this exact bug at one point. The fix is a non-animating outer `<div className="fixed inset-0 z-50">` with backdrop and panel as absolute-positioned siblings inside.
-   - The slide keyframes (`slideUp`, `slideDownOut`, `slideDownIn`, `slideUpOut`) animate transform only (no opacity) so panels feel like solid physical objects, not ghostly UI overlays. The backdrop fades on its own via the separate `fadeIn` / `fadeOut` keyframes. See "Modal Layout Pattern" in the Design System section.
+   - Why: CSS opacity is multiplicative, so a panel inside a fading backdrop wrapper inherits the fade. Slide keyframes animate transform only; the backdrop fades independently. See *Design System → Modal Layout Pattern* for the full pattern and close-handler timing.
 
 9. **Helper Modal trigger lives in Header, modal mounts in AppShell, bridged by `useHelperStore`**
    - Why: The button and the modal live in different component trees (Header is a Header child, the modal mounts at AppShell level so its `fixed` positioning and z-index don't get scoped under any particular tab view). They can't share local React state, so we use a tiny dedicated Zustand store as the bridge. This mirrors how the AI assistant uses `useAIStore.isModalOpen` for the same trigger-in-header / modal-elsewhere pattern. The helper modal is conditionally mounted (`{isHelperOpen && <HelperModal />}`) so each open is a fresh component mount with fresh state — no leftover-state bugs.

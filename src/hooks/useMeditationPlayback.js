@@ -39,6 +39,8 @@ const PROMPT_DISPLAY_DURATION = 8000;     // ms to show text if muted (fallback)
 const GONG_DELAY = 1;         // seconds of silence before gong plays
 const GONG_PREAMBLE = 8;      // seconds before first TTS (1s silence + gong ring + pause)
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export function useMeditationPlayback({
   meditationId,
   moduleInstanceId,
@@ -73,6 +75,11 @@ export function useMeditationPlayback({
   const blobUrlRef = useRef(null);
   const promptTimeMapRef = useRef([]);
   const composedDurationRef = useRef(0); // Actual physical blob duration from real byte count
+
+  // Multi-phase begin transition: 'idle' | 'idle-leaving' | 'preparing' | 'preparing-leaving' | 'active'
+  // Only driven by handleBeginWithTransition. Legacy handleStart leaves it at 'idle'.
+  const [transitionStage, setTransitionStage] = useState('idle');
+  const isTransitioningRef = useRef(false);
 
   // Prompt display state
   const [currentPromptIndex, setCurrentPromptIndex] = useState(-1);
@@ -279,6 +286,97 @@ export function useMeditationPlayback({
     };
   }, []);
 
+  // Begin flow with smooth idle → loading → playing transitions.
+  // Sequence:
+  //   1. idle-leaving   — idle screen fades out (idleFadeMs)
+  //   2. preparing      — loading screen fades in; compose + minLoadMs run in parallel
+  //   3. audio.loadAndPlay is called once both are ready (preserves user gesture)
+  //   4. preparing-leaving — loading screen fades out (loadFadeMs); audio already playing
+  //      (opening gong / silence is happening under the fade — intentional overlap)
+  //   5. active         — playback screen visible
+  const handleBeginWithTransition = useCallback(async ({
+    idleFadeMs = 300,
+    minLoadMs = 900,
+    loadFadeMs = 400,
+  } = {}) => {
+    if (isTransitioningRef.current || hasStarted || isLoading) return;
+    isTransitioningRef.current = true;
+    setError(null);
+
+    try {
+      // Phase 1: fade out idle
+      setTransitionStage('idle-leaving');
+      await sleep(idleFadeMs);
+
+      // Phase 2: show loading screen + compose in parallel with minimum display timer
+      setTransitionStage('preparing');
+      setIsLoading(true);
+
+      const composePromise = (async () => {
+        const gongOpts = gongSound === false
+          ? { skipOpeningGong: true, skipClosingGong: true }
+          : composerOptions;
+        return composeMeditationAudio(
+          timedSequence,
+          { gongDelay: GONG_DELAY, gongPreamble: GONG_PREAMBLE, ...gongOpts }
+        );
+      })();
+
+      const [composed] = await Promise.all([composePromise, sleep(minLoadMs)]);
+      const { blobUrl, composedBytes, promptTimeMap } = composed;
+
+      // Store refs for playback
+      blobUrlRef.current = blobUrl;
+      promptTimeMapRef.current = promptTimeMap;
+      composedDurationRef.current = composedBytes.byteLength / CBR_BYTES_PER_SECOND;
+
+      // Reset display state
+      setElapsedTime(0);
+      setCurrentPromptIndex(-1);
+      lastPromptRef.current = -1;
+      setPromptPhase('hidden');
+
+      // Start playback while still in the promise chain from the Begin click,
+      // so iOS's user-gesture requirement for audio.play() is satisfied.
+      startMeditationPlayback(moduleInstanceId);
+      const success = await audio.loadAndPlay(blobUrl);
+      if (!success) {
+        console.error('[MeditationPlayback] Failed to start audio playback');
+        resetMeditationPlayback();
+        setIsLoading(false);
+        setTransitionStage('idle');
+        return;
+      }
+      audio.storeComposedBytes(composedBytes);
+
+      // Phase 3: fade out loading screen while audio's opening silence/gong plays underneath.
+      setTransitionStage('preparing-leaving');
+      setIsLoading(false);
+      await sleep(loadFadeMs);
+
+      // Phase 4: active playback screen
+      setTransitionStage('active');
+    } catch (err) {
+      console.error('[MeditationPlayback] handleBeginWithTransition error:', err);
+      setError('Audio not found');
+      resetMeditationPlayback();
+      setIsLoading(false);
+      setTransitionStage('idle');
+    } finally {
+      isTransitioningRef.current = false;
+    }
+  }, [
+    hasStarted,
+    isLoading,
+    timedSequence,
+    moduleInstanceId,
+    startMeditationPlayback,
+    resetMeditationPlayback,
+    audio,
+    composerOptions,
+    gongSound,
+  ]);
+
   // Handlers
   const handleStart = useCallback(async () => {
     setError(null);
@@ -346,6 +444,7 @@ export function useMeditationPlayback({
     blobUrlRef.current = null;
     audio.stop();
     resetMeditationPlayback();
+    setTransitionStage('idle');
     if (blobUrl) {
       revokeMeditationBlobUrl(blobUrl);
     }
@@ -375,6 +474,7 @@ export function useMeditationPlayback({
     setPromptPhase('hidden');
     setElapsedTime(0);
     setIsLoading(false);
+    setTransitionStage('idle');
   }, [resetMeditationPlayback, audio]);
 
   // Derived state
@@ -434,6 +534,7 @@ export function useMeditationPlayback({
       blobUrlRef.current = null;
       audio.stop();
       resetMeditationPlayback();
+      setTransitionStage('idle');
       if (blobUrl) {
         revokeMeditationBlobUrl(blobUrl);
       }
@@ -480,12 +581,14 @@ export function useMeditationPlayback({
     elapsedTime,
     currentPrompt,
     promptPhase,
+    transitionStage,
 
     // Audio
     audio,
 
     // Handlers
     handleStart,
+    handleBeginWithTransition,
     handlePauseResume,
     handleComplete,
     handleSkip,

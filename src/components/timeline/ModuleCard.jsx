@@ -9,9 +9,8 @@
 import { useState } from 'react';
 import { getModuleById, CATEGORY_ICONS, MODULE_ICONS } from '../../content/modules';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
-import DurationPicker from '../shared/DurationPicker';
 import ModuleDetailModal from './ModuleDetailModal';
-import { SparkleIcon, CircleCheckIcon, CircleSkipIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, FireIcon } from '../shared/Icons';
+import { SparkleIcon, CircleCheckIcon, CircleSkipIcon, CirclePlusIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, FireIcon } from '../shared/Icons';
 
 // Resolve icon string keys to components
 const ICON_MAP = {
@@ -52,16 +51,10 @@ export default function ModuleCard({
   phaseCompleted = false,
   grayWhenCompleted = false,
 }) {
-  const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
 
   const libraryModule = getModuleById(module.libraryId);
-
-  // Check if this module supports variable duration
-  const hasVariableDuration = libraryModule?.hasVariableDuration === true;
-  const durationSteps = libraryModule?.durationSteps || [10, 15, 20, 25, 30];
-  const canEditDuration = hasVariableDuration && !isActiveSession;
 
   const formatDuration = (minutes) => {
     const hours = Math.floor(minutes / 60);
@@ -170,12 +163,10 @@ export default function ModuleCard({
                       e.stopPropagation();
                       onRemove();
                     }}
-                    className="ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm
-                               bg-[var(--color-bg)] border border-[var(--accent)] text-[var(--accent)]
-                               hover:bg-[var(--accent)] hover:text-white transition-colors"
+                    className="ml-2 w-7 h-7 flex items-center justify-center text-[var(--accent)] hover:opacity-70 transition-opacity translate-x-0.5"
                     title="Remove"
                   >
-                    ×
+                    <CirclePlusIcon size={24} className="rotate-45" />
                   </button>
                 )}
               </div>
@@ -204,24 +195,12 @@ export default function ModuleCard({
                 </p>
               </div>
 
-              {/* Right side: Duration and Remove button - aligned to top-right */}
+              {/* Right side: Duration (read-only) and Remove button - aligned to top-right.
+                  Duration is changed via the ModuleDetailModal's +/− stepper, not inline. */}
               <div className="flex items-start space-x-1 flex-shrink-0">
-                {canEditDuration ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDurationPicker(true);
-                    }}
-                    className="text-[var(--color-text-secondary)] text-sm underline decoration-dotted underline-offset-2 hover:text-[var(--color-text-primary)] transition-colors"
-                    title="Click to change duration"
-                  >
-                    {formatDuration(module.duration)}
-                  </button>
-                ) : (
-                  <span className="text-[var(--color-text-tertiary)] text-sm">
-                    {formatDuration(module.duration)}
-                  </span>
-                )}
+                <span className="text-[var(--color-text-tertiary)] text-sm">
+                  {formatDuration(module.duration)}
+                </span>
 
                 {/* Remove button - visible in edit mode, hidden otherwise (hover to show) */}
                 {canRemove && isEditMode && (
@@ -230,12 +209,10 @@ export default function ModuleCard({
                       e.stopPropagation();
                       onRemove();
                     }}
-                    className="ml-2 w-7 h-7 rounded-full flex items-center justify-center text-sm
-                               bg-[var(--color-bg)] border border-[var(--accent)] text-[var(--accent)]
-                               hover:bg-[var(--accent)] hover:text-white transition-colors"
+                    className="ml-2 w-7 h-7 flex items-center justify-center text-[var(--accent)] hover:opacity-70 transition-opacity translate-x-0.5"
                     title="Remove"
                   >
-                    ×
+                    <CirclePlusIcon size={24} className="rotate-45" />
                   </button>
                 )}
               </div>
@@ -268,21 +245,6 @@ export default function ModuleCard({
           </>
         )}
       </div>
-
-      {/* Duration Picker Modal */}
-      {showDurationPicker && (
-        <DurationPicker
-          isOpen={showDurationPicker}
-          onClose={() => setShowDurationPicker(false)}
-          onSelect={(newDuration) => {
-            updateModuleDuration(module.instanceId, newDuration);
-          }}
-          currentDuration={module.duration}
-          durationSteps={durationSteps}
-          minDuration={libraryModule?.minDuration || 10}
-          maxDuration={libraryModule?.maxDuration || 30}
-        />
-      )}
 
       {/* Module Detail Modal */}
       {showDetailModal && (

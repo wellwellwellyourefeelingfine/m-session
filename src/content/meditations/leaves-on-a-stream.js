@@ -8,7 +8,7 @@
  * 21 prompts (18 base + 3 conditional) written at ~90 WPM for peak state.
  * Audio files are TTS-generated and placed in /audio/meditations/leaves-on-a-stream/
  *
- * Variable duration: 10, 15, or 20 minutes via expandable silence intervals
+ * Variable duration: 10 or 15 minutes via expandable silence intervals
  * and conditional prompts for longer sessions.
  */
 
@@ -19,8 +19,8 @@ export const leavesOnAStreamMeditation = {
   description: 'A guided audio meditation for observing your thoughts with curiosity rather than getting caught in them. Have your headphones or speakers ready.',
   baseDuration: 600,   // ~10 minutes base
   minDuration: 600,    // 10 min
-  maxDuration: 1200,   // 20 min
-  durationSteps: [10, 15, 20],
+  maxDuration: 900,    // 15 min
+  durationSteps: [10, 15],
   defaultDuration: 10,
 
   // Audio configuration

@@ -40,6 +40,11 @@ export const simpleGroundingMeditation = {
   audio: {
     basePath: '/audio/meditations/simple-grounding/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   // Speaking rate for duration estimation (words per minute)

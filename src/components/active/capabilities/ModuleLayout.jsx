@@ -27,6 +27,7 @@
  * - Safe area padding
  */
 
+import { useEffect, useRef, useState } from 'react';
 import LeafDrawV2 from './animations/LeafDrawV2';
 import AsciiMoon from './animations/AsciiMoon';
 
@@ -163,15 +164,205 @@ export function CompletionScreen({
 }
 
 /**
+ * Voice Pill Component
+ * Cycles through available meditation voices with < / > arrows. Used on
+ * meditation idle screens when the content declares multiple voices.
+ * The active voice name fades out/in when cycling.
+ */
+function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
+  const activeIndex = Math.max(0, voices.findIndex((v) => v.id === selectedVoiceId));
+  const activeVoice = voices[activeIndex];
+  const [displayVoice, setDisplayVoice] = useState(activeVoice);
+  const [isFaded, setIsFaded] = useState(false);
+  const prevActiveIdRef = useRef(activeVoice?.id);
+  const swapTimerRef = useRef(null);
+
+  // When selectedVoiceId changes, fade the current name out, swap the label,
+  // then fade the new name in. Tracks the last-processed id via ref so that
+  // the setDisplayVoice inside the effect doesn't trigger a re-run that would
+  // cancel the second transition.
+  useEffect(() => {
+    if (activeVoice?.id === prevActiveIdRef.current) return;
+    prevActiveIdRef.current = activeVoice?.id;
+
+    if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
+    setIsFaded(true);
+    swapTimerRef.current = setTimeout(() => {
+      setDisplayVoice(activeVoice);
+      setIsFaded(false);
+    }, 200);
+
+    return () => {
+      if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
+    };
+  }, [activeVoice]);
+
+  const cycle = (delta) => {
+    const next = voices[(activeIndex + delta + voices.length) % voices.length];
+    if (next && next.id !== selectedVoiceId) onVoiceChange(next.id);
+  };
+
+  const arrowClass = 'flex items-center justify-center w-7 h-7 rounded-full text-[var(--accent)] hover:opacity-70 active:opacity-50 transition-opacity';
+  const opacityClass = isFaded ? 'opacity-0' : 'opacity-100';
+
+  return (
+    // !mt-3 overrides IdleScreen's space-y-4 (16px) to pull the voice pill
+    // closer to the preceding time pill (~12px gap instead).
+    <div className="!mt-3 flex items-center justify-center gap-2">
+      <button
+        type="button"
+        onClick={() => cycle(-1)}
+        className={arrowClass}
+        aria-label="Previous voice"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M9 2 L4 7 L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      <div className="rounded-full border-[1.5px] border-[var(--accent)] px-4 py-1 min-w-[12rem] flex items-center justify-center gap-2">
+        <span className="text-sm font-bold text-[var(--accent)] lowercase tracking-wide">voice:</span>
+        <span
+          className={`text-sm text-[var(--color-text-primary)] transition-opacity duration-200 ${opacityClass}`}
+          aria-live="polite"
+        >
+          {displayVoice?.label}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => cycle(1)}
+        className={arrowClass}
+        aria-label="Next voice"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M5 2 L10 7 L5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Duration Pill Component
+ * Shows the meditation's estimated time in an accent-outline pill that
+ * matches the VoicePill's shape. When step handlers are provided, flanks
+ * the pill with < / > arrows that clamp at min/max (greyed when inactive).
+ * Without step handlers, renders as a display-only pill (fixed-duration
+ * meditations like Simple Grounding).
+ */
+export function DurationPill({ minutes, canStepBack, canStepForward, onStepBack, onStepForward, showArrows = false }) {
+  const [displayMinutes, setDisplayMinutes] = useState(minutes);
+  const [isFaded, setIsFaded] = useState(false);
+  const prevMinutesRef = useRef(minutes);
+  const swapTimerRef = useRef(null);
+
+  // Fade-swap the number when it changes, mirroring VoicePill's pattern.
+  // Tracks last-processed value via ref so setDisplayMinutes doesn't re-run
+  // the effect and cancel the fade-in transition.
+  useEffect(() => {
+    if (minutes === prevMinutesRef.current) return;
+    prevMinutesRef.current = minutes;
+
+    if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
+    setIsFaded(true);
+    swapTimerRef.current = setTimeout(() => {
+      setDisplayMinutes(minutes);
+      setIsFaded(false);
+    }, 200);
+
+    return () => {
+      if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
+    };
+  }, [minutes]);
+
+  const arrowBase = 'flex items-center justify-center w-7 h-7 rounded-full text-[var(--accent)] transition-opacity';
+  const arrowActive = 'hover:opacity-70 active:opacity-50';
+  const arrowDisabled = 'opacity-30 cursor-not-allowed';
+  const opacityClass = isFaded ? 'opacity-0' : 'opacity-100';
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-2">
+      {showArrows ? (
+        <button
+          type="button"
+          onClick={canStepBack ? onStepBack : undefined}
+          disabled={!canStepBack}
+          className={`${arrowBase} ${canStepBack ? arrowActive : arrowDisabled}`}
+          aria-label="Shorter"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M9 2 L4 7 L9 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        <span className="w-7 h-7" aria-hidden="true" />
+      )}
+
+      <div className="rounded-full border-[1.5px] border-[var(--accent)] px-3 py-1 flex items-center justify-start gap-2">
+        <span className="text-sm font-bold text-[var(--accent)] lowercase tracking-wide">time:</span>
+        <span
+          className={`text-sm text-[var(--color-text-primary)] transition-opacity duration-200 w-14 text-left tabular-nums ${opacityClass}`}
+          aria-live="polite"
+        >
+          {displayMinutes}min
+        </span>
+      </div>
+
+      {showArrows ? (
+        <button
+          type="button"
+          onClick={canStepForward ? onStepForward : undefined}
+          disabled={!canStepForward}
+          className={`${arrowBase} ${canStepForward ? arrowActive : arrowDisabled}`}
+          aria-label="Longer"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M5 2 L10 7 L5 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        <span className="w-7 h-7" aria-hidden="true" />
+      )}
+    </div>
+  );
+}
+
+/**
  * Idle Screen Component
  * Shown before a module starts (with title, description, morphing shapes animation)
+ *
+ * Optional voice selector: when `voices` (array) has more than one entry and
+ * `onVoiceChange` is provided, a pill with < / > arrows renders below the
+ * duration line, letting the user cycle through voice variants.
+ *
+ * Optional duration pill: when `durationMinutes` is a number, an accent-outline
+ * pill shows "time: X min". If `onDurationStepBack` / `onDurationStepForward`
+ * are provided, the pill is flanked by arrows that step through the meditation's
+ * duration options (clamped at the passed `canStepBack` / `canStepForward` bounds).
  */
 export function IdleScreen({
   title,
   description,
-  duration,
   animation,
+  voices,
+  selectedVoiceId,
+  onVoiceChange,
+  durationMinutes,
+  onDurationStepBack,
+  onDurationStepForward,
+  canStepDurationBack,
+  canStepDurationForward,
+  // Legacy plain-text duration line. Kept for modules that haven't migrated
+  // to the `durationMinutes` pill (MasterModule, MeditationSection).
+  duration,
 }) {
+  const showVoicePill = Array.isArray(voices) && voices.length > 1 && typeof onVoiceChange === 'function';
+  const showDurationPill = typeof durationMinutes === 'number';
+  const showDurationArrows = typeof onDurationStepBack === 'function' && typeof onDurationStepForward === 'function';
+  const showLegacyDuration = !showDurationPill && duration;
+
   return (
     <div className="space-y-4 animate-fadeIn px-6">
       {title && (
@@ -193,10 +384,25 @@ export function IdleScreen({
         </p>
       )}
 
-      {duration && (
+      {showDurationPill && (
+        <DurationPill
+          minutes={durationMinutes}
+          showArrows={showDurationArrows}
+          canStepBack={!!canStepDurationBack}
+          canStepForward={!!canStepDurationForward}
+          onStepBack={onDurationStepBack}
+          onStepForward={onDurationStepForward}
+        />
+      )}
+
+      {showLegacyDuration && (
         <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] text-center">
           {duration} minutes
         </p>
+      )}
+
+      {showVoicePill && (
+        <VoicePill voices={voices} selectedVoiceId={selectedVoiceId} onVoiceChange={onVoiceChange} />
       )}
     </div>
   );

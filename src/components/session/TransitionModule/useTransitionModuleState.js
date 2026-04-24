@@ -194,8 +194,12 @@ export default function useTransitionModuleState(config) {
     const sessionProfile = storeState.sessionProfile || {};
     const booster = storeState.booster || {};
 
-    // Effective focus: transitionData override or sessionProfile.primaryFocus
-    const effectiveFocus = transitionData?.newFocus || sessionProfile.primaryFocus || null;
+    // Effective focus: transitionData override, sessionProfile.primaryFocus,
+    // or 'open' as a final fallback. The 'open' default matches the timeline
+    // generator's fallback (`primaryFocus || 'open'`) and the focus-confirm
+    // screen's `emptyText: 'Open exploration'` — guarantees the bridge screen
+    // always renders a focus-specific activity button, never just "Continue without".
+    const effectiveFocus = transitionData?.newFocus || sessionProfile.primaryFocus || 'open';
 
     return {
       modulesCompleted: history

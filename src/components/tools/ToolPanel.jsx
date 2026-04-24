@@ -40,7 +40,7 @@ export default function ToolPanel({ toolId, ToolComponent, isLast = false }) {
 
   return (
     <div
-      className={`grid bg-app-white dark:bg-app-black ${renderedTool && !isLast ? 'border-b border-app-black dark:border-app-white' : ''}`}
+      className={`grid bg-app-white dark:bg-app-black ${renderedTool && isLast ? 'border-t border-app-black dark:border-app-white' : ''} ${renderedTool && !isLast ? 'border-b border-app-black dark:border-app-white' : ''}`}
       style={{
         gridTemplateRows: isOpen ? '1fr' : '0fr',
         transition: isOpen

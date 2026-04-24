@@ -43,9 +43,9 @@ Both share `useAudioPlayback` as their audio engine and `useSessionStore.meditat
 
 Each meditation exports a content object. There are two patterns:
 
-### Variable-duration meditations (DurationPicker)
+### Variable-duration meditations (DurationPill with arrows)
 
-Body Scan, Open Awareness — user selects a target duration. Silence gaps scale via a multiplier.
+Body Scan, Open Awareness — user selects a target duration via an inline pill with `<` / `>` arrows on the idle screen (see **Voice + duration pills** below). Silence gaps scale via a multiplier.
 
 ```js
 {
@@ -64,7 +64,7 @@ Body Scan, Open Awareness — user selects a target duration. Silence gaps scale
 }
 ```
 
-### Fixed-duration meditations (no DurationPicker)
+### Fixed-duration meditations (display-only pill)
 
 Simple Grounding, Short Grounding — single fixed length. Self-Compassion, Felt Sense — variations with pre-calculated durations.
 
@@ -103,6 +103,24 @@ Each prompt object has:
 - `silenceMax` (optional) — cap on expanded silence
 - `variationOnly` (optional) — only include in this variation
 - `defaultSilenceAfter` (optional) — override `baseSilenceAfter` for the default variation
+
+### Voice variants (optional)
+
+Meditations can offer multiple voice readings of the same prompt set by declaring an `audio.voices` array:
+
+```js
+audio: {
+  basePath: '/audio/meditations/simple-grounding/',
+  format: 'mp3',
+  defaultVoice: 'theo',
+  voices: [
+    { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+    { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+  ],
+}
+```
+
+The default voice's clips live at the root of `basePath` (so `subfolder: ''`). Alternate voices live in a nested subfolder. Today only Simple Grounding declares voices. Meditations without a `voices` array behave exactly as before — a single flat clip set. See the **Voice System** section for the full data flow.
 
 ---
 
@@ -143,9 +161,90 @@ If audio files are added/changed without regenerating the manifest, the old dura
 
 **File:** `src/content/meditations/index.js`
 
-- **`calculateSilenceMultiplier(prompts, targetDuration, speakingRate, meditationId)`** — Binary search for a multiplier (1.0–10.0) so total duration hits target within 5 seconds. Expandable silences scale; non-expandable stay fixed. Uses manifest durations when `meditationId` is provided.
+- **`calculateSilenceMultiplier(prompts, targetDuration, speakingRate, meditationId, voiceId)`** — Binary search for a multiplier (1.0–10.0) so total duration hits target within 5 seconds. Expandable silences scale; non-expandable stay fixed. Uses manifest durations when `meditationId` is provided; `voiceId` (optional) selects per-voice clip durations for voice-aware meditations.
 
-- **`generateTimedSequence(prompts, multiplier, { speakingRate, audioConfig, meditationId })`** — Produces an array with `startTime`/`endTime` relative to sequence start (NOT blob start — the composer adds the gong preamble offset). Derives `meditationId` from `audioConfig.basePath` if not passed explicitly.
+- **`generateTimedSequence(prompts, multiplier, { speakingRate, audioConfig, meditationId, voiceId })`** — Produces an array with `startTime`/`endTime` relative to sequence start (NOT blob start — the composer adds the gong preamble offset). Derives `meditationId` from `audioConfig.basePath` if not passed explicitly. Resolves `audioSrc` through `resolveVoiceBasePath()` so clips for the selected voice are used.
+
+- **`estimateMeditationDurationSeconds(meditation, { voiceId, silenceMultiplier, includeGongs })`** — Voice-aware duration estimate used by idle-screen "time: X min" pills. Sums per-voice clip durations + silence + composer overhead (opening preamble + closing gong). Once playback starts, the progress bar uses the exact composed-blob duration instead.
+
+- **`resolveVoiceBasePath(audioConfig, voiceId)`** / **`resolveEffectiveVoiceId(audioConfig, preferredVoiceId)`** — Helpers for voice-aware path resolution. See **Voice System** below.
+
+- **`getAvailableVoices()`** — Returns every unique voice variant (id + label) declared across all meditations in the library, deduplicated. Used by the Settings UI to render the default-voice picker without a hand-maintained registry.
+
+---
+
+## Voice System
+
+Meditations can ship multiple voice readings of the same prompt set. Today only **Simple Grounding** offers voice variants (Thoughtful Theo + Relaxing Rachel), but the pattern is designed to scale to any meditation.
+
+### File layout
+
+```
+public/audio/meditations/simple-grounding/
+  settle-01.mp3 ... close-04.mp3     ← default voice (Theo), no subfolder
+  relaxing-rachel/
+    settle-01.mp3 ... close-04.mp3   ← alternate voice, nested folder
+```
+
+The default voice's clips sit at the root of `basePath` so untouched meditations stay identical. Alternate voices live in subfolders whose name is declared in the voice's `subfolder` field.
+
+### Default-voice preference
+
+**Store:** `useAppStore.preferences.defaultVoiceId` (persisted, versioned migration seeds it to `'theo'`).
+
+**Reader locations:**
+- `precacheAudioForModule(libraryId, voiceId)` / `precacheAudioForTimeline(modules, voiceId)` in `src/services/audioCacheService.js` — timeline precache fires with the current preference when the session store builds the timeline (`useSessionStore.js` call sites). This warms the PWA cache with clips for the user's preferred voice so offline play works.
+- `SimpleGroundingModule.jsx` (and any future voice-aware module) — initializes the idle-screen voice pill's `selectedVoiceId` from the preference, and re-syncs via `useEffect` when the preference changes.
+
+**Writer:** `SettingsTool.jsx` — see the "commit-on-tab-leave" flow below.
+
+### Settings: commit-on-tab-leave
+
+To keep rapid toggling from thrashing the PWA cache, the Settings UI uses a **two-state model**:
+
+1. The `<` / `>` cycler in Settings writes to a **local `pendingVoiceId`** state (useState). This is the only thing that changes while the user is on the Tools tab.
+2. When the user navigates **away from the Tools tab** to any other tab, a `useEffect` compares `pendingVoiceId` against a `committedVoiceIdRef` (seeded from the committed preference on mount).
+3. If they differ, the effect calls `setPreference('defaultVoiceId', pendingVoiceId)` and fires a fire-and-forget `precacheAudioForTimeline(modules, pendingVoiceId)`. `committedVoiceIdRef.current` is updated so repeat tab-outs don't re-fire.
+
+Net effect: cycling Theo → Rachel → Theo while on Settings ends with pending == committed → no precache, no store write. Only a net change triggers the warm-up.
+
+### Idle-screen voice pill
+
+The voice pill lives inside `IdleScreen` (exported from `src/components/active/capabilities/ModuleLayout.jsx`). It renders only when `meditation.audio.voices.length > 1`. The module owns `selectedVoiceId` state:
+
+- Initialized from `resolveEffectiveVoiceId(meditation.audio, preferences.defaultVoiceId)` — falls back to the meditation's `defaultVoice` if the global preference isn't in this meditation's voice list.
+- Kept in sync with preference changes via a `useEffect` that runs only when `!playback.hasStarted` (so in-flight sessions aren't disturbed).
+- Snapshotted into `activeVoiceRef` inside `handleBeginWithTransition` so toggling the pill mid-session doesn't affect the composed blob.
+
+Cycling the pill arrows is a **per-session override** and doesn't touch the preference.
+
+### Voice previews (Settings Preview button)
+
+Each voice has a short sample clip at:
+
+```
+public/audio/voice-previews/<voiceId>.mp3
+```
+
+e.g. `theo.mp3`, `rachel.mp3`. The Settings Preview button fetches via a plain `new Audio(audioPath('/audio/voice-previews/' + voiceId + '.mp3'))` — no composer, no blob URL. The button shows a play-in-circle icon when idle, a stop-in-circle icon during playback; pressing during playback (or cycling to a different voice) triggers a 150ms volume fade-out. Missing files fail silently.
+
+**The SW runtime cache regex (`/audio/.*\.mp3`) covers voice previews**, so first play populates the cache and subsequent plays are offline-friendly.
+
+### Voice-preview copy (standard text)
+
+**Every voice added to the app must record the exact same preview text**, so that Settings' preview function gives an apples-to-apples comparison between voices:
+
+> "Voice-guided meditations will allow you to settle into your session without distraction and really do the work. You'll hear prompts like: find a comfortable position, feel the breath move in and out, let the shoulders soften and the jaw release — each moment its own quiet beginning."
+
+Use the **same ElevenLabs settings** as the voice's production meditation clips (same stability, similarity_boost, style, speed, model) — see `scripts/generate-simple-grounding-audio.mjs` for the current presets. Output format: `mp3_44100_128`.
+
+### Adding a new voice
+
+1. Add a new entry under the meditation's `audio.voices` array with a unique `id`, human-readable `label`, and subfolder path.
+2. Generate the voice's meditation clips into `public/audio/meditations/<meditation-id>/<subfolder>/` — one MP3 per prompt id, matching the default voice's filenames.
+3. Generate the standardized preview clip into `public/audio/voice-previews/<voiceId>.mp3`.
+4. Run `node scripts/generate-audio-durations.mjs` to refresh the manifest (the scanner recurses one level into subfolders and nests per-voice durations as `manifest[medId][voiceId][promptId]`).
+5. That's it — `getAvailableVoices()` and the Settings picker pick it up automatically.
 
 ---
 

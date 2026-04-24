@@ -8,18 +8,22 @@
  * - Audio-text sync via shared useMeditationPlayback hook
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
+  resolveEffectiveVoiceId,
+  estimateMeditationDurationSeconds,
 } from '../../../content/meditations';
 import { getModuleById } from '../../../content/modules/library';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import WaveLoop from '../capabilities/animations/WaveLoop';
@@ -36,24 +40,43 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
   const libraryModule = getModuleById(module.libraryId);
   const meditationId = libraryModule?.meditationId || 'simple-grounding';
   const meditation = getMeditationById(meditationId);
-  const [isLeaving, setIsLeaving] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+
+  // Voice selection — initialized from the global default preference, overridable on the idle screen.
+  // Snapshotted to a ref when Begin is pressed so mid-session changes don't affect the in-flight session.
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
+  const activeVoiceRef = useRef(selectedVoiceId);
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
-  // Build timed sequence (fixed duration, no silence expansion — multiplier = 1.0)
+  // Build timed sequence (fixed duration, no silence expansion — multiplier = 1.0).
+  // Rebuilds when the idle-selected voice changes so the audioSrc URLs point at the right folder.
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
     const sequence = generateTimedSequence(meditation.prompts, 1.0, {
       speakingRate: meditation.speakingRate || 95,
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
 
     // Use the fixed duration for the timer
     return [sequence, meditation.fixedDuration];
-  }, [meditation]);
+  }, [meditation, selectedVoiceId]);
+
+  // Idle-screen duration estimate — voice-aware so it reflects the currently
+  // selected voice rather than the hardcoded fixedDuration. Once playback
+  // starts, the progress bar uses the exact composed-blob duration instead.
+  const durationMinutes = useMemo(() => {
+    if (!meditation) return null;
+    const seconds = estimateMeditationDurationSeconds(meditation, { voiceId: selectedVoiceId });
+    return Math.round(seconds / 60);
+  }, [meditation, selectedVoiceId]);
 
   // Shared playback hook handles timer, audio-text sync, prompt progression, etc.
   const playback = useMeditationPlayback({
@@ -66,17 +89,32 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
     onProgressUpdate,
   });
 
-  // Fade out idle screen before starting composition
+  // Sync the idle-screen voice pill with the global default voice preference.
+  // The store's `defaultVoiceId` only updates when the user commits a change
+  // in Settings (on tab-leave from Tools), so this effect fires at that
+  // moment and never during rapid Settings toggling. Skipped once playback
+  // has started so in-flight sessions aren't disturbed; per-session pill
+  // overrides are preserved because this only fires on preference change.
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- we intentionally don't re-run when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
+
+  // Begin with smooth idle → loading → playing transition. Snapshots the selected voice
+  // so toggling the pill mid-session doesn't change the audio that's composing/playing.
   const handleBeginWithTransition = useCallback(() => {
+    activeVoiceRef.current = selectedVoiceId;
     useSessionStore.getState().beginModule(module.instanceId);
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
-  }, [playback, module.instanceId]);
+    playback.handleBeginWithTransition();
+  }, [playback, module.instanceId, selectedVoiceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {
     playback.handleRestart();
-    setIsLeaving(false);
     setShowCompletion(false);
   }, [playback]);
 
@@ -128,38 +166,41 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
           </div>
         )}
 
-        {/* Idle state */}
-        {!playback.error && !playback.hasStarted && !playback.isLoading && (() => {
-          const IdleAnimationComp = meditation.idleAnimation
-            ? IDLE_ANIMATIONS[meditation.idleAnimation]
-            : null;
-          return (
-            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-              <IdleScreen
-                title={meditation.title}
-                description={meditation.description}
-                animation={IdleAnimationComp ? <IdleAnimationComp /> : undefined}
-              />
+        {/* Idle state — also shown during 'idle-leaving' with a fadeOut class */}
+        {!playback.error &&
+          !playback.hasStarted &&
+          (playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') &&
+          (() => {
+            const IdleAnimationComp = meditation.idleAnimation
+              ? IDLE_ANIMATIONS[meditation.idleAnimation]
+              : null;
+            const isLeaving = playback.transitionStage === 'idle-leaving';
+            return (
+              <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+                <IdleScreen
+                  title={meditation.title}
+                  description={meditation.description}
+                  animation={IdleAnimationComp ? <IdleAnimationComp /> : undefined}
+                  voices={voices}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceChange={setSelectedVoiceId}
+                  durationMinutes={durationMinutes}
+                />
+              </div>
+            );
+          })()}
 
-              {/* Fixed duration display */}
-              <p className="mt-6 text-[var(--color-text-tertiary)] text-sm">
-                ~{Math.round(meditation.fixedDuration / 60)} min
-              </p>
-            </div>
-          );
-        })()}
-
-        {/* Loading state — composing meditation audio */}
-        {playback.isLoading && (
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
+        {/* Loading state — fades in on 'preparing', fades out on 'preparing-leaving' */}
+        {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+          <MeditationLoadingScreen
+            isLeaving={playback.transitionStage === 'preparing-leaving'}
+          />
         )}
 
-        {/* Active/completed state — title, animation, paused indicator, prompt display */}
-        {playback.hasStarted && !showCompletion && (
+        {/* Active/completed state — title, animation, paused indicator, prompt display.
+            Gated on transitionStage === 'active' so the loading screen's fade-out
+            completes before this fades in (sequential, not overlapping). */}
+        {playback.hasStarted && !showCompletion && playback.transitionStage === 'active' && (
           <div
             className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
@@ -207,15 +248,14 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
       {/* Control bar */}
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={
-          showCompletion
-            ? { label: 'Complete', onClick: handleFinalComplete }
-            : !playback.hasStarted || playback.isLoading
-              ? { label: 'Begin', onClick: handleBeginWithTransition }
-              : playback.isComplete
-                ? { label: 'Continue', onClick: handleContinueToCompletion }
-                : playback.getPrimaryButton()
-        }
+        primary={(() => {
+          if (showCompletion) return { label: 'Complete', onClick: handleFinalComplete };
+          const phase = playback.getPhase();
+          if (phase === 'idle') return { label: 'Begin', onClick: handleBeginWithTransition };
+          if (phase === 'loading') return { label: 'Loading', loading: true };
+          if (playback.isComplete) return { label: 'Continue', onClick: handleContinueToCompletion };
+          return playback.getPrimaryButton();
+        })()}
         showBack={playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion}
         onBack={handleRestart}
         backConfirmMessage="Restart this meditation from the beginning?"

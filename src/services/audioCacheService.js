@@ -6,7 +6,7 @@
  */
 
 import { getModuleById } from '../content/modules/library';
-import { getMeditationById } from '../content/meditations';
+import { getMeditationById, resolveVoiceBasePath, resolveEffectiveVoiceId } from '../content/meditations';
 import { audioPath } from '../utils/audioPath';
 
 const CACHE_NAME = 'audio-cache';
@@ -56,15 +56,22 @@ export async function precacheComposerAssets() {
  * Get all audio URLs for a given module's meditation content.
  * Handles both standard meditations (flat prompts array) and
  * variation-based meditations like self-compassion (assembleVariation + variations).
+ *
+ * When the meditation declares voice variants, only the requested voice
+ * (or the meditation's default voice if voiceId is null) is precached.
+ * Alternate voices are fetched on-demand at Begin; the SW runtime cache
+ * still stores them for future sessions.
  */
-function getAudioUrlsForModule(libraryId) {
+function getAudioUrlsForModule(libraryId, voiceId = null) {
   const libraryModule = getModuleById(libraryId);
   if (!libraryModule?.meditationId) return [];
 
   const meditation = getMeditationById(libraryModule.meditationId);
   if (!meditation?.audio) return [];
 
-  const { basePath, format } = meditation.audio;
+  const { format } = meditation.audio;
+  const effectiveVoiceId = resolveEffectiveVoiceId(meditation.audio, voiceId);
+  const voiceBasePath = resolveVoiceBasePath(meditation.audio, effectiveVoiceId);
   const allClipIds = new Set();
 
   if (meditation.prompts) {
@@ -79,7 +86,7 @@ function getAudioUrlsForModule(libraryId) {
     });
   }
 
-  return Array.from(allClipIds).map((id) => audioPath(`${basePath}${id}.${format}`));
+  return Array.from(allClipIds).map((id) => audioPath(`${voiceBasePath}${id}.${format}`));
 }
 
 /**
@@ -87,11 +94,11 @@ function getAudioUrlsForModule(libraryId) {
  * Idempotent: skips files already in cache.
  * Non-blocking: catches all errors individually.
  */
-export async function precacheAudioForModule(libraryId) {
+export async function precacheAudioForModule(libraryId, voiceId = null) {
   try {
     if (!('caches' in window)) return;
 
-    const urls = getAudioUrlsForModule(libraryId);
+    const urls = getAudioUrlsForModule(libraryId, voiceId);
     if (urls.length === 0) return;
 
     const cache = await caches.open(CACHE_NAME);
@@ -123,9 +130,9 @@ export async function precacheAudioForModule(libraryId) {
  * Precache audio for all modules in a timeline.
  * Deduplicates by libraryId so shared modules aren't cached twice.
  */
-export async function precacheAudioForTimeline(modules) {
+export async function precacheAudioForTimeline(modules, voiceId = null) {
   if (!modules || !Array.isArray(modules)) return;
 
   const uniqueLibraryIds = [...new Set(modules.map((m) => m.libraryId))];
-  await Promise.all(uniqueLibraryIds.map((id) => precacheAudioForModule(id)));
+  await Promise.all(uniqueLibraryIds.map((id) => precacheAudioForModule(id, voiceId)));
 }

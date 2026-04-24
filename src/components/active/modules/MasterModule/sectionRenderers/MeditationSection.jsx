@@ -22,9 +22,8 @@ import { useMeditationPlayback } from '../../../../../hooks/useMeditationPlaybac
 import { useTranscriptModal } from '../../../../../hooks/useTranscriptModal';
 import useSyncedDuration from '../../../../../hooks/useSyncedDuration';
 
-import ModuleLayout, { IdleScreen } from '../../../capabilities/ModuleLayout';
+import ModuleLayout, { IdleScreen, DurationPill } from '../../../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../../../capabilities/ModuleControlBar';
-import DurationPicker from '../../../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../../../capabilities/TranscriptModal';
 import { EggIcon } from '../../../../shared/Icons';
 import { HeaderBlock, MeditationAudioBlock } from '../blockRenderers';
@@ -207,17 +206,29 @@ export default function MeditationSection({
               </div>
             )}
 
-            {/* Duration selector (for variable-duration meditations without variations) */}
-            {hasVariableDuration && (
-              <button
-                onClick={() => duration.setShowPicker(true)}
-                className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                  hover:border-[var(--color-text-tertiary)] transition-colors"
-              >
-                <span className="text-2xl font-light">{duration.selected}</span>
-                <span className="text-sm ml-1">min</span>
-              </button>
-            )}
+            {/* Duration pill with arrows (for variable-duration meditations without variations) */}
+            {hasVariableDuration && (() => {
+              const steps = meditation.durationSteps || [];
+              const stepIndex = steps.indexOf(duration.selected);
+              const canStepBack = stepIndex > 0;
+              const canStepForward = stepIndex >= 0 && stepIndex < steps.length - 1;
+              const stepTo = (nextIndex) => {
+                const next = steps[nextIndex];
+                if (typeof next === 'number') duration.setSelected(next);
+              };
+              return (
+                <div className="mt-6 flex justify-center">
+                  <DurationPill
+                    minutes={duration.selected}
+                    showArrows={true}
+                    canStepBack={canStepBack}
+                    canStepForward={canStepForward}
+                    onStepBack={() => stepTo(stepIndex - 1)}
+                    onStepForward={() => stepTo(stepIndex + 1)}
+                  />
+                </div>
+              );
+            })()}
           </div>
         )}
 
@@ -303,19 +314,6 @@ export default function MeditationSection({
           ) : null
         }
       />
-
-      {/* Duration picker (variable-duration meditations only) */}
-      {hasVariableDuration && meditation.durationSteps && (
-        <DurationPicker
-          isOpen={duration.showPicker}
-          onClose={() => duration.setShowPicker(false)}
-          onSelect={duration.setSelected}
-          currentDuration={duration.selected}
-          durationSteps={meditation.durationSteps}
-          minDuration={meditation.minDuration ? meditation.minDuration / 60 : undefined}
-          maxDuration={meditation.maxDuration ? meditation.maxDuration / 60 : undefined}
-        />
-      )}
 
       {/* Transcript modal */}
       {showTranscriptOption && (

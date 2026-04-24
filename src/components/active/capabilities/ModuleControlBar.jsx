@@ -30,7 +30,10 @@ import { useAppStore } from '../../../stores/useAppStore';
 /**
  * @param {object} props
  * @param {string} props.phase - Current phase: 'idle' | 'active' | 'paused' | 'completed'
- * @param {object} props.primary - Primary button config { label, onClick, disabled }
+ * @param {object} props.primary - Primary button config { label, onClick, disabled, loading }
+ *   - `loading: true` renders the active style (same color, same size) but blocks clicks.
+ *     Use for brief transitional states (e.g. composing audio) where `disabled: true`'s
+ *     greyed-out look would feel jarring.
  * @param {boolean} props.showBack - Show back button
  * @param {boolean} props.showSkip - Show skip button
  * @param {function} props.onBack - Back button handler
@@ -128,7 +131,19 @@ export default function ModuleControlBar({
               </button>
             )}
 
-            {primary?.label && !primary.disabled ? (
+            {primary?.label && primary.loading && !primary.disabled ? (
+              <button
+                disabled
+                aria-busy="true"
+                className="px-8 py-2.5 bg-[var(--color-text-primary)] text-[var(--color-bg)]
+                  uppercase tracking-wider text-[10px] w-[120px] rounded-sm
+                  pointer-events-auto cursor-not-allowed
+                  translate-x-0 translate-y-0 shadow-[2px_2px_0_rgba(0,0,0,0.2)]"
+                style={{ WebkitTapHighlightColor: 'transparent', fontFamily: 'Azeret Mono, monospace' }}
+              >
+                {primary.label}
+              </button>
+            ) : primary?.label && !primary.disabled ? (
               <button
                 onClick={() => { primary.onClick?.(); triggerLogoAnimation(); }}
                 onTouchStart={() => setIsPrimaryPressed(true)}
@@ -137,7 +152,7 @@ export default function ModuleControlBar({
                 onMouseUp={() => setIsPrimaryPressed(false)}
                 onMouseLeave={() => setIsPrimaryPressed(false)}
                 className={`px-8 py-2.5 bg-[var(--color-text-primary)] text-[var(--color-bg)]
-                  uppercase tracking-wider text-[10px] min-w-[120px] rounded-sm
+                  uppercase tracking-wider text-[10px] w-[120px] rounded-sm
                   transition-all duration-100 ease-out pointer-events-auto
                   ${isPrimaryPressed
                     ? 'translate-x-[1px] translate-y-[1px] shadow-[1px_1px_0_rgba(0,0,0,0.2)]'
@@ -151,7 +166,7 @@ export default function ModuleControlBar({
               <button
                 disabled
                 className="px-8 py-2.5 border border-[var(--color-border)] text-[var(--color-text-tertiary)]
-                  uppercase tracking-wider text-[10px] cursor-not-allowed min-w-[120px] flex items-center justify-center pointer-events-auto"
+                  uppercase tracking-wider text-[10px] cursor-not-allowed w-[120px] flex items-center justify-center pointer-events-auto"
                 style={{ backgroundColor: 'var(--color-border)', opacity: 0.4, fontFamily: 'Azeret Mono, monospace' }}
               >
                 {primary?.label || (

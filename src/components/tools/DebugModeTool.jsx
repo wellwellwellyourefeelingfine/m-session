@@ -458,7 +458,7 @@ function BoosterPeakTest() {
         modules: {
           ...useSessionStore.getState().modules,
           items: updatedItems,
-          activeModuleId: firstPeakModule?.instanceId || null,
+          currentModuleInstanceId: firstPeakModule?.instanceId || null,
         },
       });
 

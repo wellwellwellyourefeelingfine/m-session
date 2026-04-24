@@ -15,6 +15,24 @@
  *   --start N       Start from clip index N (0-based, for resuming after errors)
  *   --only ID       Generate only a specific clip by ID (e.g. --only settle-01)
  *   --section SEC   Generate only clips from a section: settle, contact, senses, breath, or close
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * Standard voice-preview copy (see MEDITATION_AUDIO_SYSTEM.md → Voice System)
+ *
+ * Every voice added to the app must record the SAME preview text with its
+ * production voice settings, saved to /public/audio/voice-previews/<voiceId>.mp3.
+ * This gives the Settings Preview button an apples-to-apples comparison.
+ *
+ *   "Voice-guided meditations will allow you to settle into your session
+ *    without distraction and really do the work. You'll hear prompts like:
+ *    find a comfortable position, feel the breath move in and out, let the
+ *    shoulders soften and the jaw release — each moment its own quiet
+ *    beginning."
+ *
+ * Use the same ElevenLabs settings (stability, similarity_boost, style,
+ * speed, model) as the voice's VOICE_PRESETS entry below. Output format:
+ * mp3_44100_128.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';

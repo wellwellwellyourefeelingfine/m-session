@@ -23,7 +23,6 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
-import DurationPicker from '../../shared/DurationPicker';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
 import { EggIcon } from '../../shared/Icons';
 
@@ -135,24 +134,29 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
         )}
 
         {/* Idle state */}
-        {!playback.error && !playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
-            <IdleScreen
-              title={meditation.title}
-              description={meditation.description}
-            />
-
-            {/* Duration selector */}
-            <button
-              onClick={() => duration.setShowPicker(true)}
-              className="mt-6 px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                hover:border-[var(--color-text-tertiary)] transition-colors"
-            >
-              <span className="text-2xl font-light">{duration.selected}</span>
-              <span className="text-sm ml-1">min</span>
-            </button>
-          </div>
-        )}
+        {!playback.error && !playback.hasStarted && !playback.isLoading && (() => {
+          const steps = meditation.durationSteps || [];
+          const stepIndex = steps.indexOf(duration.selected);
+          const canStepBack = stepIndex > 0;
+          const canStepForward = stepIndex >= 0 && stepIndex < steps.length - 1;
+          const stepTo = (nextIndex) => {
+            const next = steps[nextIndex];
+            if (typeof next === 'number') duration.setSelected(next);
+          };
+          return (
+            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+              <IdleScreen
+                title={meditation.title}
+                description={meditation.description}
+                durationMinutes={duration.selected}
+                canStepDurationBack={canStepBack}
+                canStepDurationForward={canStepForward}
+                onDurationStepBack={() => stepTo(stepIndex - 1)}
+                onDurationStepForward={() => stepTo(stepIndex + 1)}
+              />
+            </div>
+          );
+        })()}
 
         {/* Loading state — composing meditation audio */}
         {playback.isLoading && (
@@ -247,17 +251,6 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
             />
           ) : null
         }
-      />
-
-      {/* Duration picker modal */}
-      <DurationPicker
-        isOpen={duration.showPicker}
-        onClose={() => duration.setShowPicker(false)}
-        onSelect={duration.setSelected}
-        currentDuration={duration.selected}
-        durationSteps={meditation.durationSteps}
-        minDuration={meditation.minDuration / 60}
-        maxDuration={meditation.maxDuration / 60}
       />
 
       {/* Transcript modal */}

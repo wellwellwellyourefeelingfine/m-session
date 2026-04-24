@@ -757,9 +757,14 @@ export const useSessionStore = create(
           },
         });
 
-        // Precache audio for all modules in the generated timeline (non-blocking)
-        precacheAudioForTimeline(modules);
-        precacheComposerAssets();
+        // Precache audio for all modules in the generated timeline (non-blocking).
+        // Use the user's default voice preference so offline-ready assets match
+        // what plays when Begin is pressed on a meditation idle screen.
+        {
+          const voiceId = useAppStore.getState().preferences?.defaultVoiceId || null;
+          precacheAudioForTimeline(modules, voiceId);
+          precacheComposerAssets();
+        }
       },
 
       // ============================================
@@ -868,8 +873,11 @@ export const useSessionStore = create(
           });
 
           // Precache audio for parts that have meditation content
-          if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id);
-          if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id);
+          {
+            const voiceId = useAppStore.getState().preferences?.defaultVoiceId || null;
+            if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id, voiceId);
+            if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id, voiceId);
+          }
 
           return { success: true, module: newPart1 };
         }
@@ -930,7 +938,7 @@ export const useSessionStore = create(
         set(updates);
 
         // Precache audio for the newly added module (non-blocking)
-        precacheAudioForModule(libraryId);
+        precacheAudioForModule(libraryId, useAppStore.getState().preferences?.defaultVoiceId || null);
 
         return { success: true, module: newModule };
       },
@@ -1038,8 +1046,11 @@ export const useSessionStore = create(
             },
           });
 
-          if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id);
-          if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id);
+          {
+            const voiceId = useAppStore.getState().preferences?.defaultVoiceId || null;
+            if (part1Lib.meditationId) precacheAudioForModule(part1Lib.id, voiceId);
+            if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id, voiceId);
+          }
 
           useAppStore.getState().setCurrentTab('active');
           return { success: true, instanceId: newPart1.instanceId };
@@ -1089,7 +1100,7 @@ export const useSessionStore = create(
         useAppStore.getState().setCurrentTab('active');
 
         // Precache audio (non-blocking)
-        precacheAudioForModule(libraryId);
+        precacheAudioForModule(libraryId, useAppStore.getState().preferences?.defaultVoiceId || null);
 
         return { success: true, instanceId: newInstanceId };
       },

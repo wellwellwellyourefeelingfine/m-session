@@ -23,6 +23,7 @@ import { useSilenceTimer } from '../../../hooks/useSilenceTimer';
 // Shared UI components
 import ModuleControlBar, { VolumeButton } from '../capabilities/ModuleControlBar';
 import DurationPicker from '../../shared/DurationPicker';
+import { DurationPill } from '../capabilities/ModuleLayout';
 import AlarmPrompt from '../../shared/AlarmPrompt';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
 
@@ -46,6 +47,9 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onProgress
 
   // Local UI state
   const [showAlarmPrompt, setShowAlarmPrompt] = useState(false);
+  // DurationPicker is only used mid-session (tap elapsed-time / total to extend).
+  // Idle-state uses the inline DurationPill with arrows, not this modal.
+  const [showDurationPickerModal, setShowDurationPickerModal] = useState(false);
 
   const totalDurationSeconds = duration.selected * 60;
 
@@ -136,16 +140,28 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onProgress
                 <AsciiMoon />
               </div>
 
-              {/* Duration picker button */}
+              {/* Duration pill with arrows — idle state */}
               <div className="mb-6">
-                <button
-                  onClick={() => duration.setShowPicker(true)}
-                  className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
-                    hover:border-[var(--color-text-tertiary)] transition-colors"
-                >
-                  <span className="text-2xl font-light">{duration.selected}</span>
-                  <span className="text-sm ml-1">min</span>
-                </button>
+                {(() => {
+                  const steps = DURATION_STEPS;
+                  const stepIndex = steps.indexOf(duration.selected);
+                  const canStepBack = stepIndex > 0;
+                  const canStepForward = stepIndex >= 0 && stepIndex < steps.length - 1;
+                  const stepTo = (nextIndex) => {
+                    const next = steps[nextIndex];
+                    if (typeof next === 'number') handleDurationChange(next);
+                  };
+                  return (
+                    <DurationPill
+                      minutes={duration.selected}
+                      showArrows={true}
+                      canStepBack={canStepBack}
+                      canStepForward={canStepForward}
+                      onStepBack={() => stepTo(stepIndex - 1)}
+                      onStepForward={() => stepTo(stepIndex + 1)}
+                    />
+                  );
+                })()}
               </div>
 
               {/* Description */}
@@ -173,7 +189,7 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onProgress
 
               {/* Elapsed timer — tap to adjust duration */}
               <button
-                onClick={() => duration.setShowPicker(true)}
+                onClick={() => setShowDurationPickerModal(true)}
                 className="px-4 py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)]
                   hover:border-[var(--color-text-tertiary)] transition-colors"
               >
@@ -236,8 +252,8 @@ export default function OpenSpaceModule({ module, onComplete, onSkip, onProgress
 
       {/* Duration picker modal — minDuration constrained by elapsed time when running */}
       <DurationPicker
-        isOpen={duration.showPicker}
-        onClose={() => duration.setShowPicker(false)}
+        isOpen={showDurationPickerModal}
+        onClose={() => setShowDurationPickerModal(false)}
         onSelect={handleDurationChange}
         currentDuration={duration.selected}
         durationSteps={DURATION_STEPS}

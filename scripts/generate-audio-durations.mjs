@@ -40,9 +40,30 @@ function getID3TagSize(filePath) {
   return 0;
 }
 
-// Scan all meditation audio directories
+function scanClipDurations(dirPath) {
+  const files = readdirSync(dirPath)
+    .filter(f => f.endsWith('.mp3'))
+    .sort();
+
+  const durations = {};
+  for (const file of files) {
+    const filePath = resolve(dirPath, file);
+    const fileSize = statSync(filePath).size;
+    const id3Size = getID3TagSize(filePath);
+    const audioBytes = fileSize - id3Size;
+    const duration = Math.round((audioBytes / CBR_BYTES_PER_SECOND) * 100) / 100;
+    const promptId = basename(file, '.mp3');
+    durations[promptId] = duration;
+  }
+  return durations;
+}
+
+// Scan all meditation audio directories. Root-level MP3s are the default voice
+// and stored flat as manifest[medId][promptId]. Subdirectories are alternate
+// voice variants, stored nested as manifest[medId][voiceId][promptId].
 const manifest = {};
 let totalClips = 0;
+let totalVoiceVariants = 0;
 
 const dirs = readdirSync(AUDIO_BASE, { withFileTypes: true })
   .filter(d => d.isDirectory())
@@ -51,30 +72,29 @@ const dirs = readdirSync(AUDIO_BASE, { withFileTypes: true })
 
 for (const dir of dirs) {
   const dirPath = resolve(AUDIO_BASE, dir);
-  const files = readdirSync(dirPath)
-    .filter(f => f.endsWith('.mp3'))
-    .sort();
+  const entries = readdirSync(dirPath, { withFileTypes: true });
 
-  if (files.length === 0) continue;
+  const rootDurations = scanClipDurations(dirPath);
+  const subDirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
 
-  const durations = {};
-  for (const file of files) {
-    const filePath = resolve(dirPath, file);
-    const fileSize = statSync(filePath).size;
-    const id3Size = getID3TagSize(filePath);
-    const audioBytes = fileSize - id3Size;
-    const duration = Math.round((audioBytes / CBR_BYTES_PER_SECOND) * 100) / 100; // 2 decimal places
-    const promptId = basename(file, '.mp3');
-    durations[promptId] = duration;
-    totalClips++;
+  if (Object.keys(rootDurations).length === 0 && subDirs.length === 0) continue;
+
+  const medEntry = { ...rootDurations };
+  totalClips += Object.keys(rootDurations).length;
+
+  for (const voiceId of subDirs) {
+    const voiceDurations = scanClipDurations(resolve(dirPath, voiceId));
+    if (Object.keys(voiceDurations).length === 0) continue;
+    medEntry[voiceId] = voiceDurations;
+    totalClips += Object.keys(voiceDurations).length;
+    totalVoiceVariants++;
   }
 
-  manifest[dir] = durations;
+  manifest[dir] = medEntry;
 }
 
-// Write manifest
 writeFileSync(OUTPUT_PATH, JSON.stringify(manifest, null, 2) + '\n');
 
 console.log(`Generated audio duration manifest:`);
-console.log(`  ${dirs.length} meditations, ${totalClips} clips`);
+console.log(`  ${dirs.length} meditations, ${totalClips} clips, ${totalVoiceVariants} alternate voice variant(s)`);
 console.log(`  Output: ${OUTPUT_PATH}`);

@@ -103,6 +103,28 @@ export function getMeditationById(meditationId) {
 }
 
 /**
+ * Collect every unique voice variant declared across all meditations in
+ * `meditationLibrary`. Deduplicated by voice id, preserving first-seen order.
+ * Used by Settings to render the default-voice picker without requiring a
+ * hand-maintained list.
+ *
+ * @returns {Array<{ id: string, label: string }>}
+ */
+export function getAvailableVoices() {
+  const seen = new Map();
+  for (const meditation of Object.values(meditationLibrary)) {
+    const voices = meditation?.audio?.voices;
+    if (!Array.isArray(voices)) continue;
+    for (const voice of voices) {
+      if (voice?.id && !seen.has(voice.id)) {
+        seen.set(voice.id, { id: voice.id, label: voice.label });
+      }
+    }
+  }
+  return Array.from(seen.values());
+}
+
+/**
  * Get all available meditations
  */
 export function getAllMeditations() {
@@ -119,14 +141,32 @@ const DEFAULT_SPEAKING_RATE = 150;
  * when available (accurate byte-based duration) and falling back to
  * word-count estimation when no audio file exists.
  *
+ * Lookup order when voiceId is supplied and points to an alternate voice
+ * variant: manifest[medId][voiceId][promptId] → manifest[medId][promptId] →
+ * word-count fallback. This lets alternate voices that have their own
+ * nested manifest entry drive accurate timing while falling back cleanly
+ * to the default voice's timing when a variant is incomplete.
+ *
  * @param {string|null} meditationId - Meditation ID for manifest lookup
  * @param {Object} prompt - Prompt object with id and text
  * @param {number} speakingRate - Words per minute fallback
+ * @param {string|null} voiceId - Optional voice variant ID
  * @returns {number} Duration in seconds
  */
-export function getClipDuration(meditationId, prompt, speakingRate = DEFAULT_SPEAKING_RATE) {
-  const manifestDuration = meditationId && audioDurations[meditationId]?.[prompt.id];
-  if (manifestDuration) return manifestDuration;
+export function getClipDuration(meditationId, prompt, speakingRate = DEFAULT_SPEAKING_RATE, voiceId = null) {
+  if (meditationId) {
+    const medEntry = audioDurations[meditationId];
+    if (medEntry) {
+      if (voiceId) {
+        const voiceEntry = medEntry[voiceId];
+        if (voiceEntry && typeof voiceEntry === 'object' && voiceEntry[prompt.id]) {
+          return voiceEntry[prompt.id];
+        }
+      }
+      const flat = medEntry[prompt.id];
+      if (typeof flat === 'number') return flat;
+    }
+  }
   // Fallback to word-count estimate for meditations without pre-recorded audio
   const wordCount = prompt.text.split(' ').length;
   return (wordCount / speakingRate) * 60;
@@ -142,11 +182,11 @@ export function getClipDuration(meditationId, prompt, speakingRate = DEFAULT_SPE
  * @param {string|null} meditationId - Meditation ID for manifest lookup
  * @returns {number} Total duration in seconds
  */
-export function calculateMeditationDuration(prompts, silenceMultiplier = 1.0, speakingRate = DEFAULT_SPEAKING_RATE, meditationId = null) {
+export function calculateMeditationDuration(prompts, silenceMultiplier = 1.0, speakingRate = DEFAULT_SPEAKING_RATE, meditationId = null, voiceId = null) {
   let totalSeconds = 0;
 
   prompts.forEach((prompt) => {
-    const speakingTime = getClipDuration(meditationId, prompt, speakingRate);
+    const speakingTime = getClipDuration(meditationId, prompt, speakingRate, voiceId);
 
     // Calculate silence
     let silence = prompt.baseSilenceAfter;
@@ -171,9 +211,9 @@ export function calculateMeditationDuration(prompts, silenceMultiplier = 1.0, sp
  * @param {string|null} meditationId - Meditation ID for manifest lookup
  * @returns {number} The silence multiplier to use
  */
-export function calculateSilenceMultiplier(prompts, targetDurationSeconds, speakingRate = DEFAULT_SPEAKING_RATE, meditationId = null) {
+export function calculateSilenceMultiplier(prompts, targetDurationSeconds, speakingRate = DEFAULT_SPEAKING_RATE, meditationId = null, voiceId = null) {
   // Calculate base duration (multiplier = 1.0)
-  const baseDuration = calculateMeditationDuration(prompts, 1.0, speakingRate, meditationId);
+  const baseDuration = calculateMeditationDuration(prompts, 1.0, speakingRate, meditationId, voiceId);
 
   // If target is at or below base, use minimum multiplier
   if (targetDurationSeconds <= baseDuration) {
@@ -181,7 +221,7 @@ export function calculateSilenceMultiplier(prompts, targetDurationSeconds, speak
   }
 
   // Calculate max possible duration
-  const maxDuration = calculateMeditationDuration(prompts, 10.0, speakingRate, meditationId);
+  const maxDuration = calculateMeditationDuration(prompts, 10.0, speakingRate, meditationId, voiceId);
 
   // If target exceeds max, cap at what's achievable
   if (targetDurationSeconds >= maxDuration) {
@@ -197,7 +237,7 @@ export function calculateSilenceMultiplier(prompts, targetDurationSeconds, speak
 
   while (iterations < maxIterations) {
     const mid = (low + high) / 2;
-    const duration = calculateMeditationDuration(prompts, mid, speakingRate, meditationId);
+    const duration = calculateMeditationDuration(prompts, mid, speakingRate, meditationId, voiceId);
 
     if (Math.abs(duration - targetDurationSeconds) <= tolerance) {
       return mid;
@@ -226,6 +266,60 @@ function meditationIdFromAudioConfig(audioConfig) {
 }
 
 /**
+ * Resolve the base path to the audio clips for a given voice. When the
+ * meditation declares a `voices` array and a matching voiceId is supplied,
+ * returns basePath + voice.subfolder. Otherwise falls back to basePath.
+ */
+export function resolveVoiceBasePath(audioConfig, voiceId) {
+  if (!audioConfig?.basePath) return '';
+  if (!voiceId || !Array.isArray(audioConfig.voices)) return audioConfig.basePath;
+  const voice = audioConfig.voices.find((v) => v.id === voiceId);
+  if (!voice) return audioConfig.basePath;
+  return `${audioConfig.basePath}${voice.subfolder || ''}`;
+}
+
+/**
+ * Pick the effective voice ID for a meditation given a caller-supplied
+ * preference. Returns null when the meditation has no voices declared.
+ */
+export function resolveEffectiveVoiceId(audioConfig, preferredVoiceId = null) {
+  if (!Array.isArray(audioConfig?.voices) || audioConfig.voices.length === 0) return null;
+  if (preferredVoiceId && audioConfig.voices.some((v) => v.id === preferredVoiceId)) {
+    return preferredVoiceId;
+  }
+  return audioConfig.defaultVoice || audioConfig.voices[0]?.id || null;
+}
+
+// Composer overhead constants — must stay in sync with GONG_DELAY/GONG_PREAMBLE
+// in useMeditationPlayback.js and the closing-gong logic in audioComposerService.js.
+const COMPOSER_OVERHEAD_WITH_GONGS = 12;    // ~8s opening preamble + ~4s closing
+const COMPOSER_OVERHEAD_WITHOUT_GONGS = 2;  // 1s lead-in + 1s trailing
+
+/**
+ * Estimate the expected total meditation duration for a given voice, in seconds.
+ * Sums per-prompt speaking + silence (voice-aware via the audio-durations manifest)
+ * and adds a small constant for the opening/closing gong window.
+ *
+ * Intended for idle-screen previews — once playback starts, the progress bar
+ * uses the exact byte-derived duration from the composed blob instead.
+ */
+export function estimateMeditationDurationSeconds(meditation, { voiceId = null, silenceMultiplier = 1.0, includeGongs = true } = {}) {
+  if (!meditation?.prompts) return 0;
+  const medId = meditation.id;
+  const effectiveVoiceId = resolveEffectiveVoiceId(meditation.audio, voiceId);
+  const speakingRate = meditation.speakingRate || DEFAULT_SPEAKING_RATE;
+  const promptsTotal = calculateMeditationDuration(
+    meditation.prompts,
+    silenceMultiplier,
+    speakingRate,
+    medId,
+    effectiveVoiceId,
+  );
+  const overhead = includeGongs ? COMPOSER_OVERHEAD_WITH_GONGS : COMPOSER_OVERHEAD_WITHOUT_GONGS;
+  return promptsTotal + overhead;
+}
+
+/**
  * Generate a timed prompt sequence for playback.
  * Uses actual MP3 durations from the audio manifest when available.
  *
@@ -235,15 +329,18 @@ function meditationIdFromAudioConfig(audioConfig) {
  * @param {number} options.speakingRate - Words per minute fallback (default 150)
  * @param {Object} options.audioConfig - Audio config with basePath and format, or null
  * @param {string} [options.meditationId] - Explicit meditation ID (derived from audioConfig if omitted)
+ * @param {string} [options.voiceId] - Optional voice variant ID
  * @returns {Array} Array of { id, text, speakingDuration, silenceDuration, startTime, endTime, audioSrc }
  */
-export function generateTimedSequence(prompts, silenceMultiplier = 1.0, { speakingRate = DEFAULT_SPEAKING_RATE, audioConfig = null, meditationId = null } = {}) {
+export function generateTimedSequence(prompts, silenceMultiplier = 1.0, { speakingRate = DEFAULT_SPEAKING_RATE, audioConfig = null, meditationId = null, voiceId = null } = {}) {
   const medId = meditationId || meditationIdFromAudioConfig(audioConfig);
+  const effectiveVoiceId = audioConfig ? resolveEffectiveVoiceId(audioConfig, voiceId) : null;
+  const voiceBasePath = audioConfig ? resolveVoiceBasePath(audioConfig, effectiveVoiceId) : '';
   const sequence = [];
   let currentTime = 0;
 
   prompts.forEach((prompt) => {
-    const speakingDuration = getClipDuration(medId, prompt, speakingRate);
+    const speakingDuration = getClipDuration(medId, prompt, speakingRate, effectiveVoiceId);
 
     // Calculate silence duration
     let silenceDuration = prompt.baseSilenceAfter;
@@ -262,7 +359,7 @@ export function generateTimedSequence(prompts, silenceMultiplier = 1.0, { speaki
       startTime: currentTime,
       endTime: currentTime + totalDuration,
       audioSrc: audioConfig
-        ? audioPath(`${audioConfig.basePath}${prompt.id}.${audioConfig.format}`)
+        ? audioPath(`${voiceBasePath}${prompt.id}.${audioConfig.format}`)
         : null,
     });
 

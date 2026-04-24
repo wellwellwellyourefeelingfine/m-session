@@ -29,6 +29,7 @@ export const useAppStore = create(
         autoUpdate: true, // Automatic background app updates (silent install + activation on next cold launch)
         readableFont: true, // false = Azeret Mono caps, true = Lora readable serif
         fontSizeAdjustment: 0, // -1 | 0 | 1 | 2 — px shift applied to body text tokens
+        defaultVoiceId: 'theo', // Preferred meditation voice for offline-cached assets
       },
       setPreference: (key, value) =>
         set((state) => ({
@@ -71,9 +72,21 @@ export const useAppStore = create(
     }),
     {
       name: 'mdma-guide-app-state',
+      version: 1,
       partialize: (state) => {
         const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, logoAnimationTrigger: _logoAnimationTrigger, ...rest } = state;
         return rest;
+      },
+      migrate: (persistedState, version) => {
+        if (!persistedState) return persistedState;
+        if (version < 1) {
+          // v0 → v1: introduce preferences.defaultVoiceId for alternate meditation voices
+          persistedState.preferences = {
+            ...(persistedState.preferences || {}),
+            defaultVoiceId: persistedState.preferences?.defaultVoiceId ?? 'theo',
+          };
+        }
+        return persistedState;
       },
     }
   )
