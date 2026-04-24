@@ -340,10 +340,81 @@ export default function FAQTool() {
           medications.
         </p>
         <p>
-          Testing your substance, staying moderately hydrated (see the water
-          question below—overhydration is a real risk), using reasonable doses,
-          waiting adequate time between sessions, and avoiding contraindicated
-          medications significantly reduces risk.
+          Testing your substance (see the testing questions below), staying
+          moderately hydrated (overhydration is a real risk—see the water
+          question further down), using reasonable doses, waiting adequate time
+          between sessions, and avoiding contraindicated medications
+          significantly reduces risk.
+        </p>
+      </Question>
+
+      <Question q="Why should I test my MDMA before a session?">
+        <p>
+          You can't know what you have by looking at it. What's sold as MDMA
+          in the black market is unregulated—actual contents vary by batch,
+          by source, and sometimes within the same pill. Lab analyses over
+          the past decade have found methamphetamine, caffeine, cathinones,
+          MDA, and—most dangerously—<span className="text-[var(--color-text-primary)]">PMMA</span> in
+          substances sold as MDMA or ecstasy.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">PMMA</span> (paramethoxymethamphetamine)
+          is a neurotoxic MDMA analog that has killed users in documented
+          batches in Europe (Norway, the Netherlands, Scotland, and Ireland
+          saw fatality clusters between 2010 and 2013) and North America
+          (roughly 21 deaths in Canada in 2011–2012, centered in Calgary and
+          Vancouver). It's more dangerous than MDMA for three compounding
+          reasons: slower onset, so users redose thinking the first dose was
+          weak; MAO-A inhibition, which causes serotonin syndrome when
+          stacked with other serotonergic drugs or a second dose; and a
+          narrower margin before fatal hyperthermia.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">A trusted source is
+          not a trusted batch.</span> A documented sales pattern is a clean
+          first sample that builds trust, followed by cut or substituted
+          bulk. Test every batch, even from vendors you've used safely
+          before.
+        </p>
+        <p>
+          For the how-to—reagent color reactions, trusted mail-in labs, and
+          a PMMA-specific walkthrough—see the Substance Testing section
+          inside the Dosage Assistant.
+        </p>
+      </Question>
+
+      <Question q="Should I use a reagent kit, a lab test, or both?">
+        <p>
+          Both, ideally—they answer different questions.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Reagent kits</span> are
+          cheap, immediate, and surface red flags. You drop a reagent onto
+          a tiny sample and watch the color change. For MDMA, a proper
+          panel means at minimum Marquis (should go purple/black) and
+          Simon's (should go blue). Simon's is what actually separates
+          MDMA from PMMA—running Marquis alone is the single biggest
+          failure mode for spotting a PMMA-cut sample. Reagents can tell
+          you if something is clearly wrong; they can't tell you purity
+          or dose.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">Mail-in lab testing</span> (GC-MS
+          or LC-MS) identifies exactly what's in your sample and at what
+          concentration. Turnaround is usually 1–2 weeks and cost is
+          roughly $40–100 in North America or €20–70 in Europe. This is
+          the only way to definitively rule out PMMA or confirm actual
+          MDMA content.
+        </p>
+        <p>
+          <span className="text-[var(--color-text-primary)]">A reasonable default:</span> reagent-test
+          every batch, and add a lab test when the source is new, the
+          form is pressed pills, or anything about the reagent reaction
+          looks off.
+        </p>
+        <p>
+          The Substance Testing section in the Dosage Assistant has the
+          full breakdown, including trusted services by region.
         </p>
       </Question>
 

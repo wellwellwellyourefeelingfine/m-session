@@ -107,7 +107,9 @@ export default function TestingTool() {
                 creates more opportunity for adulteration—other active substances can be
                 mixed in, and you can't visually assess what you're getting. Pills with
                 logos or designs are often counterfeited. A pill that was safe last month
-                may not be the same pill this month, even if it looks identical.
+                may not be the same pill this month, even if it looks identical. Pressed
+                pills are also the typical vector for PMMA, an MDMA analog that has killed
+                users in documented batches (see PMMA Testing below).
               </p>
               {isEurope && (
                 <p className="mt-2">
@@ -143,7 +145,9 @@ export default function TestingTool() {
             Use at minimum two reagents: <span className="text-[var(--color-text-primary)]">Marquis</span> (should
             turn purple/black) and <span className="text-[var(--color-text-primary)]">Simon's</span> (should
             turn blue). This combination helps distinguish MDMA from MDA, methamphetamine,
-            and other substitutes.
+            and <span className="text-[var(--color-text-primary)]">PMMA</span>—a dangerous
+            MDMA analog that Marquis alone can miss (see PMMA Testing below). Treat
+            Simon's as mandatory, not optional.
           </p>
 
           <p className="text-[var(--color-text-primary)] mt-4">
@@ -407,20 +411,105 @@ export default function TestingTool() {
           )}
         </Section>
 
+        {/* PMMA - shown in both regions with conditional closing note */}
+        <Section title="PMMA Testing">
+          <p>
+            PMMA (paramethoxymethamphetamine) is an MDMA analog that has killed users
+            in documented batches sold as ecstasy. It's one of the most dangerous
+            substitutions in the MDMA supply because three things compound each other:
+          </p>
+
+          <ul className="list-disc list-inside space-y-1 ml-2">
+            <li>Slower onset than MDMA, so users redose thinking the first dose was weak</li>
+            <li>MAO-A inhibition, which causes serotonin syndrome when stacked with other serotonergic drugs or a second dose</li>
+            <li>A narrower margin before fatal hyperthermia</li>
+          </ul>
+
+          <p className="text-[var(--color-text-primary)] mt-4">
+            Why reagent testing can miss it
+          </p>
+          <p>
+            On Marquis, MDMA goes rapidly to dark purple/black. PMMA is sluggish—it
+            lingers in yellow or orange and only slowly darkens. The common trap is a
+            pressed pill containing mostly PMMA with a small amount of MDMA added on
+            top; the MDMA fraction drives the Marquis color and the result looks
+            "correct" to anyone working from memory with a single-reagent kit.
+          </p>
+
+          <p className="text-[var(--color-text-primary)] mt-4">
+            Simon's is the discriminator
+          </p>
+          <p>
+            MDMA turns Simon's a rich blue within about 30 seconds. PMMA reacts weakly
+            or stays pale and clear. If you're testing suspected MDMA without Simon's,
+            you're exposed to exactly this failure mode. This is why Simon's belongs
+            on every MDMA test panel—not as a nice-to-have, but as the reagent that
+            actually separates MDMA from its deadliest impostor.
+          </p>
+
+          <p className="text-[var(--color-text-primary)] mt-4">
+            Other reagent tells
+          </p>
+          <p>
+            Mecke and Mandelin also lag on PMMA compared to MDMA. A sluggish or
+            atypical reaction across multiple reagents on a sample that should be
+            MDMA is a red flag—don't rationalize it away.
+          </p>
+
+          <p className="text-[var(--color-text-primary)] mt-4">
+            The vendor-trust trap
+          </p>
+          <p>
+            A trusted source is not the same as a trusted batch. The documented PMMA
+            sales pattern is a clean first sample that builds trust, followed by cut
+            or substituted bulk. Test every batch, not every vendor—including from
+            sources you've used safely before.
+          </p>
+
+          <p className="text-[var(--color-text-primary)] mt-4">
+            When in doubt, lab test
+          </p>
+          <p>
+            Reagents narrow the possibilities; GC-MS or LC-MS is the only way to
+            definitively rule out PMMA. If a reagent result looks even slightly off,
+            or if you're testing from a new batch or source, use the lab services
+            listed in the Lab Testing section above.
+          </p>
+
+          {isEurope ? (
+            <p className="mt-4 text-[var(--color-text-tertiary)] text-xs">
+              PMMA has historically been a European supply problem—Norway, the
+              Netherlands, Scotland, and Ireland all saw fatality clusters between
+              2010 and 2013, and cases have continued to appear. Don't assume the
+              risk is in the past.
+            </p>
+          ) : (
+            <p className="mt-4 text-[var(--color-text-tertiary)] text-xs">
+              PMMA appeared in North America with the 2011–2012 Canadian cluster
+              (roughly 21 deaths, centered in Calgary and Vancouver) and has
+              reappeared sporadically since. The risk is higher with pressed
+              pills than with crystal.
+            </p>
+          )}
+        </Section>
+
         {/* Fentanyl - conditional display */}
         {!isEurope ? (
           <Section title="Fentanyl Testing">
             <p>
-              Fentanyl contamination in the North American drug supply is a serious risk.
-              While less common in MDMA than in opioids or cocaine, it does happen—and
-              the consequences can be fatal. Standard reagent tests won't detect it.
+              Fentanyl is a serious issue in the broader North American drug supply,
+              though it's much rarer in MDMA than in opioids or cocaine. Harm-reduction
+              organizations haven't published a specific MDMA contamination rate because
+              confirmed cases are sporadic—but when contamination does happen, the
+              consequences can be fatal, and reagent tests won't detect it.
             </p>
 
             <p className="mt-3">
               <span className="text-[var(--color-text-primary)]">Fentanyl test strips</span> are
-              inexpensive ($1-2 each) and easy to use. DanceSafe includes them with their
-              kits, or you can buy them separately. If you're testing anything in North
-              America, add this step—it takes two minutes.
+              inexpensive ($1–2 each) and quick to use. DanceSafe includes them with
+              their kits. The logic is asymmetry: strips are cheap, the risk of missing
+              a contaminated sample is severe, and testing takes two minutes—so it's
+              worth doing even though most MDMA samples will come back clean.
             </p>
 
             <p className="text-[var(--color-text-primary)] mt-4">
@@ -434,9 +523,11 @@ export default function TestingTool() {
             </ul>
 
             <p className="mt-4 text-[var(--color-text-tertiary)] text-xs">
-              Note: Fentanyl strips can give false positives with some substances. A positive
-              result warrants caution and ideally lab confirmation, not immediate panic—but
-              do take it seriously.
+              Important: MDMA itself can trigger false positives on some fentanyl strip
+              batches if the solution isn't diluted enough—DanceSafe has published
+              dilution guidance. On an MDMA sample, a positive is more likely to be a
+              false positive than actual contamination, but it still warrants caution
+              and ideally lab confirmation rather than being waved off.
             </p>
           </Section>
         ) : (
@@ -450,9 +541,21 @@ export default function TestingTool() {
 
             <p className="mt-3">
               The more relevant risks in Europe are high-dose pills (some contain
-              200-300mg of MDMA) and occasional substitution with other substances.
-              Reagent testing and dose awareness address these concerns more directly
-              than fentanyl strips.
+              200-300mg of MDMA) and <span className="text-[var(--color-text-primary)]">synthetic
+              cathinones</span>—a rising trend. European drug-checking services have
+              reported compounds like 3-CMC, 4-CMC, 3-MMC, dipentylone, and eutylone
+              being mis-sold as MDMA or used to adulterate it. The UK has seen
+              meaningful cathinone and caffeine adulteration in its MDMA market since
+              Brexit and COVID. These aren't acutely lethal the way PMMA is, but
+              they're unknown compounds at unknown doses, with longer-lasting and
+              less predictable effects than MDMA.
+            </p>
+
+            <p className="mt-3">
+              Reagent testing and dose awareness address these concerns more
+              directly than fentanyl strips. A proper panel (Marquis + Simon's,
+              ideally with Mecke) will often flag cathinone adulteration when
+              reactions don't look "right."
             </p>
 
             <p className="mt-3 text-[var(--color-text-tertiary)] text-xs">

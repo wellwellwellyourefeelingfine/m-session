@@ -6,7 +6,7 @@
  * screen. All pages share a single fade transition system.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import SafetyWarning from './SafetyWarning';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
@@ -95,7 +95,6 @@ export default function IntakeFlow({ onComplete }) {
   // the page index changes.
   const [continuePressed, setContinuePressed] = useState(false);
   const [activeWarning, setActiveWarning] = useState(null);
-  const scrollContainerRef = useRef(null);
 
   // Fade in entire component on initial mount
   const [mountedVisible, setMountedVisible] = useState(false);
@@ -197,7 +196,7 @@ export default function IntakeFlow({ onComplete }) {
       setIsVisible(false);
       setTimeout(() => {
         setCurrentQuestionIndex(nextIndex);
-        if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+        document.querySelector('main')?.scrollTo({ top: 0 });
         setIsVisible(true);
       }, TRANSITION_MS);
     }, 300);
@@ -214,7 +213,7 @@ export default function IntakeFlow({ onComplete }) {
     setIsVisible(false);
     setTimeout(() => {
       setCurrentQuestionIndex(prevIndex);
-      if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+      document.querySelector('main')?.scrollTo({ top: 0 });
       setIsVisible(true);
     }, TRANSITION_MS);
   };
@@ -370,8 +369,6 @@ export default function IntakeFlow({ onComplete }) {
       <ModuleProgressBar progress={progress} visible={true} />
 
       <div className="transition-opacity duration-700 ease-out" style={{ opacity: mountedVisible ? 1 : 0 }}>
-        {/* Main content container - positioned below progress bar */}
-        <div ref={scrollContainerRef} className="fixed left-0 right-0 bottom-0 overflow-auto" style={{ top: 'var(--header-height)' }}>
         <div className="max-w-md mx-auto px-6 pt-6 pb-12">
           {/* Header - section title and page counter */}
           <div className="flex justify-between items-center mb-8">
@@ -475,7 +472,6 @@ export default function IntakeFlow({ onComplete }) {
           </div>
           </div>
         </div>
-      </div>
 
       {/* Health Warning Modal */}
       {activeWarning && HEALTH_WARNINGS[activeWarning] && (
