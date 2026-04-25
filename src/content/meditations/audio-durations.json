@@ -410,7 +410,24 @@
     "senses-03": 16.64,
     "settle-01": 7.81,
     "settle-02": 11.31,
-    "settle-03": 8.86
+    "settle-03": 8.86,
+    "relaxing-rachel": {
+      "breath-01": 9.87,
+      "breath-02": 10.92,
+      "breath-03": 21.16,
+      "close-01": 16.64,
+      "close-02": 21.79,
+      "contact-01": 10.14,
+      "contact-02": 12.98,
+      "contact-03": 14.05,
+      "contact-04": 5.49,
+      "senses-01": 13.58,
+      "senses-02": 9.22,
+      "senses-03": 19.25,
+      "settle-01": 9.77,
+      "settle-02": 9.59,
+      "settle-03": 9.77
+    }
   },
   "simple-grounding": {
     "breath-01": 12.46,
