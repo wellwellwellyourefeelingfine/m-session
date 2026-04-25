@@ -5,33 +5,52 @@
  *
  * Usage:
  *   ELEVENLABS_API_KEY=your_key node scripts/generate-body-scan-audio.mjs
+ *   node scripts/generate-body-scan-audio.mjs --voice rachel --dry-run
  *
  * Options:
  *   --dry-run       Print prompts and filenames without calling the API
  *   --list-voices   List all voices available to your account
+ *   --voice NAME    Voice preset: theo (default) or rachel
  *   --start N       Start from prompt index N (0-based, for resuming after errors)
  *   --only ID       Generate only a specific prompt by ID (e.g. --only settling-01)
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
-const VOICE_ID = 'jfIS2w2yJi0grJZPyEsk'; // Oliver Silk
-const MODEL_ID = 'eleven_multilingual_v2';
 const OUTPUT_FORMAT = 'mp3_44100_128'; // High quality MP3
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
-// Voice settings tuned for slow, meditative speech
-// Speed: 0.7-1.2 (1.0 = normal pace; 0.7 = slowest allowed)
-const VOICE_SETTINGS = {
-  stability: 0.88,
-  similarity_boost: 0.88,
-  style: 0.0,
-  use_speaker_boost: false,
-  speed: 0.7,
+const VOICE_PRESETS = {
+  theo: {
+    label: 'Oliver Silk',
+    voiceId: 'jfIS2w2yJi0grJZPyEsk',
+    modelId: 'eleven_multilingual_v2',
+    outputSubdir: null,
+    settings: {
+      stability: 0.88,
+      similarity_boost: 0.88,
+      style: 0.0,
+      use_speaker_boost: false,
+      speed: 0.7,
+    },
+  },
+  rachel: {
+    label: 'Relaxing Rachel - Calm & Soothing',
+    voiceId: 'ROMJ9yK1NAMuu1ggrjDW',
+    modelId: 'eleven_multilingual_v2',
+    outputSubdir: 'relaxing-rachel',
+    settings: {
+      stability: 0.80,
+      similarity_boost: 0.75,
+      style: 0.50,
+      use_speaker_boost: true,
+      speed: 0.81,
+    },
+  },
 };
 
 // Delay between requests to respect rate limits (ms)
@@ -41,7 +60,6 @@ const REQUEST_DELAY = 1200;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public', 'audio', 'meditations', 'body-scan');
 
 // --- Import prompts from content definition ---
 // We inline-import to avoid needing to transpile JSX/ESM config
@@ -51,14 +69,58 @@ const { bodyScanMeditation } = await import('../src/content/meditations/body-sca
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const listVoices = args.includes('--list-voices');
+const voiceKey = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : 'theo';
 const startIdx = args.includes('--start') ? parseInt(args[args.indexOf('--start') + 1], 10) : 0;
 const onlyId = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 
+const selectedVoice = VOICE_PRESETS[voiceKey];
+if (!selectedVoice) {
+  console.error(`Error: Unknown voice preset "${voiceKey}".`);
+  console.error(`Available voices: ${Object.keys(VOICE_PRESETS).join(', ')}`);
+  process.exit(1);
+}
+
+const OUTPUT_DIR = path.join(
+  PROJECT_ROOT,
+  'public',
+  'audio',
+  'meditations',
+  'body-scan',
+  ...(selectedVoice.outputSubdir ? [selectedVoice.outputSubdir] : []),
+);
+
+function loadApiKey() {
+  if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY;
+  if (process.env.ELEVENLABS_API) return process.env.ELEVENLABS_API;
+
+  const envPath = path.join(PROJECT_ROOT, '.env');
+  if (!existsSync(envPath)) return null;
+
+  const envText = readFileSync(envPath, 'utf8');
+  for (const line of envText.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    if (key !== 'ELEVENLABS_API_KEY' && key !== 'ELEVENLABS_API') continue;
+
+    let value = trimmed.slice(separatorIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    return value;
+  }
+
+  return null;
+}
+
 // --- Validate ---
-const apiKey = process.env.ELEVENLABS_API_KEY;
+const apiKey = loadApiKey();
 if (!apiKey && !dryRun) {
-  console.error('Error: ELEVENLABS_API_KEY environment variable is required.');
-  console.error('Usage: ELEVENLABS_API_KEY=your_key node scripts/generate-body-scan-audio.mjs');
+  console.error('Error: ELEVENLABS_API_KEY or ELEVENLABS_API is required.');
+  console.error('Set it in the environment or in .env, then run node scripts/generate-body-scan-audio.mjs');
   process.exit(1);
 }
 
@@ -94,13 +156,13 @@ if (listVoices) {
     console.log();
   }
 
-  console.log('To use a voice, update VOICE_ID in this script.');
+  console.log(`To use a preset, pass --voice ${Object.keys(VOICE_PRESETS).join('|')}.`);
   process.exit(0);
 }
 
 // --- Main ---
-async function generateAudio(promptId, text) {
-  const url = `${API_BASE}/text-to-speech/${VOICE_ID}?output_format=${OUTPUT_FORMAT}`;
+async function generateAudio(text) {
+  const url = `${API_BASE}/text-to-speech/${selectedVoice.voiceId}?output_format=${OUTPUT_FORMAT}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -111,8 +173,8 @@ async function generateAudio(promptId, text) {
     },
     body: JSON.stringify({
       text,
-      model_id: MODEL_ID,
-      voice_settings: VOICE_SETTINGS,
+      model_id: selectedVoice.modelId,
+      voice_settings: selectedVoice.settings,
     }),
   });
 
@@ -135,15 +197,16 @@ async function main() {
 
   console.log(`Body Scan Audio Generator`);
   console.log(`========================`);
-  console.log(`Voice: Oliver Silk (${VOICE_ID})`);
-  console.log(`Model: ${MODEL_ID}`);
+  console.log(`Voice: ${selectedVoice.label} (${selectedVoice.voiceId})`);
+  console.log(`Model: ${selectedVoice.modelId}`);
+  console.log(`Settings: ${JSON.stringify(selectedVoice.settings)}`);
   console.log(`Prompts: ${prompts.length}`);
   console.log(`Total characters: ${totalChars}`);
   console.log(`Output: ${OUTPUT_DIR}`);
   console.log();
 
   // Ensure output directory exists
-  if (!existsSync(OUTPUT_DIR)) {
+  if (!dryRun && !existsSync(OUTPUT_DIR)) {
     await mkdir(OUTPUT_DIR, { recursive: true });
     console.log(`Created directory: ${OUTPUT_DIR}`);
   }
@@ -187,7 +250,7 @@ async function main() {
     console.log(`  "${prompt.text.substring(0, 60)}${prompt.text.length > 60 ? '...' : ''}"`);
 
     try {
-      const audioBuffer = await generateAudio(prompt.id, prompt.text);
+      const audioBuffer = await generateAudio(prompt.text);
       await writeFile(filepath, audioBuffer);
       const sizeKB = (audioBuffer.length / 1024).toFixed(1);
       console.log(`  Saved (${sizeKB} KB)`);
@@ -209,6 +272,7 @@ async function main() {
   console.log(`Done! ${successCount} succeeded, ${errorCount} failed.`);
   if (errorCount > 0) {
     console.log(`Re-run with --start or --only to retry failed prompts.`);
+    process.exit(1);
   }
 }
 
