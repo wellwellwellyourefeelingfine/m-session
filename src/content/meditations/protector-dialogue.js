@@ -22,6 +22,11 @@ export const protectorDialogueMeditation = {
   audio: {
     basePath: '/audio/meditations/protector/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   // Speaking rate — slower for peak state (90 WPM vs typical 150)
