@@ -501,7 +501,32 @@
     "staying-06": 12.41,
     "staying-07": 15.2,
     "staying-08": 11.02,
-    "staying-09": 21.76
+    "staying-09": 21.76,
+    "relaxing-rachel": {
+      "arriving-01": 7.5,
+      "arriving-02": 7.5,
+      "arriving-03": 7.37,
+      "arriving-04": 11.08,
+      "arriving-05": 12.56,
+      "closing-01": 12.46,
+      "closing-02": 16.98,
+      "closing-03": 11.02,
+      "closing-04": 5.83,
+      "inviting-01": 11.68,
+      "inviting-02": 18.23,
+      "inviting-03": 17.66,
+      "inviting-04": 13.66,
+      "inviting-05": 16.14,
+      "staying-01": 16.17,
+      "staying-02": 15.91,
+      "staying-03": 23.75,
+      "staying-04": 21.58,
+      "staying-05": 16.69,
+      "staying-06": 14.65,
+      "staying-07": 18.65,
+      "staying-08": 11.15,
+      "staying-09": 23.61
+    }
   },
   "the-cycle-closing": {
     "close-01": 11.68,
