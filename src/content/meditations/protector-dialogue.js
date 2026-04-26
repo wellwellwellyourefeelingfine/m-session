@@ -25,7 +25,7 @@ export const protectorDialogueMeditation = {
 
   // Audio config
   audio: {
-    basePath: '/audio/meditations/protector/',
+    basePath: '/audio/meditations/protector-dialogue/',
     format: 'mp3',
     defaultVoice: 'theo',
     voices: [
