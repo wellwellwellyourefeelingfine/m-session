@@ -86,7 +86,7 @@ const OUTPUT_DIR = path.join(
   'public',
   'audio',
   'meditations',
-  'protector',
+  'protector-dialogue',
   ...(selectedVoice.outputSubdir ? [selectedVoice.outputSubdir] : []),
 );
 
