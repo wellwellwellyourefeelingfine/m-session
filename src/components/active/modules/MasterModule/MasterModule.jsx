@@ -62,7 +62,6 @@
  */
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { getModuleById } from '../../../../content/modules';
 import { useSessionStore } from '../../../../stores/useSessionStore';
 import useMasterModuleState from './useMasterModuleState';
 import { ScreensSection, MeditationSection, TimerSection, GenerateSection } from './sectionRenderers';
@@ -108,7 +107,6 @@ function IdleExpandable({ title, body }) {
 }
 
 export default function MasterModule({ module, onComplete, onSkip, onProgressUpdate }) {
-  const libraryModule = getModuleById(module.libraryId);
   const content = module.content?.masterModuleContent;
 
   // Hand the parent's onComplete down to the state hook so that the module's

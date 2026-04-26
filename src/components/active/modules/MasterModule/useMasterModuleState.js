@@ -26,7 +26,7 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
   // advance, or a `_complete` route — bypassing the legacy "Well Done"
   // completion screen so the timeline moves on directly. `onModuleSkip`
   // runs when Skip is pressed on the last section in main flow.
-  const { onModuleComplete, onModuleSkip } = callbacks;
+  const { onModuleComplete } = callbacks;
   // ── Navigation state ──────────────────────────────────────────────────────
 
   const [modulePhase, setModulePhase] = useState('idle'); // 'idle' | 'active' | 'complete'
