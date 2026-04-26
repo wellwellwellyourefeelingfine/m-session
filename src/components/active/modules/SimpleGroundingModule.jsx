@@ -65,8 +65,13 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
       voiceId: selectedVoiceId,
     });
 
-    // Use the fixed duration for the timer
-    return [sequence, meditation.fixedDuration];
+    // Voice-aware total: the sequence's last endTime reflects the actual
+    // composed audio length for the selected voice. Falls back to
+    // meditation.fixedDuration if the sequence is empty (defensive).
+    const total = sequence.length > 0
+      ? sequence[sequence.length - 1].endTime
+      : meditation.fixedDuration;
+    return [sequence, total];
   }, [meditation, selectedVoiceId]);
 
   // Idle-screen duration estimate — voice-aware so it reflects the currently

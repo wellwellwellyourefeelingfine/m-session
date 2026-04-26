@@ -357,6 +357,11 @@ export const feltSenseMeditation = {
   audio: {
     basePath: '/audio/meditations/felt-sense/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   // Speaking rate for duration estimation (slower pace per script direction)

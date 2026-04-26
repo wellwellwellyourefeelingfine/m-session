@@ -29,7 +29,8 @@ export const protectorDialogueMeditation = {
     format: 'mp3',
     defaultVoice: 'theo',
     voices: [
-      { id: 'theo', label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
     ],
   },
 

@@ -5,22 +5,31 @@
  * - 54 pre-recorded TTS audio prompts
  * - Variable duration support (10 or 15 minutes)
  * - Silence expansion concentrated in later body regions
+ * - Voice selector when the meditation declares multiple voices
  * - Audio-text sync via shared useMeditationPlayback hook
+ *
+ * Voice + loading-screen wiring mirrors SimpleGroundingModule. The selected
+ * voice flows into both the silence-multiplier solver and the audio path
+ * resolution, so picking Rachel actually plays Rachel's clips and the
+ * solver targets the right total length using Rachel's clip durations.
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
   generateTimedSequence,
+  resolveEffectiveVoiceId,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
 import ModuleLayout, { CompletionScreen, IdleScreen } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import TranscriptModal, { TranscriptIcon } from '../capabilities/TranscriptModal';
@@ -35,30 +44,54 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
 
   // Duration (synced with session store)
   const duration = useSyncedDuration(module, { hasStarted });
-  const [isLeaving, setIsLeaving] = useState(false);
   const [showCompletion, setShowCompletion] = useState(false);
+
+  // Voice selection — initialized from the global default preference,
+  // overridable on the idle pill. The selected voice flows into both the
+  // silence-multiplier solver (so the target duration math uses the right
+  // clip lengths) and generateTimedSequence (so audio URLs point at the
+  // chosen voice's subfolder).
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
+  const activeVoiceRef = useRef(selectedVoiceId);
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
 
-  // Build timed sequence (all 54 prompts always play, silence expansion for later regions)
+  // Build timed sequence (all 54 prompts always play, silence expansion for
+  // later regions). Voice-aware: rebuilds when the idle-pill cycles voices
+  // so the solver and audio URLs both reflect the chosen voice.
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
     const durationSeconds = duration.selected * 60;
 
-    // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(meditation.prompts, durationSeconds, meditation.speakingRate, 'body-scan');
+    // Calculate silence multiplier for this duration, using the selected
+    // voice's clip durations. Without voiceId, the solver would fall back
+    // to the default voice and the meditation could run several seconds
+    // over target when an alternate voice is selected.
+    const silenceMultiplier = calculateSilenceMultiplier(
+      meditation.prompts,
+      durationSeconds,
+      meditation.speakingRate,
+      'body-scan',
+      selectedVoiceId,
+    );
 
-    // Generate timed sequence
+    // Generate timed sequence — voiceId here also drives audio URL
+    // resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
       speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
 
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, duration.selected]);
+  }, [meditation, duration.selected, selectedVoiceId]);
 
   // Shared playback hook handles timer, audio-text sync, prompt progression, etc.
   const playback = useMeditationPlayback({
@@ -71,17 +104,34 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
     onProgressUpdate,
   });
 
-  // Fade out idle screen before starting composition
+  // Sync the idle-screen voice pill with the global default preference.
+  // The store's `defaultVoiceId` only updates when the user commits a
+  // change in Settings, so this fires at that moment and never during
+  // rapid Settings toggling. Skipped once playback has started so an
+  // in-flight session isn't disturbed.
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
+
+  // Begin → idle-leaving → preparing (loading screen) → preparing-leaving →
+  // active. The composer reads the current `timedSequence`, which is
+  // voice-aware, so the loading screen is the moment the chosen voice's
+  // audio gets fetched and assembled. Replaces the legacy 300ms setTimeout
+  // pattern, which had no per-voice composition step.
   const handleBeginWithTransition = useCallback(() => {
+    activeVoiceRef.current = selectedVoiceId;
     useSessionStore.getState().beginModule(module.instanceId);
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
-  }, [playback, module.instanceId]);
+    playback.handleBeginWithTransition();
+  }, [playback, module.instanceId, selectedVoiceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {
     playback.handleRestart();
-    setIsLeaving(false);
     setShowCompletion(false);
   }, [playback]);
 
@@ -133,8 +183,12 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
           </div>
         )}
 
-        {/* Idle state */}
-        {!playback.error && !playback.hasStarted && !playback.isLoading && (() => {
+        {/* Idle state — visible during 'idle' and 'idle-leaving' (the latter
+            applies the fadeOut class). */}
+        {!playback.error
+          && !playback.hasStarted
+          && (playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving')
+          && (() => {
           const steps = meditation.durationSteps || [];
           const stepIndex = steps.indexOf(duration.selected);
           const canStepBack = stepIndex > 0;
@@ -143,6 +197,7 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
             const next = steps[nextIndex];
             if (typeof next === 'number') duration.setSelected(next);
           };
+          const isLeaving = playback.transitionStage === 'idle-leaving';
           return (
             <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
               <IdleScreen
@@ -153,22 +208,27 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
                 canStepDurationForward={canStepForward}
                 onDurationStepBack={() => stepTo(stepIndex - 1)}
                 onDurationStepForward={() => stepTo(stepIndex + 1)}
+                voices={voices}
+                selectedVoiceId={selectedVoiceId}
+                onVoiceChange={setSelectedVoiceId}
               />
             </div>
           );
         })()}
 
-        {/* Loading state — composing meditation audio */}
-        {playback.isLoading && (
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
+        {/* Loading state — fades in on 'preparing', out on 'preparing-leaving'.
+            The composer fetches and assembles the chosen voice's audio during
+            this window. */}
+        {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+          <MeditationLoadingScreen
+            isLeaving={playback.transitionStage === 'preparing-leaving'}
+          />
         )}
 
-        {/* Active/completed state — title, animation, paused indicator, prompt display */}
-        {playback.hasStarted && !showCompletion && (
+        {/* Active/completed state — title, animation, paused indicator, prompt
+            display. Gated on transitionStage === 'active' so the loading screen
+            finishes fading out before this fades in (sequential, not overlapping). */}
+        {playback.hasStarted && !showCompletion && playback.transitionStage === 'active' && (
           <div
             className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
@@ -216,15 +276,14 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
       {/* Control bar */}
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={
-          showCompletion
-            ? { label: 'Complete', onClick: handleFinalComplete }
-            : !playback.hasStarted || playback.isLoading
-              ? { label: 'Begin', onClick: handleBeginWithTransition }
-              : playback.isComplete
-                ? { label: 'Continue', onClick: handleContinueToCompletion }
-                : playback.getPrimaryButton()
-        }
+        primary={(() => {
+          if (showCompletion) return { label: 'Complete', onClick: handleFinalComplete };
+          const phase = playback.getPhase();
+          if (phase === 'idle') return { label: 'Begin', onClick: handleBeginWithTransition };
+          if (phase === 'loading') return { label: 'Loading', loading: true };
+          if (playback.isComplete) return { label: 'Continue', onClick: handleContinueToCompletion };
+          return playback.getPrimaryButton();
+        })()}
         showBack={playback.hasStarted && !playback.isComplete && !playback.isLoading && !showCompletion}
         onBack={handleRestart}
         backConfirmMessage="Restart this meditation from the beginning?"

@@ -12,20 +12,23 @@
  * Variable duration: 10-25 min meditation via expandable silence + conditional prompts
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
   generateTimedSequence,
+  resolveEffectiveVoiceId,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import useSyncedDuration from '../../../hooks/useSyncedDuration';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
 import ModuleLayout, { IdleScreen } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -234,8 +237,13 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
   // Module phase: idle → meditation → checkin → response → psychoeducation → journaling → closing
   const [phase, setPhase] = useState('idle');
 
-  // Meditation state
-  const [isLeaving, setIsLeaving] = useState(false);
+  // Voice selection — see BodyScanModule for the canonical pattern.
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
+  const activeVoiceRef = useRef(selectedVoiceId);
 
   // Check-in state
   const [checkInSelection, setCheckInSelection] = useState(null);
@@ -280,18 +288,28 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
       return true;
     });
 
-    // Calculate silence multiplier for this duration
-    const silenceMultiplier = calculateSilenceMultiplier(filteredPrompts, durationSeconds, meditation.speakingRate, 'stay-with-it');
+    // Calculate silence multiplier for this duration, using the selected
+    // voice's clip durations so the target is met when an alternate voice
+    // is picked.
+    const silenceMultiplier = calculateSilenceMultiplier(
+      filteredPrompts,
+      durationSeconds,
+      meditation.speakingRate,
+      'stay-with-it',
+      selectedVoiceId,
+    );
 
-    // Generate timed sequence
+    // Generate timed sequence — voiceId here also drives audio URL
+    // resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {
       speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
 
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, duration.selected]);
+  }, [meditation, duration.selected, selectedVoiceId]);
 
   // ─── Meditation completion → check-in transition ────────────────────────
 
@@ -336,18 +354,31 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
     }
   }, [playback.hasStarted, playback.isLoading, phase]);
 
-  // Fade out idle screen before starting composition
+  // Sync the idle-screen voice pill with the global default preference
+  // (skips once playback has started so an in-flight session isn't
+  // disturbed). See BodyScanModule for the canonical pattern.
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
+
+  // Begin → idle-leaving → preparing (loading screen) → preparing-leaving →
+  // active. The composer reads the voice-aware timedSequence during the
+  // loading screen window.
   const handleBeginWithTransition = useCallback(() => {
+    activeVoiceRef.current = selectedVoiceId;
     useSessionStore.getState().beginModule(module.instanceId);
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
-  }, [playback, module.instanceId]);
+    playback.handleBeginWithTransition();
+  }, [playback, module.instanceId, selectedVoiceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {
     playback.handleRestart();
     setPhase('idle');
-    setIsLeaving(false);
   }, [playback]);
 
   // ─── Check-in navigation ─────────────────────────────────────────────
@@ -558,7 +589,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
                 Audio not found.
               </p>
             </div>
-          ) : !playback.isLoading ? (() => {
+          ) : (playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') ? (() => {
             const steps = meditation.durationSteps || [];
             const stepIndex = steps.indexOf(duration.selected);
             const canStepBack = stepIndex > 0;
@@ -567,6 +598,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
               const next = steps[nextIndex];
               if (typeof next === 'number') duration.setSelected(next);
             };
+            const isLeaving = playback.transitionStage === 'idle-leaving';
             return (
               <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
                 <IdleScreen
@@ -577,21 +609,26 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
                   canStepDurationForward={canStepForward}
                   onDurationStepBack={() => stepTo(stepIndex - 1)}
                   onDurationStepForward={() => stepTo(stepIndex + 1)}
+                  voices={voices}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceChange={setSelectedVoiceId}
                 />
               </div>
             );
-          })() : (
-            <div className="text-center animate-fadeIn">
-              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-                Preparing meditation...
-              </p>
-            </div>
-          )}
+          })() : (playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') ? (
+            <MeditationLoadingScreen
+              isLeaving={playback.transitionStage === 'preparing-leaving'}
+            />
+          ) : null}
         </ModuleLayout>
 
         <ModuleControlBar
-          phase="idle"
-          primary={{ label: 'Begin', onClick: playback.isLoading ? () => {} : handleBeginWithTransition }}
+          phase={playback.getPhase()}
+          primary={(() => {
+            const ph = playback.getPhase();
+            if (ph === 'loading') return { label: 'Loading', loading: true };
+            return { label: 'Begin', onClick: handleBeginWithTransition };
+          })()}
           showBack={false}
           showSkip={true}
           onSkip={onSkip}

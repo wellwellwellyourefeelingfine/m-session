@@ -484,6 +484,11 @@ export const selfCompassionMeditation = {
   audio: {
     basePath: '/audio/meditations/self-compassion/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   // Speaking rate for duration estimation (slower pace per script direction)

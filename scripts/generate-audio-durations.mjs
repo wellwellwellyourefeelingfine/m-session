@@ -8,18 +8,36 @@
  * This replaces the inaccurate word-count-based WPM estimates with
  * precise byte-derived durations.
  *
+ * Manifest shape:
+ *   {
+ *     "<meditation-id>": {
+ *       "<prompt-id>": <duration-seconds>,            // root-level (default voice)
+ *       "<voice-id>": {                                // alternate voice variants
+ *         "<prompt-id>": <duration-seconds>
+ *       }
+ *     }
+ *   }
+ *
+ * Voice-variant keys come from the meditation's `audio.voices` config,
+ * NOT the on-disk subfolder name — that way the runtime lookup
+ * `manifest[medId][voiceId][promptId]` works directly with the voice id
+ * the engine has at hand. If the meditation file can't be loaded or
+ * doesn't declare a matching voice, the subfolder name is used as a
+ * fallback so no data is lost.
+ *
  * Usage: node scripts/generate-audio-durations.mjs
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { readdirSync, readFileSync, statSync, writeFileSync, existsSync } from 'fs';
 import { resolve, dirname, basename } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = resolve(__dirname, '..');
 
 const AUDIO_BASE = resolve(projectRoot, 'public/audio/meditations');
+const MEDITATIONS_DIR = resolve(projectRoot, 'src/content/meditations');
 const OUTPUT_PATH = resolve(projectRoot, 'src/content/meditations/audio-durations.json');
 const CBR_BYTES_PER_SECOND = 16000;
 
@@ -58,43 +76,98 @@ function scanClipDurations(dirPath) {
   return durations;
 }
 
-// Scan all meditation audio directories. Root-level MP3s are the default voice
-// and stored flat as manifest[medId][promptId]. Subdirectories are alternate
-// voice variants, stored nested as manifest[medId][voiceId][promptId].
-const manifest = {};
-let totalClips = 0;
-let totalVoiceVariants = 0;
+/**
+ * Build a `subfolder → voice id` map for a given meditation by dynamically
+ * importing its content module and reading `audio.voices`. Returns an empty
+ * map if the file doesn't exist, doesn't export a meditation matching the
+ * id, or doesn't declare voices — callers fall back to the subfolder name.
+ */
+async function loadVoiceIdMap(meditationId) {
+  const filePath = resolve(MEDITATIONS_DIR, `${meditationId}.js`);
+  if (!existsSync(filePath)) return {};
 
-const dirs = readdirSync(AUDIO_BASE, { withFileTypes: true })
-  .filter(d => d.isDirectory())
-  .map(d => d.name)
-  .sort();
-
-for (const dir of dirs) {
-  const dirPath = resolve(AUDIO_BASE, dir);
-  const entries = readdirSync(dirPath, { withFileTypes: true });
-
-  const rootDurations = scanClipDurations(dirPath);
-  const subDirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
-
-  if (Object.keys(rootDurations).length === 0 && subDirs.length === 0) continue;
-
-  const medEntry = { ...rootDurations };
-  totalClips += Object.keys(rootDurations).length;
-
-  for (const voiceId of subDirs) {
-    const voiceDurations = scanClipDurations(resolve(dirPath, voiceId));
-    if (Object.keys(voiceDurations).length === 0) continue;
-    medEntry[voiceId] = voiceDurations;
-    totalClips += Object.keys(voiceDurations).length;
-    totalVoiceVariants++;
+  try {
+    const mod = await import(pathToFileURL(filePath).href);
+    for (const exp of Object.values(mod)) {
+      if (
+        exp && typeof exp === 'object'
+        && exp.id === meditationId
+        && Array.isArray(exp.audio?.voices)
+      ) {
+        const map = {};
+        for (const voice of exp.audio.voices) {
+          if (!voice?.id) continue;
+          // Strip trailing slash so the key matches the on-disk directory name.
+          const cleanSubfolder = (voice.subfolder || '').replace(/\/$/, '');
+          if (cleanSubfolder) map[cleanSubfolder] = voice.id;
+        }
+        return map;
+      }
+    }
+  } catch {
+    // Module load failed — graceful fallback to subfolder names.
   }
-
-  manifest[dir] = medEntry;
+  return {};
 }
 
-writeFileSync(OUTPUT_PATH, JSON.stringify(manifest, null, 2) + '\n');
+/**
+ * Scan all meditation audio directories and write the manifest.
+ *
+ * Layout:
+ *   public/audio/meditations/<med-id>/                — root MP3s (default voice)
+ *   public/audio/meditations/<med-id>/<subfolder>/    — alternate voice
+ *
+ * Each `<subfolder>` is mapped to the corresponding `voice.id` declared in
+ * the meditation file's `audio.voices` array, so the runtime engine can
+ * look up `manifest[medId][voiceId][promptId]` directly.
+ */
+async function main() {
+  const manifest = {};
+  let totalClips = 0;
+  let totalVoiceVariants = 0;
 
-console.log(`Generated audio duration manifest:`);
-console.log(`  ${dirs.length} meditations, ${totalClips} clips, ${totalVoiceVariants} alternate voice variant(s)`);
-console.log(`  Output: ${OUTPUT_PATH}`);
+  const dirs = readdirSync(AUDIO_BASE, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+    .map(d => d.name)
+    .sort();
+
+  for (const dir of dirs) {
+    const dirPath = resolve(AUDIO_BASE, dir);
+    const entries = readdirSync(dirPath, { withFileTypes: true });
+
+    const rootDurations = scanClipDurations(dirPath);
+    const subDirs = entries.filter(e => e.isDirectory()).map(e => e.name).sort();
+
+    if (Object.keys(rootDurations).length === 0 && subDirs.length === 0) continue;
+
+    const medEntry = { ...rootDurations };
+    totalClips += Object.keys(rootDurations).length;
+
+    // Resolve subfolder → voice id once per meditation; fall back to the
+    // subfolder name when the meditation doesn't declare voices (or its
+    // file isn't loadable).
+    const voiceIdMap = await loadVoiceIdMap(dir);
+
+    for (const subDirName of subDirs) {
+      const voiceDurations = scanClipDurations(resolve(dirPath, subDirName));
+      if (Object.keys(voiceDurations).length === 0) continue;
+      const voiceKey = voiceIdMap[subDirName] || subDirName;
+      medEntry[voiceKey] = voiceDurations;
+      totalClips += Object.keys(voiceDurations).length;
+      totalVoiceVariants++;
+    }
+
+    manifest[dir] = medEntry;
+  }
+
+  writeFileSync(OUTPUT_PATH, JSON.stringify(manifest, null, 2) + '\n');
+
+  console.log(`Generated audio duration manifest:`);
+  console.log(`  ${dirs.length} meditations, ${totalClips} clips, ${totalVoiceVariants} alternate voice variant(s)`);
+  console.log(`  Output: ${OUTPUT_PATH}`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -172,7 +172,7 @@ export function CompletionScreen({
  * many voices they ship.
  * The active voice name fades out/in when cycling.
  */
-function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
+export function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
   const activeIndex = Math.max(0, voices.findIndex((v) => v.id === selectedVoiceId));
   const activeVoice = voices[activeIndex];
   const [displayVoice, setDisplayVoice] = useState(activeVoice);

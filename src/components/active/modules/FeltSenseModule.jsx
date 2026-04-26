@@ -12,18 +12,21 @@
  * - Going Deeper (~20 min): Full practice with extended silences and additional prompts
  */
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
+  resolveEffectiveVoiceId,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
-import ModuleLayout from '../capabilities/ModuleLayout';
+import ModuleLayout, { VoicePill } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -427,7 +430,18 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
   const [selectedVariation, setSelectedVariation] = useState(
     meditation?.defaultVariation || 'default'
   );
-  const [isLeaving, setIsLeaving] = useState(false);
+
+  // Voice selection — independent of variation. See BodyScanModule for the
+  // canonical pattern. Variation drives WHICH clips play (default vs going
+  // deeper); voice drives WHICH FOLDER each clip is fetched from. The two
+  // are orthogonal — a Going Deeper variation with the Rachel voice
+  // resolves to /felt-sense/relaxing-rachel/<the going-deeper clips>.
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
+  const activeVoiceRef = useRef(selectedVoiceId);
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
@@ -457,14 +471,26 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
     const clips = meditation.assembleVariation(selectedVariation);
     const variationMeta = meditation.variations[selectedVariation];
 
-    // Generate timed sequence (no silence expansion)
+    // Generate timed sequence (no silence expansion). voiceId drives audio
+    // URL resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(clips, 1.0, {
       speakingRate: meditation.speakingRate || 90,
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
 
-    return [sequence, variationMeta.duration];
-  }, [meditation, selectedVariation]);
+    // Use the actual sequence end-time as the timer's total — voice-aware
+    // because the sequence above was built with the selected voice's
+    // durations. Falls back to the variation's pre-computed (Theo-based)
+    // duration if the sequence is empty. This keeps the playback timer
+    // synced to actual audio length when an alternate voice is selected,
+    // since the variation's `duration` field is computed at module-load
+    // time using the default voice only.
+    const total = sequence.length > 0
+      ? sequence[sequence.length - 1].endTime
+      : variationMeta.duration;
+    return [sequence, total];
+  }, [meditation, selectedVariation, selectedVoiceId]);
 
   // Transcript prompts for the current variation
   const transcriptPrompts = useMemo(() => {
@@ -519,18 +545,29 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
     }
   }, [playback.hasStarted, playback.isLoading, phase]);
 
-  // Fade out idle screen before starting composition
+  // Sync the idle-screen voice pill with the global default preference.
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
+
+  // Begin → idle-leaving → preparing (loading screen) → preparing-leaving →
+  // active. Composer reads the voice-aware timedSequence during the loading
+  // screen window.
   const handleBeginWithTransition = useCallback(() => {
+    activeVoiceRef.current = selectedVoiceId;
     useSessionStore.getState().beginModule(module.instanceId);
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
-  }, [playback, module.instanceId]);
+    playback.handleBeginWithTransition();
+  }, [playback, module.instanceId, selectedVoiceId]);
 
   // Restart meditation from the beginning
   const handleRestart = useCallback(() => {
     playback.handleRestart();
     setPhase('idle');
-    setIsLeaving(false);
   }, [playback]);
 
   // ─── Reflection navigation ────────────────────────────────────────────
@@ -649,7 +686,9 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
                 Audio not found.
               </p>
             </div>
-          ) : !playback.isLoading ? (
+          ) : (playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') ? (() => {
+            const isLeaving = playback.transitionStage === 'idle-leaving';
+            return (
             <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
               <div className="text-center space-y-2">
                 <h2
@@ -691,19 +730,30 @@ export default function FeltSenseModule({ module, onComplete, onSkip, onProgress
                   </button>
                 ))}
               </div>
+
+              {/* Voice pill — independent of variation. Renders only when
+                  the meditation declares voices (graceful no-op pre-PR-merge). */}
+              {Array.isArray(voices) && voices.length >= 1 && (
+                <div className="mt-4">
+                  <VoicePill voices={voices} selectedVoiceId={selectedVoiceId} onVoiceChange={setSelectedVoiceId} />
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center animate-fadeIn">
-              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-                Preparing meditation...
-              </p>
-            </div>
-          )}
+            );
+          })() : (playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') ? (
+            <MeditationLoadingScreen
+              isLeaving={playback.transitionStage === 'preparing-leaving'}
+            />
+          ) : null}
         </ModuleLayout>
 
         <ModuleControlBar
-          phase="idle"
-          primary={{ label: 'Begin', onClick: playback.isLoading ? () => {} : handleBeginWithTransition }}
+          phase={playback.getPhase()}
+          primary={(() => {
+            const ph = playback.getPhase();
+            if (ph === 'loading') return { label: 'Loading', loading: true };
+            return { label: 'Begin', onClick: handleBeginWithTransition };
+          })()}
           showBack={false}
           showSkip={true}
           onSkip={onSkip}
