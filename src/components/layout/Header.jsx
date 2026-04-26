@@ -44,7 +44,7 @@ export default function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-40" style={{ borderBottom: '1px solid var(--color-border)', background: glassEffect ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)' : 'var(--bg-primary)', backdropFilter: glassEffect ? 'blur(24px)' : 'none', WebkitBackdropFilter: glassEffect ? 'blur(24px)' : 'none', paddingTop: 'env(safe-area-inset-top, 0px)', height: 'var(--header-height)' }}>
-        <div className="h-full flex items-end pl-0 pr-0">
+        <div className="h-full flex items-end pl-0 pr-0 max-w-[1000px] mx-auto">
           {/* App Logo + "SESSION" text */}
           <div className="h-full flex items-end" style={{ padding: '0' }}>
             {alternateAppLogo ? (

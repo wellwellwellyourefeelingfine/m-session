@@ -1,9 +1,12 @@
 /**
- * ExpandableBlock — Collapsible text section with smooth expand/collapse.
+ * ExpandableBlock — Collapsible section with smooth expand/collapse.
  *
- * Mirrors the music module's RecommendationsWidget pattern. Static `lines`
- * array; no randomization. Supports `§` spacers and `{accent}` terms via
- * the shared renderContentLines utility.
+ * Two content modes:
+ *   - `lines: [...]` (default) — free-text lines via renderContentLines,
+ *     supporting `§` spacers and `{accent}` terms.
+ *   - `items: [{ name, description }]` — boxed list. Each item renders as a
+ *     bordered card with the name in uppercase mono on top and the
+ *     description below in muted body text. Optional `footnote` italic.
  *
  * Config:
  *   {
@@ -19,7 +22,9 @@
  *                                         //   when expanded
  *     alignment: 'center',               // 'left' | 'center'
  *     lineStyle: 'italic',               // 'normal' | 'italic' | 'subdued'
- *     lines: [...],
+ *     lines: [...],                      // OR
+ *     items: [{ name, description }],    // boxed-list mode
+ *     footnote: 'These are starting...', // optional, only used with `items`
  *   }
  */
 
@@ -51,7 +56,8 @@ export default function ExpandableBlock({ block, context }) {
 
   return (
     <div className="w-full">
-      {/* Toggle button */}
+      {/* Toggle button — icon sits AFTER the label (right side) for
+          consistency with the rest of the app's expandable affordances. */}
       <div className={`flex items-center ${alignmentClass}`}>
         <button
           type="button"
@@ -60,21 +66,47 @@ export default function ExpandableBlock({ block, context }) {
             hover:text-[var(--color-text-secondary)] transition-colors
             inline-flex items-center gap-2"
         >
-          {IconComp && <IconComp size={14} className="text-[var(--color-text-tertiary)]" />}
           {visible ? hideLabel : showLabel}
+          {IconComp && <IconComp size={14} className="text-[var(--color-text-tertiary)]" />}
         </button>
       </div>
 
-      {/* Slide-down content */}
+      {/* Slide-down content. maxHeight is generous (2000px) — the slide
+          animation only needs an upper bound; long lists like the protector
+          examples (10 cards + footnote) won't get clipped. */}
       <div
         className="overflow-hidden transition-all duration-300 ease-out"
         style={{
-          maxHeight: visible ? '800px' : '0',
+          maxHeight: visible ? '2000px' : '0',
           opacity: visible ? 1 : 0,
         }}
       >
         <div className={`pt-3 ${contentClass}`}>
-          {renderContentLines(block.lines, accentTerms)}
+          {Array.isArray(block.items) ? (
+            // Boxed-list mode — bordered cards with uppercase mono name on
+            // top and a muted description below. Mirrors the legacy IFS
+            // examples-list styling so it can be reused for any future
+            // "labeled options" list.
+            <div className="space-y-1.5 animate-fadeIn">
+              {block.items.map((item, i) => (
+                <div key={i} className="border border-[var(--color-border)] px-3 py-1.5">
+                  <p className="text-[var(--color-text-primary)] text-xs uppercase tracking-wider">
+                    {item.name}
+                  </p>
+                  <p className="text-[var(--color-text-tertiary)] text-[11px] normal-case tracking-normal">
+                    {item.description}
+                  </p>
+                </div>
+              ))}
+              {block.footnote && (
+                <p className="text-[var(--color-text-tertiary)] text-[11px] italic mt-2">
+                  {block.footnote}
+                </p>
+              )}
+            </div>
+          ) : (
+            renderContentLines(block.lines, accentTerms)
+          )}
         </div>
       </div>
     </div>

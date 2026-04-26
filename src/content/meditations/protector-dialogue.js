@@ -17,11 +17,20 @@ export const protectorDialogueMeditation = {
   baseDuration: 840,  // ~14 minutes base
   minDuration: 720,   // 12 minutes minimum
   maxDuration: 900,   // 15 minutes with expanded silences
+  // Display value for the meditation idle pill — measured composed length
+  // including silences and gongs (≈20 min). Independent of baseDuration,
+  // which only covers prompt speech and is used internally by the silence
+  // multiplier solver.
+  fixedDuration: 1200,
 
   // Audio config
   audio: {
     basePath: '/audio/meditations/protector/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo', label: 'Thoughtful Theo', subfolder: '' },
+    ],
   },
 
   // Speaking rate — slower for peak state (90 WPM vs typical 150)

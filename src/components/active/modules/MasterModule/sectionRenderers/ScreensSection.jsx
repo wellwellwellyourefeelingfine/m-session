@@ -1,4 +1,10 @@
 /**
+ * SEE FIRST: ../MasterModuleStyleSheet.md
+ *   Conventions for headers, prompt slots, animations & transitions, smooth
+ *   scroll, header/animation continuity within a section, and the persistBlocks
+ *   pattern are all documented there. Read it before changing renderer behavior
+ *   that affects how authors write content configs.
+ *
  * ScreensSection — Step-through screen sequence with block-based rendering
  *
  * Each screen is a vertical stack of blocks. Shorthand screen types
@@ -24,6 +30,21 @@ import {
   ChoiceBlock, AnimationBlock, AlarmBlock, ReviewBlock,
 } from '../blockRenderers';
 import { ANIMATION_MAP } from '../blockRenderers/HeaderBlock';
+import { renderLineWithMarkup } from '../utils/renderContentLines';
+
+// Resolve a header block's animation key. Distinguishes three cases:
+//   undefined → default 'ascii-moon'
+//   null      → no animation (text-heavy beat)
+//   'name'    → explicit animation
+// Matters for the sameAnimation comparison in handleNext/handleBack so that
+// two consecutive screens with explicit `animation: null` are treated as the
+// same (no fade), and a transition from null → ascii-moon (or vice versa)
+// fades the animation slot.
+function resolveAnimationKey(headerBlock) {
+  if (!headerBlock) return null;
+  if (headerBlock.animation === null) return null;
+  return headerBlock.animation || 'ascii-moon';
+}
 import expandScreenToBlocks from '../utils/expandScreenToBlocks';
 import evaluateCondition from '../utils/evaluateCondition';
 import { smoothScrollToElement } from '../../../../../utils/smoothScroll';
@@ -54,6 +75,14 @@ export default function ScreensSection({
   // Back navigation across section boundaries
   canGoBackToPreviewSection,
   onBackToPreviousSection,
+  // Optional further fallback — when there are no previous screens AND no
+  // previous section to return to, Back drops the user on the module's
+  // idle screen. MasterModule wires this to its goBackToIdle action.
+  onBackToIdle,
+  // Last-section flag — when true, ScreensSection labels the primary
+  // "Continue" button "Complete" on the section's last visible screen so
+  // the user knows they're at the end of the module.
+  isLastSection = false,
   // Generated images (for right-slot viewer)
   generatedImages,
   onOpenViewer,
@@ -75,8 +104,14 @@ export default function ScreensSection({
   const [isAnimationVisible, setIsAnimationVisible] = useState(false);
   const [isBodyVisible, setIsBodyVisible] = useState(false);
 
-  // Fade in on mount (section entry)
+  // Fade in on mount (section entry).
+  // Also reset the main scroll container to the top — section transitions
+  // unmount and remount this component, but the browser scroll position
+  // persists across renders. Without this, advancing into a new section
+  // while scrolled to the bottom of the previous one lands the user
+  // mid-page on the new section's body.
   useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
     const raf = requestAnimationFrame(() => {
       setIsTitleVisible(true);
       setIsAnimationVisible(true);
@@ -177,8 +212,11 @@ export default function ScreensSection({
     ? (evaluateCondition(currentBlocks[0].condition, conditionContext) ? currentBlocks[0] : null)
     : null;
 
-  // Resolve the animation component for the header (stable reference for rendering)
-  const HeaderAnimationComp = headerBlock ? ANIMATION_MAP[headerBlock.animation || 'ascii-moon'] : null;
+  // Resolve the animation component for the header (stable reference for rendering).
+  // animation: undefined → defaults to ascii-moon. animation: null → no animation
+  // at all (text-heavy beat where the title alone is enough).
+  const headerAnimationKey = resolveAnimationKey(headerBlock);
+  const HeaderAnimationComp = headerAnimationKey ? ANIMATION_MAP[headerAnimationKey] : null;
   const headerAnimationProps = headerBlock?.animationProps || {};
 
   const bodyBlocks = useMemo(() => {
@@ -220,8 +258,18 @@ export default function ScreensSection({
 
   const totalVisiblePrompts = orderedUniquePromptIndices.length;
 
+  // Detect "this Continue press will end the section." Combined with
+  // isLastSection, that's the moment to swap "Continue" → "Complete" so the
+  // user knows the next press finishes the module. Section authors can
+  // override the default with `section.primaryLabel`.
+  const isOnLastVisibleScreen = useMemo(() => {
+    return findNextVisibleScreen(screenIndex + 1) === -1;
+  }, [findNextVisibleScreen, screenIndex]);
+
   const getPrimaryLabel = () => {
-    return section.primaryLabel || 'Continue';
+    if (section.primaryLabel) return section.primaryLabel;
+    if (isLastSection && isOnLastVisibleScreen) return 'Complete';
+    return 'Continue';
   };
 
   const handleNext = useCallback(() => {
@@ -268,7 +316,7 @@ export default function ScreensSection({
       const nextHeader = getScreenHeader(nextVisible);
       const sameTitle = headerBlock?.title && nextHeader?.title && headerBlock.title === nextHeader.title;
       const sameAnimation = headerBlock && nextHeader
-        && (headerBlock.animation || 'ascii-moon') === (nextHeader.animation || 'ascii-moon');
+        && resolveAnimationKey(headerBlock) === resolveAnimationKey(nextHeader);
 
       // persistBlocks: keep the body mounted across screens in this section.
       // React's keyed reconciliation reuses DOM for blocks at matching indexes,
@@ -298,17 +346,15 @@ export default function ScreensSection({
             setIsAnimationVisible(true);
           }
           // After React commits the new DOM, smooth-scroll the newly-mounted
-          // block into view. Uses a custom cubic ease-out over 700ms rather
-          // than native `scrollIntoView({ behavior: 'smooth' })` — the
-          // browser default felt abrupt alongside the 500ms block fade-in,
-          // especially on mobile. Controlled easing makes the scroll lead the
-          // eye to the new content without rushing. The non-persistBlocks
-          // branch still does a hard scrollTo(0, 0); this only runs for
-          // persistBlocks transitions where existing content stays in place.
+          // block into view. Uses smoothScrollToElement's defaults
+          // (sinusoidal ease-in-out, 900ms) — see smoothScroll.js for why
+          // sine instead of cubic. The non-persistBlocks branch still does a
+          // hard scrollTo(0, 0); this only runs for persistBlocks
+          // transitions where existing content stays in place.
           if (hasNewBlock) {
             requestAnimationFrame(() => {
               const target = document.querySelector(`[data-block-index="${firstNewIndex}"]`);
-              smoothScrollToElement(target, { duration: 700 });
+              smoothScrollToElement(target);
             });
           }
         }, (sameTitle && sameAnimation) ? 0 : FADE_MS);
@@ -340,8 +386,13 @@ export default function ScreensSection({
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
 
     if (prevVisible === -1) {
+      // Back chain: previous section (if any) → module idle (if available).
+      // Always-show-Back is a MasterModule UX rule — there's never a screen
+      // a user can land on without a way back.
       if (canGoBackToPreviewSection) {
         onBackToPreviousSection();
+      } else if (typeof onBackToIdle === 'function') {
+        onBackToIdle();
       }
       return;
     }
@@ -349,7 +400,7 @@ export default function ScreensSection({
     const prevHeader = getScreenHeader(prevVisible);
     const sameTitle = headerBlock?.title && prevHeader?.title && headerBlock.title === prevHeader.title;
     const sameAnimation = headerBlock && prevHeader
-      && (headerBlock.animation || 'ascii-moon') === (prevHeader.animation || 'ascii-moon');
+      && resolveAnimationKey(headerBlock) === resolveAnimationKey(prevHeader);
 
     // persistBlocks: same rationale as handleNext — keep the body mounted.
     if (section.persistBlocks) {
@@ -410,6 +461,7 @@ export default function ScreensSection({
             onChange={(value) => onSetPromptResponse(block.promptIndex, value)}
             promptNumber={promptNumber}
             totalPrompts={totalVisiblePrompts}
+            accentTerms={accentTerms}
           />
         );
       }
@@ -439,6 +491,7 @@ export default function ScreensSection({
             selectedValue={choiceValues[block.key]}
             onChoiceSelect={handleChoiceSelect}
             visitedSections={visitedSections}
+            accentTerms={accentTerms}
           />
         );
       }
@@ -525,7 +578,7 @@ export default function ScreensSection({
                 className={headerBlock.titleClassName || 'text-xl font-light mb-2 text-center'}
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
-                {headerBlock.title}
+                {renderLineWithMarkup(headerBlock.title, accentTerms)}
               </h2>
             </div>
           )}
@@ -584,7 +637,7 @@ export default function ScreensSection({
           }
           return { label: getPrimaryLabel(), onClick: handleNext, disabled: isDisabled };
         })()}
-        showBack={hasPreviousVisible || canGoBackToPreviewSection}
+        showBack={hasPreviousVisible || canGoBackToPreviewSection || typeof onBackToIdle === 'function'}
         onBack={handleBack}
         backConfirmMessage={null}
         showSkip={skipEnabled && !anyBlockNotReady}

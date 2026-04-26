@@ -5,7 +5,7 @@
 
 import { useSessionStore } from '../stores/useSessionStore';
 import { useJournalStore } from '../stores/useJournalStore';
-import { getProtectorName } from '../content/modules/protectorDialogueContent';
+import { getProtectorName } from '../content/modules/master/protectorDialogueShared';
 import { getImage } from './imageStorage';
 
 /**
@@ -359,8 +359,23 @@ ${centerText(`Exported ${exportDate}`)}
 
   const activityCaptures = {};
 
-  const protector = data.transitionCaptures?.protectorDialogue;
-  if (protector?.protectorName) activityCaptures.protector = protector;
+  // Prefer the new identity-scoped sessionProfile.protector path. Fall back to
+  // the legacy transitionCaptures.protectorDialogue slot for any session that
+  // hasn't migrated yet (and for the test window before the legacy modules are
+  // deleted). The fallback also normalizes field names so downstream renderers
+  // see a single shape.
+  const newProtector = data.sessionProfile?.protector;
+  const legacyProtector = data.transitionCaptures?.protectorDialogue;
+  if (newProtector?.name) {
+    activityCaptures.protector = {
+      protectorName: newProtector.name,
+      protectorDescription: newProtector.description,
+      bodyLocation: newProtector.bodyLocation,
+      protectorMessage: newProtector.message,
+    };
+  } else if (legacyProtector?.protectorName) {
+    activityCaptures.protector = legacyProtector;
+  }
 
   const stayWithIt = data.transitionCaptures?.stayWithIt;
   if (stayWithIt?.checkInResponse) activityCaptures.stayWithIt = stayWithIt;

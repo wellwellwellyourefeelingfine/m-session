@@ -647,6 +647,50 @@ updateSessionProfile('holdingQuestion', value);
 
 Working reference implementations live in TransitionModule: `EditableDoseBlock` (simplest — read field, write via `updateSessionProfile` on save) and `TouchstonePromptBlock` (edit/display mode toggle with primary-override + readiness gating).
 
+### MasterModule UI Conventions
+
+These are app-wide design rules every MasterModule activity inherits. They're enforced by the runtime (`MasterModule.jsx`, `ScreensSection.jsx`, `useMasterModuleState.js`) so a content author writing a new config gets them automatically — but if you're adding a custom block or extending the runtime, mind the contracts here.
+
+**Idle screen layout** (rendered by `MasterModule.jsx` idle phase + `IdleScreen` in `ModuleLayout.jsx`):
+
+```
+title       (content.idle.title, falls back to module.title)
+animation   (content.idleAnimation, defaults to AsciiMoon)
+subtitle    (content.idle.subtitle — small grey mono caps)
+description (content.idle.description — short framing of the activity)
+time pill   (auto from module.duration; override via content.idle.durationMinutes)
+voice pill  (auto from embedded meditation; override via content.idle.voices)
+expandable  (content.idle.expandable — optional collapsible disclosure)
+Begin button
+```
+
+- **Title** is what sits at the top. For linked-part activities (e.g. Protector Dialogue Parts 1 & 2), set a single shared `idle.title` so both parts read as one practice — the per-part identity goes in the subtitle below the animation.
+- **Subtitle** is a small grey monospace caps line between animation and description. Use it for "PART I — …" labels or short context tags. Optional.
+- **Description** is the short "what you'll do in this part" framing — left-aligned, a sentence or two.
+- **Time pill** auto-derives from `module.duration`. Override with `content.idle.durationMinutes`.
+- **Voice pill** auto-derives from the first embedded `meditation` section's `audio.voices`. Override with `content.idle.voices`. With one voice the pill renders with greyed cycle arrows for layout consistency — meditation modules should always declare a `voices` array (single-voice is fine: `[{ id: 'theo', label: 'Thoughtful Theo', subfolder: '' }]`).
+- **Expandable disclosure** lives below the pills for dense framing material the user can opt into.
+
+**Pre-meditation prep beat.** Modules that embed an audio meditation should land the user on a one-screen prep section just before the meditation section. The prep screen reminds the user about headphones and re-shows the time commitment via a `meditation-time-pill` block. See the headphones-prep section in `protectorDialogueP1.js`.
+
+**Header continuity within a section.** When a sequence of screens share the same `header.title` and `header.animation`, the engine skips the header re-fade on advance — only the body fades. This kicks in automatically; the section author just defines the same header block at index 0 of each screen. Combine with `persistBlocks: true` for progressive-reveal sections where the body itself accumulates blocks across screens (the same prompt/text block reference reused across screens reconciles in place — no remount, no fade). Pattern: define block consts at module scope, reuse the same reference on multiple screens.
+
+**Animation choices.** AsciiMoon is the default header animation (used when `animation` is omitted). Closing sections typically use `ascii-diamond` for visual finality. Meditation sections default to `morphing-shapes`. Set `animation: null` on a header to render a title-only beat for text-heavy passages where an animation would add noise. Animation values supported: `ascii-moon`, `morphing-shapes`, `ascii-diamond`, `leaf`, `compass`, `wave`, `sunrise`, `full-sun`, `sunset`, `moonrise`.
+
+**Back is always available in active phase.** ScreensSection's Back chains: previous screen → previous section → module idle. The first screen of the first section's Back drops the user back on the IdleScreen (Begin re-enters with state preserved). Authors don't need to wire this; it comes from `goBackToIdle` on the state hook + `onBackToIdle` on ScreensSection.
+
+**Skip advances by section, not by module.** Skip from any section that's NOT the last main-flow section calls `advanceSection` — moves to the next section, doesn't abandon the module. Only Skip on the last section saves partial data and fires the parent's `onSkip` (which abandons the module entirely). Detour Skip (inside a bookmark-routed section) advances the section so the bookmark pops, returning the user to the gate. Skip is hidden via `skip.allowed: false` on a section if a module needs to disable the bail-out for a critical step.
+
+**Last-screen primary says "Complete."** When the user is on the last visible screen of the last section, the primary button label flips from "Continue" to "Complete." Pressing it finalizes the module directly — saves the journal, fires the parent `onComplete`, and hands control back to the timeline. There is no intermediate "Well Done" completion screen for MasterModule activities. Authors don't need to wire this; it's driven by `state.isLastSection` and `findNextVisibleScreen(...) === -1`.
+
+**Optional fields.** No prompt or input field should be required to advance. Empty fields are journalled as `[no entry — HH:MM]` so users who keep a physical journal can match timestamps. Avoid `requireForContinue` / `reportReady(false)` gating on text inputs; reserve readiness gating for non-text decisions (e.g. picking an option in a fork that determines downstream content). The dialogue-loop block follows this rule: it only gates on the question-→-listening transition (because there'd be nothing to listen for otherwise), and the response/exchange flow is fully optional.
+
+**Scroll reset on every page change.** Section transitions and standard screen-to-screen advances scroll the main container to the top. `persistBlocks` progressive-reveal transitions are the deliberate exception: the user stays anchored as new blocks fade in below, with a smooth scroll to the newly-mounted block.
+
+**Expandable affordances render the icon to the RIGHT of the label.** The plus/minus circle sits after the text, not before. Applies to `ExpandableBlock` instances, the idle-screen disclosure, and the dialogue-loop's starter-questions toggle. Keeps a single visual grammar across the app for "tap to reveal more."
+
+**Runtime token substitution.** `{tokenName}` markup in headers, text lines, prompt strings, and placeholders resolves at render time from a context-built map. Today the protector tokens (`{protectorName}`, `{bodyLocation}`) are sourced from `sessionProfile.protector`. To add tokens for a new module, extend the `accentTerms` build in `MasterModule.jsx` to merge in additional store-derived values. Static accent terms (declared at content time) keep working unchanged.
+
 ### Adding a New Module with MasterModule
 
 **Step 1: Create the content file** in `src/content/modules/master/myModule.js`:
@@ -1989,6 +2033,8 @@ Minimal unpersisted store (`{ isOpen, openHelper, closeHelper }`) that bridges t
 ---
 
 ## Design System
+
+**Desktop layout cap:** UI content is capped at `max-w-[1000px] mx-auto` on the inner row of `<main>`, Header, TabBar, ModuleStatusBar, ModuleProgressBar, and ModuleControlBar — fixed bar backgrounds stay full-bleed; no-op below 1000px viewport.
 
 ### CSS Variables (`index.css`)
 

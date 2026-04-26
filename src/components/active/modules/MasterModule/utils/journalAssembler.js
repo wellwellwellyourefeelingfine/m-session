@@ -167,6 +167,64 @@ export function assembleJournalEntry({
       return;
     }
 
+    // `dialogue-loop` accumulates a multi-turn transcript in the local
+    // responses map under a string key (block.responsesKey), JSON-encoded.
+    // Emit it as a single labeled section formatted like:
+    //   Dialogue:
+    //   Me: question 1
+    //   The Critic: response 1
+    //
+    //   Me: question 2
+    //   The Critic: response 2
+    if (block.type === 'dialogue-loop') {
+      const responsesKey = block.responsesKey || 'dialogue-exchanges';
+      if (emittedStoreKeys.has(`dialogue:${responsesKey}`)) return;
+      emittedStoreKeys.add(`dialogue:${responsesKey}`);
+
+      const label = block.journalLabel ? `${block.journalLabel}:` : 'Dialogue:';
+      const raw = responses[responsesKey];
+      let parsed = null;
+      if (typeof raw === 'string' && raw.length > 0) {
+        try { parsed = JSON.parse(raw); } catch (_e) { parsed = null; }
+      }
+      const exchanges = Array.isArray(parsed?.exchanges) ? parsed.exchanges : [];
+      const protectorLabel = parsed?.protectorLabel || 'your protector';
+      const filtered = exchanges.filter((e) => (e.question || '').trim() || (e.response || '').trim());
+
+      content += `\n${label}\n`;
+      if (filtered.length === 0) {
+        content += `[no entry — ${timestamp}]\n`;
+      } else {
+        const formatted = filtered
+          .map((e) => `Me: ${(e.question || '').trim()}\n${protectorLabel}: ${(e.response || '').trim()}`)
+          .join('\n\n');
+        content += `${formatted}\n`;
+      }
+      return;
+    }
+
+    // `protector-field` writes directly to sessionProfile.protector.<field>.
+    // Emit each field at most once (so a progressive-reveal section that
+    // re-renders the same block doesn't duplicate it in the journal).
+    if (block.type === 'protector-field' && storeState) {
+      const field = block.field;
+      if (!field) return;
+      const dedupeKey = `protector-field:${field}`;
+      if (emittedStoreKeys.has(dedupeKey)) return;
+      emittedStoreKeys.add(dedupeKey);
+
+      const label = block.journalLabel ? `${block.journalLabel}:` : `${field}:`;
+      content += `\n${label}\n`;
+
+      const value = storeState?.sessionProfile?.protector?.[field];
+      if (value != null && String(value).trim() !== '') {
+        content += `${String(value).trim()}\n`;
+      } else {
+        content += `[no entry — ${timestamp}]\n`;
+      }
+      return;
+    }
+
     // `touchstone-prompt` writes directly to a store path (block.storeField)
     // rather than into the local `responses` map, so it needs its own emit.
     // Matches the physical-journal-friendly pattern: the label always prints,

@@ -13,7 +13,7 @@ import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 29;
+export const SESSION_STORE_VERSION = 32;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
@@ -153,6 +153,16 @@ export const useSessionStore = create(
         touchstone: '',                // The word/phrase the user captured
         intentionJournalEntryId: null, // Pointer to the persisted intention journal entry
         focusJournalEntryId: null,     // Pointer to the persisted session focus entry
+
+        // Protector identity (from Dialogue with a Protector — Part 1, read by Part 2).
+        // Lives on sessionProfile because it's cross-module identity data, not
+        // module-scoped capture state. Written via updateProtector(field, value).
+        protector: {
+          name: '',          // e.g. 'The Critic'
+          description: '',   // free-text characterization
+          bodyLocation: '',  // e.g. 'tightness in my chest'
+          message: '',       // user's message-to-protector text
+        },
       },
 
       // ============================================
@@ -575,6 +585,24 @@ export const useSessionStore = create(
           sessionProfile: {
             ...state.sessionProfile,
             ...updates,
+          },
+        });
+      },
+
+      // Shallow-merge a single field into sessionProfile.protector. Used by the
+      // Dialogue with a Protector modules (Part 1 writes name/description/
+      // bodyLocation/message; Part 2 reads them). Mirrors the pattern of
+      // updateProtectorCapture but writes to the identity-scoped location on
+      // sessionProfile rather than the module-scoped transitionCaptures slot.
+      updateProtector: (field, value) => {
+        const state = get();
+        set({
+          sessionProfile: {
+            ...state.sessionProfile,
+            protector: {
+              ...state.sessionProfile.protector,
+              [field]: value,
+            },
           },
         });
       },
@@ -3908,6 +3936,62 @@ export function migrateSessionState(persistedState, version) {
             state.followUp = {
               phaseUnlockTime: state.followUp.phaseUnlockTime ?? null,
             };
+          }
+        }
+
+        // Version 29 → 30: Migrate Protector Dialogue captures from
+        // transitionCaptures.protectorDialogue (module-scoped) onto
+        // sessionProfile.protector (identity-scoped, available to any module).
+        // Additive only — the legacy slot is left in place during the
+        // MasterModule rewrite test window so the old custom modules continue
+        // to function. A later v30→v31 migration removes the legacy slot.
+        // feelToward and completedAt are not carried forward (no longer
+        // durable identity data).
+        if (version < 30) {
+          state.sessionProfile = state.sessionProfile || {};
+          if (!state.sessionProfile.protector) {
+            const old = state.transitionCaptures?.protectorDialogue;
+            state.sessionProfile.protector = {
+              name: old?.protectorName || '',
+              description: old?.protectorDescription || '',
+              bodyLocation: old?.bodyLocation || '',
+              message: old?.protectorMessage || '',
+            };
+          }
+        }
+
+        // Version < 32: Collapse the protector-dialogue id suffixes into
+        // the canonical bare ids. Two waves of history may exist:
+        //
+        //   - Pre-v31 sessions had bare ids that originally rendered legacy
+        //     custom-component modules. Those custom components have since
+        //     been deleted; the bare ids now alias MasterModule with v2
+        //     content. No id rewrite needed for these.
+        //
+        //   - Sessions that ran the old v30 → v31 migration were rewritten
+        //     from `*-p1` / `*-p2` to `*-p1-v2` / `*-p2-v2`. Those `-v2`
+        //     library/registry entries no longer exist — we collapsed them
+        //     back to bare ids in v32. Rewrite the persisted libraryIds so
+        //     the session resolves to a valid library entry on next render.
+        //
+        // Pure libraryId swap — no other shape changes.
+        if (version < 32) {
+          const remapId = (id) => {
+            if (id === 'protector-dialogue-p1-v2') return 'protector-dialogue-p1';
+            if (id === 'protector-dialogue-p2-v2') return 'protector-dialogue-p2';
+            if (id === 'protector-dialogue-v2') return 'protector-dialogue';
+            return id;
+          };
+
+          if (Array.isArray(state.modules?.items)) {
+            state.modules.items = state.modules.items.map((m) => (
+              m?.libraryId ? { ...m, libraryId: remapId(m.libraryId) } : m
+            ));
+          }
+          if (Array.isArray(state.modules?.history)) {
+            state.modules.history = state.modules.history.map((m) => (
+              m?.libraryId ? { ...m, libraryId: remapId(m.libraryId) } : m
+            ));
           }
         }
 

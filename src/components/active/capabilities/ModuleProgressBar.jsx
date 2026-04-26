@@ -52,7 +52,7 @@ export default function ModuleProgressBar({
       style={{ top: 'calc(var(--header-height) - 1px)', opacity: visible ? 1 : 0 }}
     >
       {/* Progress bar track - positioned below header */}
-      <div className="h-px bg-[var(--color-border)]">
+      <div className="h-px bg-[var(--color-border)] max-w-[1000px] mx-auto">
         {/* Progress bar fill */}
         <div
           className={`h-full bg-[var(--color-text-primary)] transition-all duration-200 ease-linear

@@ -6,8 +6,9 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { moduleLibrary, canAddModuleToPhase, MODULE_CATEGORIES, FRAMEWORKS } from '../../content/modules';
-import { CircleXIcon, StarIcon, SearchIcon } from '../shared/Icons';
+import { CircleXIcon, StarIcon, SearchIcon, BookHeartIcon } from '../shared/Icons';
 import ModuleDetailModal from './ModuleDetailModal';
+import { getModuleIcon } from './getModuleIcon';
 import { useAppStore } from '../../stores/useAppStore';
 
 // Check if query is an exact match for a framework abbreviation, label, or key
@@ -175,6 +176,13 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
           <CircleXIcon size={26} />
         </button>
 
+        {/* Library icon - positioned in top-left corner of drawer; tweak top/left to fine-tune alignment with the title */}
+        <BookHeartIcon
+          size={40}
+          strokeWidth={2.5}
+          className="absolute top-7 left-6 text-[var(--accent)] pointer-events-none z-10"
+        />
+
         {/* Handle */}
         <div className="flex justify-center py-3">
           <div className="w-10 h-1 bg-[var(--color-border)] rounded-full" />
@@ -182,7 +190,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
 
         {/* Header */}
         <div className="pb-4 border-b border-[var(--color-border)]">
-          <div className="mb-4 pr-24 px-6">
+          <div className="mb-4 pl-18 pr-24">
             <h3 className="text-3xl" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Activity Library</h3>
           </div>
 
@@ -316,9 +324,12 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
                           {formatDuration(module.defaultDuration)}
                         </span>
                       </div>
-                      <p className="text-[var(--color-text-secondary)] text-sm -mt-px">
-                        {module.description}
-                      </p>
+                      <div className="flex items-start gap-3.5 -mt-px">
+                        {(() => { const Icon = getModuleIcon(module.id, module.category); return <Icon size={24} className="text-[var(--accent)] flex-shrink-0 mt-px" />; })()}
+                        <p className="text-[var(--color-text-secondary)] text-sm min-w-0 line-clamp-3 min-h-[60px]">
+                          {module.description}
+                        </p>
+                      </div>
                       {(module.framework?.length > 0 || module.intensity != null) && (
                         <div className="flex items-center justify-between mt-0.5 mb-0.5">
                           {module.framework?.length > 0 ? (

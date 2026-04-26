@@ -1,20 +1,22 @@
 /**
  * smoothScrollToElement
  *
- * Scroll an element's nearest scrollable ancestor so the element lands at
- * `align: 'start'` (top) with controllable duration + easing. Replaces
- * `element.scrollIntoView({ behavior: 'smooth' })` when the browser's
- * default smooth-scroll timing feels too abrupt.
+ * Animate an element's scrollable ancestor to bring the element to its top
+ * edge. Replaces `scrollIntoView({ behavior: 'smooth' })` when the browser
+ * default feels too abrupt against surrounding fade animations.
  *
- * Respects `prefers-reduced-motion`: jumps instantly when that media query
- * matches.
- *
- * Defaults chosen for the transition-module progressive reveal: 700ms with
- * a cubic ease-out curve so the scroll leads the eye without feeling slow.
+ * Default curve is a quintic with a small landing overshoot — the scroll
+ * presses gently past the target and drifts back, instead of stopping
+ * cold. Honors `prefers-reduced-motion` (instant jump).
  */
 
-function easeOutCubic(t) {
-  return 1 - Math.pow(1 - t, 3);
+// Quintic landing curve. Coefficients solved from:
+//   f(0)=0, f'(0)=0, f''(0)=0   glass-smooth start (no perceptible kick)
+//   f(1)=1, f'(1)=0              lands at target with zero velocity
+//   f(0.85) ≈ 1.07               sets the overshoot (peak ~9% near t=0.78,
+//                                drifts back to 1.0)
+function easeOutGive(t) {
+  return ((13 * t - 29) * t + 17) * t * t * t;
 }
 
 // Walks up the DOM to find the first ancestor that's actually scrollable on
@@ -37,8 +39,8 @@ export function smoothScrollToElement(element, options = {}) {
   if (!element) return;
 
   const {
-    duration = 700,
-    easing = easeOutCubic,
+    duration = 900,
+    easing = easeOutGive,
     offset = 0,
     container: explicitContainer,
   } = options;

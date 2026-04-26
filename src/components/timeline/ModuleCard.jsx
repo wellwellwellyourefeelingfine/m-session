@@ -7,34 +7,11 @@
  */
 
 import { useState } from 'react';
-import { getModuleById, CATEGORY_ICONS, MODULE_ICONS } from '../../content/modules';
+import { getModuleById } from '../../content/modules';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
 import ModuleDetailModal from './ModuleDetailModal';
-import { SparkleIcon, CircleCheckIcon, CircleSkipIcon, CirclePlusIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, FireIcon } from '../shared/Icons';
-
-// Resolve icon string keys to components
-const ICON_MAP = {
-  sparkle: SparkleIcon,
-  compass: CompassIcon,
-  waves: WavesIcon,
-  boat: BoatIcon,
-  'notebook-pen': NotebookPenIcon,
-  leaf: LeafIcon,
-  music: MusicIcon,
-  'heart-handshake': HeartHandshakeIcon,
-  snail: SnailIcon,
-  clock: ClockIcon,
-  fire: FireIcon,
-};
-
-function getModuleIcon(libraryId, category) {
-  // Layer 3: individual override
-  if (libraryId && MODULE_ICONS[libraryId]) return ICON_MAP[MODULE_ICONS[libraryId]] || SparkleIcon;
-  // Layer 2: category override
-  if (category && CATEGORY_ICONS[category]) return ICON_MAP[CATEGORY_ICONS[category]] || SparkleIcon;
-  // Layer 1: default
-  return SparkleIcon;
-}
+import { CircleCheckIcon, CircleSkipIcon, CirclePlusIcon, FireIcon } from '../shared/Icons';
+import { getModuleIcon } from './getModuleIcon';
 
 export default function ModuleCard({
   module,

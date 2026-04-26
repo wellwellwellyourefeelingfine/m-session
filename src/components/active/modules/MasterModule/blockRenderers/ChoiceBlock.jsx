@@ -8,9 +8,14 @@
  * If an option's route target is in `visitedSections`, a small check icon is
  * appended after the label to indicate the user has already done that activity.
  * The button remains selectable so the user can revisit.
+ *
+ * Prompt + context support `{accentTerm}` token substitution and accent
+ * colouring via the shared renderLineWithMarkup utility — same idiom as
+ * PromptBlock and TextBlock.
  */
 
 import { CircleCheckIcon } from '../../../../shared/Icons';
+import { renderLineWithMarkup } from '../utils/renderContentLines';
 
 function getRouteTarget(route) {
   if (!route) return null;
@@ -19,21 +24,23 @@ function getRouteTarget(route) {
   return null;
 }
 
-export default function ChoiceBlock({ screen, selectedValue, onChoiceSelect, visitedSections = [] }) {
+export default function ChoiceBlock({ screen, selectedValue, onChoiceSelect, visitedSections = [], accentTerms = {} }) {
   return (
     <div className="space-y-4">
       {screen.context && (
         <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed">
-          {screen.context}
+          {renderLineWithMarkup(screen.context, accentTerms)}
         </p>
       )}
 
-      <p
-        className="text-base text-[var(--color-text-primary)]"
-        style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-      >
-        {screen.prompt}
-      </p>
+      {screen.prompt && (
+        <p
+          className="text-base text-[var(--color-text-primary)]"
+          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+        >
+          {renderLineWithMarkup(screen.prompt, accentTerms)}
+        </p>
+      )}
 
       <div className="space-y-2">
         {screen.options.map((option) => {

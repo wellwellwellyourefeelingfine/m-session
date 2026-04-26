@@ -95,7 +95,7 @@ export default function ModuleControlBar({
       {/* Fixed control bar - positioned above tab bar */}
       {/* pointer-events-none allows clicks to pass through transparent areas */}
       <div className="fixed left-0 right-0 h-14 z-30 pointer-events-none" style={{ bottom: 'var(--tabbar-height)' }}>
-        <div className="h-full flex items-center justify-between px-4">
+        <div className="h-full flex items-center justify-between px-4 max-w-[1000px] mx-auto">
           {/* Left group: Back button + left slot */}
           <div className="flex items-center gap-2">
             <div className="w-8 flex justify-center">

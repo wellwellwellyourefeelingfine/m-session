@@ -1,4 +1,10 @@
 /**
+ * SEE FIRST: ./MasterModuleStyleSheet.md
+ *   The single source of truth for design, UI, copy, and behavior conventions
+ *   across the master-module system. Read it before authoring or modifying a
+ *   master module — the conventions block below is a redundant safety net,
+ *   not a substitute.
+ *
  * MasterModule — Universal content-driven module component
  *
  * A generalized module framework that renders any module from a content config.
@@ -9,10 +15,55 @@
  * a content config file alone, with no custom component code.
  *
  * Props: { module, onComplete, onSkip, onProgressUpdate }
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * UI / COPY CONVENTIONS — read before authoring a new module
+ * ────────────────────────────────────────────────────────────────────────────
+ *
+ * 1. Module-level idle screen render order:
+ *      title → subtitle (accent) → animation → description → time pill
+ *    Voice selection, when applicable, lives on the embedded meditation's
+ *    OWN idle (MeditationSection), not on the module-level idle.
+ *
+ * 2. Header copy: Title Case, no terminal punctuation.
+ *      ✓  "What Surfaced", "Set This Aside", "Where In Your Body"
+ *      ✗  "What showed up?", "Set this aside.", "Going deeper."
+ *    The header is the section's *descriptor*, not the question being asked.
+ *    Move the question into the prompt slot of the input/choice block — it
+ *    renders in DM Serif at text-base via PromptBlock / ProtectorFieldBlock /
+ *    ChoiceBlock and sits directly above the input.
+ *
+ * 3. Screen layout pattern when the section asks for input:
+ *      header → animation → body text (orienting copy in mono/serif primary)
+ *      → DM Serif prompt question → input/selector/choice
+ *    The body text orients; the DM Serif prompt is the actual ask.
+ *
+ * 4. Header + animation continuity ACROSS SCREENS within a section:
+ *    ScreensSection compares headerBlock.title and the resolved animation
+ *    key between consecutive screens — when both match, neither fades on
+ *    transition. The header stays anchored while only the body content fades.
+ *
+ *    To extend this across what feels like "two pages" of one experience,
+ *    combine them into ONE section with multiple screens. Two SEPARATE
+ *    sections always remount fresh DOM and re-fade everything, even if their
+ *    headers happen to match — there's no cross-section persistence.
+ *
+ *    Optional `persistBlocks: true` on the section keeps body blocks at
+ *    matching indexes mounted across screens (progressive-reveal pattern).
+ *    Without it, each screen transition fades the full body in/out while the
+ *    matching header/animation stay anchored.
+ *
+ * 5. Use the same JS reference for shared blocks across screens. Define a
+ *    `const SECTION_HEADER = { type: 'header', title: 'X', animation: 'Y' }`
+ *    at the top of the content file and spread the same reference into every
+ *    screen that shares it. React's keyed reconciliation matches blocks by
+ *    index, so a shared reference at the same index keeps its DOM and avoids
+ *    re-running its mount animations.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { getModuleById } from '../../../../content/modules';
+import { useSessionStore } from '../../../../stores/useSessionStore';
 import useMasterModuleState from './useMasterModuleState';
 import { ScreensSection, MeditationSection, TimerSection, GenerateSection } from './sectionRenderers';
 import useProgressReporter from '../../../../hooks/useProgressReporter';
@@ -22,14 +73,66 @@ import RevealOverlay from '../../capabilities/animations/RevealOverlay';
 import ImageViewerModal from '../../capabilities/ImageViewerModal';
 import { ANIMATION_MAP } from './blockRenderers/HeaderBlock';
 import MASTER_CUSTOM_BLOCKS from './customBlocks';
+import { CirclePlusIcon, CircleSkipIcon } from '../../../shared/Icons';
+
+// Inline collapsible used by the idle landing for richer module layouts.
+// Mirrors the ExpandableBlock visual but lives outside the section/blocks
+// system because the idle screen doesn't render through ScreensSection.
+function IdleExpandable({ title, body }) {
+  const [open, setOpen] = useState(false);
+  const Icon = open ? CircleSkipIcon : CirclePlusIcon;
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-center">
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="text-xs uppercase tracking-wider text-[var(--color-text-secondary)]
+            hover:text-[var(--color-text-primary)] transition-colors
+            inline-flex items-center gap-2"
+        >
+          {title}
+          <Icon size={14} className="text-[var(--color-text-tertiary)]" />
+        </button>
+      </div>
+      <div
+        className="overflow-hidden transition-all duration-300 ease-out"
+        style={{ maxHeight: open ? '600px' : '0', opacity: open ? 1 : 0 }}
+      >
+        <p className="pt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+          {body}
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function MasterModule({ module, onComplete, onSkip, onProgressUpdate }) {
   const libraryModule = getModuleById(module.libraryId);
   const content = module.content?.masterModuleContent;
 
-  const state = useMasterModuleState(content, module);
+  // Hand the parent's onComplete down to the state hook so that the module's
+  // final advance (sequential past last section, or terminal section, or
+  // _complete route) finalizes the module DIRECTLY — saves the journal and
+  // hands control back to the timeline. The legacy "Well Done" intermediate
+  // page is no longer rendered.
+  const state = useMasterModuleState(content, module, {
+    onModuleComplete: onComplete,
+    onModuleSkip: onSkip,
+  });
 
-  const accentTerms = content?.accentTerms || {};
+  // Runtime tokens — merge config-time accentTerms with values resolved from
+  // the session store at render time. The protector tokens are read here
+  // because they're cross-module identity data on sessionProfile.protector;
+  // a future module that wants different runtime tokens can extend this map.
+  // Falling back to neutral generics ('your protector', 'in your body') keeps
+  // text grammatical even before the user has entered anything.
+  const protector = useSessionStore((s) => s.sessionProfile?.protector);
+  const accentTerms = useMemo(() => ({
+    ...(content?.accentTerms || {}),
+    protectorName: protector?.name || 'your protector',
+    bodyLocation: protector?.bodyLocation || 'in your body',
+  }), [content?.accentTerms, protector?.name, protector?.bodyLocation]);
 
   // ── Progress reporting (screen-level granularity) ─────────────────────────
 
@@ -159,23 +262,62 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
 
   if (state.modulePhase === 'idle') {
     const IdleAnimation = content?.idleAnimation ? ANIMATION_MAP[content.idleAnimation] : null;
+    const idleConfig = content?.idle;
+
+    // Auto-derive idle screen duration pill from module.duration (the
+    // activity's total estimate). Voice selection lives on the embedded
+    // meditation's own idle screen — the module-level idle previews the time
+    // commitment but not the voice, so the user picks their voice on the
+    // meditation idle right before composition begins.
+    const idleDurationMinutes = typeof idleConfig?.durationMinutes === 'number'
+      ? idleConfig.durationMinutes
+      : (typeof module.duration === 'number' ? module.duration : null);
+
+    // Title — `idle.title` overrides `module.title` so linked parts can
+    // share a unified title (e.g. "Dialogue with a Protector") above the
+    // per-part subtitle (e.g. "Part 1: Meeting a Protector"), without
+    // having to rename the underlying library entries.
+    const idleTitle = idleConfig?.title ?? module.title;
+
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
           <div className={state.isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}>
+            {/*
+              IdleScreen renders, in order:
+                title → subtitle (accent) → animation → description → time pill
+              The expandable disclosure (when configured) lives below the
+              pill so the user sees their time commitment before the deeper
+              info dive. Voice selection is deferred to the meditation
+              section's own idle screen.
+            */}
             <IdleScreen
-              title={module.title}
-              description={libraryModule?.description}
-              duration={module.duration}
+              title={idleTitle}
+              subtitle={idleConfig?.subtitle}
+              description={idleConfig?.description}
+              durationMinutes={idleDurationMinutes}
               animation={IdleAnimation ? <IdleAnimation /> : null}
             />
+
+            {idleConfig?.expandable && (
+              <div className="px-6 mt-6">
+                <IdleExpandable
+                  title={idleConfig.expandable.title}
+                  body={idleConfig.expandable.body}
+                />
+              </div>
+            )}
           </div>
         </ModuleLayout>
         <ModuleControlBar
           phase="idle"
           primary={{ label: 'Begin', onClick: state.begin }}
           showSkip={true}
-          onSkip={handleSkip}
+          // Idle-phase Skip ALWAYS abandons the module — the user hasn't
+          // started anything yet, so there's nothing to advance to. Bypass
+          // the active-phase handleSkip (which would advance a section) and
+          // call onSkip directly to move to the next module in the timeline.
+          onSkip={onSkip}
           skipConfirmMessage="Skip this activity?"
         />
       </>
@@ -183,24 +325,13 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
   }
 
   // ── Completion Phase ──────────────────────────────────────────────────────
+  // finalizeModule already saved the journal entry and called the parent
+  // `onComplete` to advance the timeline. We render nothing here so the
+  // user doesn't briefly see a "Well done" intermediate page during the
+  // tick or two it takes the parent to unmount this module.
 
   if (state.modulePhase === 'complete') {
-    const completionConfig = content.completion || {};
-    return (
-      <>
-        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <CompletionScreen
-            title={completionConfig.title}
-            message={completionConfig.message}
-          />
-        </ModuleLayout>
-        <ModuleControlBar
-          phase="completed"
-          primary={{ label: 'Continue', onClick: handleComplete }}
-          showSkip={false}
-        />
-      </>
-    );
+    return null;
   }
 
   // ── Active Phase — render current section ─────────────────────────────────
@@ -257,6 +388,8 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
           onSkip={handleSkip}
           canGoBackToPreviewSection={state.canGoBackToPreviousSection}
           onBackToPreviousSection={state.goBackToPreviousSection}
+          onBackToIdle={state.goBackToIdle}
+          isLastSection={state.isLastSection}
           generatedImages={state.generatedImages}
           onOpenViewer={state.openViewer}
           onRouteToSection={state.routeToSection}

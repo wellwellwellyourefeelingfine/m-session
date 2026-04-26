@@ -71,7 +71,7 @@ export default function AppShell({ children }) {
         )}
 
         {/* Main content area - scrollable container with fixed header/footer compensation */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>
+        <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none w-full max-w-[1000px] mx-auto" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>
           {children}
         </main>
 

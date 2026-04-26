@@ -26,6 +26,8 @@ import { spiritMeaningContent } from './journaling/spiritMeaningContent';
 import { bodySomaticContent } from './journaling/bodySomaticContent';
 import { natureConnectionContent } from './journaling/natureConnectionContent';
 import { routingTestModuleContent } from './master/routingTestModule';
+import { protectorDialogueP1Content } from './master/protectorDialogueP1';
+import { protectorDialogueP2Content } from './master/protectorDialogueP2';
 
 // Display order and labels for module categories in the Add Activity drawer
 export const MODULE_CATEGORIES = {
@@ -104,6 +106,7 @@ export const MODULE_TYPES = {
   // Leaves on a Stream (ACT cognitive defusion)
   'leaves-on-a-stream': { label: 'Leaves on a Stream', intensity: 2 },
   // Protector Dialogue (IFS) — linked two-part module
+  'protector-dialogue': { label: 'Dialogue with a Protector', intensity: 4 },
   'protector-dialogue-p1': { label: 'Meeting a Protector', intensity: 4 },
   'protector-dialogue-p2': { label: 'Understanding Your Protector', intensity: 4 },
   // Values Compass (ACT Matrix)
@@ -113,6 +116,8 @@ export const MODULE_TYPES = {
   // The Deep Dive (EFT) — linked two-part module
   'the-descent': { label: 'The Deep Dive', intensity: 5 },
   'the-cycle': { label: 'The Cycle', intensity: 4 },
+  // Stay With It (Coherence Therapy)
+  'stay-with-it': { label: 'Stay With It', intensity: 4 },
   'booster-consideration': { label: 'Booster Check-In', intensity: 1 },
   // Intention Setting (pre-session)
   'intention-setting': { label: 'Intention Setting', intensity: 1 },
@@ -970,7 +975,8 @@ export const moduleLibrary = [
   // Note: 'closing-ritual' is now a transition flow (ClosingRitual.jsx), not a module
 
   // === PROTECTOR DIALOGUE (IFS Framework) — Linked Two-Part Module ===
-  // Parent entry — shown in ModuleLibraryDrawer. Adding this creates both Part 1 and Part 2.
+  // MasterModule-driven. The parent entry is what shows up in the
+  // ModuleLibraryDrawer; selecting it adds Part 1 + Part 2 as linked parts.
   {
     id: 'protector-dialogue',
     type: 'protector-dialogue',
@@ -985,16 +991,16 @@ export const moduleLibrary = [
       { id: 'protector-dialogue-p1', title: 'Meeting a Protector (Part 1)', duration: 25, phase: 'same' },
       { id: 'protector-dialogue-p2', title: 'Understanding Your Protector (Part 2)', duration: 30, phase: 'integration' },
     ],
-    tags: ['IFS', 'parts-work', 'protector', 'dialogue', 'deep-work', 'guided', 'meditation'],
+    tags: ['IFS', 'parts-work', 'protector', 'dialogue', 'deep-work', 'guided', 'meditation', 'master-module'],
     framework: ['ifs'],
     content: { instructions: 'A two-part IFS practice. Part 1 guides you through meeting a protective part of yourself via meditation and reflection. Part 2 deepens the dialogue during integration, exploring what the protector guards and what it needs.' },
   },
-  // Part 1 — hidden from drawer, added automatically by linked parent
+  // Part 1 — hidden from drawer, added automatically by the linked parent.
   {
     id: 'protector-dialogue-p1',
     type: 'protector-dialogue-p1',
     category: 'activity',
-    title: 'Meeting a Protector (Part 1)',
+    title: 'Meeting a Protector',
     description: 'Guided meditation and reflection to meet a protective part of yourself.',
     defaultDuration: 25,
     allowedPhases: ['peak', 'integration'],
@@ -1002,33 +1008,31 @@ export const moduleLibrary = [
     isLinkedPart: true,
     linkedParentId: 'protector-dialogue',
     meditationId: 'protector-dialogue',
-    capabilities: {
-      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
-      layout: { centered: true, maxWidth: 'sm' },
-    },
-    tags: ['IFS', 'parts-work', 'protector', 'meditation'],
+    tags: ['IFS', 'parts-work', 'protector', 'meditation', 'master-module'],
     framework: ['ifs'],
-    content: { instructions: 'A guided flow to meet a protective part of yourself. You will move through a breath exercise, guided meditation, and a series of reflections to name the protector, notice where it lives in your body, and hear what it wants you to know.' },
+    content: {
+      instructions: 'A guided flow to meet a protective part of yourself. Walks through three short framings, a 12–15 minute meditation, and reflections to name the protector and notice where it lives in your body.',
+      masterModuleContent: protectorDialogueP1Content,
+    },
   },
-  // Part 2 — hidden from drawer, added automatically by linked parent
+  // Part 2 — hidden from drawer, added automatically by the linked parent.
   {
     id: 'protector-dialogue-p2',
     type: 'protector-dialogue-p2',
     category: 'activity',
-    title: 'Understanding Your Protector (Part 2)',
+    title: 'Understanding Your Protector',
     description: 'Deepen your dialogue with the protector you met. Journaling and reflection.',
     defaultDuration: 30,
     allowedPhases: ['peak', 'integration'],
     hidden: true,
     isLinkedPart: true,
     linkedParentId: 'protector-dialogue',
-    capabilities: {
-      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
-      layout: { centered: true, maxWidth: 'sm' },
-    },
-    tags: ['IFS', 'parts-work', 'protector', 'journaling'],
+    tags: ['IFS', 'parts-work', 'protector', 'journaling', 'master-module'],
     framework: ['ifs'],
-    content: { instructions: 'A guided integration exercise that continues the dialogue from Part 1. You will reconnect with the protector, explore its origins and what it fears, and move through a dialogue cycle of asking, listening, and responding.' },
+    content: {
+      instructions: 'A guided integration exercise that continues the dialogue from Part 1. Reconnect with the protector, explore its origins, fears, and needs, and move through a written dialogue cycle of asking, listening, and responding.',
+      masterModuleContent: protectorDialogueP2Content,
+    },
   },
 
   // === UTILITY MODULES (Any phase) ===

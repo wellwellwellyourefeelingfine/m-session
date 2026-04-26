@@ -136,6 +136,21 @@
  *                                   value)` directly.
  */
 
-const MASTER_CUSTOM_BLOCKS = {};
+// ExpandableBlock is shared with TransitionModule. It's already
+// MasterModule-aware (its imports reach into MasterModule's utils), so we
+// register the existing implementation directly rather than duplicating it.
+import ExpandableBlock from '../../../../session/TransitionModule/customBlocks/ExpandableBlock';
+import ProtectorReconnectionBlock from './ProtectorReconnectionBlock';
+import ProtectorFieldBlock from './ProtectorFieldBlock';
+import DialogueLoopBlock from './DialogueLoopBlock';
+import MeditationTimePillBlock from './MeditationTimePillBlock';
+
+const MASTER_CUSTOM_BLOCKS = {
+  expandable: ExpandableBlock,
+  'protector-reconnection': ProtectorReconnectionBlock,
+  'protector-field': ProtectorFieldBlock,
+  'dialogue-loop': DialogueLoopBlock,
+  'meditation-time-pill': MeditationTimePillBlock,
+};
 
 export default MASTER_CUSTOM_BLOCKS;

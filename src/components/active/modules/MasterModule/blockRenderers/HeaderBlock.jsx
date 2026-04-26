@@ -20,6 +20,7 @@ import Sunrise from '../../../capabilities/animations/Sunrise';
 import FullSun from '../../../capabilities/animations/FullSun';
 import Sunset from '../../../capabilities/animations/Sunset';
 import Moonrise from '../../../capabilities/animations/Moonrise';
+import { renderLineWithMarkup } from '../utils/renderContentLines';
 
 export const ANIMATION_MAP = {
   'ascii-moon': AsciiMoon,
@@ -34,8 +35,10 @@ export const ANIMATION_MAP = {
   'moonrise': Moonrise,
 };
 
-export default function HeaderBlock({ block }) {
-  const Animation = ANIMATION_MAP[block.animation || 'ascii-moon'];
+export default function HeaderBlock({ block, accentTerms }) {
+  // animation: undefined → default to ascii-moon. animation: null → no animation.
+  const animationKey = block.animation === null ? null : (block.animation || 'ascii-moon');
+  const Animation = animationKey ? ANIMATION_MAP[animationKey] : null;
   const titleClassName = block.titleClassName || 'text-xl font-light mb-2 text-center';
   const animationProps = block.animationProps || {};
 
@@ -46,7 +49,7 @@ export default function HeaderBlock({ block }) {
           className={titleClassName}
           style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
         >
-          {block.title}
+          {renderLineWithMarkup(block.title, accentTerms)}
         </h2>
       )}
       {Animation && (

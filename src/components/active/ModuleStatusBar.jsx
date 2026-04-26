@@ -60,7 +60,7 @@ export default function ModuleStatusBar({
           (progress, labels) don't replay the animation. */}
       <div className="fixed left-0 right-0 z-30 animate-fadeIn" style={{ top: 'var(--header-height)' }}>
         {/* Status content */}
-        <div className="flex items-center px-4 py-2 gap-3">
+        <div className="flex items-center px-4 py-2 gap-3 max-w-[1000px] mx-auto">
           {/* Left: Label */}
           <div className="flex items-center flex-shrink-0">
             <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">

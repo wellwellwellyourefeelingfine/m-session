@@ -5,6 +5,10 @@
  * - useMeditationPlayback for audio-text sync
  * - useSyncedDuration for variable duration
  * - Variation selector for meditations with multiple versions (e.g., self-compassion)
+ * - Voice selector when the meditation declares multiple voices — pill lives
+ *   on this section's idle so the user picks the voice immediately before
+ *   audio composition. Begin → MeditationLoadingScreen composes the chosen
+ *   voice's clips, then fades to playback.
  * - MorphingShapes animation during playback
  * - VolumeButton left slot, TranscriptModal right slot
  * - ±10s seek controls
@@ -12,17 +16,20 @@
  * On playback completion → onSectionComplete (not module completion).
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   calculateSilenceMultiplier,
   generateTimedSequence,
+  resolveEffectiveVoiceId,
 } from '../../../../../content/meditations';
 import { useMeditationPlayback } from '../../../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../../../hooks/useTranscriptModal';
 import useSyncedDuration from '../../../../../hooks/useSyncedDuration';
+import { useAppStore } from '../../../../../stores/useAppStore';
 
 import ModuleLayout, { IdleScreen, DurationPill } from '../../../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../../../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../../../capabilities/ModuleControlBar';
 import TranscriptModal, { TranscriptIcon } from '../../../capabilities/TranscriptModal';
 import { EggIcon } from '../../../../shared/Icons';
@@ -50,13 +57,23 @@ export default function MeditationSection({
     meditation?.defaultVariation || 'default'
   );
 
+  // Voice selection — initialized from the global default preference, overridable
+  // on the idle screen. The selected voice flows into generateTimedSequence so the
+  // composer fetches the right clip URLs when Begin starts loading.
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
+
   // Duration sync (for variable-duration meditations without variations)
   const duration = useSyncedDuration(module, { hasStarted: false });
 
   // Transcript modal
   const transcript = useTranscriptModal();
 
-  // Build timed sequence — variation-aware
+  // Build timed sequence — variation-aware and voice-aware. Rebuilds when the
+  // voice pill is cycled so audio URLs point to the chosen voice's folder.
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
@@ -70,6 +87,7 @@ export default function MeditationSection({
         speakingRate: meditation.speakingRate || 150,
         audioConfig: meditation.audio,
         meditationId,
+        voiceId: selectedVoiceId,
       });
       const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : fixedDuration;
       return [sequence, total];
@@ -85,16 +103,17 @@ export default function MeditationSection({
     });
 
     const silenceMultiplier = calculateSilenceMultiplier(
-      prompts, durationSeconds, meditation.speakingRate || 150, meditationId
+      prompts, durationSeconds, meditation.speakingRate || 150, meditationId, selectedVoiceId
     );
     const sequence = generateTimedSequence(prompts, silenceMultiplier, {
       speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       meditationId,
+      voiceId: selectedVoiceId,
     });
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
     return [sequence, total];
-  }, [meditation, hasVariations, selectedVariation, duration.selected, meditationId]);
+  }, [meditation, hasVariations, selectedVariation, duration.selected, meditationId, selectedVoiceId]);
 
   // Get current variation's prompts for the transcript modal
   const transcriptPrompts = useMemo(() => {
@@ -117,13 +136,26 @@ export default function MeditationSection({
     composerOptions: section.composerOptions,
   });
 
-  // Fade transition state for idle → active
-  const [isLeaving, setIsLeaving] = useState(false);
+  // Sync the idle-screen voice pill with the global default preference. The
+  // store's `defaultVoiceId` only updates when the user commits a change in
+  // Settings, so this fires at that moment and never during rapid toggling.
+  // Skipped once playback has started so an in-flight session isn't disturbed.
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
 
-  // Begin with fade transition
+  // Begin → idle-leaving → preparing (loading screen) → preparing-leaving → active.
+  // The composer reads the current `timedSequence`, which is voice-aware, so
+  // the loading screen is the moment the chosen voice's audio is fetched.
+  // Once preparing starts, the idle pill is unmounted so voice changes are
+  // inert — the closure captures the timedSequence at Begin time.
   const handleBeginWithTransition = useCallback(() => {
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 400);
+    playback.handleBeginWithTransition();
   }, [playback]);
 
   if (!meditation) {
@@ -165,13 +197,19 @@ export default function MeditationSection({
           </div>
         )}
 
-        {/* Idle — before starting meditation */}
-        {!playback.error && !playback.hasStarted && !playback.isLoading && (
-          <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+        {/* Idle — before starting meditation. Visible during 'idle' and
+            'idle-leaving' (the latter applies the fadeOut class). */}
+        {!playback.error &&
+          !playback.hasStarted &&
+          (playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') && (
+          <div className={`text-center ${playback.transitionStage === 'idle-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
             <IdleScreen
               title={meditation.title}
               description={meditation.description}
-              duration={displayDuration}
+              durationMinutes={displayDuration}
+              voices={voices}
+              selectedVoiceId={selectedVoiceId}
+              onVoiceChange={setSelectedVoiceId}
             />
 
             {/* Variation selector (e.g., self-compassion, felt-sense) */}
@@ -232,17 +270,18 @@ export default function MeditationSection({
           </div>
         )}
 
-        {/* Loading state — composing meditation audio */}
-        {playback.isLoading && (
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
+        {/* Loading state — composing meditation audio for the chosen voice.
+            Fades in on 'preparing', out on 'preparing-leaving'. */}
+        {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+          <MeditationLoadingScreen
+            isLeaving={playback.transitionStage === 'preparing-leaving'}
+          />
         )}
 
-        {/* Active + Completed — header and animation stay visible until user clicks Continue */}
-        {playback.hasStarted && (
+        {/* Active + Completed — header and animation stay visible until user clicks Continue.
+            Gated on transitionStage === 'active' so the loading screen finishes fading
+            out before this fades in (sequential, not overlapping). */}
+        {playback.hasStarted && playback.transitionStage === 'active' && (
           <div
             className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
@@ -277,13 +316,13 @@ export default function MeditationSection({
 
       <ModuleControlBar
         phase={playback.getPhase()}
-        primary={
-          playback.isComplete
-            ? { label: 'Continue', onClick: () => { playback.handleComplete(); } }
-            : !playback.hasStarted || playback.isLoading
-              ? { label: 'Begin', onClick: handleBeginWithTransition }
-              : playback.getPrimaryButton()
-        }
+        primary={(() => {
+          const phase = playback.getPhase();
+          if (phase === 'idle') return { label: 'Begin', onClick: handleBeginWithTransition };
+          if (phase === 'loading') return { label: 'Loading', loading: true };
+          if (playback.isComplete) return { label: 'Continue', onClick: () => { playback.handleComplete(); } };
+          return playback.getPrimaryButton();
+        })()}
         showBack={canGoBackToPreviousSection && Boolean(onBackToPreviousSection)}
         onBack={onBackToPreviousSection}
         backConfirmMessage={

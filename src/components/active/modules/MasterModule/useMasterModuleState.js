@@ -20,7 +20,13 @@ import expandScreenToBlocks from './utils/expandScreenToBlocks';
 const FADE_MS = 400;
 const VIEWER_CLOSE_BUFFER = 50;
 
-export default function useMasterModuleState(content, module) {
+export default function useMasterModuleState(content, module, callbacks = {}) {
+  // Parent-supplied callbacks. `onModuleComplete` runs when the module ends
+  // via sequential advance past the final section, a terminal section's
+  // advance, or a `_complete` route — bypassing the legacy "Well Done"
+  // completion screen so the timeline moves on directly. `onModuleSkip`
+  // runs when Skip is pressed on the last section in main flow.
+  const { onModuleComplete, onModuleSkip } = callbacks;
   // ── Navigation state ──────────────────────────────────────────────────────
 
   const [modulePhase, setModulePhase] = useState('idle'); // 'idle' | 'active' | 'complete'
@@ -61,51 +67,53 @@ export default function useMasterModuleState(content, module) {
   const [viewerState, setViewerState] = useState({ open: false, closing: false, generatorId: null });
 
   // ── Prompt indexing (blocks-aware) ──────────────────────────────────────────
-
-  // Build a flat list of all blocks with global prompt indices assigned.
-  // Walks screens → blocks so multi-prompt screens get separate indices.
-  const allBlocksWithPromptIndex = useMemo(() => {
-    if (!content?.sections) return [];
-    let promptCounter = 0;
+  //
+  // Prompts are keyed by OBJECT REFERENCE, not by walk order. A single
+  // prompt block shared across multiple screens (the progressive-reveal
+  // pattern in `persistBlocks` sections — author defines the prompt as a
+  // module-level const and spreads the same reference into screens 1..N)
+  // gets ONE stable `promptIndex` across every appearance, so the user's
+  // response at responses[promptIndex] follows the block wherever it's
+  // rendered. Without this dedupe, each screen's copy would get a fresh
+  // index and the textarea would read responses[undefined] on the next
+  // screen, making progressive reveal lose typed content.
+  //
+  // The two views (allBlocksWithPromptIndex + sectionScreensMap) share the
+  // same counter + seen-map so they agree on which prompt owns which index.
+  const { allBlocksWithPromptIndex, sectionScreensMap } = useMemo(() => {
     const blocks = [];
-    content.sections.forEach((section) => {
-      if (section.type === 'screens' && section.screens) {
-        section.screens.forEach((screen) => {
-          const expanded = expandScreenToBlocks(screen, module.title);
-          expanded.forEach((block) => {
-            if (block.type === 'prompt') {
-              blocks.push({ ...block, promptIndex: promptCounter++, sectionId: section.id });
-            } else {
-              blocks.push({ ...block, sectionId: section.id });
-            }
-          });
-        });
-      }
-    });
-    return blocks;
-  }, [content, module.title]);
-
-  // Build per-section screens with blocks expanded and prompt indices assigned.
-  // Each screen in the map has a `blocks` array with prompt indices set.
-  const sectionScreensMap = useMemo(() => {
-    if (!content?.sections) return {};
-    let promptCounter = 0;
     const map = {};
-    content.sections.forEach((section) => {
-      if (section.type === 'screens' && section.screens) {
-        map[section.id] = section.screens.map((screen) => {
-          const expanded = expandScreenToBlocks(screen, module.title);
-          const indexedBlocks = expanded.map((block) => {
-            if (block.type === 'prompt') {
-              return { ...block, promptIndex: promptCounter++ };
-            }
-            return block;
-          });
-          return { ...screen, blocks: indexedBlocks };
-        });
+    if (!content?.sections) return { allBlocksWithPromptIndex: blocks, sectionScreensMap: map };
+
+    const promptIndexByBlock = new Map();
+    let promptCounter = 0;
+    const assignPromptIndex = (block) => {
+      let idx = promptIndexByBlock.get(block);
+      if (idx === undefined) {
+        idx = promptCounter++;
+        promptIndexByBlock.set(block, idx);
       }
+      return idx;
+    };
+
+    content.sections.forEach((section) => {
+      if (section.type !== 'screens' || !section.screens) return;
+      map[section.id] = section.screens.map((screen) => {
+        const expanded = expandScreenToBlocks(screen, module.title);
+        const indexedBlocks = expanded.map((block) => {
+          if (block.type === 'prompt') {
+            const promptIndex = assignPromptIndex(block);
+            blocks.push({ ...block, promptIndex, sectionId: section.id });
+            return { ...block, promptIndex };
+          }
+          blocks.push({ ...block, sectionId: section.id });
+          return block;
+        });
+        return { ...screen, blocks: indexedBlocks };
+      });
     });
-    return map;
+
+    return { allBlocksWithPromptIndex: blocks, sectionScreensMap: map };
   }, [content, module.title]);
 
   // ── Derived state ─────────────────────────────────────────────────────────
@@ -145,6 +153,37 @@ export default function useMasterModuleState(content, module) {
     }, FADE_MS);
   }, [module.instanceId]);
 
+  const finalizeModule = useCallback(() => {
+    // Save journal entry if configured. Same logic as the (now-deprecated)
+    // CompletionScreen's Continue button, just hoisted up so the user's last
+    // Continue press completes the module directly without a "Well Done"
+    // intermediate page.
+    if (content?.journal?.saveOnComplete) {
+      const entryText = assembleJournalEntry({
+        titlePrefix: content.journal.titlePrefix || module.title?.toUpperCase() || 'MODULE',
+        allScreens: allBlocksWithPromptIndex,
+        responses,
+        selectorValues,
+        selectorJournals,
+        conditionContext: { choiceValues, selectorValues, visitedSections },
+        storeState: useSessionStore.getState(),
+      });
+      if (entryText.split('\n').length > 1) {
+        addEntry({
+          content: entryText,
+          source: 'session',
+          sessionId,
+          moduleTitle: module.title,
+        });
+      }
+    }
+    onModuleComplete?.();
+    // Keep the phase set to 'complete' as a fallback for any consumer that
+    // peeks at it post-completion. The actual UI doesn't render anything
+    // here because onModuleComplete is expected to advance the timeline.
+    setModulePhase('complete');
+  }, [content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId, onModuleComplete]);
+
   const advanceSection = useCallback(() => {
     // Track that we completed this section
     if (currentSection?.id) {
@@ -155,7 +194,7 @@ export default function useMasterModuleState(content, module) {
 
     // Terminal sections end the module regardless of what sits after them.
     if (currentSection?.terminal === true) {
-      setModulePhase('complete');
+      finalizeModule();
       return;
     }
 
@@ -165,10 +204,26 @@ export default function useMasterModuleState(content, module) {
     // entry that `routeToSection` wrote on entry. The net effect: the round-trip
     // leaves no history residue, so Back from the gate returns to what was
     // before the gate, not back into the completed detour.
+    //
+    // Stale-bookmark guard: `bookmark: true` resolves to currentSectionIndex+1
+    // at route time. When the detour sits sequentially after its gate (gate
+    // at N, detour at N+1), the bookmark resolves to the detour's own index.
+    // After the detour completes the bookmark would land us back on the
+    // section we just finished — a no-op setCurrentSectionIndex call that
+    // leaves ScreensSection mounted with its faded-out state intact, i.e. a
+    // blank screen until the user presses Continue a second time. Same
+    // failure mode if a continuation points to any already-visited section.
+    // In those cases we drop the bookmark and fall through to sequential
+    // advance below, which correctly skips past visited sections.
     if (routeStack.length > 0) {
       const continuationIndex = routeStack[routeStack.length - 1];
       setRouteStack((prev) => prev.slice(0, -1));
-      if (continuationIndex < sections.length) {
+      const continuationId = sections[continuationIndex]?.id;
+      const isStaleBookmark =
+        continuationIndex >= sections.length
+        || continuationIndex === currentSectionIndex
+        || visitedSections.includes(continuationId);
+      if (!isStaleBookmark) {
         setSectionHistory((prev) => (
           prev.length > 0 && prev[prev.length - 1] === continuationIndex
             ? prev.slice(0, -1)
@@ -177,6 +232,7 @@ export default function useMasterModuleState(content, module) {
         setCurrentSectionIndex(continuationIndex);
         return;
       }
+      // Fall through to sequential advance.
     }
 
     // Normal sequential advance — skip already-visited sections
@@ -185,12 +241,12 @@ export default function useMasterModuleState(content, module) {
       nextIndex++;
     }
     if (nextIndex >= sections.length) {
-      setModulePhase('complete');
+      finalizeModule();
     } else {
       setSectionHistory((prev) => [...prev, currentSectionIndex]);
       setCurrentSectionIndex(nextIndex);
     }
-  }, [currentSectionIndex, currentSection, sections, routeStack, visitedSections]);
+  }, [currentSectionIndex, currentSection, sections, routeStack, visitedSections, finalizeModule]);
 
   const routeToSection = useCallback((routeConfig) => {
     // Normalize: string → skip-ahead (no bookmark), object passes through
@@ -207,7 +263,7 @@ export default function useMasterModuleState(content, module) {
 
     // Special routes
     if (config.to === '_next') { advanceSection(); return; }
-    if (config.to === '_complete') { setModulePhase('complete'); return; }
+    if (config.to === '_complete') { finalizeModule(); return; }
 
     // Find target section
     const targetIndex = sectionIndexById(config.to);
@@ -345,10 +401,27 @@ export default function useMasterModuleState(content, module) {
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Skip handler (saves partial data) ─────────────────────────────────────
-
+  // ── Skip handler ───────────────────────────────────────────────────────────
+  //
+  // Skip advances to the NEXT SECTION rather than abandoning the whole module.
+  // Only the final section's Skip ends the module (saves journal + fires the
+  // parent onSkip). This keeps Skip useful for "I'm done with this part, but
+  // I want to keep going through the activity" — the more common intent in
+  // multi-section MasterModule activities than a full module bail-out.
+  //
+  // Detour Skip (inside a bookmark-routed section) still works the same way:
+  // advanceSection pops the bookmark and lands the user back on the gate.
   const handleSkip = useCallback((onSkip) => {
-    // Save whatever we have so far
+    const isLastSection = routeStack.length === 0
+      && currentSectionIndex >= sections.length - 1;
+
+    if (!isLastSection) {
+      advanceSection();
+      return;
+    }
+
+    // Last section in main flow — finalize + abandon. Save partial data and
+    // hand control back to the parent so the timeline moves on.
     if (content?.journal?.saveOnComplete) {
       const entryText = assembleJournalEntry({
         titlePrefix: content.journal.titlePrefix || module.title?.toUpperCase() || 'MODULE',
@@ -369,7 +442,28 @@ export default function useMasterModuleState(content, module) {
       }
     }
     onSkip();
-  }, [content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId]);
+  }, [routeStack, currentSectionIndex, sections.length, advanceSection, content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId]);
+
+  // ── Back-to-idle ──────────────────────────────────────────────────────────
+  //
+  // When the user is on the very first screen of the very first section and
+  // presses Back, we drop them back on the module's idle screen. Press
+  // Begin again to re-enter — responses + nav state are preserved (the hook
+  // keeps state across phase transitions). Used by ScreensSection to chain
+  // its Back fallback: previous screen → previous section → idle.
+  const goBackToIdle = useCallback(() => {
+    setModulePhase('idle');
+    setCurrentSectionIndex(0);
+    setSectionHistory([]);
+    setRouteStack([]);
+  }, []);
+
+  // True when the current section is the last section in main flow (no
+  // bookmark to pop, currentSectionIndex is at the final array entry). Used
+  // by ScreensSection to relabel the primary "Continue" → "Complete" on the
+  // section's last screen.
+  const isLastSection = routeStack.length === 0
+    && currentSectionIndex >= sections.length - 1;
 
   return {
     // Navigation
@@ -380,6 +474,9 @@ export default function useMasterModuleState(content, module) {
     isLeaving,
     routeStack,
     canGoBackToPreviousSection,
+    goBackToIdle,
+    isLastSection,
+    finalizeModule,
 
     // Data
     responses,

@@ -6,6 +6,7 @@
  */
 
 import { useJournalStore } from '../../../../../stores/useJournalStore';
+import { renderLineWithMarkup, substituteTokensPlain } from '../utils/renderContentLines';
 
 export default function PromptBlock({
   screen,
@@ -13,6 +14,7 @@ export default function PromptBlock({
   onChange,
   promptNumber,
   totalPrompts,
+  accentTerms,
 }) {
   const settings = useJournalStore((state) => state.settings);
 
@@ -40,25 +42,33 @@ export default function PromptBlock({
     }
   };
 
+  // Placeholder is a plain string attribute — substitute tokens but no JSX.
+  const resolvedPlaceholder = substituteTokensPlain(
+    screen.placeholder || 'Write freely...',
+    accentTerms
+  );
+
   return (
     <div>
       {screen.context && (
         <p className="text-[var(--color-text-primary)] text-sm uppercase tracking-wider leading-relaxed mb-3">
-          {screen.context}
+          {renderLineWithMarkup(screen.context, accentTerms)}
         </p>
       )}
 
-      <p
-        className="text-base mb-3 text-[var(--color-text-primary)]"
-        style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-      >
-        {screen.prompt}
-      </p>
+      {screen.prompt && (
+        <p
+          className="text-base mb-3 text-[var(--color-text-primary)]"
+          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+        >
+          {renderLineWithMarkup(screen.prompt, accentTerms)}
+        </p>
+      )}
 
       <textarea
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={screen.placeholder || 'Write freely...'}
+        placeholder={resolvedPlaceholder}
         rows={screen.rows || 6}
         className={`w-full py-3 px-4 border border-[var(--color-border)] bg-transparent
           focus:outline-none focus:border-[var(--accent)]

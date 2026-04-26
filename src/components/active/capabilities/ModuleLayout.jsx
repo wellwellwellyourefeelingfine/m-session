@@ -166,7 +166,10 @@ export function CompletionScreen({
 /**
  * Voice Pill Component
  * Cycles through available meditation voices with < / > arrows. Used on
- * meditation idle screens when the content declares multiple voices.
+ * meditation idle screens when the content declares one or more voices.
+ * With a single voice the pill still renders, with arrows greyed out — same
+ * shape so the layout is consistent across meditations regardless of how
+ * many voices they ship.
  * The active voice name fades out/in when cycling.
  */
 function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
@@ -176,6 +179,8 @@ function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
   const [isFaded, setIsFaded] = useState(false);
   const prevActiveIdRef = useRef(activeVoice?.id);
   const swapTimerRef = useRef(null);
+
+  const canCycle = voices.length > 1 && typeof onVoiceChange === 'function';
 
   // When selectedVoiceId changes, fade the current name out, swap the label,
   // then fade the new name in. Tracks the last-processed id via ref so that
@@ -198,11 +203,14 @@ function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
   }, [activeVoice]);
 
   const cycle = (delta) => {
+    if (!canCycle) return;
     const next = voices[(activeIndex + delta + voices.length) % voices.length];
     if (next && next.id !== selectedVoiceId) onVoiceChange(next.id);
   };
 
-  const arrowClass = 'flex items-center justify-center w-7 h-7 rounded-full text-[var(--accent)] hover:opacity-70 active:opacity-50 transition-opacity';
+  const arrowBase = 'flex items-center justify-center w-7 h-7 rounded-full text-[var(--accent)] transition-opacity';
+  const arrowActive = 'hover:opacity-70 active:opacity-50';
+  const arrowDisabled = 'opacity-30 cursor-not-allowed';
   const opacityClass = isFaded ? 'opacity-0' : 'opacity-100';
 
   return (
@@ -211,8 +219,9 @@ function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
     <div className="!mt-3 flex items-center justify-center gap-2">
       <button
         type="button"
-        onClick={() => cycle(-1)}
-        className={arrowClass}
+        onClick={canCycle ? () => cycle(-1) : undefined}
+        disabled={!canCycle}
+        className={`${arrowBase} ${canCycle ? arrowActive : arrowDisabled}`}
         aria-label="Previous voice"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -232,8 +241,9 @@ function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
 
       <button
         type="button"
-        onClick={() => cycle(1)}
-        className={arrowClass}
+        onClick={canCycle ? () => cycle(1) : undefined}
+        disabled={!canCycle}
+        className={`${arrowBase} ${canCycle ? arrowActive : arrowDisabled}`}
         aria-label="Next voice"
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -344,6 +354,11 @@ export function DurationPill({ minutes, canStepBack, canStepForward, onStepBack,
  */
 export function IdleScreen({
   title,
+  // Optional accent-coloured subtitle rendered between the title and the
+  // animation. Used by MasterModule activities to label parts (e.g.
+  // "PART 1: MEETING A PROTECTOR") so the main title can stay unified
+  // ("Dialogue with a Protector") across linked parts of the same activity.
+  subtitle,
   description,
   animation,
   voices,
@@ -358,7 +373,10 @@ export function IdleScreen({
   // to the `durationMinutes` pill (MasterModule, MeditationSection).
   duration,
 }) {
-  const showVoicePill = Array.isArray(voices) && voices.length > 1 && typeof onVoiceChange === 'function';
+  // Render the voice pill whenever the meditation declares any voices, even
+  // a single one — keeps the layout consistent across meditations. With a
+  // single voice the cycle arrows render greyed-out (no-op).
+  const showVoicePill = Array.isArray(voices) && voices.length >= 1;
   const showDurationPill = typeof durationMinutes === 'number';
   const showDurationArrows = typeof onDurationStepBack === 'function' && typeof onDurationStepForward === 'function';
   const showLegacyDuration = !showDurationPill && duration;
@@ -372,6 +390,15 @@ export function IdleScreen({
         >
           {title}
         </h2>
+      )}
+
+      {subtitle && (
+        <p
+          className="text-xs uppercase tracking-wider text-[var(--accent)] text-center"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
+        >
+          {subtitle}
+        </p>
       )}
 
       <div className="flex justify-center">

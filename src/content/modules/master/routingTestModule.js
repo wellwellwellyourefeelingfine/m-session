@@ -24,11 +24,6 @@ export const routingTestModuleContent = {
 
   idleAnimation: 'moonrise',
 
-  completion: {
-    title: 'Routing test complete',
-    message: 'The routing and bookmark system worked correctly.',
-  },
-
   journal: {
     saveOnComplete: true,
     titlePrefix: 'ROUTING TEST',
