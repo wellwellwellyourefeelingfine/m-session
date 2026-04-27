@@ -22,6 +22,7 @@ import {
   calculateSilenceMultiplier,
   generateTimedSequence,
   resolveEffectiveVoiceId,
+  estimateMeditationDurationSeconds,
 } from '../../../../../content/meditations';
 import { useMeditationPlayback } from '../../../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../../../hooks/useTranscriptModal';
@@ -80,16 +81,18 @@ export default function MeditationSection({
     // If meditation has variations, use assembleVariation to get the clip array
     if (hasVariations) {
       const clips = meditation.assembleVariation(selectedVariation);
-      const variationMeta = meditation.variations[selectedVariation];
-      const fixedDuration = variationMeta?.duration || duration.selected * 60;
 
       const sequence = generateTimedSequence(clips, 1.0, {
-        speakingRate: meditation.speakingRate || 150,
         audioConfig: meditation.audio,
         meditationId,
         voiceId: selectedVoiceId,
       });
-      const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : fixedDuration;
+      const total = sequence.length > 0
+        ? sequence[sequence.length - 1].endTime
+        : estimateMeditationDurationSeconds(meditation, {
+            voiceId: selectedVoiceId,
+            variationKey: selectedVariation,
+          });
       return [sequence, total];
     }
 
@@ -103,10 +106,9 @@ export default function MeditationSection({
     });
 
     const silenceMultiplier = calculateSilenceMultiplier(
-      prompts, durationSeconds, meditation.speakingRate || 150, meditationId, selectedVoiceId
+      prompts, durationSeconds, meditationId, selectedVoiceId
     );
     const sequence = generateTimedSequence(prompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       meditationId,
       voiceId: selectedVoiceId,
@@ -175,11 +177,17 @@ export default function MeditationSection({
     );
   }
 
-  // Display duration for idle screen — prefer explicit fixedDuration (in seconds)
-  // when the meditation declares one (e.g. transition-opening, transition-closing),
-  // otherwise fall back to the module's synced duration.
+  // Display duration for idle screen — voice-aware, ceil-rounded for variation
+  // meditations; for non-variation meditations with an explicit fixedDuration,
+  // keep the existing behavior (round, voice-blind). For pure variable-duration,
+  // show the user's picked step.
   const displayDuration = hasVariations
-    ? Math.round((meditation.variations[selectedVariation]?.duration || 0) / 60)
+    ? Math.ceil(
+        estimateMeditationDurationSeconds(meditation, {
+          voiceId: selectedVoiceId,
+          variationKey: selectedVariation,
+        }) / 60
+      )
     : meditation.fixedDuration
       ? Math.round(meditation.fixedDuration / 60)
       : duration.selected;
@@ -235,9 +243,6 @@ export default function MeditationSection({
                           {v.description}
                         </p>
                       </div>
-                      <span className="text-xs text-[var(--color-text-tertiary)] ml-3 flex-shrink-0 mt-0.5">
-                        ~{Math.round(v.duration / 60)} min
-                      </span>
                     </div>
                   </button>
                 ))}

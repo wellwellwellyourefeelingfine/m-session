@@ -12,12 +12,8 @@
  * 21 total unique prompts: 15 shared + 3 couple-only + 2 solo-only
  *
  * Audio: /audio/meditations/the-cycle-closing/{promptId}.mp3
- * Fixed duration per mode (no DurationPicker)
+ * Fixed duration per mode
  */
-
-import audioDurations from './audio-durations.json' with { type: 'json' };
-
-const SPEAKING_RATE = 90; // words per minute — same as The Deep Dive
 
 // ============================================
 // ALL PROMPTS (21 total)
@@ -202,37 +198,6 @@ function assembleVariation(mode) {
   return allPrompts.filter(p => !p.variationOnly || p.variationOnly === mode);
 }
 
-/**
- * Calculate the speaking duration for a prompt using the audio manifest.
- * Falls back to word-count estimation if no audio file exists yet.
- */
-function calculatePromptSpeakingDuration(prompt) {
-  const manifestDuration = audioDurations['the-cycle-closing']?.[prompt.id];
-  if (manifestDuration) return manifestDuration;
-  const wordCount = prompt.text.split(' ').length;
-  return (wordCount / SPEAKING_RATE) * 60;
-}
-
-/**
- * Calculate the total raw duration for a mode (before rounding)
- */
-function calculateRawDuration(mode) {
-  const prompts = assembleVariation(mode);
-  return prompts.reduce((sum, prompt) => {
-    return sum + calculatePromptSpeakingDuration(prompt) + prompt.baseSilenceAfter;
-  }, 0);
-}
-
-/**
- * Calculate the rounded duration for a mode (nearest whole minute, rounded up)
- */
-function calculateVariationDuration(mode) {
-  const rawSeconds = calculateRawDuration(mode);
-  const minutes = Math.ceil(rawSeconds / 60);
-  return minutes * 60;
-}
-
-
 // ============================================
 // EXPORTED MEDITATION OBJECT
 // ============================================
@@ -248,29 +213,26 @@ export const theCycleClosingMeditation = {
     format: 'mp3',
   },
 
-  speakingRate: SPEAKING_RATE,
-
-  // Fixed duration per mode (no DurationPicker)
+  // Fixed duration per mode
   isFixedDuration: true,
 
   defaultVariation: 'solo',
 
+  // Display durations are derived at runtime via estimateMeditationDurationSeconds
+  // (voice-aware) — see TheCycleModule.
   variations: {
     solo: {
       key: 'solo',
       label: 'Solo',
       description: 'Closing meditation for solo mode.',
-      duration: calculateVariationDuration('solo'),
     },
     couple: {
       key: 'couple',
       label: 'With a Partner',
       description: 'Closing meditation with shared moments.',
-      duration: calculateVariationDuration('couple'),
     },
   },
 
   prompts: allPrompts,
   assembleVariation,
-  calculatePromptSpeakingDuration,
 };

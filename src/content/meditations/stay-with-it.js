@@ -35,9 +35,6 @@ export const stayWithItMeditation = {
     ],
   },
 
-  // Speaking rate — slower for peak state (90 WPM vs typical 150)
-  speakingRate: 90,
-
   prompts: [
     // === MOVEMENT 1: ARRIVING AND ESTABLISHING SAFETY ===
     {

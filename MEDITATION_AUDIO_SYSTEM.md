@@ -30,7 +30,7 @@ The meditation system plays guided meditations as a **single continuous MP3 blob
 ```
 
 **Two orchestrator hooks:**
-- **`useMeditationPlayback`** — for TTS modules (BodyScan, OpenAwareness, SelfCompassion, SimpleGrounding, ShortGrounding, FeltSense, LeavesOnAStream, StayWithIt). Handles audio-text sync, prompt progression, text fade animations.
+- **`useMeditationPlayback`** — for TTS modules (BodyScan, OpenAwareness, SelfCompassion, SimpleGrounding, ShortGrounding, FeltSense, LeavesOnAStream, StayWithIt, TheDescent, TheCycle, plus `MeditationSection` inside MasterModule for Protector Dialogue). Handles audio-text sync, prompt progression, text fade animations.
 - **`useSilenceTimer`** — for non-TTS modules (OpenSpace, MusicListening). Simpler: gong-bookended silence blob with elapsed timer. Supports mid-session `resize()`.
 
 Both share `useAudioPlayback` as their audio engine and `useSessionStore.meditationPlayback` for state coordination.
@@ -39,7 +39,7 @@ Both share `useAudioPlayback` as their audio engine and `useSessionStore.meditat
 
 ## Content Definitions
 
-**Files:** `src/content/meditations/body-scan.js`, `open-awareness.js`, `self-compassion.js`, `simple-grounding.js`, `short-grounding.js`, `felt-sense.js`, `leaves-on-a-stream.js`, `stay-with-it.js`
+**Files:** one per meditation in `src/content/meditations/` — `body-scan.js`, `open-awareness.js`, `self-compassion.js`, `simple-grounding.js`, `short-grounding.js`, `felt-sense.js`, `leaves-on-a-stream.js`, `stay-with-it.js`, `protector-dialogue.js`, `the-descent.js`, `the-cycle-closing.js`, `pendulation.js`, plus the transition meditations (`transition-opening.js`, `transition-centering-breath.js`, `transition-closing.js`).
 
 Each meditation exports a content object. There are two patterns:
 
@@ -55,7 +55,6 @@ Body Scan, Open Awareness — user selects a target duration via an inline pill 
   minDuration: 600,
   maxDuration: 900,
   durationSteps: [10, 15],
-  speakingRate: 150,
   audio: { basePath: '/audio/meditations/body-scan/', format: 'mp3' },
   prompts: [
     { id: 'settling-01', text: 'Let yourself settle...', baseSilenceAfter: 3, silenceExpandable: true, silenceMax: 15 },
@@ -66,7 +65,7 @@ Body Scan, Open Awareness — user selects a target duration via an inline pill 
 
 ### Fixed-duration meditations (display-only pill)
 
-Simple Grounding, Short Grounding — single fixed length. Self-Compassion, Felt Sense — variations with pre-calculated durations.
+Simple Grounding, Short Grounding — single fixed length. Self-Compassion, Felt Sense, The Descent, The Cycle Closing — variations.
 
 ```js
 // Simple fixed duration
@@ -77,14 +76,14 @@ Simple Grounding, Short Grounding — single fixed length. Self-Compassion, Felt
   // ...
 }
 
-// Variation-based fixed duration (Felt Sense, Self-Compassion)
+// Variation-based fixed duration (Felt Sense, Self-Compassion, etc.)
 {
   id: 'felt-sense',
   isFixedDuration: true,
   defaultVariation: 'default',
   variations: {
-    default: { key: 'default', label: 'A Gentle Practice', duration: calculateVariationDuration('default') },
-    'going-deeper': { key: 'going-deeper', label: 'Going Deeper', duration: calculateVariationDuration('going-deeper') },
+    default:        { key: 'default',       label: 'A Gentle Practice',  description: 'Settle in...' },
+    'going-deeper': { key: 'going-deeper',  label: 'Going Deeper',       description: 'The full practice...' },
   },
   assembleVariation, // filters prompts by variationOnly field, applies defaultSilenceAfter overrides
   // ...
@@ -93,16 +92,20 @@ Simple Grounding, Short Grounding — single fixed length. Self-Compassion, Felt
 
 Variation-based meditations use `assembleVariation(variationKey)` to filter and configure prompts. Prompts can have `variationOnly: 'going-deeper'` to be included only in that variation, and `defaultSilenceAfter` to override `baseSilenceAfter` for the default (shorter) variation.
 
+Variations carry no precomputed `duration` field — the displayed `~N min` is derived at runtime via `estimateMeditationDurationSeconds(meditation, { voiceId, variationKey })` (voice-aware, ceil-rounded). This is what feeds the shared `DurationPill` rendered below the variation cards on the idle screen.
+
 ### Prompt fields
 
 Each prompt object has:
 - `id` — doubles as the MP3 filename: `{basePath}{id}.{format}`
-- `text` — displayed text and used for word-count fallback duration
+- `text` — displayed text shown below the animation while the clip plays
 - `baseSilenceAfter` — silence gap in seconds after this clip
 - `silenceExpandable` (optional) — if true, silence scales with the multiplier
 - `silenceMax` (optional) — cap on expanded silence
 - `variationOnly` (optional) — only include in this variation
 - `defaultSilenceAfter` (optional) — override `baseSilenceAfter` for the default variation
+
+Clip durations come exclusively from the `audio-durations.json` manifest — there is no word-count fallback. Adding a prompt without a corresponding entry in the manifest will throw at runtime; regenerate via `node scripts/generate-audio-durations.mjs` after any audio change. See **Audio Duration Manifest** below.
 
 ### Voice variants (optional)
 
@@ -120,7 +123,7 @@ audio: {
 }
 ```
 
-The default voice's clips live at the root of `basePath` (so `subfolder: ''`). Alternate voices live in a nested subfolder. Today only Simple Grounding declares voices. Meditations without a `voices` array behave exactly as before — a single flat clip set. See the **Voice System** section for the full data flow.
+The default voice's clips live at the root of `basePath` (so `subfolder: ''`). Alternate voices live in a nested subfolder. Most TTS meditations declare both Thoughtful Theo (default) and Relaxing Rachel today. Meditations without a `voices` array behave as a single flat clip set. See the **Voice System** section for the full data flow.
 
 ---
 
@@ -129,31 +132,32 @@ The default voice's clips live at the root of `basePath` (so `subfolder: ''`). A
 **Script:** `scripts/generate-audio-durations.mjs`
 **Manifest:** `src/content/meditations/audio-durations.json`
 
-All duration calculations use **actual MP3 file durations** from a pre-generated manifest, not word-count estimates. The manifest maps `meditationId → promptId → durationSeconds`, computed from file byte lengths (`audioBytes / 16000` for CBR 128kbps).
+The manifest is the **single source of truth for clip duration**. It maps `meditationId → promptId → durationSeconds` (with optional voice variants nested as `manifest[medId][voiceId][promptId]`), computed from file byte lengths (`audioBytes / 16000` for CBR 128kbps).
 
-### Why not word-count estimates?
+### Why bytes, not WPM
 
-TTS output doesn't follow a constant words-per-minute rate — pauses for ellipses, commas, emphasis, and varying sentence structures make actual clip durations unpredictable. Testing showed WPM estimates drifted ±1–4 minutes from reality across meditations. The manifest eliminates this entirely.
+Earlier the system used `text.split(' ').length / speakingRate` as a fallback. That was always inaccurate — TTS output doesn't follow a constant words-per-minute rate (pauses for ellipses, commas, emphasis, varying sentence structures all shift real clip durations), and the per-meditation `speakingRate` field was never grounded in the actual voice/speed settings. WPM estimates drifted ±1–4 minutes across meditations. The manifest eliminates this; `getClipDuration` now **throws** if no manifest entry is found, surfacing a clear "regenerate the manifest" message rather than silently returning a wrong number.
 
 ### Regenerating the manifest
 
-**Run after adding, replacing, or removing any audio clips:**
+**Run after adding, replacing, or removing any audio clip:**
 
 ```bash
 node scripts/generate-audio-durations.mjs
 ```
 
-This scans all `public/audio/meditations/*/` directories, strips ID3 tag bytes from file sizes, computes `audioBytes / 16000`, and writes the JSON manifest. The script is fast (no network calls) and idempotent.
+This scans all `public/audio/meditations/*/` directories (one level deep — picks up nested voice subfolders too), strips ID3 tag bytes from file sizes, computes `audioBytes / 16000`, maps subfolder names to voice ids via each meditation's `audio.voices` array, and writes the JSON manifest. The script is fast (no network calls) and idempotent.
 
-### How it's used
+### How it's consumed
 
-- **`getClipDuration(meditationId, prompt, speakingRate)`** in `index.js` — looks up the manifest, falls back to word-count estimate if no audio file exists (e.g., protector-dialogue which has no pre-recorded clips yet)
-- **`calculateMeditationDuration()`** and **`calculateSilenceMultiplier()`** — accept `meditationId` to use real durations, ensuring the silence multiplier binary search calibrates against accurate totals
-- **`self-compassion.js`** and **`felt-sense.js`** — their `calculateClipSpeakingDuration()` / `calculatePromptSpeakingDuration()` functions look up the manifest directly for variation duration calculation
+- **`getClipDuration(meditationId, prompt, voiceId)`** in `index.js` — looks up `manifest[medId][voiceId][promptId]` first (when a voice is supplied), falls through to the flat `manifest[medId][promptId]` for the default voice, throws otherwise.
+- **`calculateMeditationDuration(prompts, multiplier, meditationId, voiceId)`** and **`calculateSilenceMultiplier(prompts, target, meditationId, voiceId)`** — feed manifest durations into the silence-multiplier solver so it calibrates against real clip lengths per voice.
+- **`generateTimedSequence(prompts, multiplier, { audioConfig, meditationId, voiceId })`** — produces the `startTime`/`endTime` schedule the runtime composer and progress bar use.
+- **`estimateMeditationDurationSeconds(meditation, { voiceId, variationKey })`** — single helper that drives every idle-screen `~N min` label (variation cards too, via `variationKey`).
 
 ### What happens if the manifest is stale
 
-If audio files are added/changed without regenerating the manifest, the old durations remain in the JSON. The pre-composition estimate (timer on idle screen, silence multiplier calibration) will use stale values. The post-composition timer (`composedDurationRef` in `useMeditationPlayback`) will still be accurate since it derives from actual composed byte lengths. So playback works correctly — only the pre-composition estimates and silence calibration would be slightly off.
+If a prompt is added without regenerating the manifest, the next render that calls `getClipDuration` for that prompt throws with a message pointing at the regen script. Playback won't start with bad timing data — the failure is loud and immediate. After running the generator and reloading, everything resumes.
 
 ---
 
@@ -161,11 +165,11 @@ If audio files are added/changed without regenerating the manifest, the old dura
 
 **File:** `src/content/meditations/index.js`
 
-- **`calculateSilenceMultiplier(prompts, targetDuration, speakingRate, meditationId, voiceId)`** — Binary search for a multiplier (1.0–10.0) so total duration hits target within 5 seconds. Expandable silences scale; non-expandable stay fixed. Uses manifest durations when `meditationId` is provided; `voiceId` (optional) selects per-voice clip durations for voice-aware meditations.
+- **`calculateSilenceMultiplier(prompts, targetDuration, meditationId, voiceId)`** — Binary search for a multiplier (1.0–10.0) so total duration hits target within 5 seconds. Expandable silences scale; non-expandable stay fixed. Voice-aware via the manifest.
 
-- **`generateTimedSequence(prompts, multiplier, { speakingRate, audioConfig, meditationId, voiceId })`** — Produces an array with `startTime`/`endTime` relative to sequence start (NOT blob start — the composer adds the gong preamble offset). Derives `meditationId` from `audioConfig.basePath` if not passed explicitly. Resolves `audioSrc` through `resolveVoiceBasePath()` so clips for the selected voice are used.
+- **`generateTimedSequence(prompts, multiplier, { audioConfig, meditationId, voiceId })`** — Produces an array with `startTime`/`endTime` relative to sequence start (NOT blob start — the composer adds the gong preamble offset). Derives `meditationId` from `audioConfig.basePath` if not passed explicitly. Resolves `audioSrc` through `resolveVoiceBasePath()` so clips for the selected voice are used.
 
-- **`estimateMeditationDurationSeconds(meditation, { voiceId, silenceMultiplier, includeGongs })`** — Voice-aware duration estimate used by idle-screen "time: X min" pills. Sums per-voice clip durations + silence + composer overhead (opening preamble + closing gong). Once playback starts, the progress bar uses the exact composed-blob duration instead.
+- **`estimateMeditationDurationSeconds(meditation, { voiceId, variationKey, silenceMultiplier, includeGongs })`** — Single voice-aware duration estimate used by every idle-screen `DurationPill`. When `variationKey` is supplied and the meditation declares `assembleVariation`, sums that variation's clips; otherwise sums `meditation.prompts`. Adds the composer's gong overhead (`COMPOSER_OVERHEAD_WITH_GONGS = 12s`) so the pre-composition estimate matches the post-composition blob duration within ~1s. Once playback starts, the progress bar uses the exact composed-blob duration instead.
 
 - **`resolveVoiceBasePath(audioConfig, voiceId)`** / **`resolveEffectiveVoiceId(audioConfig, preferredVoiceId)`** — Helpers for voice-aware path resolution. See **Voice System** below.
 
@@ -175,7 +179,7 @@ If audio files are added/changed without regenerating the manifest, the old dura
 
 ## Voice System
 
-Meditations can ship multiple voice readings of the same prompt set. Today only **Simple Grounding** offers voice variants (Thoughtful Theo + Relaxing Rachel), but the pattern is designed to scale to any meditation.
+Meditations can ship multiple voice readings of the same prompt set. Most TTS meditations now declare **Thoughtful Theo** (default) and **Relaxing Rachel** — Simple Grounding, Short Grounding, Body Scan, Open Awareness, Stay With It, Leaves on a Stream, Felt Sense, Self-Compassion, and Protector Dialogue. The Descent and The Cycle Closing currently have Theo only; the pattern scales by simply adding a `voices` entry and the matching subfolder of clips.
 
 ### File layout
 
@@ -194,7 +198,7 @@ The default voice's clips sit at the root of `basePath` so untouched meditations
 
 **Reader locations:**
 - `precacheAudioForModule(libraryId, voiceId)` / `precacheAudioForTimeline(modules, voiceId)` in `src/services/audioCacheService.js` — timeline precache fires with the current preference when the session store builds the timeline (`useSessionStore.js` call sites). This warms the PWA cache with clips for the user's preferred voice so offline play works.
-- `SimpleGroundingModule.jsx` (and any future voice-aware module) — initializes the idle-screen voice pill's `selectedVoiceId` from the preference, and re-syncs via `useEffect` when the preference changes.
+- Every voice-aware module (`SimpleGroundingModule`, `BodyScanModule`, `OpenAwarenessModule`, `SelfCompassionModule`, `FeltSenseModule`, `LeavesOnAStreamModule`, `StayWithItModule`, plus MasterModule's `MeditationSection`) — initializes the idle-screen voice pill's `selectedVoiceId` from the preference, and re-syncs via `useEffect` when the preference changes (skipped after `playback.hasStarted` so an in-flight session isn't disturbed).
 
 **Writer:** `SettingsTool.jsx` — see the "commit-on-tab-leave" flow below.
 
@@ -250,15 +254,20 @@ Use the **same ElevenLabs settings** as the voice's production meditation clips 
 
 ## Module Components
 
-**Files:** `src/components/active/modules/{BodyScan,OpenAwareness,SelfCompassion,SimpleGrounding,FeltSense,LeavesOnAStream,StayWithIt}Module.jsx`
+**Files:** `src/components/active/modules/{BodyScan,OpenAwareness,SelfCompassion,SimpleGrounding,FeltSense,LeavesOnAStream,StayWithIt,TheDescent,TheCycle}Module.jsx`. Protector Dialogue runs through MasterModule's `MeditationSection.jsx` instead, but uses the same hook.
 
 Each module:
-1. Gets meditation content from its content file (via import or `getMeditationById()`)
+1. Gets meditation content via `getMeditationById()` (the only public lookup — no per-meditation named imports from the content registry)
 2. Builds `timedSequence` in `useMemo` (variable-duration: computes silence multiplier → generates sequence; fixed-duration: calls `assembleVariation()` → generates sequence with multiplier 1.0)
-3. Passes to `useMeditationPlayback` with `{ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onTimerUpdate }`
+3. Passes to `useMeditationPlayback` with `{ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onProgressUpdate }`
 4. Uses `useTranscriptModal()` hook (`src/hooks/useTranscriptModal.js`) for transcript modal state — returns `{ showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript }`
-5. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `getPrimaryButton()`)
+5. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `transitionStage`, `getPrimaryButton()`)
 6. Wires seek controls to `ModuleControlBar`: `showSeekControls`, `onSeekBack={() => playback.handleSeekRelative(-10)}`, `onSeekForward={() => playback.handleSeekRelative(10)}`
+
+**Idle-screen pills (shared component model):**
+- Variable-duration modules pass `durationMinutes={duration.selected}` plus the step handlers to `IdleScreen` — this renders the inline `DurationPill` with `<` / `>` arrows. The displayed value is the user's *picked* step (10, 15, etc.); the actual playback may run a few seconds longer due to silence-multiplier solver tolerance + gong overhead, but the `DurationPill` reflects the target.
+- Fixed-duration single-clip modules (Simple Grounding et al.) pass `durationMinutes={Math.ceil(estimateMeditationDurationSeconds(meditation, { voiceId }) / 60)}` so the pill shows the actual ceil-rounded length.
+- Variation modules render the cards manually, then place a single shared `<DurationPill minutes={Math.ceil(estimateMeditationDurationSeconds(meditation, { voiceId, variationKey: selectedVariation }) / 60)} />` below the cards (no arrows) — the pill fades to the new value when the user picks a different card or toggles the voice pill.
 
 ---
 
@@ -752,8 +761,8 @@ All meditation scripts use the Theo Silk voice (`UmQN7jS1Ee8B1czsUtQh`) with `el
 
 1. Create content file in `src/content/meditations/` following existing patterns
 2. Add audio files to `public/audio/meditations/{meditation-id}/`
-3. Register in `src/content/meditations/index.js` (import, add to `meditationLibrary`, re-export)
-4. Run `node scripts/generate-audio-durations.mjs`
-5. Create module component in `src/components/active/modules/`
+3. Register in `src/content/meditations/index.js`: add the `import` and a key in the `meditationLibrary` object. **Do not add a named re-export** — every consumer goes through `getMeditationById()`.
+4. Run `node scripts/generate-audio-durations.mjs` to populate the manifest. Without this, `getClipDuration` will throw at runtime.
+5. Create module component in `src/components/active/modules/` (or use MasterModule with a meditation section in `src/content/modules/master/`)
 6. Register in `src/components/active/moduleRegistry.js` (lazy import, add to `CUSTOM_MODULES` and `MODULE_CATEGORIES`)
 7. Add module definition in `src/content/modules/library.js`

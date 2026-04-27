@@ -25,6 +25,7 @@ import { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
+  estimateMeditationDurationSeconds,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
@@ -350,12 +351,13 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
     const clips = meditation.assembleVariation(mode);
-    const variationMeta = meditation.variations[mode];
     const sequence = generateTimedSequence(clips, 1.0, {
-      speakingRate: meditation.speakingRate || 90,
       audioConfig: meditation.audio,
     });
-    return [sequence, variationMeta.duration];
+    const total = sequence.length > 0
+      ? sequence[sequence.length - 1].endTime
+      : estimateMeditationDurationSeconds(meditation, { variationKey: mode });
+    return [sequence, total];
   }, [meditation, mode]);
 
   const transcriptPrompts = useMemo(() => {

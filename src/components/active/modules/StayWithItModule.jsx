@@ -294,7 +294,6 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
     const silenceMultiplier = calculateSilenceMultiplier(
       filteredPrompts,
       durationSeconds,
-      meditation.speakingRate,
       'stay-with-it',
       selectedVoiceId,
     );
@@ -302,7 +301,6 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
     // Generate timed sequence — voiceId here also drives audio URL
     // resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });

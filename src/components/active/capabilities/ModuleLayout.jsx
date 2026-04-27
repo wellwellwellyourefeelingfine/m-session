@@ -369,9 +369,6 @@ export function IdleScreen({
   onDurationStepForward,
   canStepDurationBack,
   canStepDurationForward,
-  // Legacy plain-text duration line. Kept for modules that haven't migrated
-  // to the `durationMinutes` pill (MasterModule, MeditationSection).
-  duration,
 }) {
   // Render the voice pill whenever the meditation declares any voices, even
   // a single one — keeps the layout consistent across meditations. With a
@@ -379,7 +376,6 @@ export function IdleScreen({
   const showVoicePill = Array.isArray(voices) && voices.length >= 1;
   const showDurationPill = typeof durationMinutes === 'number';
   const showDurationArrows = typeof onDurationStepBack === 'function' && typeof onDurationStepForward === 'function';
-  const showLegacyDuration = !showDurationPill && duration;
 
   return (
     <div className="space-y-4 animate-fadeIn px-6">
@@ -420,12 +416,6 @@ export function IdleScreen({
           onStepBack={onDurationStepBack}
           onStepForward={onDurationStepForward}
         />
-      )}
-
-      {showLegacyDuration && (
-        <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)] text-center">
-          {duration} minutes
-        </p>
       )}
 
       {showVoicePill && (

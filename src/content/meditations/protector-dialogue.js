@@ -34,9 +34,6 @@ export const protectorDialogueMeditation = {
     ],
   },
 
-  // Speaking rate — slower for peak state (90 WPM vs typical 150)
-  speakingRate: 90,
-
   // Prompts — 7 phases, 30 prompts
   prompts: [
     // ── Settling Phase ──

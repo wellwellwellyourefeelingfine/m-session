@@ -11,12 +11,8 @@
  * 41 total unique prompts: 32 shared + 6 couple-only + 3 solo-only
  *
  * Audio: /audio/meditations/the-descent/{promptId}.mp3
- * Fixed duration per mode (no DurationPicker)
+ * Fixed duration per mode
  */
-
-import audioDurations from './audio-durations.json' with { type: 'json' };
-
-const SPEAKING_RATE = 90; // words per minute — slow, spacious pacing
 
 // ============================================
 // ALL PROMPTS (41 total)
@@ -353,18 +349,6 @@ function assembleVariation(mode) {
   return allPrompts.filter(p => !p.variationOnly || p.variationOnly === mode);
 }
 
-/**
- * Calculate the speaking duration for a prompt using the audio manifest.
- * Falls back to word-count estimation if no audio file exists yet.
- */
-function calculatePromptSpeakingDuration(prompt) {
-  const manifestDuration = audioDurations['the-descent']?.[prompt.id];
-  if (manifestDuration) return manifestDuration;
-  const wordCount = prompt.text.split(' ').length;
-  return (wordCount / SPEAKING_RATE) * 60;
-}
-
-
 // ============================================
 // EXPORTED MEDITATION OBJECT
 // ============================================
@@ -380,29 +364,26 @@ export const theDescentMeditation = {
     format: 'mp3',
   },
 
-  speakingRate: SPEAKING_RATE,
-
-  // Fixed duration per mode (no DurationPicker)
+  // Fixed duration per mode
   isFixedDuration: true,
 
   defaultVariation: 'solo',
 
+  // Display durations are derived at runtime via estimateMeditationDurationSeconds
+  // (voice-aware) — see TheDescentModule.
   variations: {
     solo: {
       key: 'solo',
       label: 'Solo',
       description: 'Explore a relationship on your own.',
-      duration: 17 * 60,
     },
     couple: {
       key: 'couple',
       label: 'With a Partner',
       description: 'Do this together. Includes moments of shared contact.',
-      duration: 20 * 60,
     },
   },
 
   prompts: allPrompts,
   assembleVariation,
-  calculatePromptSpeakingDuration,
 };

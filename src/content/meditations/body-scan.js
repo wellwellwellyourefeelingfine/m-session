@@ -41,9 +41,6 @@ export const bodyScanMeditation = {
     ],
   },
 
-  // Speaking rate for duration estimation (words per minute)
-  speakingRate: 150,
-
   prompts: [
     // ============================================
     // PART 1: SETTLING (clips 1-7, ~1:04)

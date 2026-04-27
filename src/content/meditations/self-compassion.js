@@ -15,8 +15,6 @@
  * Fixed duration per variation (no silence expansion)
  */
 
-const SPEAKING_RATE = 90; // words per minute — slower than body scan, per script direction
-
 // ============================================
 // CORE CLIPS (42 clips, used in all variations)
 // ============================================
@@ -431,45 +429,6 @@ function assembleVariation(variationKey) {
   }
 }
 
-import audioDurations from './audio-durations.json' with { type: 'json' };
-
-/**
- * Calculate the speaking duration for a clip, using actual MP3 duration
- * from the audio manifest when available, falling back to word-count estimation.
- * @param {Object} clip - Clip object with id and text
- * @returns {number} Speaking duration in seconds
- */
-function calculateClipSpeakingDuration(clip) {
-  const manifestDuration = audioDurations['self-compassion']?.[clip.id];
-  if (manifestDuration) return manifestDuration;
-  const wordCount = clip.text.split(' ').length;
-  return (wordCount / SPEAKING_RATE) * 60;
-}
-
-/**
- * Calculate the total raw duration for a variation (before rounding)
- * @param {string} variationKey
- * @returns {number} Duration in seconds
- */
-function calculateRawDuration(variationKey) {
-  const clips = assembleVariation(variationKey);
-  return clips.reduce((sum, clip) => {
-    return sum + calculateClipSpeakingDuration(clip) + clip.baseSilenceAfter;
-  }, 0);
-}
-
-/**
- * Calculate the rounded duration for a variation (nearest whole minute, rounded up)
- * @param {string} variationKey
- * @returns {number} Duration in seconds (always a whole minute)
- */
-function calculateVariationDuration(variationKey) {
-  const rawSeconds = calculateRawDuration(variationKey);
-  const minutes = Math.ceil(rawSeconds / 60);
-  return minutes * 60;
-}
-
-
 // ============================================
 // EXPORTED MEDITATION OBJECT
 // ============================================
@@ -491,40 +450,32 @@ export const selfCompassionMeditation = {
     ],
   },
 
-  // Speaking rate for duration estimation (slower pace per script direction)
-  speakingRate: 90,
-
-  // Fixed duration per variation (no DurationPicker)
+  // Fixed duration per variation
   isFixedDuration: true,
 
   // Default variation shown on idle screen
   defaultVariation: 'default',
 
-  // Variation definitions with pre-calculated durations
+  // Variation definitions. Display durations are derived at runtime via
+  // estimateMeditationDurationSeconds (voice-aware) — see SelfCompassionModule.
   variations: {
     default: {
       key: 'default',
       label: 'General',
       description: 'A practice of offering kindness to yourself, as you are.',
-      duration: calculateVariationDuration('default'),
     },
     relationship: {
       key: 'relationship',
       label: 'With a relationship',
       description: 'Extend compassion to yourself, then toward someone important to you.',
-      duration: calculateVariationDuration('relationship'),
     },
     'going-deeper': {
       key: 'going-deeper',
       label: 'Going Deeper',
       description: 'Bring compassion to something specific you\'ve been carrying.',
-      duration: calculateVariationDuration('going-deeper'),
     },
   },
 
   // Assembly function (called by component with selected variation key)
   assembleVariation,
-
-  // Utility for component to calculate clip speaking duration
-  calculateClipSpeakingDuration,
 };

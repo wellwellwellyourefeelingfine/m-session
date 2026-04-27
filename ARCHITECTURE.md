@@ -81,7 +81,7 @@ src/
 │   ├── tools/                     # FAQ, dosage, settings, resources, philosophy, about
 │   ├── intake/                    # Questionnaire components
 │   ├── timeline/                  # Timeline editor components
-│   ├── shared/                    # Reusable UI components (Icons, DurationPicker, etc.)
+│   ├── shared/                    # Reusable UI components (Icons, AlarmPrompt, etc.)
 │   └── layout/                    # AppShell, Header, TabBar, SessionMenu
 ├── stores/
 │   ├── useSessionStore.js         # Core session logic (~2,700 lines)
@@ -122,7 +122,7 @@ src/
 │   │   ├── musicRecommendations.js
 │   │   ├── danceRecommendations.js
 │   │   └── master/                # MasterModule content config files
-│   ├── meditations/               # Meditation content + audio mappings (14 content files)
+│   ├── meditations/               # Meditation content + audio mappings (one file per meditation)
 │   ├── intake/                    # 4-section questionnaire
 │   ├── helper/                    # Helper Modal content
 │   │   ├── categories.js          # 8 categories with `phases` arrays + decision-tree `steps`
@@ -140,18 +140,24 @@ src/
 
 public/
 └── audio/
-    └── meditations/
-        ├── open-awareness/        # 26 TTS audio files
-        ├── body-scan/             # 54 TTS audio files
-        ├── self-compassion/       # 70 TTS audio files
-        ├── simple-grounding/      # ~20 TTS audio files
-        ├── short-grounding/       # ~10 TTS audio files
-        ├── felt-sense/            # ~30 TTS audio files
-        ├── leaves-on-a-stream/    # ~15 TTS audio files
-        ├── stay-with-it/          # ~25 TTS audio files
-        ├── protector/             # 16 TTS audio files
-        ├── the-descent/           # Deep Dive meditation audio
-        └── the-cycle-closing/     # Cycle closing meditation audio
+    ├── meditations/
+    │   ├── open-awareness/        # default voice + relaxing-rachel/ subfolder
+    │   ├── body-scan/             # default voice + relaxing-rachel/ subfolder
+    │   ├── self-compassion/       # default voice + relaxing-rachel/ subfolder
+    │   ├── simple-grounding/      # default voice + relaxing-rachel/ subfolder
+    │   ├── short-grounding/       # default voice + relaxing-rachel/ subfolder
+    │   ├── felt-sense/            # default voice + relaxing-rachel/ subfolder
+    │   ├── leaves-on-a-stream/    # default voice + relaxing-rachel/ subfolder
+    │   ├── stay-with-it/          # default voice + relaxing-rachel/ subfolder
+    │   ├── protector-dialogue/    # default voice + relaxing-rachel/ subfolder
+    │   ├── pendulation/           # default voice only (branching audio)
+    │   ├── the-descent/           # default voice only (Deep Dive)
+    │   ├── the-cycle-closing/     # default voice only
+    │   ├── transition-opening/    # default voice only
+    │   ├── transition-centering-breath/
+    │   └── transition-closing/
+    ├── voice-previews/            # <voiceId>.mp3 sample clips for Settings preview
+    └── silence/                   # pre-rendered silence blocks (60s, 30s, 10s, 5s, 1s, 0.5s)
 ```
 
 ---
@@ -163,11 +169,10 @@ public/
 **1. Custom Components** (17+ lazy-loaded modules):
 
 *Meditation:*
-- `BreathMeditationModule` — BreathOrb + breath sequences
 - `OpenAwarenessModule` — Audio-synced guided meditation (shared `useMeditationPlayback` hook)
 - `BodyScanModule` — Audio-synced body scan (shared `useMeditationPlayback` hook)
 - `SelfCompassionModule` — Audio-synced self-compassion with variation selector
-- `SimpleGroundingModule` — Fixed-duration grounding meditation with audio prompts (also reused as a short 5-min come-up variant)
+- `SimpleGroundingModule` — Fixed-duration grounding meditation with audio prompts (also reused as a short 5-min come-up variant and the Centering Breath module)
 
 *Therapeutic Activities:*
 - `FeltSenseModule` — Audio-synced felt sense meditation with variation selector (Focusing)
@@ -874,7 +879,6 @@ export const myMeditation = {
   id: 'my-meditation',
   title: 'My Meditation',
   description: 'Brief description for the idle screen.',
-  speakingRate: 150,          // words per minute (use 90 for slower-paced scripts)
   minDuration: 600,           // 10 min in seconds (for variable-duration)
   maxDuration: 1800,          // 30 min in seconds
   durationSteps: [10, 15, 20, 25, 30],  // minutes
@@ -882,6 +886,12 @@ export const myMeditation = {
   audio: {
     basePath: '/audio/meditations/my-meditation/',
     format: 'mp3',
+    // To offer multiple voice readings, add:
+    // defaultVoice: 'theo',
+    // voices: [
+    //   { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+    //   { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    // ],
   },
   prompts: [
     {
@@ -912,9 +922,9 @@ export const meditationLibrary = {
   ...existing,
   'my-meditation': myMeditation,
 };
-
-export { myMeditation };
 ```
+
+Then run `node scripts/generate-audio-durations.mjs` to populate the manifest. Skipping this step will cause `getClipDuration` to throw at runtime — the manifest is the single source of truth for clip timing. Consumers fetch the meditation via `getMeditationById('my-meditation')`; **do not add a named re-export** for it.
 
 **Step 3: Create the component** in `src/components/active/modules/MyMeditationModule.jsx`.
 
@@ -992,7 +1002,7 @@ const duration = useSyncedDuration(module, { hasStarted });
 // duration.handleChange — alias for setSelected, kept for caller ergonomics
 ```
 
-The idle-screen UI for variable-duration modules is an inline `DurationPill` with `<` / `>` arrows (see `ModuleLayout.jsx`), clamped at the meditation's `durationSteps` bounds. The legacy `DurationPicker` modal is retired from all idle screens; it remains only in `OpenSpaceModule` for its mid-session "tap elapsed time to extend" affordance (distinct from the idle pill). On the Home tab, `ModuleCard` and `AltSessionModuleModal` render duration as read-only text — duration edits funnel through `ModuleDetailModal`'s own ± stepper. Cross-surface sync is store-driven: any writer calls `updateModuleDuration(instanceId, minutes)` and every reader re-renders.
+The idle-screen UI for variable-duration modules is the shared `DurationPill` with `<` / `>` arrows (defined in `ModuleLayout.jsx`), clamped at the meditation's `durationSteps` bounds. `OpenSpaceModule` uses the same pill in both idle and active states — mid-session arrow taps resize the silence-timer blob in place, with `canStepBack` constrained so the user can't shorten below already-elapsed time. The old `DurationPicker` modal has been removed entirely. On the Home tab, `ModuleCard` and `AltSessionModuleModal` render duration as read-only text; duration edits funnel through `ModuleDetailModal`'s own ± stepper. Cross-surface sync is store-driven: any writer calls `updateModuleDuration(instanceId, minutes)` and every reader re-renders.
 
 ### Intensity Rating
 
@@ -1461,16 +1471,19 @@ Each meditation object in `src/content/meditations/<name>.js` exports:
 | `id` | string | Unique meditation ID (matches registry key) |
 | `title` | string | Display title |
 | `description` | string | Brief description shown on idle screen |
-| `speakingRate` | number | Words per minute for duration estimation (e.g. 150 or 90) |
 | `prompts` | array | Array of prompt objects (see above) |
 | `audio` | object | `{ basePath, format, [defaultVoice, voices] }` — see below |
+| `isFixedDuration` | boolean | Optional. Set on meditations whose duration is predetermined (no `<` / `>` arrows). |
+| `fixedDuration` | number | Optional. Pre-measured composed duration in seconds — drives the idle pill on fixed-duration meditations that don't compute on the fly. |
 | `minDuration` | number | Minimum duration in seconds (for variable-duration meditations) |
 | `maxDuration` | number | Maximum duration in seconds |
 | `durationSteps` | array | Available duration steps in minutes (e.g. `[10, 15, 20, 25, 30]`) |
 
 `audio` minimum shape: `{ basePath: '/audio/meditations/<name>/', format: 'mp3' }`. Meditations that offer multiple voice readings add `defaultVoice: 'voiceId'` and `voices: [{ id, label, subfolder }]`. The default voice's clips live at `basePath` root (`subfolder: ''`); alternate voices live in nested subfolders. See **Voice System** below and `MEDITATION_AUDIO_SYSTEM.md` for the full data flow.
 
-Self-Compassion also uses: `variations`, `defaultVariation`, `assembleVariation()`, and shared clip segments instead of a flat `prompts` array.
+There is **no `speakingRate` field** — clip durations are looked up exclusively from the `audio-durations.json` manifest (`getClipDuration` throws if a prompt has no entry). Regenerate via `node scripts/generate-audio-durations.mjs` after adding or replacing any clip.
+
+**Variation-based meditations** (Self-Compassion, Felt Sense, The Descent, The Cycle Closing) replace flat `prompts` with: `variations` (object mapping variation key → `{ key, label, description }`), `defaultVariation`, and `assembleVariation(variationKey)` (function that returns the variation's clip array). The displayed `~N min` label per card comes from `estimateMeditationDurationSeconds(meditation, { voiceId, variationKey })` at render time — no precomputed `duration` field on each variation.
 
 ### Shared Hook: `useMeditationPlayback`
 
@@ -1490,7 +1503,7 @@ All TTS meditation components delegate playback to this shared hook. It handles:
 
 ### Voice System
 
-Meditations can offer multiple voice readings of the same prompt set. Today only **Simple Grounding** ships voice variants (Thoughtful Theo + Relaxing Rachel), but the architecture scales.
+Meditations can offer multiple voice readings of the same prompt set. Most TTS meditations now ship both **Thoughtful Theo** (default) and **Relaxing Rachel** — Simple Grounding, Short Grounding, Body Scan, Open Awareness, Stay With It, Leaves on a Stream, Felt Sense, Self-Compassion, and Protector Dialogue. The Descent, The Cycle Closing, Pendulation, and the transition meditations are Theo-only today; the architecture scales by adding a `voices` entry and a matching audio subfolder.
 
 **Content:** Each meditation's `audio` object declares `voices: [{ id, label, subfolder }]` plus `defaultVoice`. Alternate voices live in nested subfolders under `basePath`; the default voice's clips sit at the root.
 
@@ -1506,25 +1519,34 @@ Meditations can offer multiple voice readings of the same prompt set. Today only
 - `resolveVoiceBasePath(audioConfig, voiceId)` — returns `basePath + subfolder` for the voice, or plain `basePath` for meditations without voices.
 - `resolveEffectiveVoiceId(audioConfig, preferredVoiceId)` — returns the preferred voice if present in this meditation, else `defaultVoice`, else `null`.
 - `getAvailableVoices()` — deduplicated voice list across the library; used by Settings.
-- `generateTimedSequence(..., { voiceId })` — threads `voiceId` into `audioSrc` resolution so each clip URL points at the right folder.
-- `estimateMeditationDurationSeconds(meditation, { voiceId })` — voice-aware idle-screen "time: X min" estimate.
+- `generateTimedSequence(prompts, multiplier, { audioConfig, meditationId, voiceId })` — threads `voiceId` into `audioSrc` resolution so each clip URL points at the right folder.
+- `estimateMeditationDurationSeconds(meditation, { voiceId, variationKey })` — single voice-aware idle-screen `DurationPill` driver. When `variationKey` is supplied and the meditation declares `assembleVariation`, sums that variation's clips; otherwise sums `meditation.prompts`. Adds the gong overhead so the estimate matches the actual composed blob within ~1s.
 
 ### Audio Generation
 
 Audio files are generated using ElevenLabs TTS via scripts in `scripts/`. Each meditation has its own generation script that imports prompts from the content definition and outputs MP3 files to the corresponding `public/audio/meditations/<name>/` directory.
 
-| Script | Voice | Output Directory |
-|--------|-------|------------------|
-| `generate-body-scan-audio.mjs` | Oliver Silk | `public/audio/meditations/body-scan/` |
-| `generate-self-compassion-audio.mjs` | Oliver Silk | `public/audio/meditations/self-compassion/` |
-| `generate-simple-grounding-audio.mjs` | Oliver Silk | `public/audio/meditations/simple-grounding/` |
-| `generate-protector-audio.mjs` | Theo Silk | `public/audio/meditations/protector/` |
-| `generate-felt-sense-audio.mjs` | Theo Silk | `public/audio/meditations/felt-sense/` |
-| `generate-leaves-on-a-stream-audio.mjs` | Theo Silk | `public/audio/meditations/leaves-on-a-stream/` |
-| `generate-stay-with-it-audio.mjs` | Theo Silk | `public/audio/meditations/stay-with-it/` |
-| `generate-the-descent-audio.mjs` | Theo Silk | `public/audio/meditations/the-descent/` |
-| `generate-the-cycle-closing-audio.mjs` | Theo Silk | `public/audio/meditations/the-cycle-closing/` |
-| `generate-silence-blocks.mjs` | — | Pre-rendered silence MP3 blocks for blob composition |
+Scripts that ship multiple voices accept `--voice <preset>` (typically `theo` or `rachel`) and route output into the right subfolder. Run `--list-voices` to see available presets, `--dry-run` to preview filenames, `--start N` to resume from a prompt index, and `--only <id>` to regenerate one prompt. API keys come from the env (`ELEVENLABS_API_KEY` or `ELEVENLABS_API`) or a local `.env`.
+
+| Script | Default voice | Alt voice | Output Directory |
+|--------|---------------|-----------|------------------|
+| `generate-body-scan-audio.mjs` | Oliver Silk | Relaxing Rachel | `public/audio/meditations/body-scan/[relaxing-rachel/]` |
+| `generate-self-compassion-audio.mjs` | Oliver Silk | Relaxing Rachel | `public/audio/meditations/self-compassion/[relaxing-rachel/]` |
+| `generate-simple-grounding-audio.mjs` | Oliver Silk | Relaxing Rachel | `public/audio/meditations/simple-grounding/[relaxing-rachel/]` |
+| `generate-short-grounding-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/short-grounding/[relaxing-rachel/]` |
+| `generate-open-awareness-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/open-awareness/[relaxing-rachel/]` |
+| `generate-protector-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/protector-dialogue/[relaxing-rachel/]` |
+| `generate-felt-sense-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/felt-sense/[relaxing-rachel/]` |
+| `generate-leaves-on-a-stream-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/leaves-on-a-stream/[relaxing-rachel/]` |
+| `generate-stay-with-it-audio.mjs` | Theo Silk | Relaxing Rachel | `public/audio/meditations/stay-with-it/[relaxing-rachel/]` |
+| `generate-the-descent-audio.mjs` | Theo Silk | — | `public/audio/meditations/the-descent/` |
+| `generate-the-cycle-closing-audio.mjs` | Theo Silk | — | `public/audio/meditations/the-cycle-closing/` |
+| `generate-pendulation-audio.mjs` | Theo Silk | — | `public/audio/meditations/pendulation/` |
+| `generate-transition-opening-audio.mjs` | Theo Silk | — | `public/audio/meditations/transition-opening/` |
+| `generate-transition-centering-breath-audio.mjs` | Theo Silk | — | `public/audio/meditations/transition-centering-breath/` |
+| `generate-transition-closing-audio.mjs` | Theo Silk | — | `public/audio/meditations/transition-closing/` |
+| `generate-audio-durations.mjs` | — | — | Regenerates `src/content/meditations/audio-durations.json` from on-disk MP3 byte sizes |
+| `generate-silence-blocks.mjs` | — | — | Pre-rendered silence MP3 blocks for blob composition |
 
 **Voices:**
 
@@ -1878,6 +1900,8 @@ An optional AI assistant for session support:
 ---
 
 ## Breath Controller System
+
+> **Status:** unused as of the BreathMeditationModule retirement. `BreathOrb.jsx` and `useBreathController.js` are kept as building blocks for any future breath-guided meditation, but no module currently consumes them.
 
 The `useBreathController` hook is the core timing engine for all breathing animations:
 

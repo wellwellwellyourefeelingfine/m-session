@@ -88,7 +88,6 @@ export const FRAMEWORKS = {
 };
 
 export const MODULE_TYPES = {
-  'breath-meditation': { label: 'Breath Meditation', intensity: 1 },
   'music-listening': { label: 'Music Listening', intensity: 1 },
   'open-awareness': { label: 'Open Awareness', intensity: 3 },
   'body-scan': { label: 'Body Scan', intensity: 1 },
@@ -290,31 +289,6 @@ export const moduleLibrary = [
     content: { instructions: 'Audio-guided, approximately 7\u20138 minutes. Seven sections: orientation and posture, settling into the body, a body release, a pause to watch your natural breath, paced 4-in/6-out counted breathing, centering at the chest, and a soft close. The silence between prompts is tuned to the cadence of breath, so there is no duration picker \u2014 the pacing stays as designed.' },
   },
 
-  // === BREATH MEDITATION (with BreathOrb animation) ===
-  {
-    id: 'breath-meditation-calm',
-    type: 'breath-meditation',
-    category: 'meditation',
-    hidden: true,
-    title: 'Calming Breath',
-    description: 'A 15-minute guided breathing meditation that progressively deepens your breath, then gently returns to natural breathing.',
-    defaultDuration: 15,
-    allowedPhases: ['come-up', 'peak', 'integration'],
-    recommendedPhases: ['come-up'],
-    content: {
-      instructions: 'Follow the orb with your breath as it guides you through a natural progression from gentle to deep breathing.',
-      // Reference the meditation content file with segments and prompts
-      meditationId: 'calming-breath-15min',
-    },
-    // Uses custom BreathMeditationModule with BreathOrb
-    capabilities: {
-      timer: { type: 'breathing', autoComplete: true },
-      animation: { type: 'breath-orb' },
-      controls: { showBeginButton: true, showPauseButton: true, showSkipButton: true },
-    },
-    tags: ['breathing', 'meditation', 'calming', 'orb', '15-minute'],
-    framework: ['mindfulness'],
-  },
   {
     id: 'music-listening',
     type: 'music-listening',

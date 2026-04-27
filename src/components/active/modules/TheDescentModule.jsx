@@ -21,6 +21,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   getMeditationById,
   generateTimedSequence,
+  estimateMeditationDurationSeconds,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
@@ -44,7 +45,7 @@ import {
 } from '../../../content/modules/theDeepDiveReflectionContent';
 
 // Shared UI components
-import ModuleLayout from '../capabilities/ModuleLayout';
+import ModuleLayout, { DurationPill } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -223,14 +224,25 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
     if (!meditation) return [[], 0];
 
     const clips = meditation.assembleVariation(selectedMode);
-    const variationMeta = meditation.variations[selectedMode];
 
     const sequence = generateTimedSequence(clips, 1.0, {
-      speakingRate: meditation.speakingRate || 90,
       audioConfig: meditation.audio,
     });
 
-    return [sequence, variationMeta.duration];
+    const total = sequence.length > 0
+      ? sequence[sequence.length - 1].endTime
+      : estimateMeditationDurationSeconds(meditation, { variationKey: selectedMode });
+    return [sequence, total];
+  }, [meditation, selectedMode]);
+
+  // Voice-aware ceil-rounded display minutes for the shared DurationPill below
+  // the variation cards. The Descent doesn't currently expose voice variants,
+  // so this resolves to the default voice; will become voice-aware automatically
+  // once `audio.voices` is added to the meditation file.
+  const displayMinutes = useMemo(() => {
+    if (!meditation) return null;
+    const seconds = estimateMeditationDurationSeconds(meditation, { variationKey: selectedMode });
+    return Math.ceil(seconds / 60);
   }, [meditation, selectedMode]);
 
   // Transcript prompts for the current mode
@@ -609,13 +621,16 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
                           {v.description}
                         </p>
                       </div>
-                      <span className="text-xs text-[var(--color-text-tertiary)] ml-3 flex-shrink-0 mt-0.5">
-                        ~{Math.round(v.duration / 60)} min
-                      </span>
                     </div>
                   </button>
                 ))}
               </div>
+
+              {/* Shared duration pill — reflects the currently selected mode,
+                  ceil-rounded. */}
+              {typeof displayMinutes === 'number' && (
+                <DurationPill minutes={displayMinutes} />
+              )}
             </div>
           ) : (
             <div className="text-center animate-fadeIn">

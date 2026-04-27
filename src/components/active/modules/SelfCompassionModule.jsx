@@ -16,6 +16,7 @@ import {
   getMeditationById,
   generateTimedSequence,
   resolveEffectiveVoiceId,
+  estimateMeditationDurationSeconds,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
@@ -23,7 +24,7 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI components
-import ModuleLayout, { CompletionScreen, VoicePill } from '../capabilities/ModuleLayout';
+import ModuleLayout, { CompletionScreen, VoicePill, DurationPill } from '../capabilities/ModuleLayout';
 import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
@@ -59,28 +60,36 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
     if (!meditation) return [[], 0];
 
     const clips = meditation.assembleVariation(selectedVariation);
-    const variationMeta = meditation.variations[selectedVariation];
 
     // Generate timed sequence (no silence expansion — multiplier = 1.0).
     // voiceId drives audio URL resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(clips, 1.0, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });
 
-    // Use the actual sequence end-time as the timer's total — voice-aware
-    // because the sequence above was built with the selected voice's
-    // durations. Falls back to the variation's pre-computed (Theo-based)
-    // duration if the sequence is empty. This keeps the playback timer
-    // synced to actual audio length when an alternate voice is selected,
-    // since the variation's `duration` field is computed at module-load
-    // time using the default voice only.
+    // Voice-aware total. Sequence end-time when available; falls back to the
+    // central voice-aware estimator if the sequence is empty.
     const total = sequence.length > 0
       ? sequence[sequence.length - 1].endTime
-      : variationMeta.duration;
+      : estimateMeditationDurationSeconds(meditation, {
+          voiceId: selectedVoiceId,
+          variationKey: selectedVariation,
+        });
     return [sequence, total];
   }, [meditation, selectedVariation, selectedVoiceId]);
+
+  // Voice-aware ceil-rounded display minutes for the shared DurationPill below
+  // the variation cards. Recomputes when the user picks a different variation
+  // or voice. Mirrors what the playback progress bar will actually show.
+  const displayMinutes = useMemo(() => {
+    if (!meditation) return null;
+    const seconds = estimateMeditationDurationSeconds(meditation, {
+      voiceId: selectedVoiceId,
+      variationKey: selectedVariation,
+    });
+    return Math.ceil(seconds / 60);
+  }, [meditation, selectedVoiceId, selectedVariation]);
 
   // Transcript prompts and title for the current variation
   const transcriptPrompts = useMemo(() => {
@@ -216,13 +225,17 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
                         {v.description}
                       </p>
                     </div>
-                    <span className="text-xs text-[var(--color-text-tertiary)] ml-3 flex-shrink-0 mt-0.5">
-                      ~{Math.round(v.duration / 60)} min
-                    </span>
                   </div>
                 </button>
               ))}
             </div>
+
+            {/* Shared duration pill — reflects the currently selected
+                variation, voice-aware, ceil-rounded. Fades when the user
+                picks a different card or toggles voices. */}
+            {typeof displayMinutes === 'number' && (
+              <DurationPill minutes={displayMinutes} />
+            )}
 
             {/* Voice pill — independent of variation. Renders only when the
                 meditation declares voices (graceful no-op pre-PR-merge). */}

@@ -72,14 +72,12 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onProg
     const silenceMultiplier = calculateSilenceMultiplier(
       filteredPrompts,
       durationSeconds,
-      meditation.speakingRate,
       'open-awareness',
       selectedVoiceId,
     );
 
     // Generate timed sequence — voiceId drives audio URL resolution.
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });

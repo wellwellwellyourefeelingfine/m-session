@@ -34,9 +34,6 @@ export const openAwarenessMeditation = {
     ],
   },
 
-  // Speaking rate for duration estimation (words per minute)
-  speakingRate: 150,
-
   prompts: [
     // === OPENING (Fixed Duration) ===
     {

@@ -39,7 +39,6 @@ export const pendulationMeditation = {
     format: 'mp3',
   },
 
-  speakingRate: 95,
   isFixedDuration: true,
 
   sections: {

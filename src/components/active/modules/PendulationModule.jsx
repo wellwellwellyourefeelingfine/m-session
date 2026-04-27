@@ -134,7 +134,6 @@ function MeditationSection({
   // Generate timed sequence for this section
   const [timedSequence, totalDuration] = useMemo(() => {
     const sequence = generateTimedSequence(section.prompts, 1.0, {
-      speakingRate: meditation.speakingRate || 95,
       audioConfig: meditation.audio,
       meditationId: meditation.id,
     });

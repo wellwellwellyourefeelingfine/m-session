@@ -19,8 +19,6 @@ export const transitionCenteringBreath = {
     format: 'mp3',
   },
 
-  speakingRate: 95,
-
   isFixedDuration: true,
   fixedDuration: 464, // ~7:44 — computed from actual MP3 durations (audio-durations.json) + baseSilenceAfter sums
 

@@ -112,7 +112,6 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   const [timedSequence, meditationTotalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
     const sequence = generateTimedSequence(meditation.prompts, 1.0, {
-      speakingRate: meditation.speakingRate || 95,
       audioConfig: meditation.audio,
     });
     const total = meditation.fixedDuration || (sequence.length > 0 ? sequence[sequence.length - 1].endTime : 0);

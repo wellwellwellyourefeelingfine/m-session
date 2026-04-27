@@ -60,7 +60,6 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
     if (!meditation) return [[], 0];
 
     const sequence = generateTimedSequence(meditation.prompts, 1.0, {
-      speakingRate: meditation.speakingRate || 95,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });
@@ -80,7 +79,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
   const durationMinutes = useMemo(() => {
     if (!meditation) return null;
     const seconds = estimateMeditationDurationSeconds(meditation, { voiceId: selectedVoiceId });
-    return Math.round(seconds / 60);
+    return Math.ceil(seconds / 60);
   }, [meditation, selectedVoiceId]);
 
   // Shared playback hook handles timer, audio-text sync, prompt progression, etc.

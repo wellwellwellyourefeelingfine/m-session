@@ -11,7 +11,6 @@
 import { lazy } from 'react';
 
 // Lazy-load custom module components — each becomes its own chunk
-const BreathMeditationModule = lazy(() => import('./modules/BreathMeditationModule'));
 const JournalingModule = lazy(() => import('./modules/JournalingModule'));
 const OpenAwarenessModule = lazy(() => import('./modules/OpenAwarenessModule'));
 const BodyScanModule = lazy(() => import('./modules/BodyScanModule'));
@@ -42,9 +41,6 @@ const MasterModule = lazy(() => import('./modules/MasterModule/MasterModule'));
  * These are modules that have specialized logic beyond what capabilities can provide
  */
 export const CUSTOM_MODULES = {
-  // Breath meditation with orb animation and sequence support
-  'breath-meditation': BreathMeditationModule,
-
   // Journaling needs journal store integration with custom save logic
   journaling: JournalingModule,
   'light-journaling': JournalingModule,
@@ -163,7 +159,6 @@ export function getAllModuleTypes() {
  */
 export const MODULE_CATEGORIES = {
   meditation: [
-    'breath-meditation',
     'open-awareness',
     'body-scan',
     'self-compassion',

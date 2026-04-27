@@ -15,8 +15,6 @@
  * Fixed duration per variation (no silence expansion)
  */
 
-const SPEAKING_RATE = 90; // words per minute — slow, spacious pacing
-
 // ============================================
 // ALL PROMPTS (38 total)
 // ============================================
@@ -304,45 +302,6 @@ function assembleVariation(variationKey) {
     });
 }
 
-import audioDurations from './audio-durations.json' with { type: 'json' };
-
-/**
- * Calculate the speaking duration for a prompt, using actual MP3 duration
- * from the audio manifest when available, falling back to word-count estimation.
- * @param {Object} prompt - Prompt object with id and text
- * @returns {number} Speaking duration in seconds
- */
-function calculatePromptSpeakingDuration(prompt) {
-  const manifestDuration = audioDurations['felt-sense']?.[prompt.id];
-  if (manifestDuration) return manifestDuration;
-  const wordCount = prompt.text.split(' ').length;
-  return (wordCount / SPEAKING_RATE) * 60;
-}
-
-/**
- * Calculate the total raw duration for a variation (before rounding)
- * @param {string} variationKey
- * @returns {number} Duration in seconds
- */
-function calculateRawDuration(variationKey) {
-  const prompts = assembleVariation(variationKey);
-  return prompts.reduce((sum, prompt) => {
-    return sum + calculatePromptSpeakingDuration(prompt) + prompt.baseSilenceAfter;
-  }, 0);
-}
-
-/**
- * Calculate the rounded duration for a variation (nearest whole minute, rounded up)
- * @param {string} variationKey
- * @returns {number} Duration in seconds (always a whole minute)
- */
-function calculateVariationDuration(variationKey) {
-  const rawSeconds = calculateRawDuration(variationKey);
-  const minutes = Math.ceil(rawSeconds / 60);
-  return minutes * 60;
-}
-
-
 // ============================================
 // EXPORTED MEDITATION OBJECT
 // ============================================
@@ -364,28 +323,24 @@ export const feltSenseMeditation = {
     ],
   },
 
-  // Speaking rate for duration estimation (slower pace per script direction)
-  speakingRate: SPEAKING_RATE,
-
-  // Fixed duration per variation (no DurationPicker)
+  // Fixed duration per variation
   isFixedDuration: true,
 
   // Default variation shown on idle screen
   defaultVariation: 'default',
 
-  // Variation definitions with pre-calculated durations
+  // Variation definitions. Display durations are derived at runtime via
+  // estimateMeditationDurationSeconds (voice-aware) — see FeltSenseModule.
   variations: {
     default: {
       key: 'default',
       label: 'A Gentle Practice',
       description: 'Settle in, find what your body is holding, and be with it.',
-      duration: calculateVariationDuration('default'),
     },
     'going-deeper': {
       key: 'going-deeper',
       label: 'Going Deeper',
       description: 'The full practice, with more time to stay with what you find.',
-      duration: calculateVariationDuration('going-deeper'),
     },
   },
 
@@ -394,7 +349,4 @@ export const feltSenseMeditation = {
 
   // Assembly function (called by component with selected variation key)
   assembleVariation,
-
-  // Utility for component to calculate prompt speaking duration
-  calculatePromptSpeakingDuration,
 };

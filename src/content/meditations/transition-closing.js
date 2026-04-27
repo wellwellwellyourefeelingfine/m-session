@@ -19,8 +19,6 @@ export const transitionClosing = {
     format: 'mp3',
   },
 
-  speakingRate: 95,
-
   isFixedDuration: true,
   fixedDuration: 551, // ~9:11 — computed from actual MP3 durations (audio-durations.json) + baseSilenceAfter sums
 

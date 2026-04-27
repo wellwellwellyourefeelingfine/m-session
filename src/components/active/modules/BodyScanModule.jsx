@@ -76,7 +76,6 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
     const silenceMultiplier = calculateSilenceMultiplier(
       meditation.prompts,
       durationSeconds,
-      meditation.speakingRate,
       'body-scan',
       selectedVoiceId,
     );
@@ -84,7 +83,6 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
     // Generate timed sequence — voiceId here also drives audio URL
     // resolution via resolveVoiceBasePath.
     const sequence = generateTimedSequence(meditation.prompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });

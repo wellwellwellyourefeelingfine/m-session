@@ -41,10 +41,7 @@ export const shortGroundingMeditation = {
     ],
   },
 
-  // Speaking rate for duration estimation (words per minute)
-  speakingRate: 95,
-
-  // Fixed duration — no DurationPicker
+  // Fixed duration
   isFixedDuration: true,
   fixedDuration: 249, // ~4:09 in seconds (from actual MP3 durations + actual silence file durations)
 

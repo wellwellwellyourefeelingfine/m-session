@@ -189,14 +189,12 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onPr
     const silenceMultiplier = calculateSilenceMultiplier(
       filteredPrompts,
       durationSeconds,
-      meditation.speakingRate,
       'leaves-on-a-stream',
       selectedVoiceId,
     );
 
     // Generate timed sequence — voiceId drives audio URL resolution.
     const sequence = generateTimedSequence(filteredPrompts, silenceMultiplier, {
-      speakingRate: meditation.speakingRate || 150,
       audioConfig: meditation.audio,
       voiceId: selectedVoiceId,
     });
