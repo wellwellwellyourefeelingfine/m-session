@@ -12,7 +12,7 @@ Developer documentation for M-SESSION. For an overview of the project, see [READ
 src/
 ├── components/
 │   ├── active/                    # Active session (meditation playback)
-│   │   ├── modules/               # 25+ lazy-loaded custom module components
+│   │   ├── modules/               # 20+ lazy-loaded custom module components
 │   │   │   ├── shared/            # Shared module sub-components (cycle/, matrix/)
 │   │   │   └── MasterModule/      # Content-driven universal module framework
 │   │   │       ├── MasterModule.jsx         # Main orchestrator
@@ -35,7 +35,6 @@ src/
 │   ├── session/                   # Session flow & transition components
 │   │   ├── SubstanceChecklist.jsx  # Pre-session preparation (5 steps)
 │   │   ├── PreSessionIntro.jsx     # Pre-session ritual (6 steps + intention sub-flow)
-│   │   ├── TransitionBuffer.jsx    # Reusable transition screen (quote + animation)
 │   │   ├── ComeUpCheckIn.jsx       # Come-up phase check-in modal
 │   │   ├── PeakTransition.jsx      # Come-up → peak transition (6 steps)
 │   │   ├── PeakPhaseCheckIn.jsx    # Peak phase end-of-phase check-in
@@ -44,7 +43,6 @@ src/
 │   │   ├── ClosingCheckIn.jsx      # Prompts user to begin closing ritual
 │   │   ├── ClosingRitual.jsx       # 8-step closing ritual
 │   │   ├── DataDownloadModal.jsx   # Session data download (text/JSON)
-│   │   ├── PostCloseScreen.jsx     # Post-session animation
 │   │   ├── activities/            # Pre-session activities
 │   │   │   ├── IntentionSettingActivity.jsx  # Guided intention refinement
 │   │   │   └── LifeGraphActivity.jsx         # Lifecycle visualization + PNG export
@@ -101,7 +99,6 @@ src/
 │   ├── useMeditationPlayback.js   # Shared TTS meditation playback orchestration
 │   ├── useSilenceTimer.js         # Gong-bookended silence timer (for non-TTS modules)
 │   ├── useSyncedDuration.js       # Two-way duration sync between module UI and session store
-│   ├── useWakeLock.js             # Screen Wake Lock API wrapper
 │   ├── useInstallPrompt.js        # PWA install prompt detection
 │   └── useTranscriptModal.js      # Meditation transcript viewer
 ├── content/
@@ -2216,7 +2213,7 @@ A compact looping ASCII art diamond animation for smaller visual accents:
 - **Characters**: Uses 'L', 'O', 'V', 'E' for dense areas, punctuation for lit areas
 - **Animation**: 8-second cycle - fills from center outward, empties from center outward
 - **Grid**: 7x7 character grid (~1/3 the size of AsciiMoon)
-- **Used in**: SubstanceChecklist Step 4, TransitionBuffer, HomeView welcome
+- **Used in**: SubstanceChecklist Step 4, HomeView welcome
 
 #### MorphingShapes (`capabilities/animations/MorphingShapes.jsx`)
 
@@ -2226,15 +2223,6 @@ Three overlapping shapes (stroke only) that slowly morph with polyrhythmic timin
 - **Shape C**: center point → full circle → center point (SVG, 2/3 duration ratio)
 - **Color**: Always renders in accent color
 - **Props**: `size`, `strokeWidth`, `duration`
-
-#### TransitionBuffer (`session/TransitionBuffer.jsx`)
-
-A reusable transition screen for smooth flow between sections:
-- **Sequence**: blank (300ms) → fade in (800ms) → hold (2s) → fade out (800ms) → blank (300ms)
-- **Content**: AsciiDiamond animation + randomly selected quote with attribution
-- **Usage**: Pass `onComplete` callback; component calls it when animation finishes
-- **Total duration**: ~4.2 seconds
-- **Quotes**: 7 curated quotes (Rogers, Rilke, Krishnamurti, Marcus Aurelius, Saint-Exupery, Pascal)
 
 ---
 
@@ -2259,7 +2247,6 @@ A reusable transition screen for smooth flow between sections:
 | Orb animation | `src/components/active/capabilities/animations/BreathOrb.jsx` |
 | ASCII moon | `src/components/active/capabilities/animations/AsciiMoon.jsx` |
 | ASCII diamond | `src/components/active/capabilities/animations/AsciiDiamond.jsx` |
-| Transition buffer | `src/components/session/TransitionBuffer.jsx` |
 | Audio playback | `src/hooks/useAudioPlayback.js` |
 | Meditation playback | `src/hooks/useMeditationPlayback.js` |
 | Meditation content registry | `src/content/meditations/index.js` |
@@ -2488,12 +2475,12 @@ This approach aligns with the app's non-directive philosophy. Rigid timing isn't
 
 The production build uses Vite's default 500 KB chunk size warning threshold. The main `index` chunk sits around ~700 KB minified (~197 KB gzipped) as of April 2026. This is above the threshold but acceptable for a PWA — the service worker caches all chunks after first load, so repeat visits are instant.
 
-**What's in the main chunk:** Session store (~3,600 LOC), HomeView, IntakeFlow, TimelineEditor, all shared components/icons/utilities, and third-party deps (React, Zustand). These are all interconnected via shared imports and don't split cleanly.
+**What's in the main chunk:** Session store (~4,000 LOC), HomeView, IntakeFlow, TimelineEditor, all shared components/icons/utilities, and third-party deps (React, Zustand). These are all interconnected via shared imports and don't split cleanly.
 
 **What's lazy-loaded:**
 - ActiveView, JournalView, ToolsView (tab-level code splitting via `React.lazy`)
 - HelperModal (entire helper subsystem: 17 components, 8 resolvers, 3 content files)
-- All 25+ session modules (via `moduleRegistry.js`)
+- All 24 session modules (via `moduleRegistry.js`)
 
 **Guidelines for keeping the bundle in check:**
 - New self-contained features (modals, overlays, drawers) that are user-initiated should use `React.lazy` — the HelperModal pattern in `AppShell.jsx` is the template

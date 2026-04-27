@@ -28,9 +28,8 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
 - 8-step closing ritual capturing self-gratitude, future messages, and commitments
 - Follow-up phase (unlocked 8h post-session) with a growing library of MAPS-inspired integration activities
 
-**17+ Activity Modules**
-- 11 audio-synced guided meditations with pre-recorded TTS voice guidance
-- Breath meditation with animated BreathOrb visualization
+**24+ Activity Modules**
+- 12 audio-synced guided meditations with pre-recorded TTS voice guidance
 - 6 journaling types (light, deep, letter-writing, parts-work, therapy-exercise, general)
 - Values Compass (ACT Matrix) with interactive drag-and-drop + PNG export
 - Music listening and dance modules with native alarm integration
@@ -89,7 +88,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
    ├── Reassurance: "what to expect" before the guided audio
    ├── Guided audio — clearing the space, arriving in the body
    ├── Reassurance: debrief + soften into the wait
-   └── Begin session → TransitionBuffer → startSession()
+   └── Begin session → startSession()
 
 5. ACTIVE SESSION — COME-UP PHASE
    ├── Modules begin (grounding, breathing, music, etc.)
@@ -103,7 +102,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
    ├── Body Sensations — multi-select grid (10 sensations + "Something I can't name")
    ├── Tune In — reassurance
    ├── Let It Unfold — permission statement
-   └── Begin → TransitionBuffer → enter peak phase
+   └── Begin → enter peak phase
 
 7. ACTIVE SESSION — PEAK PHASE
    ├── Peak-appropriate modules (meditation, music, journaling, open awareness)
@@ -118,7 +117,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
    │   └── (conditional) Focus selector + relationship sub-type
    ├── Tailored activity offer — journaling/compassion/reflection based on focus
    ├── Hydration reminder
-   └── Begin → TransitionBuffer → enter synthesis phase
+   └── Begin → enter synthesis phase
 
 9. ACTIVE SESSION — SYNTHESIS PHASE
    ├── Synthesis-phase modules (deep journaling, parts work, letter writing, etc.)
@@ -132,7 +131,7 @@ A privacy-first companion for intentional MDMA experiences. M-SESSION guides you
     ├── "This Session Is Complete"
     ├── "Before You Go" — data download prompt (text / JSON)
     ├── "Integration Takes Time" — encouragement to return for follow-up
-    └── "Take Care" → Close Session → PostCloseScreen animation → Home
+    └── "Take Care" → Close Session → Home
 
 11. FOLLOW-UP (phase unlocked 8h after session, available on Home screen)
     ├── Auto-added on session close:

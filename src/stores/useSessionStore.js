@@ -99,9 +99,7 @@ export const useSessionStore = create(
       // Single source of truth for every piece of user-entered data captured
       // during this session — regardless of which screen captured it. Replaces
       // the old intake.responses + substanceChecklist (user fields) +
-      // preSubstanceActivity (intention artifacts) split. See
-      // Technical-Spec-Docs-Temporary/Session-Profile-Spec-V1.md (and the V2
-      // spec in ~/.claude/plans) for the full design.
+      // preSubstanceActivity (intention artifacts) split.
       //
       // Lifecycle: born when a session starts, lives forever inside the session
       // (preserved across archive/restore), and is only destroyed when the
@@ -2671,14 +2669,12 @@ export const useSessionStore = create(
       },
 
       skipModule: (instanceId) => {
-        console.log('[SessionStore] skipModule(%s) called', instanceId);
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module) { console.warn('[SessionStore] skipModule — module not found!'); return; }
 
         const now = Date.now();
         const currentPhase = state.timeline.currentPhase;
-        console.log('[SessionStore] skipModule — phase=%s, module=%s', currentPhase, module.libraryId);
 
         // Update the module items first (mark as skipped)
         const updatedItems = state.modules.items.map((m) =>

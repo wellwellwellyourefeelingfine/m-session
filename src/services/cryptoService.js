@@ -146,18 +146,3 @@ export async function decryptApiKey(encryptedData) {
 export function hasEncryptedKey(encryptedData) {
   return !!(encryptedData && encryptedData.iv && encryptedData.ciphertext);
 }
-
-/**
- * Clear the device key (useful for testing or full reset)
- */
-export async function clearDeviceKey() {
-  const db = await openDatabase();
-  const transaction = db.transaction(STORE_NAME, 'readwrite');
-  const store = transaction.objectStore(STORE_NAME);
-
-  return new Promise((resolve, reject) => {
-    const request = store.delete(DEVICE_KEY_ID);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}

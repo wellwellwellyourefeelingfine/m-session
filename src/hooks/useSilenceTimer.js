@@ -263,7 +263,6 @@ export function useSilenceTimer({
 
   // Skip: stop, cleanup, skip
   const handleSkip = useCallback(() => {
-    console.log('[SilenceTimer] handleSkip called');
     try {
       audio.stop();
       resetMeditationPlayback();
@@ -271,9 +270,7 @@ export function useSilenceTimer({
         revokeMeditationBlobUrl(blobUrlRef.current);
         blobUrlRef.current = null;
       }
-      console.log('[SilenceTimer] calling onSkip()...');
       onSkip();
-      console.log('[SilenceTimer] onSkip() done');
     } catch (err) {
       console.error('[SilenceTimer] handleSkip ERROR:', err);
       try { onSkip(); } catch (e2) { console.error('[SilenceTimer] fallback onSkip ERROR:', e2); }

@@ -3,8 +3,8 @@
  * Handles tab routing and renders appropriate view
  *
  * Views are lazy-loaded on first visit and then kept mounted (via CSS)
- * to preserve state when switching tabs. This is important for modules
- * like BreathMeditation that need to maintain their state across tab switches.
+ * to preserve state when switching tabs — important for any module
+ * with timers or in-progress audio that needs to survive tab switches.
  */
 
 import { useEffect, useState, lazy, Suspense } from 'react';
