@@ -19,45 +19,60 @@
  * Options:
  *   --dry-run       Print clips and filenames without calling the API
  *   --list-voices   List all voices available to your account
+ *   --voice KEY     Voice preset to use: theo or rachel (default: theo)
  *   --start N       Start from clip index N (0-based, for resuming after errors)
  *   --only ID       Generate only a specific clip by ID (e.g. --only paced-1-in)
  *   --section SEC   Generate only clips from a section (e.g. --section paced)
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // --- Configuration ---
-const VOICE_ID = 'UmQN7jS1Ee8B1czsUtQh'; // Theo Silk
-const MODEL_ID = 'eleven_multilingual_v2';
 const OUTPUT_FORMAT = 'mp3_44100_128'; // High quality MP3
 const API_BASE = 'https://api.elevenlabs.io/v1';
 
-// Voice settings — tuned for a stable, neutral, monotone meditation read.
-// Higher stability keeps Theo Silk even and steady across short phrases so
-// fragments don't come out sounding theatrical.
-// Speed is set per-prompt below; everything else is uniform.
-const VOICE_SETTINGS = {
-  stability: 0.80,
-  similarity_boost: 0.77,
-  style: 0.0,
-  use_speaker_boost: true,
+const VOICE_PRESETS = {
+  theo: {
+    label: 'Theo Silk',
+    voiceId: 'UmQN7jS1Ee8B1czsUtQh',
+    modelId: 'eleven_multilingual_v2',
+    outputSubdir: null,
+    defaultSpeed: 0.87,
+    speedMap: [
+      // Counted in/out prompts: "One. Two. Three. Four." — slower for timing
+      { pattern: /^paced-[1-4]-(in|out)$/, speed: 0.85 },
+    ],
+    settings: {
+      stability: 0.80,
+      similarity_boost: 0.77,
+      style: 0.0,
+      use_speaker_boost: true,
+    },
+  },
+  rachel: {
+    label: 'Relaxing Rachel - Calm & Soothing',
+    voiceId: 'ROMJ9yK1NAMuu1ggrjDW',
+    modelId: 'eleven_multilingual_v2',
+    outputSubdir: 'relaxing-rachel',
+    defaultSpeed: 0.81,
+    speedMap: [],
+    settings: {
+      stability: 0.80,
+      similarity_boost: 0.75,
+      style: 0.50,
+      use_speaker_boost: true,
+    },
+  },
 };
 
-// Speed map — counted paced-breathing clips run slower to give each count space
-const DEFAULT_SPEED = 0.87;
-const SPEED_MAP = [
-  // Counted in/out prompts: "One. Two. Three. Four." — slower for timing
-  { pattern: /^paced-[1-4]-(in|out)$/, speed: 0.85 },
-];
-
 function getSpeedForPrompt(clipId) {
-  for (const { pattern, speed } of SPEED_MAP) {
+  for (const { pattern, speed } of selectedVoice.speedMap || []) {
     if (pattern.test(clipId)) return speed;
   }
-  return DEFAULT_SPEED;
+  return selectedVoice.defaultSpeed;
 }
 
 // Delay between requests to respect rate limits (ms)
@@ -67,7 +82,6 @@ const REQUEST_DELAY = 1200;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const OUTPUT_DIR = path.join(PROJECT_ROOT, 'public', 'audio', 'meditations', 'transition-centering-breath');
 
 // --- Import clips from content definition ---
 const { transitionCenteringBreath } = await import('../src/content/meditations/transition-centering-breath.js');
@@ -78,22 +92,66 @@ const allClips = transitionCenteringBreath.prompts;
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const listVoices = args.includes('--list-voices');
+const voiceKey = args.includes('--voice') ? args[args.indexOf('--voice') + 1] : 'theo';
 const startIdx = args.includes('--start') ? parseInt(args[args.indexOf('--start') + 1], 10) : 0;
 const onlyId = args.includes('--only') ? args[args.indexOf('--only') + 1] : null;
 const sectionFilter = args.includes('--section') ? args[args.indexOf('--section') + 1] : null;
 
+const selectedVoice = VOICE_PRESETS[voiceKey];
+if (!selectedVoice) {
+  console.error(`Error: Unknown voice preset "${voiceKey}".`);
+  console.error(`Available voices: ${Object.keys(VOICE_PRESETS).join(', ')}`);
+  process.exit(1);
+}
+
+const OUTPUT_DIR = path.join(
+  PROJECT_ROOT,
+  'public',
+  'audio',
+  'meditations',
+  'transition-centering-breath',
+  ...(selectedVoice.outputSubdir ? [selectedVoice.outputSubdir] : []),
+);
+
+function loadApiKey() {
+  if (process.env.ELEVENLABS_API_KEY) return process.env.ELEVENLABS_API_KEY;
+  if (process.env.ELEVENLABS_API) return process.env.ELEVENLABS_API;
+
+  const envPath = path.join(PROJECT_ROOT, '.env');
+  if (!existsSync(envPath)) return null;
+
+  const envText = readFileSync(envPath, 'utf8');
+  for (const line of envText.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) continue;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    if (key !== 'ELEVENLABS_API_KEY' && key !== 'ELEVENLABS_API') continue;
+
+    let value = trimmed.slice(separatorIndex + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    return value;
+  }
+
+  return null;
+}
+
 // --- Validate ---
-const apiKey = process.env.ELEVENLABS_API_KEY;
+const apiKey = loadApiKey();
 if (!apiKey && !dryRun) {
-  console.error('Error: ELEVENLABS_API_KEY environment variable is required.');
-  console.error('Usage: ELEVENLABS_API_KEY=your_key node scripts/generate-transition-centering-breath-audio.mjs');
+  console.error('Error: ELEVENLABS_API_KEY or ELEVENLABS_API is required.');
+  console.error('Set it in the environment or in .env, then run node scripts/generate-transition-centering-breath-audio.mjs');
   process.exit(1);
 }
 
 // --- List available voices ---
 if (listVoices) {
   if (!apiKey) {
-    console.error('Error: ELEVENLABS_API_KEY is required to list voices.');
+    console.error('Error: ELEVENLABS_API_KEY or ELEVENLABS_API is required to list voices.');
     process.exit(1);
   }
 
@@ -122,13 +180,13 @@ if (listVoices) {
     console.log();
   }
 
-  console.log('To use a voice, update VOICE_ID in this script.');
+  console.log(`To use a preset, pass --voice ${Object.keys(VOICE_PRESETS).join('|')}.`);
   process.exit(0);
 }
 
 // --- Main ---
 async function generateAudio(clipId, text) {
-  const url = `${API_BASE}/text-to-speech/${VOICE_ID}?output_format=${OUTPUT_FORMAT}`;
+  const url = `${API_BASE}/text-to-speech/${selectedVoice.voiceId}?output_format=${OUTPUT_FORMAT}`;
   const speed = getSpeedForPrompt(clipId);
 
   const response = await fetch(url, {
@@ -140,8 +198,8 @@ async function generateAudio(clipId, text) {
     },
     body: JSON.stringify({
       text,
-      model_id: MODEL_ID,
-      voice_settings: { ...VOICE_SETTINGS, speed },
+      model_id: selectedVoice.modelId,
+      voice_settings: { ...selectedVoice.settings, speed },
     }),
   });
 
@@ -198,26 +256,29 @@ async function main() {
     section,
     count: allClips.filter(c => getClipSection(c.id) === section).length,
   }));
-  const slowClipCount = allClips.filter(c => getSpeedForPrompt(c.id) !== DEFAULT_SPEED).length;
+  const customSpeedClipCount = allClips.filter(c => getSpeedForPrompt(c.id) !== selectedVoice.defaultSpeed).length;
 
   console.log(`Centering Breath Audio Generator`);
   console.log(`================================`);
-  console.log(`Voice: Theo Silk (${VOICE_ID})`);
-  console.log(`Model: ${MODEL_ID}`);
+  console.log(`Voice: ${selectedVoice.label} (${selectedVoice.voiceId})`);
+  console.log(`Model: ${selectedVoice.modelId}`);
+  console.log(`Settings: ${JSON.stringify(selectedVoice.settings)}`);
   console.log(`Total clips: ${allClips.length}`);
   for (const { section, count } of sectionCounts) {
     if (count > 0) {
       console.log(`  ${getSectionLabel(section).padEnd(18)} ${count}`);
     }
   }
-  console.log(`Default speed: ${DEFAULT_SPEED} (${allClips.length - slowClipCount} clips)`);
-  console.log(`Slower speed: 0.85 (${slowClipCount} counted paced-breathing clips)`);
+  console.log(`Default speed: ${selectedVoice.defaultSpeed} (${allClips.length - customSpeedClipCount} clips)`);
+  if (customSpeedClipCount > 0) {
+    console.log(`Custom speed: ${customSpeedClipCount} clip(s)`);
+  }
   console.log(`Total characters: ${totalChars}`);
   console.log(`Output: ${OUTPUT_DIR}`);
   console.log();
 
   // Ensure output directory exists
-  if (!existsSync(OUTPUT_DIR)) {
+  if (!dryRun && !existsSync(OUTPUT_DIR)) {
     await mkdir(OUTPUT_DIR, { recursive: true });
     console.log(`Created directory: ${OUTPUT_DIR}`);
   }
