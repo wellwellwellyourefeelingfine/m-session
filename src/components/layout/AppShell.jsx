@@ -63,6 +63,9 @@ export default function AppShell({ children }) {
   return (
     <AppUpdaterProvider>
       <div className="h-full flex flex-col bg-app-white dark:bg-app-black">
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Header />
         {isHelperOpen && (
           <Suspense fallback={null}>
@@ -71,7 +74,13 @@ export default function AppShell({ children }) {
         )}
 
         {/* Main content area - scrollable container with fixed header/footer compensation */}
-        <main ref={mainRef} className="flex-1 overflow-y-auto overscroll-none w-full max-w-[1000px] mx-auto" style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}>
+        <main
+          id="main-content"
+          ref={mainRef}
+          tabIndex={-1}
+          className="flex-1 overflow-y-auto overscroll-none w-full max-w-[1000px] mx-auto"
+          style={{ paddingTop: 'var(--header-height)', paddingBottom: 'var(--tabbar-height)' }}
+        >
           {children}
         </main>
 
