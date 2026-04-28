@@ -26,11 +26,13 @@ import {
   getMeditationById,
   generateTimedSequence,
   estimateMeditationDurationSeconds,
+  resolveEffectiveVoiceId,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 import { saveImage } from '../../../utils/imageStorage';
 
 import {
@@ -68,7 +70,7 @@ import {
 } from '../../../content/modules/theCycleContent';
 
 // Shared UI
-import ModuleLayout from '../capabilities/ModuleLayout';
+import ModuleLayout, { VoicePill } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -236,6 +238,11 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
   // Meditation
   const [isMedLeaving, setIsMedLeaving] = useState(false);
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
 
   // Post-meditation
   const [meditationCapture, setMeditationCapture] = useState('');
@@ -353,12 +360,13 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     const clips = meditation.assembleVariation(mode);
     const sequence = generateTimedSequence(clips, 1.0, {
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
     const total = sequence.length > 0
       ? sequence[sequence.length - 1].endTime
-      : estimateMeditationDurationSeconds(meditation, { variationKey: mode });
+      : estimateMeditationDurationSeconds(meditation, { variationKey: mode, voiceId: selectedVoiceId });
     return [sequence, total];
-  }, [meditation, mode]);
+  }, [meditation, mode, selectedVoiceId]);
 
   const transcriptPrompts = useMemo(() => {
     if (!meditation) return [];
@@ -394,6 +402,15 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
       setPhase('meditation');
     }
   }, [playback.hasStarted, playback.isLoading, phase]);
+
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
 
   const handleBeginMeditation = useCallback(() => {
     setIsMedLeaving(true);
@@ -1484,6 +1501,14 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
               <div className="text-left mb-6">
                 {renderContentLines(MEDITATION_INTRO_CONTENT.lines)}
               </div>
+
+              {Array.isArray(voices) && voices.length >= 1 && (
+                <VoicePill
+                  voices={voices}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceChange={setSelectedVoiceId}
+                />
+              )}
             </div>
           ) : (
             <div className="text-center animate-fadeIn">
