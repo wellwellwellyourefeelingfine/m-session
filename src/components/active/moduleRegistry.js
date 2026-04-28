@@ -27,7 +27,6 @@ const TheDescentModule = lazy(() => import('./modules/TheDescentModule'));
 const TheCycleModule = lazy(() => import('./modules/TheCycleModule'));
 const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
-const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
 const PendulationModule = lazy(() => import('./modules/PendulationModule'));
 const ShakingTheTreeModule = lazy(() => import('./modules/ShakingTheTreeModule'));
 const LetterWritingModule = lazy(() => import('./modules/LetterWritingModule'));
@@ -115,8 +114,8 @@ export const CUSTOM_MODULES = {
   // Life Graph — pre-session lifeline exercise with PNG visualization
   'life-graph': LifeGraphActivity,
 
-  // Mapping the Territory — pre-session educational orientation
-  'mapping-territory': MappingTerritoryActivity,
+  // Mapping the Territory — pre-session educational orientation, MasterModule-driven
+  'mapping-territory': MasterModule,
 
   // Pendulation (Somatic Experiencing) — branching audio + checkpoints + adaptive debrief
   'pendulation': PendulationModule,

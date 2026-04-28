@@ -70,6 +70,7 @@ import ModuleLayout, { CompletionScreen, IdleScreen } from '../../capabilities/M
 import ModuleControlBar from '../../capabilities/ModuleControlBar';
 import RevealOverlay from '../../capabilities/animations/RevealOverlay';
 import ImageViewerModal from '../../capabilities/ImageViewerModal';
+import { getModuleById } from '../../../../content/modules';
 import { ANIMATION_MAP } from './blockRenderers/HeaderBlock';
 import MASTER_CUSTOM_BLOCKS from './customBlocks';
 import { CirclePlusIcon, CircleSkipIcon } from '../../../shared/Icons';
@@ -107,7 +108,8 @@ function IdleExpandable({ title, body }) {
 }
 
 export default function MasterModule({ module, onComplete, onSkip, onProgressUpdate }) {
-  const content = module.content?.masterModuleContent;
+  const content = module.content?.masterModuleContent
+    || getModuleById(module.libraryId)?.content?.masterModuleContent;
 
   // Hand the parent's onComplete down to the state hook so that the module's
   // final advance (sequential past last section, or terminal section, or

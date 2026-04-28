@@ -530,6 +530,7 @@ export default function ScreensSection({
                 sessionData,
                 storeState,
                 conditionContext,
+                allBlocksWithPromptIndex,
                 // State writers
                 setPromptResponse: onSetPromptResponse,
                 toggleSelector: onToggleSelector,
