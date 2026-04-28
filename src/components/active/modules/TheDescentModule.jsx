@@ -22,11 +22,13 @@ import {
   getMeditationById,
   generateTimedSequence,
   estimateMeditationDurationSeconds,
+  resolveEffectiveVoiceId,
 } from '../../../content/meditations';
 import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Reflection content
 import {
@@ -45,7 +47,7 @@ import {
 } from '../../../content/modules/theDeepDiveReflectionContent';
 
 // Shared UI components
-import ModuleLayout, { DurationPill } from '../capabilities/ModuleLayout';
+import ModuleLayout, { DurationPill, VoicePill } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -193,6 +195,11 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
     meditation?.defaultVariation || 'solo'
   );
   const [isLeaving, setIsLeaving] = useState(false);
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
+  const voices = meditation?.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId)
+  );
 
   // Transcript modal state
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
@@ -227,23 +234,23 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
 
     const sequence = generateTimedSequence(clips, 1.0, {
       audioConfig: meditation.audio,
+      voiceId: selectedVoiceId,
     });
 
     const total = sequence.length > 0
       ? sequence[sequence.length - 1].endTime
-      : estimateMeditationDurationSeconds(meditation, { variationKey: selectedMode });
+      : estimateMeditationDurationSeconds(meditation, { variationKey: selectedMode, voiceId: selectedVoiceId });
     return [sequence, total];
-  }, [meditation, selectedMode]);
+  }, [meditation, selectedMode, selectedVoiceId]);
 
-  // Voice-aware ceil-rounded display minutes for the shared DurationPill below
-  // the variation cards. The Descent doesn't currently expose voice variants,
-  // so this resolves to the default voice; will become voice-aware automatically
-  // once `audio.voices` is added to the meditation file.
   const displayMinutes = useMemo(() => {
     if (!meditation) return null;
-    const seconds = estimateMeditationDurationSeconds(meditation, { variationKey: selectedMode });
+    const seconds = estimateMeditationDurationSeconds(meditation, {
+      variationKey: selectedMode,
+      voiceId: selectedVoiceId,
+    });
     return Math.ceil(seconds / 60);
-  }, [meditation, selectedMode]);
+  }, [meditation, selectedMode, selectedVoiceId]);
 
   // Transcript prompts for the current mode
   const transcriptPrompts = useMemo(() => {
@@ -293,6 +300,15 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
       setPhase('meditation');
     }
   }, [playback.hasStarted, playback.isLoading, phase]);
+
+  useEffect(() => {
+    if (playback.hasStarted) return;
+    const nextEffective = resolveEffectiveVoiceId(meditation?.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
+  }, [defaultVoiceId, playback.hasStarted, meditation]);
 
   // Fade out idle screen before starting
   const handleBeginWithTransition = useCallback(() => {
@@ -630,6 +646,14 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
                   ceil-rounded. */}
               {typeof displayMinutes === 'number' && (
                 <DurationPill minutes={displayMinutes} />
+              )}
+
+              {Array.isArray(voices) && voices.length >= 1 && (
+                <VoicePill
+                  voices={voices}
+                  selectedVoiceId={selectedVoiceId}
+                  onVoiceChange={setSelectedVoiceId}
+                />
               )}
             </div>
           ) : (
