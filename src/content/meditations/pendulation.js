@@ -37,6 +37,11 @@ export const pendulationMeditation = {
   audio: {
     basePath: '/audio/meditations/pendulation/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   isFixedDuration: true,

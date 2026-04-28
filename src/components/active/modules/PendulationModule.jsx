@@ -22,7 +22,7 @@
 
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { pendulationMeditation } from '../../../content/meditations/pendulation';
-import { generateTimedSequence } from '../../../content/meditations';
+import { generateTimedSequence, resolveEffectiveVoiceId } from '../../../content/meditations';
 import {
   INTRO_SCREENS,
   ACCENT_TERMS,
@@ -38,9 +38,10 @@ import { useMeditationPlayback } from '../../../hooks/useMeditationPlayback';
 import { useTranscriptModal } from '../../../hooks/useTranscriptModal';
 import { useJournalStore } from '../../../stores/useJournalStore';
 import { useSessionStore } from '../../../stores/useSessionStore';
+import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI
-import ModuleLayout from '../capabilities/ModuleLayout';
+import ModuleLayout, { VoicePill } from '../capabilities/ModuleLayout';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import useProgressReporter from '../../../hooks/useProgressReporter';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
@@ -120,6 +121,7 @@ function renderBodyWithAccents(paragraphs, textSize = 'text-sm') {
 
 function MeditationSection({
   sectionKey,
+  voiceId,
   moduleInstanceId,
   onSectionComplete,
   onModuleSkip,
@@ -136,10 +138,11 @@ function MeditationSection({
     const sequence = generateTimedSequence(section.prompts, 1.0, {
       audioConfig: meditation.audio,
       meditationId: meditation.id,
+      voiceId,
     });
     const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : 0;
     return [sequence, total];
-  }, [section, meditation]);
+  }, [section, meditation, voiceId]);
 
   // Opening gong only on first section (A), closing gong only on last section (D)
   const composerOptions = useMemo(() => ({
@@ -286,6 +289,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
   const updatePendulationCapture = useSessionStore((s) => s.updatePendulationCapture);
+  const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
 
   const report = useProgressReporter(onProgressUpdate);
 
@@ -294,6 +298,10 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
   const [phase, setPhase] = useState('idle');
   const [activeSectionKey, setActiveSectionKey] = useState('a');
   const [sectionsCompleted, setSectionsCompleted] = useState([]);
+  const voices = pendulationMeditation.audio?.voices;
+  const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
+    resolveEffectiveVoiceId(pendulationMeditation.audio, defaultVoiceId)
+  );
 
   // Intro state
   const [introStep, setIntroStep] = useState(0);
@@ -330,6 +338,15 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
 
   // Idle leave animation
   const [isLeaving, setIsLeaving] = useState(false);
+
+  useEffect(() => {
+    if (phase !== 'idle') return;
+    const nextEffective = resolveEffectiveVoiceId(pendulationMeditation.audio, defaultVoiceId);
+    if (nextEffective && nextEffective !== selectedVoiceId) {
+      setSelectedVoiceId(nextEffective);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- local VoicePill changes should not trigger a reset
+  }, [defaultVoiceId, phase]);
 
   // ─── Computed values ────────────────────────────────────────────────
 
@@ -638,6 +655,14 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
             <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)]">
               About 25 to 40 minutes
             </p>
+
+            {Array.isArray(voices) && voices.length >= 1 && (
+              <VoicePill
+                voices={voices}
+                selectedVoiceId={selectedVoiceId}
+                onVoiceChange={setSelectedVoiceId}
+              />
+            )}
           </div>
         </ModuleLayout>
         <ModuleControlBar
@@ -722,8 +747,9 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
     return (
       <div className={`transition-opacity duration-[400ms] ${isMeditationVisible ? 'opacity-100' : 'opacity-0'}`}>
         <MeditationSection
-          key={activeSectionKey}
+          key={`${activeSectionKey}:${selectedVoiceId}`}
           sectionKey={activeSectionKey}
+          voiceId={selectedVoiceId}
           moduleInstanceId={module.instanceId}
           onSectionComplete={handleSectionComplete}
           onModuleSkip={handleModuleSkip}
