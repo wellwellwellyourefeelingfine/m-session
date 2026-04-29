@@ -28,6 +28,7 @@ import { ViewImageIcon } from '../../../capabilities/ImageViewerModal';
 import {
   TextBlock, PromptBlock, SelectorBlock,
   ChoiceBlock, AnimationBlock, AlarmBlock, ReviewBlock,
+  DotSeparatorBlock,
 } from '../blockRenderers';
 import { ANIMATION_MAP } from '../blockRenderers/HeaderBlock';
 import { renderLineWithMarkup } from '../utils/renderContentLines';
@@ -352,8 +353,19 @@ export default function ScreensSection({
           // hard scrollTo(0, 0); this only runs for persistBlocks
           // transitions where existing content stays in place.
           if (hasNewBlock) {
+            // Skip leading dot-separator blocks as scroll targets — the user
+            // should land on the new TEXT, with the freshly-drawing dots in
+            // peripheral view rather than at the top of the viewport. The
+            // separator's SVG draw-in still plays as the eye tracks down.
             requestAnimationFrame(() => {
-              const target = document.querySelector(`[data-block-index="${firstNewIndex}"]`);
+              let scrollIndex = firstNewIndex;
+              while (
+                scrollIndex < nextBodyBlocks.length - 1
+                && nextBodyBlocks[scrollIndex].type === 'dot-separator'
+              ) {
+                scrollIndex++;
+              }
+              const target = document.querySelector(`[data-block-index="${scrollIndex}"]`);
               smoothScrollToElement(target);
             });
           }
@@ -499,6 +511,9 @@ export default function ScreensSection({
       case 'animation':
         return <AnimationBlock screen={block} accentTerms={accentTerms} />;
 
+      case 'dot-separator':
+        return <DotSeparatorBlock screen={block} />;
+
       case 'alarm':
         return <AlarmBlock screen={block} />;
 
@@ -609,7 +624,12 @@ export default function ScreensSection({
               const topSpacing = i === 0
                 ? ''
                 : (block.tightAbove ? 'mt-2' : 'mt-4');
-              const fadeClass = section.persistBlocks ? ' animate-fade-in' : '';
+              // Dot-separator blocks self-animate via stroke-dashoffset and
+              // must NOT inherit the wrapper's 6px-translateY fade-in. The
+              // SVG handles its own draw-in entry. See MasterModuleStyleSheet
+              // §6 (the persistBlocks reveal pattern).
+              const isStaticEntry = block.type === 'dot-separator';
+              const fadeClass = (section.persistBlocks && !isStaticEntry) ? ' animate-fade-in' : '';
               return (
                 <div
                   key={i}

@@ -34,6 +34,16 @@ const INTRO_HEADER = {
   animation: 'ascii-moon',
 };
 
+// Dot-separator blocks for the intro's progressive reveal. Each separator
+// sits above the text block whose index matches its dot count — 1 dot above
+// the second text block, 2 dots above the third, etc. The cumulative count
+// gives the user an at-a-glance sense of how deep into the section they are.
+// `tightAbove: true` snugs the separator to the text above it; the text
+// block following the separator should also set `tightAbove: true` so the
+// cluster reads as `text → separator → text` rather than three islands.
+const SEPARATOR_1 = { type: 'dot-separator', count: 1, tightAbove: true };
+const SEPARATOR_2 = { type: 'dot-separator', count: 2, tightAbove: true };
+
 // Closing section header — diamond animation marks the moment of completion.
 const CLOSING_HEADER = {
   type: 'header',
@@ -139,7 +149,8 @@ export const protectorDialogueP1Content = {
               '§',
               'Not to fix it. Not to get rid of it. Just to understand it a little better.',
             ] },
-            { type: 'text', lines: [
+            SEPARATOR_1,
+            { type: 'text', tightAbove: true, lines: [
               'You carry patterns that formed for good reasons. Ways of coping, defending, managing the world.',
               '§',
               'An inner critic that pushes you to be better. A part that avoids conflict at all costs. A part that stays busy so you never have to sit still. A part that reaches for distraction the moment things get uncomfortable.',
@@ -156,14 +167,16 @@ export const protectorDialogueP1Content = {
               '§',
               'Not to fix it. Not to get rid of it. Just to understand it a little better.',
             ] },
-            { type: 'text', lines: [
+            SEPARATOR_1,
+            { type: 'text', tightAbove: true, lines: [
               'You carry patterns that formed for good reasons. Ways of coping, defending, managing the world.',
               '§',
               'An inner critic that pushes you to be better. A part that avoids conflict at all costs. A part that stays busy so you never have to sit still. A part that reaches for distraction the moment things get uncomfortable.',
               '§',
               "These aren't flaws. They're protectors. They took on their roles when you needed them.",
             ] },
-            { type: 'text', lines: [
+            SEPARATOR_2,
+            { type: 'text', tightAbove: true, lines: [
               'Right now, in this state, something interesting happens.',
               '§',
               'The walls these protectors usually maintain tend to soften on their own. You may already be sensing parts of yourself more clearly than usual.',

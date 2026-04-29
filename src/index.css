@@ -303,6 +303,28 @@
   .animate-fade-in {
     animation: fade-in 500ms ease-out;
   }
+
+  /* Dot-separator reveal — two-phase: stroke draws the outline (pen tracing),
+     then fill fades in (ink filling the disc). Used together by DotSeparator
+     so the FINAL rendered state is a true filled circle (matching TabBar's
+     CSS-rendered solid-disc quality) rather than a stroke-only thick ring
+     whose degenerate inner edge at r=0 rasterizes less cleanly at zoom.
+     Each <path> sets `--dot-circumference` inline (= 2πr) and applies both
+     animations with `animation-fill-mode: both` so the FROM state holds
+     before the per-dot delay and the TO state locks afterward — no flash,
+     no replay on back-then-forward navigation. The cubic-bezier easing on
+     the stroke draw approximates smoothstep, perceptually matching the JS
+     `smoothstep()` used by LeafDrawV2 / Sunrise for their dot reveals.
+     PRM is honored automatically by the global reduce-motion rule below. */
+  @keyframes dot-stroke-draw {
+    from { stroke-dashoffset: var(--dot-circumference); }
+    to   { stroke-dashoffset: 0; }
+  }
+
+  @keyframes dot-fill-in {
+    from { fill-opacity: 0; }
+    to   { fill-opacity: 1; }
+  }
 }
 
 /* Reduced motion preference */

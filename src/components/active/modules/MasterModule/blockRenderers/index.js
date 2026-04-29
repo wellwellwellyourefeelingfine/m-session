@@ -15,3 +15,4 @@ export { default as AnimationBlock } from './AnimationBlock';
 export { default as AlarmBlock } from './AlarmBlock';
 export { default as ReviewBlock } from './ReviewBlock';
 export { default as MeditationAudioBlock } from './MeditationAudioBlock';
+export { default as DotSeparatorBlock } from './DotSeparatorBlock';
