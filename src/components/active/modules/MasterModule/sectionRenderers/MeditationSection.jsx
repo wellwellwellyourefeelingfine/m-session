@@ -177,20 +177,18 @@ export default function MeditationSection({
     );
   }
 
-  // Display duration for idle screen — voice-aware, ceil-rounded for variation
-  // meditations; for non-variation meditations with an explicit fixedDuration,
-  // keep the existing behavior (round, voice-blind). For pure variable-duration,
-  // show the user's picked step.
-  const displayDuration = hasVariations
-    ? Math.ceil(
+  // Display duration for idle screen — voice-aware ceil estimate for both
+  // variation and fixed-duration meditations (so the pill updates when the
+  // user toggles the voice pill). For variable-duration meditations, show
+  // the user's picked step instead.
+  const displayDuration = hasVariableDuration
+    ? duration.selected
+    : Math.ceil(
         estimateMeditationDurationSeconds(meditation, {
           voiceId: selectedVoiceId,
-          variationKey: selectedVariation,
+          variationKey: hasVariations ? selectedVariation : null,
         }) / 60
-      )
-    : meditation.fixedDuration
-      ? Math.round(meditation.fixedDuration / 60)
-      : duration.selected;
+      );
 
   return (
     <>
