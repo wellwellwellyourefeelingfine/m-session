@@ -144,6 +144,10 @@ import ProtectorReconnectionBlock from './ProtectorReconnectionBlock';
 import ProtectorFieldBlock from './ProtectorFieldBlock';
 import DialogueLoopBlock from './DialogueLoopBlock';
 import MeditationTimePillBlock from './MeditationTimePillBlock';
+import ExternalLinkBlock from './ExternalLinkBlock';
+import MappingTerritoryCaptureBlock from './MappingTerritoryCaptureBlock';
+import MappingTerritoryCompletionBlock from './MappingTerritoryCompletionBlock';
+import MusicRecommendationsBlock from './MusicRecommendationsBlock';
 
 const MASTER_CUSTOM_BLOCKS = {
   expandable: ExpandableBlock,
@@ -151,6 +155,10 @@ const MASTER_CUSTOM_BLOCKS = {
   'protector-field': ProtectorFieldBlock,
   'dialogue-loop': DialogueLoopBlock,
   'meditation-time-pill': MeditationTimePillBlock,
+  'external-link': ExternalLinkBlock,
+  'mapping-territory-capture': MappingTerritoryCaptureBlock,
+  'mapping-territory-completion': MappingTerritoryCompletionBlock,
+  'music-recommendations': MusicRecommendationsBlock,
 };
 
 export default MASTER_CUSTOM_BLOCKS;

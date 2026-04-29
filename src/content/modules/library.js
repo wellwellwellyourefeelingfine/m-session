@@ -26,6 +26,7 @@ import { spiritMeaningContent } from './journaling/spiritMeaningContent';
 import { bodySomaticContent } from './journaling/bodySomaticContent';
 import { natureConnectionContent } from './journaling/natureConnectionContent';
 import { routingTestModuleContent } from './master/routingTestModule';
+import { mappingTerritoryContent } from './master/mappingTerritory';
 import { protectorDialogueP1Content } from './master/protectorDialogueP1';
 import { protectorDialogueP2Content } from './master/protectorDialogueP2';
 
@@ -216,7 +217,10 @@ export const moduleLibrary = [
     },
     tags: ['mapping', 'pre-session', 'preparation', 'education', 'Richards'],
     framework: ['general'],
-    content: { instructions: 'A self-paced read-through covering the experiential territories \u2014 sensory, biographical, peak, and challenging. Includes self-assessment choices, journaling prompts, and curated music recommendations with streaming links.' },
+    content: {
+      instructions: 'A self-paced read-through covering the experiential territories \u2014 sensory, biographical, peak, and challenging. Includes self-assessment choices, journaling prompts, and curated music recommendations with streaming links.',
+      masterModuleContent: mappingTerritoryContent,
+    },
   },
 
   // === COME-UP APPROPRIATE (Gentle) ===

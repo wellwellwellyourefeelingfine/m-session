@@ -18,6 +18,7 @@ export default function SelectorBlock({
   const settings = useJournalStore((state) => state.settings);
   const columns = screen.columns || 2;
   const isMulti = screen.multiSelect || false;
+  const gridClass = columns === 1 ? 'grid-cols-1' : columns === 3 ? 'grid-cols-3' : 'grid-cols-2';
 
   const isOptionSelected = (optionId) => {
     if (isMulti) return (selectedValue || []).includes(optionId);
@@ -63,7 +64,7 @@ export default function SelectorBlock({
         {screen.prompt}
       </p>
 
-      <div className={`grid gap-2 ${columns === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className={`grid gap-2 ${gridClass}`}>
         {screen.options.map((option) => (
           <button
             key={option.id}
