@@ -17,6 +17,11 @@ export const transitionCenteringBreath = {
   audio: {
     basePath: '/audio/meditations/transition-centering-breath/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   isFixedDuration: true,
