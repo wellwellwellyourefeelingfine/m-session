@@ -8,6 +8,15 @@
  * Default curve is a quintic with a small landing overshoot — the scroll
  * presses gently past the target and drifts back, instead of stopping
  * cold. Honors `prefers-reduced-motion` (instant jump).
+ *
+ * Only one animation runs at a time. A module-scoped `activeRafId` tracks
+ * the in-flight RAF and cancels it before any new call. Without this,
+ * overlapping calls (e.g. a user rapidly clicking Continue through a
+ * persistBlocks reveal) produce parallel RAF loops that race for
+ * `container.scrollTop` each frame — the latest call captures
+ * `startScrollTop` against a moving target, and the visible animation
+ * compresses into what looks like a sudden jump. The cancellation makes
+ * "latest call wins" the unambiguous contract.
  */
 
 // Quintic landing curve. Coefficients solved from:
@@ -18,6 +27,11 @@
 function easeOutGive(t) {
   return ((13 * t - 29) * t + 17) * t * t * t;
 }
+
+// Module-scope tracker for the in-flight scroll animation. Holds the
+// `requestAnimationFrame` id of the next-frame callback; null when no
+// animation is running. See the file's top docstring for why.
+let activeRafId = null;
 
 // Walks up the DOM to find the first ancestor that's actually scrollable on
 // the Y axis (overflow-y: auto | scroll, and scrollable content inside).
@@ -37,6 +51,15 @@ function findScrollableParent(element) {
 
 export function smoothScrollToElement(element, options = {}) {
   if (!element) return;
+
+  // Cancel any in-flight scroll animation before starting a new one. Runs
+  // before any other work so the cancellation is unconditional — even an
+  // early return below leaves the previous animation cleanly stopped
+  // rather than letting it race against the user's intent.
+  if (activeRafId !== null) {
+    cancelAnimationFrame(activeRafId);
+    activeRafId = null;
+  }
 
   const {
     duration = 900,
@@ -74,7 +97,11 @@ export function smoothScrollToElement(element, options = {}) {
     const elapsed = now - startTime;
     const t = Math.min(1, elapsed / duration);
     container.scrollTop = startScrollTop + distance * easing(t);
-    if (t < 1) requestAnimationFrame(frame);
+    if (t < 1) {
+      activeRafId = requestAnimationFrame(frame);
+    } else {
+      activeRafId = null;
+    }
   }
-  requestAnimationFrame(frame);
+  activeRafId = requestAnimationFrame(frame);
 }

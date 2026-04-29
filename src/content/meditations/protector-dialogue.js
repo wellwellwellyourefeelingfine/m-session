@@ -13,15 +13,13 @@ export const protectorDialogueMeditation = {
   subtitle: 'Guided Noticing',
   description: 'A gentle guided audio meditation to notice and connect with a protective part of yourself. Have your headphones or speakers ready.',
 
-  // Duration config — expanded meditation
-  baseDuration: 840,  // ~14 minutes base
-  minDuration: 720,   // 12 minutes minimum
-  maxDuration: 900,   // 15 minutes with expanded silences
-  // Display value for the meditation idle pill — measured composed length
-  // including silences and gongs (≈20 min). Independent of baseDuration,
-  // which only covers prompt speech and is used internally by the silence
-  // multiplier solver.
-  fixedDuration: 1200,
+  // Duration config — fixed-duration meditation. Plays at multiplier 1.0
+  // (raw baseSilenceAfter values, no expansion) per MeditationSection's
+  // fixed-duration branch. baseDuration is the documented composed length
+  // (speech + base silences) for fallback consumers like MeditationTimePillBlock.
+  baseDuration: 840,  // ~14 minutes
+  minDuration: 720,
+  maxDuration: 900,
 
   // Audio config
   audio: {

@@ -3,13 +3,13 @@
 > **Read this before authoring or modifying any master module.**
 > This is the single source of truth for design, UI, copy, and behavior conventions across the master-module system. The conventions exist for consistency, accessibility, and feel — drift is expensive to undo, so favor following the patterns here even when an alternative looks cleaner in isolation.
 >
-> *Last reviewed: 2026-04-26*
+> *Last reviewed: 2026-04-29*
 
 ---
 
 ## Table of Contents
 
-1. [Quick Start (the 5 rules)](#1-quick-start-the-5-rules)
+1. [Quick Start (the 7 rules)](#1-quick-start-the-7-rules)
 2. [Authoring or Migrating a Module — Step-by-Step](#2-authoring-or-migrating-a-module--step-by-step)
 3. [Reference Module](#3-reference-module)
 4. [Conventions Reference](#4-conventions-reference)
@@ -31,7 +31,7 @@
 
 ---
 
-## 1. Quick Start (the 6 rules)
+## 1. Quick Start (the 7 rules)
 
 If you remember nothing else from this doc, remember these:
 
@@ -43,6 +43,7 @@ If you remember nothing else from this doc, remember these:
 4. **Tone is intelligent and grounded, not AI-affirming.** No `that's a real skill`, no `that matters more than you might think`, no two-beat motivational pacing (`Let it sit. Let it settle.`). Treat the user as an adult.
 5. **For "two pages" that share a header and animation, combine them into ONE section with multiple screens** — header continuity only works within a single section. Spread the same JS reference (a `const SECTION_HEADER = {...}`) into each screen's `blocks` so React reconciliation matches by index.
 6. **NEVER gate Continue on a filled-in input.** The app must be physical-journal compatible — a user can press Continue through every prompt without typing anything, because they're writing in their paper journal alongside. The journal assembler records `[no entry — HH:MM]` for any empty prompt so the user can map paper-journal timestamps back to in-app prompts later. No `requireForContinue: true`, no gating useEffect, no disabled buttons on empty textareas. Choices (selection-required by nature) are the only place gating is permitted, and even then only when the *flow* genuinely needs the value (e.g. a routing branch).
+7. **Use dot separators between text→text reveal steps in `persistBlocks` sections.** Whenever a `persistBlocks` reveal accumulates two or more plain `text` blocks one after another, place a `dot-separator` block between every text-to-text transition, with cumulative counts (1 dot above the second text, 2 above the third, etc.). Separators sit ONLY between consecutive `text` blocks — never before the first text block (the header is the visual delimiter), never between a text block and a prompt/choice/selector/animation, and never in non-`persistBlocks` sections (the dots signal sequential accumulation, not generic separation). Both the separator AND the text block following it carry `tightAbove: true` so the cluster reads as `text → separator → text`. See [§6 Dot Separators in Progressive Reveals](#dot-separators-in-progressive-reveals).
 
 ---
 
@@ -73,6 +74,7 @@ Before considering a master-module change "done":
 - [ ] Idle screen has no expandable; description is inline and reads like editorial copy
 - [ ] If embedded meditation: `meditation.fixedDuration` set if the audio has a measured length; voice picker auto-renders on the meditation idle
 - [ ] Multi-screen sections use a shared JS-reference header constant; `persistBlocks: true` only when progressive-reveal is the intent
+- [ ] Every text-to-text transition in a `persistBlocks` reveal has a `dot-separator` between them, with cumulative counts (1, 2, 3…) and `tightAbove: true` on both the separator and the text block following it
 - [ ] If a section bookmarks to a sequentially-adjacent detour, the stale-bookmark guard is in `useMasterModuleState.advanceSection` — verify the round-trip lands on the next section, not back on the detour
 - [ ] Tokens (`{protectorName}`, etc.) substitute correctly in every block that displays them; ChoiceBlock prompts also support tokens
 - [ ] Read every new or modified screen's copy aloud. If it sounds patronizing, motivational, or like a wellness app's affirmation chatbot, rewrite it.
@@ -87,7 +89,8 @@ Before considering a master-module change "done":
 |---|---|
 | Module idle with inline description, durationMinutes override | lines 83–101 |
 | Shared header constant pattern (the rule #5 idiom) | lines 23–28, 41–45, 50–54 |
-| Intro section: 3-screen progressive reveal with `persistBlocks` + `ritualFade` | lines 109–170 |
+| Intro section: 3-screen progressive reveal with `persistBlocks` + `ritualFade` | lines 126–188 |
+| Dot separators between text-to-text reveal steps (rule #7 idiom) | lines 37–45 (separator consts), 152 + 170 + 178 (inline use in intro section) |
 | Embedded meditation section (voice picker + loading screen handled in MeditationSection) | lines 170–179 |
 | Combined section with continuous header across screens (naming + feel-toward) | lines 179–243 |
 | Choice with bookmark-routed detour | lines 59–63 |
@@ -274,6 +277,98 @@ screens: [
 ```
 
 **Smooth scroll** between revealed blocks uses [`smoothScrollToElement`](../../../../utils/smoothScroll.js) — a custom quintic curve with a subtle landing overshoot (~9% peak, then settles). Defaults are right; callers don't pass `easing` or `duration`. Honors `prefers-reduced-motion` (instant jump).
+
+### Dot Separators in Progressive Reveals
+
+When a `persistBlocks` section reveals two or more plain `text` blocks one after another, **place a `dot-separator` block between each text-to-text transition.** The separators visually punctuate the accumulating wall of text, give the user an at-a-glance sense of how deep into the section they are, and reinforce that each new beat is a discrete reveal rather than a sudden shift in length.
+
+**The placement rule is mechanical:**
+
+- Above text-block 1: NOTHING (the section header is the visual delimiter).
+- Above text-block 2: `dot-separator` with `count: 1`.
+- Above text-block 3: `dot-separator` with `count: 2`.
+- Above text-block N: `dot-separator` with `count: N - 1`.
+
+**Where separators do and don't go:**
+
+✓ Between consecutive `text` blocks in a `persistBlocks` reveal.
+✓ Cumulative count — each new reveal step adds one more dot than the previous, never resets.
+✓ With `tightAbove: true` on the separator AND the text block following it, so the visual cluster reads as `text → separator → text` (not three islands).
+
+✗ Above the first text block. The section header anchors the top; a separator there would imply a missing prior beat.
+✗ Between a text block and a prompt / choice / selector / animation / custom block. Those blocks have their own visual identity; the separator is meant for paragraph-to-paragraph transitions only.
+✗ In non-`persistBlocks` sections. The dots signal sequential accumulation; without progressive reveal there's no accumulation to mark.
+✗ Between a `text` block and the section's own header (headers live at index 0 — there's no scenario where a text block sits above a header).
+
+**Layout pattern (the persistBlocks reveal at its full final state):**
+
+```
+┌─────────────────────────────────┐
+│         [HEADER]                │   <- shared JS ref across screens
+│                                 │
+│        [animation]              │   <- shared, anchored
+│                                 │
+│   first text paragraph.         │   <- text block 1
+│                                 │
+│         [dot-separator]         │   <- count: 1 (first text→text)
+│                                 │
+│   second text paragraph.        │   <- text 2 (tightAbove: true)
+│                                 │
+│         [dot-separator]         │   <- count: 2 (second text→text)
+│                                 │
+│   third text paragraph.         │   <- text 3 (tightAbove: true)
+│                                 │
+│   DM Serif prompt question?     │   <- prompt; NO separator above it
+│   ┌─────────────────────────┐   │
+│   │  input / textarea       │   │
+│   └─────────────────────────┘   │
+└─────────────────────────────────┘
+            [Continue]
+```
+
+**Authoring (the canonical idiom — matches `protectorDialogueP1.js` intro):**
+
+```js
+const SEPARATOR_1 = { type: 'dot-separator', count: 1, tightAbove: true };
+const SEPARATOR_2 = { type: 'dot-separator', count: 2, tightAbove: true };
+
+const TEXT_1 = { type: 'text', lines: ['First paragraph.'] };
+const TEXT_2 = { type: 'text', tightAbove: true, lines: ['Second paragraph.'] };
+const TEXT_3 = { type: 'text', tightAbove: true, lines: ['Third paragraph.'] };
+
+// Inside a persistBlocks section:
+{
+  id: 'intro',
+  type: 'screens',
+  persistBlocks: true,
+  ritualFade: true,
+  screens: [
+    { blocks: [HEADER, TEXT_1] },
+    { blocks: [HEADER, TEXT_1, SEPARATOR_1, TEXT_2] },
+    { blocks: [HEADER, TEXT_1, SEPARATOR_1, TEXT_2, SEPARATOR_2, TEXT_3] },
+  ],
+}
+```
+
+Use shared JS references for separators and text blocks so React reconciliation keeps them mounted across screen transitions — only newly-added blocks at the tail of each screen run their entry animations.
+
+**Layout patterns by count** (auto-selected based on the `count` prop — authors don't pick the shape):
+
+| Count | Shape | Reveal order |
+|---|---|---|
+| 1 | single dot | — |
+| 2 | horizontal pair | left → right |
+| 3 | triangle (2 base + 1 apex) | bottom-left → bottom-right → top |
+| 4 | diamond (no center) | bottom → left → right → top |
+| 5 | diamond + center | center → bottom → left → right → top |
+| 6 | 3×2 grid | top row LTR → bottom row LTR |
+| 7+ | horizontal line | sequential LTR |
+
+The separator's outer footprint (the vertical space it occupies between text blocks) is **constant across all counts** — the SVG slot is sized for the diamond (the tallest pattern) and smaller patterns float vertically centered. The text-to-text gap stays identical regardless of which count is rendered, so reveal steps don't visually compress or expand the page rhythm as the section grows.
+
+**Animation feel.** Each dot reveals in two phases — stroke draws the outline (pen tracing) then fill fades in (ink filling the disc) — matching the LeafDrawV2 / Sunrise dot-reveal technique. Sequential stagger of 140ms between dot starts means counts 5–7 finish their last dot 200–500ms after the smooth-scroll settles. The user is at rest watching the trailing dots resolve; this is the intended feel, not a bug.
+
+**Where the component lives.** [`DotSeparator.jsx`](../../capabilities/animations/dotSeparators/DotSeparator.jsx) is the SVG primitive (with the `getDotPositions(count, hGap, vGap)` helper that drives the per-pattern layout). [`DotSeparatorBlock.jsx`](./blockRenderers/DotSeparatorBlock.jsx) is the block-renderer wrapper. Both are STANDARD blocks — registered in [`blockRenderers/index.js`](./blockRenderers/index.js) alongside `text` / `prompt` / `selector` / etc., not in the custom-block registry — so dot separators work in both `MasterModule` and `TransitionModule` via the shared `ScreensSection`.
 
 ---
 

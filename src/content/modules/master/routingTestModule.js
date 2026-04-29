@@ -33,6 +33,9 @@ const DOT_SEP_1 = { type: 'dot-separator', count: 1, tightAbove: true };
 const DOT_SEP_2 = { type: 'dot-separator', count: 2, tightAbove: true };
 const DOT_SEP_3 = { type: 'dot-separator', count: 3, tightAbove: true };
 const DOT_SEP_4 = { type: 'dot-separator', count: 4, tightAbove: true };
+const DOT_SEP_5 = { type: 'dot-separator', count: 5, tightAbove: true };
+const DOT_SEP_6 = { type: 'dot-separator', count: 6, tightAbove: true };
+const DOT_SEP_7 = { type: 'dot-separator', count: 7, tightAbove: true };
 
 const DOT_TEXT_1 = { type: 'text', lines: [
   'First text block. No separator above it.',
@@ -42,22 +45,37 @@ const DOT_TEXT_1 = { type: 'text', lines: [
 const DOT_TEXT_2 = { type: 'text', tightAbove: true, lines: [
   'Second text block. One dot animated in above.',
   '§',
-  'Continue for a 2-dot separator.',
+  'Continue for a horizontal 2-dot separator.',
 ] };
 const DOT_TEXT_3 = { type: 'text', tightAbove: true, lines: [
   'Third text block. Two dots staggered in.',
   '§',
-  'Continue for 3 dots.',
+  'Continue for a 3-dot triangle (two base dots, then apex on top).',
 ] };
 const DOT_TEXT_4 = { type: 'text', tightAbove: true, lines: [
-  'Fourth text block. Three dots animated in above.',
+  'Fourth text block. Triangle of three dots above.',
   '§',
-  'Continue for 4 dots — the largest count this component supports today.',
+  'Continue for a 4-dot diamond (bottom-up bloom: bottom → left → right → top).',
 ] };
 const DOT_TEXT_5 = { type: 'text', tightAbove: true, lines: [
-  'Fifth and final text block. Four dots above.',
+  'Fifth text block. Four-dot diamond above.',
   '§',
-  'All four DotSeparator counts (1, 2, 3, 4) have now rendered. End of test.',
+  'Continue for a 5-dot diamond (center anchors first, then the same bloom).',
+] };
+const DOT_TEXT_6 = { type: 'text', tightAbove: true, lines: [
+  'Sixth text block. Diamond with center above.',
+  '§',
+  'Continue for a 6-dot 3×2 grid (top row left-to-right, then bottom row).',
+] };
+const DOT_TEXT_7 = { type: 'text', tightAbove: true, lines: [
+  'Seventh text block. 3×2 grid above.',
+  '§',
+  'Continue for 7 dots — the horizontal-line fallback that handles any count above 6.',
+] };
+const DOT_TEXT_8 = { type: 'text', tightAbove: true, lines: [
+  'Eighth and final text block. Seven dots in a horizontal line above.',
+  '§',
+  'All seven DotSeparator counts (1 through 7) have now rendered. End of test.',
 ] };
 
 export const routingTestModuleContent = {
@@ -274,21 +292,30 @@ export const routingTestModuleContent = {
     },
 
     // ── Index 7: DotSeparator Test ──────────────────────────────────────────
-    // Validates the DotSeparator component across all four supported counts.
-    // Same pattern as Protector Dialogue Part 1's intro: persistBlocks + a
-    // shared header + ritualFade. Each Continue press reveals the next text
-    // block preceded by a dot separator with one more dot than the previous.
+    // Validates the DotSeparator component across all seven supported counts
+    // and their associated layout patterns. Same persistBlocks + shared
+    // header + ritualFade pattern as Protector Dialogue Part 1's intro.
+    // Each Continue press reveals the next text block preceded by a dot
+    // separator with one more dot than the previous.
     //
     // Reveal 1 (initial): text 1 (no separator above).
     // Reveal 2: 1-dot separator + text 2.
-    // Reveal 3: 2-dot separator + text 3.
-    // Reveal 4: 3-dot separator + text 4.
-    // Reveal 5: 4-dot separator + text 5 (largest count tested).
+    // Reveal 3: 2-dot horizontal separator + text 3.
+    // Reveal 4: 3-dot triangle (two base + apex) + text 4.
+    // Reveal 5: 4-dot diamond (bottom-up bloom) + text 5.
+    // Reveal 6: 5-dot diamond + center (center anchors first) + text 6.
+    // Reveal 7: 6-dot 3×2 grid (top row LTR, then bottom row LTR) + text 7.
+    // Reveal 8: 7-dot horizontal line (the count >= 7 fallback) + text 8.
     //
     // Shared block refs (DOT_TEST_HEADER, DOT_SEP_*, DOT_TEXT_*) are reused
     // across screens so React reconciliation keeps them mounted — only the
     // newly-mounted blocks at the tail of each screen run their entry
     // animations (text fade-in for text blocks, dot-draw for separators).
+    //
+    // The separator's outer footprint is constant across all counts (the
+    // SVG slot is sized for the diamond — the tallest pattern), so the
+    // text-to-text gap stays identical regardless of which count is being
+    // tested. This is the constraint that drives the slot-height design.
     {
       id: 'index-7-dot-separator-test',
       type: 'screens',
@@ -301,6 +328,9 @@ export const routingTestModuleContent = {
         { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3] },
         { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3, DOT_SEP_3, DOT_TEXT_4] },
         { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3, DOT_SEP_3, DOT_TEXT_4, DOT_SEP_4, DOT_TEXT_5] },
+        { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3, DOT_SEP_3, DOT_TEXT_4, DOT_SEP_4, DOT_TEXT_5, DOT_SEP_5, DOT_TEXT_6] },
+        { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3, DOT_SEP_3, DOT_TEXT_4, DOT_SEP_4, DOT_TEXT_5, DOT_SEP_5, DOT_TEXT_6, DOT_SEP_6, DOT_TEXT_7] },
+        { blocks: [DOT_TEST_HEADER, DOT_TEXT_1, DOT_SEP_1, DOT_TEXT_2, DOT_SEP_2, DOT_TEXT_3, DOT_SEP_3, DOT_TEXT_4, DOT_SEP_4, DOT_TEXT_5, DOT_SEP_5, DOT_TEXT_6, DOT_SEP_6, DOT_TEXT_7, DOT_SEP_7, DOT_TEXT_8] },
       ],
     },
   ],

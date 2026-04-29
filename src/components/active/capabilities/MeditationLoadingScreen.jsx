@@ -25,7 +25,7 @@ export default function MeditationLoadingScreen({ isLeaving = false }) {
       }`}
       style={{
         alignSelf: 'stretch',
-        minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
+        minHeight: 'var(--meditation-page-min-height)',
         animationDuration: '400ms',
       }}
     >

@@ -78,7 +78,7 @@ export default function MeditationSection({
   const [timedSequence, totalDuration] = useMemo(() => {
     if (!meditation) return [[], 0];
 
-    // If meditation has variations, use assembleVariation to get the clip array
+    // Variation meditation — assembleVariation picks the clip array, multiplier 1.0.
     if (hasVariations) {
       const clips = meditation.assembleVariation(selectedVariation);
 
@@ -96,26 +96,43 @@ export default function MeditationSection({
       return [sequence, total];
     }
 
-    // Standard variable-duration meditation
-    const durationSeconds = duration.selected * 60;
+    // Variable-duration meditation — silences expand via calculateSilenceMultiplier
+    // to hit duration.selected * 60 (capped per-prompt by silenceMax).
+    if (hasVariableDuration) {
+      const durationSeconds = duration.selected * 60;
 
-    // Filter conditional prompts based on selected duration
-    const prompts = meditation.prompts.filter((p) => {
-      if (p.conditional?.minDuration && duration.selected < p.conditional.minDuration) return false;
-      return true;
-    });
+      // Filter conditional prompts based on selected duration
+      const prompts = meditation.prompts.filter((p) => {
+        if (p.conditional?.minDuration && duration.selected < p.conditional.minDuration) return false;
+        return true;
+      });
 
-    const silenceMultiplier = calculateSilenceMultiplier(
-      prompts, durationSeconds, meditationId, selectedVoiceId
-    );
-    const sequence = generateTimedSequence(prompts, silenceMultiplier, {
+      const silenceMultiplier = calculateSilenceMultiplier(
+        prompts, durationSeconds, meditationId, selectedVoiceId
+      );
+      const sequence = generateTimedSequence(prompts, silenceMultiplier, {
+        audioConfig: meditation.audio,
+        meditationId,
+        voiceId: selectedVoiceId,
+      });
+      const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
+      return [sequence, total];
+    }
+
+    // Fixed-duration single-clip meditation (e.g. Protector Dialogue, transitions).
+    // Mirrors SimpleGroundingModule.jsx — multiplier 1.0, prompts as authored.
+    // duration.selected is intentionally ignored: that value is the outer
+    // master-module slot's pill, not a target for this meditation's audio.
+    const sequence = generateTimedSequence(meditation.prompts, 1.0, {
       audioConfig: meditation.audio,
       meditationId,
       voiceId: selectedVoiceId,
     });
-    const total = sequence.length > 0 ? sequence[sequence.length - 1].endTime : durationSeconds;
+    const total = sequence.length > 0
+      ? sequence[sequence.length - 1].endTime
+      : estimateMeditationDurationSeconds(meditation, { voiceId: selectedVoiceId });
     return [sequence, total];
-  }, [meditation, hasVariations, selectedVariation, duration.selected, meditationId, selectedVoiceId]);
+  }, [meditation, hasVariations, hasVariableDuration, selectedVariation, duration.selected, meditationId, selectedVoiceId]);
 
   // Get current variation's prompts for the transcript modal
   const transcriptPrompts = useMemo(() => {
@@ -177,10 +194,12 @@ export default function MeditationSection({
     );
   }
 
-  // Display duration for idle screen — voice-aware ceil estimate for both
-  // variation and fixed-duration meditations (so the pill updates when the
-  // user toggles the voice pill). For variable-duration meditations, show
-  // the user's picked step instead.
+  // Display duration for idle screen — voice-aware ceil estimate via the
+  // shared estimateMeditationDurationSeconds helper, matching the formula
+  // used by every other module (SimpleGrounding, FeltSense, SelfCompassion,
+  // TheDescent). Includes the gong overhead so the pill is an upper-bound
+  // on the actual blob duration the user will hear. For variable-duration
+  // meditations, show the user's picked step exactly.
   const displayDuration = hasVariableDuration
     ? duration.selected
     : Math.ceil(
@@ -289,7 +308,7 @@ export default function MeditationSection({
             className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
             style={{
               alignSelf: 'stretch',
-              minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
+              minHeight: 'var(--meditation-page-min-height)',
             }}
           >
             <HeaderBlock

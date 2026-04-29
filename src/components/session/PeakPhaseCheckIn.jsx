@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
+import { OrigamiIcon, CircleSkipIcon } from '../shared/Icons';
 
 // Format elapsed minutes as human-readable string
 const formatElapsedTime = (minutes) => {
@@ -66,23 +67,26 @@ export default function PeakPhaseCheckIn() {
           isAnimatingOut ? 'animate-slideDownOut' : 'animate-slideUp'
         }`}
       >
-        {/* Close button — absolute so the header can sit flush at the top */}
-        <button
-          onClick={handleDismiss}
-          className="absolute top-4 right-4 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors p-2 -m-2"
-          aria-label="Dismiss"
-        >
-          <span className="text-xl">−</span>
-        </button>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div className="flex items-center gap-4 min-w-0">
+            <OrigamiIcon size={28} strokeWidth={2.5} className="flex-shrink-0 text-[var(--accent)]" />
+            <h3
+              className="mb-0 text-lg text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              End of Peak Phase
+            </h3>
+          </div>
+          <button
+            onClick={handleDismiss}
+            className="flex-shrink-0 p-2 -m-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
+            aria-label="Dismiss"
+          >
+            <CircleSkipIcon size={22} />
+          </button>
+        </div>
 
-        <h2
-          className="text-xl font-light mb-2 text-center"
-          style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-        >
-          End of Peak Phase
-        </h2>
-
-        <p className="text-[var(--color-text-tertiary)] text-xs mb-6 text-center">
+        <p className="text-[var(--color-text-tertiary)] text-xs mb-6">
           You are about {formatElapsedTime(elapsedMinutes)} into your session.
         </p>
 

@@ -55,6 +55,10 @@
     --status-bar-height: 2.25rem;
     --bottom-chrome: calc(var(--tabbar-height) + var(--control-bar-height));
     --header-plus-status: calc(var(--header-height) + var(--status-bar-height));
+    /* Min-height for the active audio-meditation content wrapper. Sized to
+       fit inside ModuleLayout's pt-4 + pb-20 (=6rem) padding without forcing
+       document scroll. 3rem = 2.5rem precise breakeven + 0.5rem safety. */
+    --meditation-page-min-height: calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 3rem);
 
     /* Spacing */
     --space-1: 0.25rem;

@@ -456,7 +456,7 @@ export default function LeavesOnAStreamModule({ module, onComplete, onSkip, onPr
               className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
               style={{
                 alignSelf: 'stretch',
-                minHeight: 'calc(100vh - var(--header-plus-status) - var(--bottom-chrome) - 1rem)',
+                minHeight: 'var(--meditation-page-min-height)',
               }}
             >
               <h2

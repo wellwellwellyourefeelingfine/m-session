@@ -402,13 +402,19 @@ export function useAudioPlayback({ onEnded, onError, onPlay, onPause, onTimeUpda
     }
   }, [startPolling, resumeFromBytes]);
 
-  // Stop and reset
+  // Stop and reset. Detaches src (mirrors the unmount cleanup below) so the
+  // decoder can't keep playing buffered audio if pause() got queued behind a
+  // pending play() promise — the race that bites when the user presses Back
+  // mid-begin transition. Only called on terminal paths (handleComplete,
+  // handleSkip, handleRestart); the next loadAndPlay() resets src anyway.
   const stop = useCallback(() => {
     stopPolling();
     wallStartRef.current = 0;
     wallAccumulatedRef.current = 0;
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current.load();
       savedTimeRef.current = 0;
       timeOffsetRef.current = 0;
       setIsPlaying(false);

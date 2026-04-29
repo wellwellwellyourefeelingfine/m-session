@@ -126,6 +126,16 @@ export default function TransitionModule({ config }) {
   const [screenProgress, setScreenProgress] = useState({ position: 0, total: 0 });
   const [timerProgress, setTimerProgress] = useState(null);   // only for meditation sections
 
+  // Clear meditation timer state on section change. Without this, advancing
+  // away from a meditation (skip, back, or natural completion) leaves the
+  // last-reported elapsed/total/isPaused frozen in parent state — so the
+  // next section would still see a stale "M:SS / M:SS" in the center and a
+  // dimmed progress bar from the lingering isPaused. The next meditation
+  // section (if any) repopulates immediately via its own playback hook.
+  useEffect(() => {
+    setTimerProgress(null);
+  }, [state.currentSection?.id]);
+
   const handleScreenChange = useCallback((position, total) => {
     // Guard against same-value updates — ScreensSection's onScreenChange effect
     // fires on every render, not just real screen changes. Without this guard,
@@ -194,6 +204,18 @@ export default function TransitionModule({ config }) {
   const leftLabel = perSectionLabel || statusBarCfg.leftLabel || 'Transition';
   const showSessionElapsed = statusBarCfg.showSessionElapsed !== false;
 
+  // Center timer readout — mirrors ActiveView.buildTimerCenterContent so
+  // transition meditations match regular-module meditations. Gated on
+  // showTimer (= playback.hasStarted), so idle and loading screens stay clean.
+  const timerCenterContent = (timerProgress?.showTimer && timerProgress?.total > 0)
+    ? (
+      <span className={`text-[10px] uppercase tracking-wider whitespace-nowrap transition-opacity
+        ${timerProgress.isPaused ? 'text-[var(--color-text-tertiary)]' : 'text-[var(--color-text-secondary)]'}`}>
+        {formatTime(timerProgress.elapsed)} / {formatTime(timerProgress.total)}
+      </span>
+    )
+    : null;
+
   // ── Render ───────────────────────────────────────────────────────────────
   const renderCurrentSection = () => {
     if (!currentSection) return null;
@@ -255,8 +277,15 @@ export default function TransitionModule({ config }) {
             section={currentSection}
             module={{ instanceId: `transition-${config.id}-${currentSection.id}`, title: currentSection.title }}
             onSectionComplete={state.advanceSection}
-            onProgressUpdate={(mode, elapsed, total) => {
-              if (mode === 'timer') setTimerProgress({ elapsed, total });
+            onProgressUpdate={(payload) => {
+              if (payload?.mode === 'timer') {
+                setTimerProgress({
+                  elapsed: payload.elapsed,
+                  total: payload.total,
+                  showTimer: payload.showTimer,
+                  isPaused: payload.isPaused,
+                });
+              }
             }}
             canGoBackToPreviousSection={state.canGoBackToPreviousSection}
             onBackToPreviousSection={state.goBackToPreviousSection}
@@ -316,7 +345,9 @@ export default function TransitionModule({ config }) {
       >
         <ModuleStatusBar
           progress={progressPercent}
+          isPaused={timerProgress?.isPaused ?? false}
           leftLabel={leftLabel}
+          centerContent={timerCenterContent}
           rightContent={
             showSessionElapsed && ingestionTime ? (
               <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
