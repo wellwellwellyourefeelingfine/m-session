@@ -211,6 +211,11 @@ export const theCycleClosingMeditation = {
   audio: {
     basePath: '/audio/meditations/the-cycle-closing/',
     format: 'mp3',
+    defaultVoice: 'theo',
+    voices: [
+      { id: 'theo',   label: 'Thoughtful Theo', subfolder: '' },
+      { id: 'rachel', label: 'Relaxing Rachel', subfolder: 'relaxing-rachel/' },
+    ],
   },
 
   // Fixed duration per mode
