@@ -829,7 +829,30 @@
     "seeing-04": 21.79,
     "settle-01": 10.71,
     "settle-02": 8.52,
-    "settle-03": 16.27
+    "settle-03": 16.27,
+    "rachel": {
+      "close-01": 15.02,
+      "close-02": 21.89,
+      "close-03": 6.61,
+      "outside-01": 24.69,
+      "outside-02": 20.87,
+      "outside-03-couple": 17.61,
+      "outside-03-solo": 23.75,
+      "outside-04-couple": 23.75,
+      "outside-04-solo": 11.26,
+      "outside-05-couple": 7.63,
+      "same-01": 12.33,
+      "same-02": 15.52,
+      "same-03": 13.66,
+      "same-04": 20.51,
+      "seeing-01": 11.73,
+      "seeing-02": 23.75,
+      "seeing-03": 23.38,
+      "seeing-04": 22.44,
+      "settle-01": 14.55,
+      "settle-02": 9.06,
+      "settle-03": 16.46
+    }
   },
   "the-descent": {
     "beneath-01": 20.95,
