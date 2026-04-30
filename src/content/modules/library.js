@@ -28,6 +28,7 @@ import { natureConnectionContent } from './journaling/natureConnectionContent';
 import { routingTestModuleContent } from './master/routingTestModule';
 import { protectorDialogueP1Content } from './master/protectorDialogueP1';
 import { protectorDialogueP2Content } from './master/protectorDialogueP2';
+import { intentionSettingV2Content } from './master/intentionSettingV2';
 
 // Display order and labels for module categories in the Add Activity drawer
 export const MODULE_CATEGORIES = {
@@ -118,8 +119,10 @@ export const MODULE_TYPES = {
   // Stay With It (Coherence Therapy)
   'stay-with-it': { label: 'Stay With It', intensity: 4 },
   'booster-consideration': { label: 'Booster Check-In', intensity: 1 },
-  // Intention Setting (pre-session)
-  'intention-setting': { label: 'Intention Setting', intensity: 1 },
+  // Intention Setting (pre-session) — OLD custom-component implementation, kept for reference during v2 cutover
+  'intention-setting': { label: 'Intention Setting (OLD)', intensity: 1 },
+  // Intention Setting v2 (pre-session) — MasterModule-based implementation
+  'intention-setting-v2': { label: 'Intention Setting', intensity: 1 },
   // Life Graph (pre-session)
   'life-graph': { label: 'Life Graph', intensity: 2 },
   // Mapping the Territory (pre-session)
@@ -168,7 +171,7 @@ export const moduleLibrary = [
     id: 'intention-setting',
     type: 'intention-setting',
     category: 'pre-session',
-    title: 'Intention Setting',
+    title: 'Intention Setting (OLD)',
     description: 'A guided flow to refine your session intention. Includes optional grounding meditation, self-inquiry, and writing exercises.',
     defaultDuration: 5,
     allowedPhases: ['pre-session', 'come-up'],
@@ -181,6 +184,27 @@ export const moduleLibrary = [
     tags: ['intention', 'pre-session', 'writing', 'grounding', 'self-inquiry'],
     framework: ['general'],
     content: { instructions: 'Begins with education on the difference between intentions and expectations. An optional 5-minute grounding meditation helps you settle in. Self-inquiry prompts help you identify what\'s asking for attention, followed by sentence-stem warm-ups and a main intention-writing exercise.' },
+  },
+  {
+    id: 'intention-setting-v2',
+    type: 'intention-setting-v2',
+    category: 'pre-session',
+    title: 'Intention Setting',
+    description: 'A guided flow to refine your session intention. Includes optional grounding meditation, self-inquiry, and writing exercises.',
+    defaultDuration: 5,
+    allowedPhases: ['pre-session', 'come-up'],
+    recommendedPhases: ['pre-session', 'come-up'],
+    hasVariableDuration: false,
+    capabilities: {
+      controls: { showBeginButton: false, showSkipButton: true, skipConfirmation: true },
+      layout: { centered: true, maxWidth: 'sm' },
+    },
+    tags: ['intention', 'pre-session', 'writing', 'grounding', 'self-inquiry'],
+    framework: ['general'],
+    content: {
+      instructions: 'Begins with education on the difference between intentions and expectations. An optional 5-minute grounding meditation helps you settle in. Self-inquiry prompts help you identify what\'s asking for attention, followed by sentence-stem warm-ups and a main intention-writing exercise.',
+      masterModuleContent: intentionSettingV2Content,
+    },
   },
   {
     id: 'life-graph',

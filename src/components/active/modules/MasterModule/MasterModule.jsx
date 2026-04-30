@@ -173,8 +173,18 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
 
     const sectionType = state.currentSection?.type;
 
-    // Meditation/timer sections report their own progress — don't override
-    if (sectionType === 'meditation' || sectionType === 'timer') return;
+    // Timer sections report their own progress — don't override.
+    //
+    // Meditation sections also report progress (timer-based, from
+    // useMeditationPlayback) BUT only after the user presses Begin and
+    // playback starts. While the meditation is on its idle screen the
+    // hook stays silent, so we still compute and emit a section-based
+    // value here. Once playback fires its first timer update, that
+    // higher-frequency report overrides ours and the bar tracks the
+    // meditation's elapsed time. This avoids the "progress snaps to 0%
+    // on meditation idle" regression that would otherwise happen when
+    // routing into a meditation section.
+    if (sectionType === 'timer') return;
 
     const currentId = state.currentSection?.id;
     const visitedCount = state.visitedSections.length;
@@ -192,7 +202,7 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
       const screenFraction = screenProgress.position / screenProgress.total;
       report.raw((sectionBase + sectionWeight * screenFraction) * 100);
     } else {
-      // generate sections or screens before first onScreenChange fires
+      // generate / meditation sections, or screens before first onScreenChange fires
       report.raw(sectionBase * 100);
     }
   }, [state.modulePhase, state.currentSectionIndex, state.currentSection?.type, state.visitedSections, sections, screenProgress, report]);

@@ -345,11 +345,29 @@ export default function MeditationSection({
           if (playback.isComplete) return { label: 'Continue', onClick: () => { playback.handleComplete(); } };
           return playback.getPrimaryButton();
         })()}
-        showBack={canGoBackToPreviousSection && Boolean(onBackToPreviousSection)}
-        onBack={onBackToPreviousSection}
+        showBack={
+          // While at idle: Back goes to the previous section (only if available).
+          // Once playback has started: Back is always shown — it returns the
+          // user to this meditation's idle screen rather than the prior section.
+          (playback.hasStarted && !playback.isComplete)
+          || (canGoBackToPreviousSection && Boolean(onBackToPreviousSection))
+        }
+        onBack={() => {
+          // During playback: stop and return to the meditation's own idle
+          // screen (voice picker + Begin) so the user can restart cleanly
+          // without losing their place in the surrounding module flow.
+          // From idle: fall through to the section-level back navigation.
+          if (playback.hasStarted && !playback.isComplete) {
+            playback.handleRestart();
+            return;
+          }
+          if (typeof onBackToPreviousSection === 'function') {
+            onBackToPreviousSection();
+          }
+        }}
         backConfirmMessage={
           playback.hasStarted && !playback.isComplete && !playback.isLoading
-            ? 'Stop the meditation and go back?'
+            ? 'Stop the meditation? You can begin again from the start.'
             : null
         }
         showSkip={!playback.isComplete}

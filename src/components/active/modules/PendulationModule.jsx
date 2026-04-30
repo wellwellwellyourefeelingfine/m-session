@@ -41,7 +41,8 @@ import { useSessionStore } from '../../../stores/useSessionStore';
 import { useAppStore } from '../../../stores/useAppStore';
 
 // Shared UI
-import ModuleLayout, { VoicePill } from '../capabilities/ModuleLayout';
+import ModuleLayout, { VoicePill, DurationPill } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import useProgressReporter from '../../../hooks/useProgressReporter';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
@@ -126,6 +127,7 @@ function MeditationSection({
   onSectionComplete,
   onModuleSkip,
   onProgressUpdate,
+  onBack,
 }) {
   const meditation = pendulationMeditation;
   const section = meditation.sections[sectionKey];
@@ -162,31 +164,36 @@ function MeditationSection({
     composerOptions,
   });
 
-  // Auto-start on mount (Strict Mode guard)
+  // Auto-start on mount (Strict Mode guard). Uses the multi-phase transition
+  // flow so the MeditationLoadingScreen is shown for the standard minimum
+  // duration (matches BodyScan, Open Awareness, etc.). idleFadeMs is 0 because
+  // the parent already handled the idle fade-out before mounting this section.
   const hasStartedRef = useRef(false);
   useEffect(() => {
     if (!hasStartedRef.current) {
       hasStartedRef.current = true;
-      playback.handleStart();
+      playback.handleBeginWithTransition({ idleFadeMs: 0 });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Loading state ─────────────────────────────────────────────────
+  // transitionStage is 'idle' / 'idle-leaving' / 'preparing' / 'preparing-leaving' / 'active'.
+  // Anything before 'active' shows the shared MeditationLoadingScreen; the
+  // 'preparing-leaving' stage triggers its fade-out animation.
 
-  if (playback.isLoading) {
+  if (playback.transitionStage !== 'active') {
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          <div className="text-center animate-fadeIn">
-            <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-              Preparing meditation...
-            </p>
-          </div>
+          <MeditationLoadingScreen
+            isLeaving={playback.transitionStage === 'preparing-leaving'}
+          />
         </ModuleLayout>
         <ModuleControlBar
           phase="idle"
           primary={{ label: 'Loading...', onClick: () => {}, disabled: true }}
-          showBack={false}
+          showBack={!!onBack}
+          onBack={onBack}
           showSkip={true}
           onSkip={onModuleSkip}
           skipConfirmMessage="Skip this module?"
@@ -247,7 +254,13 @@ function MeditationSection({
       <ModuleControlBar
         phase="active"
         primary={playback.getPrimaryButton()}
-        showBack={false}
+        showBack={!!onBack}
+        onBack={onBack}
+        backConfirmMessage={
+          playback.hasStarted && !playback.isComplete && !playback.isLoading
+            ? 'Stop the meditation and go back?'
+            : null
+        }
         showSkip={true}
         onSkip={playback.handleSkip}
         skipConfirmMessage="Skip this section?"
@@ -414,14 +427,23 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
         setIsIntroVisible(true);
       }, FADE_MS);
     } else {
-      // Last intro screen → start meditation Section A
+      // Last intro screen → meditation-idle (gives the user a beat to pick
+      // voice and confirm duration before composition starts).
       setIsIntroVisible(false);
       setTimeout(() => {
-        setPhase('meditation');
-        setActiveSectionKey('a');
+        setPhase('meditation-idle');
       }, FADE_MS);
     }
   }, [introStep]);
+
+  const handleBeginMeditation = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => {
+      setPhase('meditation');
+      setActiveSectionKey('a');
+      setIsLeaving(false);
+    }, FADE_MS);
+  }, []);
 
   const handleIntroBack = useCallback(() => {
     if (introStep > 0) {
@@ -431,8 +453,71 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
         setIntroStep((prev) => prev - 1);
         setIsIntroVisible(true);
       }, FADE_MS);
+    } else {
+      // First intro step → main idle.
+      setIsIntroVisible(false);
+      setTimeout(() => {
+        setPhase('idle');
+        setIsLeaving(false);
+        setIsIntroVisible(true);
+      }, FADE_MS);
     }
   }, [introStep]);
+
+  // Back from the meditation-idle screen → last intro step.
+  const handleMeditationIdleBack = useCallback(() => {
+    setIsLeaving(true);
+    setTimeout(() => {
+      setPhase('intro');
+      setIntroStep(INTRO_SCREENS.length - 1);
+      setIsIntroVisible(true);
+      setIsLeaving(false);
+    }, FADE_MS);
+  }, []);
+
+  // Back from a meditation section's playback → most recent choice screen.
+  // The section is mid-playback (NOT in sectionsCompleted yet), so no state
+  // reset — just route back. checkpoint2 > checkpoint1 > meditation-idle by
+  // recency of user decision.
+  const handleSectionBack = useCallback(() => {
+    setIsMeditationVisible(false);
+    setTimeout(() => {
+      if (checkpoint2Selection) {
+        setPhase('checkpoint-2');
+        setIsCheckpointVisible(true);
+      } else if (checkpoint1Selection) {
+        setPhase('checkpoint-1');
+        setIsCheckpointVisible(true);
+      } else {
+        setPhase('meditation-idle');
+        setIsLeaving(false);
+      }
+      setIsMeditationVisible(true);
+    }, FADE_MS);
+  }, [checkpoint1Selection, checkpoint2Selection]);
+
+  // Back from checkpoint-1 → meditation-idle. Section A was completed (in
+  // sectionsCompleted); pop it so re-advancing replays cleanly.
+  const handleCheckpoint1Back = useCallback(() => {
+    setIsCheckpointVisible(false);
+    setTimeout(() => {
+      setSectionsCompleted([]);
+      setPhase('meditation-idle');
+      setIsCheckpointVisible(true);
+      setIsLeaving(false);
+    }, FADE_MS);
+  }, []);
+
+  // Back from checkpoint-2 → checkpoint-1. The post-checkpoint-1 section
+  // (B) was completed; pop it so the user can re-pick the path.
+  const handleCheckpoint2Back = useCallback(() => {
+    setIsCheckpointVisible(false);
+    setTimeout(() => {
+      setSectionsCompleted((prev) => prev.slice(0, -1));
+      setPhase('checkpoint-1');
+      setIsCheckpointVisible(true);
+    }, FADE_MS);
+  }, []);
 
   // ─── Section complete handler ─────────────────────────────────────
 
@@ -652,17 +737,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
               A guided somatic experiencing practice for working with activation in the nervous system.
             </p>
 
-            <p className="uppercase tracking-wider text-[10px] text-[var(--color-text-tertiary)]">
-              About 25 to 40 minutes
-            </p>
-
-            {Array.isArray(voices) && voices.length >= 1 && (
-              <VoicePill
-                voices={voices}
-                selectedVoiceId={selectedVoiceId}
-                onVoiceChange={setSelectedVoiceId}
-              />
-            )}
+            <DurationPill display="30 - 50 mins" />
           </div>
         </ModuleLayout>
         <ModuleControlBar
@@ -681,8 +756,10 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
 
   if (phase === 'intro') {
     const screen = INTRO_SCREENS[introStep];
-    const isLast = introStep === INTRO_SCREENS.length - 1;
-
+    if (!screen) {
+      console.warn('PendulationModule: intro phase with out-of-bounds introStep', introStep);
+      return null;
+    }
     return (
       <>
         <ModuleLayout layout={{ centered: false, maxWidth: 'sm' }}>
@@ -728,11 +805,57 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
         <ModuleControlBar
           phase="active"
           primary={{
-            label: isLast ? 'Begin Meditation' : 'Continue',
+            label: 'Continue',
             onClick: handleIntroAdvance,
           }}
-          showBack={introStep > 0}
+          showBack={true}
           onBack={handleIntroBack}
+          showSkip={true}
+          onSkip={onSkip}
+          skipConfirmMessage="Skip this module?"
+        />
+      </>
+    );
+  }
+
+  // ─── meditation-idle (voice + duration confirmation before composition) ──
+
+  if (phase === 'meditation-idle') {
+    return (
+      <>
+        <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+          <div className={`text-center space-y-4 ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+            <h2
+              className="text-2xl text-[var(--color-text-primary)]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+            >
+              {pendulationMeditation.title}
+            </h2>
+
+            <div className="flex justify-center">
+              <AsciiMoon />
+            </div>
+
+            <p className="tracking-wider text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Settle in. The guided practice begins when you press play.
+            </p>
+
+            <DurationPill display="25 - 45 mins" />
+
+            {Array.isArray(voices) && voices.length >= 1 && (
+              <VoicePill
+                voices={voices}
+                selectedVoiceId={selectedVoiceId}
+                onVoiceChange={setSelectedVoiceId}
+              />
+            )}
+          </div>
+        </ModuleLayout>
+        <ModuleControlBar
+          phase="idle"
+          primary={{ label: 'Begin', onClick: handleBeginMeditation }}
+          showBack={true}
+          onBack={handleMeditationIdleBack}
           showSkip={true}
           onSkip={onSkip}
           skipConfirmMessage="Skip this module?"
@@ -754,6 +877,7 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
           onSectionComplete={handleSectionComplete}
           onModuleSkip={handleModuleSkip}
           onProgressUpdate={onProgressUpdate}
+          onBack={handleSectionBack}
         />
       </div>
     );
@@ -812,7 +936,8 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
             onClick: handleCheckpoint1Continue,
             disabled: !checkpoint1Selection,
           }}
-          showBack={false}
+          showBack={true}
+          onBack={handleCheckpoint1Back}
           showSkip={true}
           onSkip={handleModuleSkip}
           skipConfirmMessage="Skip the remaining content?"
@@ -874,7 +999,8 @@ export default function PendulationModule({ module, onComplete, onSkip, onProgre
             onClick: handleCheckpoint2Continue,
             disabled: !checkpoint2Selection,
           }}
-          showBack={false}
+          showBack={true}
+          onBack={handleCheckpoint2Back}
           showSkip={true}
           onSkip={handleModuleSkip}
           skipConfirmMessage="Skip the remaining content?"

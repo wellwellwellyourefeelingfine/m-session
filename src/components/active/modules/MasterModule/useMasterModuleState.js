@@ -459,11 +459,19 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
   }, []);
 
   // True when the current section is the last section in main flow (no
-  // bookmark to pop, currentSectionIndex is at the final array entry). Used
-  // by ScreensSection to relabel the primary "Continue" → "Complete" on the
-  // section's last screen.
+  // bookmark to pop, currentSectionIndex is at — or past — the last
+  // main-flow section). Used by ScreensSection to relabel the primary
+  // "Continue" → "Complete" on the section's last screen.
+  //
+  // Terminal-aware: a section flagged `terminal: true` is treated as the
+  // end of the main flow, even if more sections sit after it in the array
+  // as tail detours (only reachable via routing). Without this, modules
+  // that put a tail-detour after their `terminal: true` closing section
+  // (e.g. intentionSettingV2 has a meditation detour past the closing)
+  // would leave the closing's last screen reading "Continue" forever.
   const isLastSection = routeStack.length === 0
-    && currentSectionIndex >= sections.length - 1;
+    && (currentSection?.terminal === true
+      || currentSectionIndex >= sections.length - 1);
 
   return {
     // Navigation

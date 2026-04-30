@@ -254,8 +254,15 @@ export function useMeditationPlayback({
   // derived from the physical blob, so they always match and elapsed never overshoots.
   // onProgressUpdate is stored in a ref to prevent re-render loops — parent creates
   // a new function reference each render, which would cause infinite updates.
+  //
+  // Skip when !hasStarted: the meditation idle screen sits at elapsed=0 which
+  // would report 0% progress and visibly snap the progress bar back to zero
+  // when the user routes into a meditation section. Letting the parent
+  // (MasterModule / module wrapper) hold the section-based progress until
+  // playback actually begins keeps the bar continuous through the idle.
   useEffect(() => {
     if (!onProgressUpdateRef.current) return;
+    if (!hasStarted) return;
 
     const displayTotal = composedDurationRef.current || totalDuration;
     const userElapsed = Math.min(elapsedTime, displayTotal);

@@ -30,6 +30,7 @@ import useProgressReporter from '../../../hooks/useProgressReporter';
 
 // Shared UI components
 import ModuleLayout from '../../active/capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../../active/capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../../active/capabilities/ModuleControlBar';
 
 import AsciiMoon from '../../active/capabilities/animations/AsciiMoon';
@@ -228,7 +229,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
           content,
           source: 'session',
           sessionId,
-          moduleTitle: 'Pre-Session Intention Setting',
+          moduleTitle: 'Pre-Session Intention Setting (OLD)',
           isEdited: false,
         });
         if (entry?.id) {
@@ -248,8 +249,10 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   }, [saveIntention, onSkip]);
 
   // ── Begin meditation ──
+  // Standard multi-phase begin: shows MeditationLoadingScreen for the
+  // minimum duration during composition, then fades into active playback.
   const handleBeginMeditation = useCallback(() => {
-    playback.handleStart();
+    playback.handleBeginWithTransition();
   }, [playback]);
 
   // ── Restart meditation ──
@@ -510,14 +513,15 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   };
 
   const renderMeditationPlayback = () => {
-    // Loading
-    if (playback.isLoading) {
+    // Loading — shown for the multi-phase begin's full window. Gating on
+    // transitionStage (rather than playback.isLoading) keeps the loading
+    // screen up for the standard minimum duration even when composition
+    // finishes early.
+    if (playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') {
       return (
-        <div className="text-center animate-fadeIn">
-          <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-            Preparing meditation...
-          </p>
-        </div>
+        <MeditationLoadingScreen
+          isLeaving={playback.transitionStage === 'preparing-leaving'}
+        />
       );
     }
 
@@ -839,13 +843,15 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   };
 
   const getPrimaryConfig = () => {
-    // Meditation sub-flow — playback controls
+    // Meditation sub-flow — playback controls. Hide the primary button during
+    // every transition stage (idle-leaving / preparing / preparing-leaving)
+    // so the user doesn't briefly see a stale "Begin" or "Pause" mid-fade.
     if (inMeditation) {
-      if (playback.isLoading) {
-        return null;
-      }
-      if (playback.getPhase() === 'idle') {
+      if (playback.transitionStage === 'idle') {
         return { label: 'Begin', onClick: handleBeginMeditation };
+      }
+      if (playback.transitionStage !== 'active') {
+        return null;
       }
       return playback.getPrimaryButton();
     }
@@ -894,7 +900,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   };
 
   const getLeftSlot = () => {
-    if (inMeditation && playback.hasStarted && !playback.isComplete && !playback.isLoading) {
+    if (inMeditation && playback.transitionStage === 'active' && !playback.isComplete) {
       return (
         <VolumeButton
           volume={playback.audio.volume}
@@ -906,7 +912,7 @@ export default function IntentionSettingActivity({ module, onComplete, onSkip, o
   };
 
   const getRightSlot = () => {
-    if (inMeditation && playback.hasStarted && !playback.isComplete && !playback.isLoading) {
+    if (inMeditation && playback.transitionStage === 'active' && !playback.isComplete) {
       return (
         <SlotButton
           icon={<TranscriptIcon />}

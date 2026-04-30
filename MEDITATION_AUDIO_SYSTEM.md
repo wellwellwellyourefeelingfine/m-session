@@ -261,13 +261,85 @@ Each module:
 2. Builds `timedSequence` in `useMemo` (variable-duration: computes silence multiplier → generates sequence; fixed-duration: calls `assembleVariation()` → generates sequence with multiplier 1.0)
 3. Passes to `useMeditationPlayback` with `{ meditationId, moduleInstanceId, timedSequence, totalDuration, onComplete, onSkip, onProgressUpdate }`
 4. Uses `useTranscriptModal()` hook (`src/hooks/useTranscriptModal.js`) for transcript modal state — returns `{ showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript }`
-5. Renders UI based on returned `playback` state (`hasStarted`, `isLoading`, `isComplete`, `promptPhase`, `currentPrompt`, `transitionStage`, `getPrimaryButton()`)
+5. Renders UI based on returned `playback` state. **Gate idle / loading / active views on `transitionStage`** — see the **Begin pattern** below. The other commonly-used fields are `currentPrompt`, `promptPhase`, `isComplete`, `getPrimaryButton()`. Don't gate on `isLoading` directly — it flips false before the loading-screen fade-out completes.
 6. Wires seek controls to `ModuleControlBar`: `showSeekControls`, `onSeekBack={() => playback.handleSeekRelative(-10)}`, `onSeekForward={() => playback.handleSeekRelative(10)}`
 
 **Idle-screen pills (shared component model):**
 - Variable-duration modules pass `durationMinutes={duration.selected}` plus the step handlers to `IdleScreen` — this renders the inline `DurationPill` with `<` / `>` arrows. The displayed value is the user's *picked* step (10, 15, etc.); the actual playback may run a few seconds longer due to silence-multiplier solver tolerance + gong overhead, but the `DurationPill` reflects the target.
 - Fixed-duration single-clip modules (Simple Grounding et al.) pass `durationMinutes={Math.ceil(estimateMeditationDurationSeconds(meditation, { voiceId }) / 60)}` so the pill shows the actual ceil-rounded length.
 - Variation modules render the cards manually, then place a single shared `<DurationPill minutes={Math.ceil(estimateMeditationDurationSeconds(meditation, { voiceId, variationKey: selectedVariation }) / 60)} />` below the cards (no arrows) — the pill fades to the new value when the user picks a different card or toggles the voice pill.
+
+### Begin pattern (idle → loading → active)
+
+Every audio meditation module **must** use `playback.handleBeginWithTransition()` for the user-triggered Begin flow, **never** `playback.handleStart()` directly. `handleStart` is the lower-level primitive that `handleBeginWithTransition` calls internally — calling it directly skips the multi-phase fade pipeline (idle fade-out, minimum-duration loading screen, fade-in to active) and produces a flickery transition when audio composition is fast.
+
+**The flow:**
+
+```
+'idle'  ──Begin clicked──▶  'idle-leaving' (fade idle out, idleFadeMs)
+                                         │
+                                         ▼
+                            'preparing' (fade MeditationLoadingScreen in,
+                                         compose audio + minLoadMs in parallel)
+                                         │
+                                         ▼
+                            'preparing-leaving' (fade loading screen out,
+                                                  loadFadeMs; audio plays under)
+                                         │
+                                         ▼
+                                       'active'
+```
+
+`transitionStage` from the hook drives every render gate. It is `'idle' | 'idle-leaving' | 'preparing' | 'preparing-leaving' | 'active'`.
+
+**Render template** (single ModuleLayout, three gated branches):
+
+```jsx
+<ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
+  {(playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') && (
+    <div className={`text-center ${playback.transitionStage === 'idle-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+      {/* idle screen — title, duration pill, voice pill, etc. */}
+    </div>
+  )}
+  {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+    <MeditationLoadingScreen
+      isLeaving={playback.transitionStage === 'preparing-leaving'}
+    />
+  )}
+  {playback.transitionStage === 'active' && (
+    <div /* active playback view */>...</div>
+  )}
+</ModuleLayout>
+```
+
+**Begin handler:**
+
+```jsx
+const handleBeginWithTransition = useCallback(() => {
+  playback.handleBeginWithTransition();
+}, [playback]);
+```
+
+Pass `{ idleFadeMs: 0 }` only when the parent has already faded out a separate idle screen (e.g. PendulationModule's inner per-section `MeditationSection`, where the parent's `meditation-idle` phase already handled the idle fade).
+
+**For modules with an outer phase machine** (e.g. TheDescent's `phase = 'idle' | 'meditation' | 'reflection'`), advance the outer phase on `transitionStage === 'active'` rather than on `hasStarted && !isLoading` — otherwise the outer phase swap will unmount the loading screen mid-fade:
+
+```jsx
+useEffect(() => {
+  if (playback.transitionStage === 'active' && phase === 'idle') {
+    setPhase('meditation');
+  }
+}, [playback.transitionStage, phase]);
+```
+
+**Anti-patterns** that show up in older code:
+
+- ❌ `setIsLeaving(true); setTimeout(() => playback.handleStart(), 300)` — manual idle fade with a hard-coded delay; predates `handleBeginWithTransition` and produces a flicker on fast composition.
+- ❌ Gating loading screen on `playback.isLoading` — flips false before the loading-screen fade-out, so the screen vanishes prematurely.
+- ❌ Gating "audio fully ready" UI (volume button, transcript button, primary button replacement) on `hasStarted && !isLoading` — same flicker as above. Use `transitionStage === 'active'` instead.
+- ❌ Calling `playback.handleStart()` directly from a module — bypasses the entire transition pipeline.
+
+The 8 modules in good shape: `BodyScan, OpenAwareness, SimpleGrounding, FeltSense, LeavesOnAStream, StayWithIt, SelfCompassion, MasterModule's MeditationSection` — plus PendulationModule (inner section, with `idleFadeMs: 0`), TheDescent, TheCycle, and IntentionSettingActivity. Mirror those when authoring a new audio meditation module.
 
 ---
 

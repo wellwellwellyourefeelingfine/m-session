@@ -48,6 +48,7 @@ import {
 
 // Shared UI components
 import ModuleLayout, { DurationPill, VoicePill } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -194,7 +195,6 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
   const [selectedMode, setSelectedMode] = useState(
     meditation?.defaultVariation || 'solo'
   );
-  const [isLeaving, setIsLeaving] = useState(false);
   const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
   const voices = meditation?.audio?.voices;
   const [selectedVoiceId, setSelectedVoiceId] = useState(() =>
@@ -294,12 +294,14 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
     }
   }, [phase, onProgressUpdate]);
 
-  // Track when we enter meditation phase
+  // Track when we enter meditation phase. Wait for the multi-phase transition
+  // to reach 'active' so the loading screen completes its fade-out before the
+  // outer phase swap unmounts it.
   useEffect(() => {
-    if (playback.hasStarted && !playback.isLoading && phase === 'idle') {
+    if (playback.transitionStage === 'active' && phase === 'idle') {
       setPhase('meditation');
     }
-  }, [playback.hasStarted, playback.isLoading, phase]);
+  }, [playback.transitionStage, phase]);
 
   useEffect(() => {
     if (playback.hasStarted) return;
@@ -310,18 +312,20 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
   }, [defaultVoiceId, playback.hasStarted, meditation]);
 
-  // Fade out idle screen before starting
+  // Standard multi-phase begin: fades out idle, shows MeditationLoadingScreen
+  // for the minimum duration during composition, fades it out before active
+  // playback. Same pattern as BodyScan / SimpleGrounding et al.
   const handleBeginWithTransition = useCallback(() => {
     useSessionStore.getState().beginModule(module.instanceId);
-    setIsLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
+    playback.handleBeginWithTransition();
   }, [playback, module.instanceId]);
 
-  // Restart meditation from the beginning
+  // Restart meditation from the beginning. playback.handleRestart() resets
+  // the hook's internal transitionStage back to 'idle', so the idle screen
+  // re-renders without needing local fade-state tracking.
   const handleRestart = useCallback(() => {
     playback.handleRestart();
     setPhase('idle');
-    setIsLeaving(false);
   }, [playback]);
 
   // ─── Fade transition helper ─────────────────────────────────────────────
@@ -594,8 +598,8 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          {!playback.isLoading ? (
-            <div className={`text-center ${isLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
+          {(playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') && (
+            <div className={`text-center ${playback.transitionStage === 'idle-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'}`}>
               <div className="text-center space-y-2 animate-fadeIn">
                 <h2
                   className="font-serif text-2xl text-[var(--color-text-primary)]"
@@ -656,18 +660,17 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
                 />
               )}
             </div>
-          ) : (
-            <div className="text-center animate-fadeIn">
-              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-                Preparing meditation...
-              </p>
-            </div>
+          )}
+          {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+            <MeditationLoadingScreen
+              isLeaving={playback.transitionStage === 'preparing-leaving'}
+            />
           )}
         </ModuleLayout>
 
         <ModuleControlBar
           phase="idle"
-          primary={{ label: 'Begin', onClick: playback.isLoading ? () => {} : handleBeginWithTransition }}
+          primary={{ label: 'Begin', onClick: playback.transitionStage === 'idle' ? handleBeginWithTransition : () => {} }}
           showBack={false}
           showSkip={true}
           onSkip={onSkip}

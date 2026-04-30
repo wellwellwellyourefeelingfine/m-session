@@ -262,7 +262,7 @@ export function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
  * Without step handlers, renders as a display-only pill (fixed-duration
  * meditations like Simple Grounding).
  */
-export function DurationPill({ minutes, canStepBack, canStepForward, onStepBack, onStepForward, showArrows = false }) {
+export function DurationPill({ minutes, display, canStepBack, canStepForward, onStepBack, onStepForward, showArrows = false }) {
   const [displayMinutes, setDisplayMinutes] = useState(minutes);
   const [isFaded, setIsFaded] = useState(false);
   const prevMinutesRef = useRef(minutes);
@@ -270,8 +270,10 @@ export function DurationPill({ minutes, canStepBack, canStepForward, onStepBack,
 
   // Fade-swap the number when it changes, mirroring VoicePill's pattern.
   // Tracks last-processed value via ref so setDisplayMinutes doesn't re-run
-  // the effect and cancel the fade-in transition.
+  // the effect and cancel the fade-in transition. Skipped when a static
+  // `display` string is provided (no fade — value never changes).
   useEffect(() => {
+    if (display != null) return;
     if (minutes === prevMinutesRef.current) return;
     prevMinutesRef.current = minutes;
 
@@ -312,12 +314,18 @@ export function DurationPill({ minutes, canStepBack, canStepForward, onStepBack,
 
       <div className="rounded-full border-[1.5px] border-[var(--accent)] px-3 py-1 flex items-center justify-start gap-2">
         <span className="text-sm font-bold text-[var(--accent)] lowercase tracking-wide">time:</span>
-        <span
-          className={`text-sm text-[var(--color-text-primary)] transition-opacity duration-200 w-14 text-left tabular-nums ${opacityClass}`}
-          aria-live="polite"
-        >
-          {displayMinutes}min
-        </span>
+        {display != null ? (
+          <span className="text-sm text-[var(--color-text-primary)] tracking-wide">
+            {display}
+          </span>
+        ) : (
+          <span
+            className={`text-sm text-[var(--color-text-primary)] transition-opacity duration-200 w-14 text-left tabular-nums ${opacityClass}`}
+            aria-live="polite"
+          >
+            {displayMinutes}min
+          </span>
+        )}
       </div>
 
       {showArrows ? (

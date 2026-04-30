@@ -70,7 +70,8 @@ import {
 } from '../../../content/modules/theCycleContent';
 
 // Shared UI
-import ModuleLayout, { VoicePill } from '../capabilities/ModuleLayout';
+import ModuleLayout, { VoicePill, DurationPill } from '../capabilities/ModuleLayout';
+import MeditationLoadingScreen from '../capabilities/MeditationLoadingScreen';
 import ModuleControlBar, { VolumeButton, SlotButton } from '../capabilities/ModuleControlBar';
 import MorphingShapes from '../capabilities/animations/MorphingShapes';
 import AsciiMoon from '../capabilities/animations/AsciiMoon';
@@ -236,7 +237,6 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
   const cycleCloseTimerRef = useRef(null);
 
   // Meditation
-  const [isMedLeaving, setIsMedLeaving] = useState(false);
   const { showTranscript, transcriptClosing, handleOpenTranscript, handleCloseTranscript } = useTranscriptModal();
   const defaultVoiceId = useAppStore((s) => s.preferences?.defaultVoiceId);
   const voices = meditation?.audio?.voices;
@@ -368,6 +368,15 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     return [sequence, total];
   }, [meditation, mode, selectedVoiceId]);
 
+  const displayMinutes = useMemo(() => {
+    if (!meditation) return null;
+    const seconds = estimateMeditationDurationSeconds(meditation, {
+      variationKey: mode,
+      voiceId: selectedVoiceId,
+    });
+    return Math.ceil(seconds / 60);
+  }, [meditation, mode, selectedVoiceId]);
+
   const transcriptPrompts = useMemo(() => {
     if (!meditation) return [];
     return meditation.assembleVariation(mode);
@@ -397,11 +406,13 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     onProgressUpdate,
   });
 
+  // Wait for the multi-phase transition to reach 'active' so the loading
+  // screen completes its fade-out before the outer phase swap unmounts it.
   useEffect(() => {
-    if (playback.hasStarted && !playback.isLoading && phase === 'med-intro') {
+    if (playback.transitionStage === 'active' && phase === 'med-intro') {
       setPhase('meditation');
     }
-  }, [playback.hasStarted, playback.isLoading, phase]);
+  }, [playback.transitionStage, phase]);
 
   useEffect(() => {
     if (playback.hasStarted) return;
@@ -412,9 +423,11 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not re-running when selectedVoiceId changes locally
   }, [defaultVoiceId, playback.hasStarted, meditation]);
 
+  // Standard multi-phase begin: fades out idle, shows MeditationLoadingScreen
+  // for the minimum duration during composition, fades it out before active
+  // playback. Same pattern as BodyScan / SimpleGrounding et al.
   const handleBeginMeditation = useCallback(() => {
-    setIsMedLeaving(true);
-    setTimeout(() => playback.handleStart(), 300);
+    playback.handleBeginWithTransition();
   }, [playback]);
 
   // ─── Diagram reveal sequence ──────────────────────────────────────────
@@ -1492,8 +1505,8 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     return (
       <>
         <ModuleLayout layout={{ centered: true, maxWidth: 'sm' }}>
-          {!playback.isLoading ? (
-            <div className={`text-center ${isMedLeaving ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
+          {(playback.transitionStage === 'idle' || playback.transitionStage === 'idle-leaving') && (
+            <div className={`text-center ${playback.transitionStage === 'idle-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'}`} style={{ marginTop: '-2rem' }}>
               <h2 className="font-serif text-xl text-[var(--color-text-primary)] mb-4" style={{ textTransform: 'none' }}>
                 {MEDITATION_INTRO_CONTENT.header}
               </h2>
@@ -1501,6 +1514,10 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
               <div className="text-left mb-6">
                 {renderContentLines(MEDITATION_INTRO_CONTENT.lines)}
               </div>
+
+              {typeof displayMinutes === 'number' && (
+                <DurationPill minutes={displayMinutes} />
+              )}
 
               {Array.isArray(voices) && voices.length >= 1 && (
                 <VoicePill
@@ -1510,12 +1527,11 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
                 />
               )}
             </div>
-          ) : (
-            <div className="text-center animate-fadeIn">
-              <p className="text-[var(--color-text-tertiary)] text-sm uppercase tracking-wider">
-                Preparing meditation...
-              </p>
-            </div>
+          )}
+          {(playback.transitionStage === 'preparing' || playback.transitionStage === 'preparing-leaving') && (
+            <MeditationLoadingScreen
+              isLeaving={playback.transitionStage === 'preparing-leaving'}
+            />
           )}
         </ModuleLayout>
 
@@ -1523,7 +1539,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
           phase="active"
           primary={{
             label: 'Begin',
-            onClick: playback.isLoading ? () => {} : handleBeginMeditation,
+            onClick: playback.transitionStage === 'idle' ? handleBeginMeditation : () => {},
           }}
           showBack={true}
           onBack={handleBack}

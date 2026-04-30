@@ -144,6 +144,12 @@ import ProtectorReconnectionBlock from './ProtectorReconnectionBlock';
 import ProtectorFieldBlock from './ProtectorFieldBlock';
 import DialogueLoopBlock from './DialogueLoopBlock';
 import MeditationTimePillBlock from './MeditationTimePillBlock';
+import IntentionWelcomeBlock from './IntentionWelcomeBlock';
+import IntentionExampleBlock from './IntentionExampleBlock';
+import IntentionPrepTextBlock from './IntentionPrepTextBlock';
+import StemIntentionBlock from './StemIntentionBlock';
+import IntentionPromptBlock from './IntentionPromptBlock';
+import IntentionDisplayBlock from './IntentionDisplayBlock';
 
 const MASTER_CUSTOM_BLOCKS = {
   expandable: ExpandableBlock,
@@ -151,6 +157,13 @@ const MASTER_CUSTOM_BLOCKS = {
   'protector-field': ProtectorFieldBlock,
   'dialogue-loop': DialogueLoopBlock,
   'meditation-time-pill': MeditationTimePillBlock,
+  // ── Intention Setting v2 ──
+  'intention-welcome': IntentionWelcomeBlock,
+  'intention-example': IntentionExampleBlock,
+  'intention-prep-text': IntentionPrepTextBlock,
+  'stem-intention': StemIntentionBlock,
+  'intention-prompt': IntentionPromptBlock,
+  'intention-display': IntentionDisplayBlock,
 };
 
 export default MASTER_CUSTOM_BLOCKS;

@@ -207,6 +207,70 @@ html.light .cta::before {
 }
 
 /* ═══════════════════════════════════════════
+   HERO LEAVES — organic growth behind phone
+   ═══════════════════════════════════════════ */
+.hero-leaves-wrap {
+  position: absolute;
+  width: 270px;
+  height: 560px;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+.phone {
+  position: relative;
+  z-index: 1;
+}
+.hero-leaf {
+  position: absolute;
+  overflow: visible;
+  color: var(--accent);
+  opacity: 0.45;
+  transform-origin: center bottom;
+}
+/*
+ * Left — two leaves growing from the bottom of the phone.
+ * Larger leaf angled more outward and tucked deeper behind.
+ */
+.hero-leaf-l1 {
+  width: 110px;
+  left: -35px;
+  top: 260px;
+  transform: rotate(-28deg);
+}
+.hero-leaf-l2 {
+  width: 145px;
+  left: -45px;
+  top: 233px;
+  transform: rotate(-55deg);
+}
+/*
+ * Right — three leaves spanning the midsection.
+ * Larger leaves angled more outward and tucked deeper behind.
+ */
+.hero-leaf-r1 {
+  width: 100px;
+  left: 202px;
+  top: 9px;
+  transform: rotate(18deg);
+}
+.hero-leaf-r2 {
+  width: 125px;
+  left: 186px;
+  top: 62px;
+  transform: rotate(40deg);
+}
+.hero-leaf-r3 {
+  width: 190px;
+  left: 85px;
+  top: 85px;
+  transform: rotate(65deg);
+}
+
+/* ═══════════════════════════════════════════
    PRINCIPLES STRIP
    ═══════════════════════════════════════════ */
 .principles {
@@ -598,6 +662,10 @@ html.light .cta::before {
     width: 220px;
     height: 460px;
   }
+  .hero-leaves-wrap {
+    transform: translateX(-50%) scale(0.815);
+    transform-origin: top center;
+  }
   .principles-grid {
     grid-template-columns: 1fr;
   }
@@ -696,6 +764,9 @@ html.light .cta::before {
   .phone {
     width: 190px;
     height: 400px;
+  }
+  .hero-leaves-wrap {
+    transform: translateX(-50%) scale(0.704);
   }
   .phone::before {
     width: 80px;

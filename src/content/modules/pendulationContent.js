@@ -80,18 +80,6 @@ export const INTRO_SCREENS = [
       'Some sessions will be quiet. The pendulation itself is the practice, and that is always enough. Other sessions may go deeper. Both are valuable. There is no target to reach.',
     ],
   },
-  {
-    id: 'ready',
-    type: 'text',
-    label: 'Preparation',
-    title: 'Ready',
-    showAnimation: true,
-    isClosing: true,
-    body: [
-      'Settle into your space. Make sure you are comfortable and have room to move if your body asks for it.',
-      'The guided meditation will begin when you press play.',
-    ],
-  },
 ];
 
 // ─── Checkpoint Options ──────────────────────────────────────────────────────

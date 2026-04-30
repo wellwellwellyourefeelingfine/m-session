@@ -233,7 +233,7 @@ export function resolveEffectiveVoiceId(audioConfig, preferredVoiceId = null) {
 
 // Composer overhead constants — must stay in sync with GONG_DELAY/GONG_PREAMBLE
 // in useMeditationPlayback.js and the closing-gong logic in audioComposerService.js.
-const COMPOSER_OVERHEAD_WITH_GONGS = 12;    // ~8s opening preamble + ~4s closing
+const COMPOSER_OVERHEAD_WITH_GONGS = 17;    // ~8s opening preamble + ~9s closing (1s silence + 7.6s gong)
 const COMPOSER_OVERHEAD_WITHOUT_GONGS = 2;  // 1s lead-in + 1s trailing
 
 /**

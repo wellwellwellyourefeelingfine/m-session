@@ -18,7 +18,7 @@ export const TIMELINE_CONFIGS = {
   'self-understanding': {
     full: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
         { libraryId: 'life-graph' },
         { libraryId: 'mapping-territory' },
       ],
@@ -40,7 +40,7 @@ export const TIMELINE_CONFIGS = {
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
       ],
       comeUp: [
         { libraryId: 'simple-grounding' },
@@ -64,7 +64,7 @@ export const TIMELINE_CONFIGS = {
   healing: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
         { libraryId: 'life-graph' },
         { libraryId: 'mapping-territory' },
       ],
@@ -89,7 +89,7 @@ export const TIMELINE_CONFIGS = {
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
       ],
       comeUp: [
         { libraryId: 'simple-grounding' },
@@ -117,7 +117,7 @@ export const TIMELINE_CONFIGS = {
   relationship: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
         { libraryId: 'mapping-territory' },
       ],
       comeUp: [
@@ -139,7 +139,7 @@ export const TIMELINE_CONFIGS = {
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
       ],
       comeUp: [
         { libraryId: 'simple-grounding' },
@@ -164,7 +164,7 @@ export const TIMELINE_CONFIGS = {
   creativity: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
         { libraryId: 'life-graph' },
         { libraryId: 'mapping-territory' },
       ],
@@ -187,7 +187,7 @@ export const TIMELINE_CONFIGS = {
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
       ],
       comeUp: [
         { libraryId: 'simple-grounding' },
@@ -213,7 +213,7 @@ export const TIMELINE_CONFIGS = {
   open: {
     full: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
         { libraryId: 'life-graph' },
         { libraryId: 'mapping-territory' },
       ],
@@ -236,7 +236,7 @@ export const TIMELINE_CONFIGS = {
     },
     moderate: {
       preSession: [
-        { libraryId: 'intention-setting' },
+        { libraryId: 'intention-setting-v2' },
       ],
       comeUp: [
         { libraryId: 'simple-grounding' },
