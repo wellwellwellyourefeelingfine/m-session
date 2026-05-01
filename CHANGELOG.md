@@ -4,6 +4,53 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.1] - 2026-05-01
+
+### Added
+
+- **Rachel voice ("relaxing" alternate)**: Second voice option recorded by Rachel, now available across fifteen meditations and transitions — Simple Grounding, Short Grounding, Leaves on a Stream, Open Awareness, Stay With It, Felt Sense, Body Scan, Self-Compassion, Protector Dialogue, The Cycle (closing), The Descent, Pendulation, Opening Transition, Centering Breath, and Closing Transition.
+- **Voice selection setting**: New voice-alt UI surfaced in Settings to switch between Theo Silk and Relaxing Rachel; idle-screen `DurationPill` and audio-bound estimates now resolve durations per selected voice.
+- **MasterModule custom blocks (Intention Setting)**: `StemIntentionBlock`, `IntentionWelcomeBlock`, `IntentionDisplayBlock`, `IntentionExampleBlock`, `IntentionPrepTextBlock`, `IntentionPromptBlock`, and `SelectionDisplayBlock` — all registered via `CUSTOM_BLOCKS` and used by the new Intention Setting content config.
+- **MasterModule custom blocks (Protector Dialogue)**: `DialogueLoopBlock`, `MeditationTimePillBlock`, `ProtectorFieldBlock`, `ProtectorReconnectionBlock` — power the migrated Protector Dialogue Part 1 + Part 2 flows.
+- **Dot separator feature** for MasterModule text paragraphs (V1) — supports inline structural separators in content configs.
+- **`resolveAnimationKey` utility** in `MasterModule/utils/` — centralizes per-screen animation key resolution.
+- **Hero leaves animation** (`hero-leaves.js`) added to landing page.
+- **`MasterModuleStyleSheet.md`** — internal style/usage reference for the MasterModule renderer system.
+
+### Changed
+
+- **Intention Setting migrated to MasterModule**: `IntentionSettingMaster` now drives the flow via `intentionSettingV2.js` content config and the new intention custom blocks; legacy `IntentionSettingActivity` simplified.
+- **Dialogue with a Protector migrated to MasterModule**: Replaces the standalone `ProtectorDialoguePart1Module` and `ProtectorDialoguePart2Module` components (~2,000 lines removed) with content configs `protectorDialogueP1.js`, `protectorDialogueP2.js`, and shared `protectorDialogueShared.js` powered by the new dialogue/protector custom blocks.
+- **Pendulation, The Cycle, The Descent**: Updated to consume the unified meditation-section renderer with voice-aware audio resolution.
+- **Idle screen `DurationPill` unified**: Voice-aware ceiling for fixed-duration meditations so the displayed estimate matches what playback actually plays for the selected voice.
+- **Duration system consolidated**: `DurationPicker` shared component, `BreathMeditationModule`, and the `breath-awareness`, `calming-breath-15min`, and `guided-breath-orb` content meditations were retired in favor of the consolidated meditation-section + audio-duration manifest pipeline.
+- **Module library polish**: Small icon updates and library-drawer copy tweaks; intake-main consistency pass.
+- **FAQ + substance testing**: PMMA prominence increased in safety guidance.
+- **Landing page**: Additional html/css polish (landing-page.html, landing.css, contribute.html, privacy.html), site icons updated.
+- **Active view + ModuleLayout polish**: Minor structural updates to `ActiveView`, `ModuleLayout`, `ModuleControlBar`, `ModuleProgressBar`, and `ModuleStatusBar` to support the unified module pipeline.
+- **`smoothScroll` utility**: Refined to fix scroll-height edge cases at the active/transition boundary.
+
+### Fixed
+
+- **Scroll height + smooth scroll bugs** at module/transition boundaries.
+- **Transition module bug fixes** — minor regressions surfaced after the 1.3.0 transition rebuild.
+- **Rachel meditation manifest keys**: Corrected `relaxing-rachel` → `rachel` mapping for Body Scan, Short Grounding, Leaves on a Stream, Open Awareness, Stay With It, Felt Sense, and Self-Compassion so the audio manifest resolves the right files.
+- **Protector Dialogue audio basePath**: Corrected `protector` → `protector-dialogue`; relocated MP3s + script + manifest entries to match.
+
+### Removed
+
+- **Audit-driven cleanup** (`AUDIT_FINDINGS.md` sweep): Removed unused or superseded code — `PhaseHeader`, `Horizon` animation, `PreSessionView` (legacy), `SessionTimeline` (legacy), `PostCloseScreen`, `TransitionBuffer`, `TransitionTextarea`, `AISettingsTool`, `ComeUpTestTool`, `useSilenceTimer`, `useWakeLock`, `cryptoService`. Net: ~1,300 lines deleted.
+- **Legacy breath system**: `BreathMeditationModule`, `breath-awareness`, `calming-breath-15min`, and `guided-breath-orb` meditation content removed.
+- **Legacy Protector Dialogue components**: `ProtectorDialoguePart1Module.jsx` and `ProtectorDialoguePart2Module.jsx` removed (replaced by MasterModule content configs).
+- **`date-fns`** removed from dependencies (already unused).
+
+### Security / Maintenance
+
+- **`npm audit fix`** — patched transitive dev dependencies.
+- **Dependabot bumps** — `@vitejs/plugin-react` 5.1.2 → 5.2.0, `react-dom` 19.2.3 → 19.2.4, `eslint` 9.39.2 → 10.0.3.
+
+[1.3.1]: https://github.com/wellwellwellyourefeelingfine/m-session/compare/v1.3.0...v1.3.1
+
 ## [1.3.0] - 2026-04-21
 
 ### Added
