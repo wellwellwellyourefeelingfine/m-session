@@ -178,11 +178,13 @@
     <section class="hero">
       <div class="container">
         <div class="hero-grid">
-          <div class="hero-text">
-            <h1 class="rv visible">
+          <div class="hero-heading rv visible">
+            <h1>
               Your pace.<br />Your intention.<br />Your
               <span class="accent">session</span>.
             </h1>
+          </div>
+          <div class="hero-body">
             <p class="hero-tagline rv visible rv-d1">
               A structured guide for MDMA sessions. Use it solo, with a
               partner, or with a sitter. Choose from activities grounded in
@@ -229,6 +231,13 @@
     <!-- ─── PRINCIPLES STRIP ─── -->
     <div class="principles">
       <div class="container">
+        <p class="principles-intro">
+          Think of m-session as an interactive workbook for self-guided MDMA therapy.
+          You choose what to explore, when, and for how long. MDMA temporarily softens
+          the mind's automatic defenses while preserving cognitive clarity. In that window,
+          people can look at their lives, relationships, and emotional patterns with unusual
+          honesty. m-session exists to give that window structure.
+        </p>
         <div class="principles-grid">
           <div class="principle rv">
             <div class="principle-icon"><svg><use href="#icon-compass"></use></svg></div>
@@ -239,7 +248,7 @@
             </div>
           </div>
           <div class="principle rv rv-d1">
-            <div class="principle-icon"><svg><use href="#icon-notebook-pen"></use></svg></div>
+            <div class="principle-icon"><svg><use href="#icon-book-heart"></use></svg></div>
             <div class="principle-title">Research-grounded</div>
             <div class="principle-desc">
               Built on established therapeutic frameworks: Internal Family
@@ -253,6 +262,30 @@
             <div class="principle-desc">
               No accounts, no analytics, no data leaves your device. Everything
               runs locally in your browser. Open source.
+            </div>
+          </div>
+          <div class="principle rv rv-d3">
+            <div class="principle-icon"><svg><use href="#icon-waves"></use></svg></div>
+            <div class="principle-title">Audio-first</div>
+            <div class="principle-desc">
+              Guided meditations designed for eyes-closed use. Duration-adjustable:
+              extending the length adds more silence between prompts.
+            </div>
+          </div>
+          <div class="principle rv rv-d4">
+            <div class="principle-icon"><svg><use href="#icon-notebook-pen"></use></svg></div>
+            <div class="principle-title">Physical journal compatible</div>
+            <div class="principle-desc">
+              Every journal prompt can be progressed without typing. Timestamps
+              are saved so you can cross-reference your notebook during integration.
+            </div>
+          </div>
+          <div class="principle rv rv-d5">
+            <div class="principle-icon"><svg><use href="#icon-snail"></use></svg></div>
+            <div class="principle-title">Altered-state aware</div>
+            <div class="principle-desc">
+              Built around a single accent color per theme that guides the eye
+              without overwhelming it. Flat, minimal, easy to set down.
             </div>
           </div>
         </div>
@@ -714,15 +747,21 @@
           "flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center";
         screen.appendChild(moonWrap);
 
+        // Title above moon
+        var titleAbove = document.createElement("div");
+        titleAbove.className = "phone-title";
+        titleAbove.textContent = "You've Arrived";
+        moonWrap.appendChild(titleAbove);
+
         var moonPre = document.createElement("pre");
         moonPre.id = "moon-pre";
         moonWrap.appendChild(moonPre);
 
-        var title = document.createElement("div");
-        title.style.cssText = "text-align:center;margin-top:16px";
-        title.innerHTML =
-          '<div style="font-family:var(--serif);font-size:15px;color:var(--phone-text);margin-bottom:6px">You\'ve Arrived</div><div style="font-size:9px;color:var(--phone-secondary);line-height:1.6">Let the experience unfold.<br>Be open to what arises.</div>';
-        moonWrap.appendChild(title);
+        // Description below moon
+        var descBelow = document.createElement("div");
+        descBelow.className = "phone-desc";
+        descBelow.innerHTML = 'Let the experience unfold.<br>Be open to what arises.';
+        moonWrap.appendChild(descBelow);
 
         // Nav
         var nav = document.createElement("div");

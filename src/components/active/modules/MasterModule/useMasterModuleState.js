@@ -139,8 +139,61 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
   // ── Journal store ─────────────────────────────────────────────────────────
 
   const addEntry = useJournalStore((state) => state.addEntry);
+  const updateEntry = useJournalStore((state) => state.updateEntry);
   const ingestionTime = useSessionStore((state) => state.substanceChecklist.ingestionTime);
   const sessionId = ingestionTime ? new Date(ingestionTime).toISOString() : null;
+
+  // Shared journal-write path used by both `finalizeModule` and the last-section
+  // `handleSkip`. Supports upsert: when `content.journal.upsertEntryIdField` is
+  // set (e.g. 'intentionJournalEntryId'), the assembled text is written back to
+  // the existing journal entry whose id is stored at
+  // `sessionProfile[upsertEntryIdField]`. If no such id exists, a new entry is
+  // created and its id is written back to that field. This is what lets the
+  // intention-setting flow update the intake-created entry in place rather
+  // than littering the journal with parallel module entries.
+  const writeJournalEntry = useCallback(() => {
+    if (!content?.journal?.saveOnComplete) return;
+    const storeState = useSessionStore.getState();
+    const entryText = assembleJournalEntry({
+      titlePrefix: content.journal.titlePrefix || module.title?.toUpperCase() || 'MODULE',
+      allScreens: allBlocksWithPromptIndex,
+      responses,
+      selectorValues,
+      selectorJournals,
+      conditionContext: { choiceValues, selectorValues, visitedSections },
+      storeState,
+    });
+    if (entryText.split('\n').length <= 1) return;
+
+    const upsertField = content.journal.upsertEntryIdField;
+    const moduleTitle = content.journal.moduleTitle || module.title;
+
+    if (upsertField) {
+      const existingId = storeState.sessionProfile?.[upsertField];
+      if (existingId) {
+        updateEntry(existingId, entryText);
+        return;
+      }
+      const entry = addEntry({
+        content: entryText,
+        source: 'session',
+        sessionId,
+        moduleTitle,
+        isEdited: false,
+      });
+      if (entry?.id) {
+        storeState.updateSessionProfile(upsertField, entry.id);
+      }
+      return;
+    }
+
+    addEntry({
+      content: entryText,
+      source: 'session',
+      sessionId,
+      moduleTitle,
+    });
+  }, [content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, updateEntry, sessionId]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
@@ -158,31 +211,13 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
     // CompletionScreen's Continue button, just hoisted up so the user's last
     // Continue press completes the module directly without a "Well Done"
     // intermediate page.
-    if (content?.journal?.saveOnComplete) {
-      const entryText = assembleJournalEntry({
-        titlePrefix: content.journal.titlePrefix || module.title?.toUpperCase() || 'MODULE',
-        allScreens: allBlocksWithPromptIndex,
-        responses,
-        selectorValues,
-        selectorJournals,
-        conditionContext: { choiceValues, selectorValues, visitedSections },
-        storeState: useSessionStore.getState(),
-      });
-      if (entryText.split('\n').length > 1) {
-        addEntry({
-          content: entryText,
-          source: 'session',
-          sessionId,
-          moduleTitle: module.title,
-        });
-      }
-    }
+    writeJournalEntry();
     onModuleComplete?.();
     // Keep the phase set to 'complete' as a fallback for any consumer that
     // peeks at it post-completion. The actual UI doesn't render anything
     // here because onModuleComplete is expected to advance the timeline.
     setModulePhase('complete');
-  }, [content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId, onModuleComplete]);
+  }, [writeJournalEntry, onModuleComplete]);
 
   const advanceSection = useCallback(() => {
     // Track that we completed this section
@@ -422,27 +457,9 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
 
     // Last section in main flow — finalize + abandon. Save partial data and
     // hand control back to the parent so the timeline moves on.
-    if (content?.journal?.saveOnComplete) {
-      const entryText = assembleJournalEntry({
-        titlePrefix: content.journal.titlePrefix || module.title?.toUpperCase() || 'MODULE',
-        allScreens: allBlocksWithPromptIndex,
-        responses,
-        selectorValues,
-        selectorJournals,
-        conditionContext: { choiceValues, selectorValues, visitedSections },
-        storeState: useSessionStore.getState(),
-      });
-      if (entryText.split('\n').length > 1) {
-        addEntry({
-          content: entryText,
-          source: 'session',
-          sessionId,
-          moduleTitle: module.title,
-        });
-      }
-    }
+    writeJournalEntry();
     onSkip();
-  }, [routeStack, currentSectionIndex, sections.length, advanceSection, content, module.title, allBlocksWithPromptIndex, responses, selectorValues, selectorJournals, choiceValues, visitedSections, addEntry, sessionId]);
+  }, [routeStack, currentSectionIndex, sections.length, advanceSection, writeJournalEntry]);
 
   // ── Back-to-idle ──────────────────────────────────────────────────────────
   //
@@ -472,6 +489,53 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
   const isLastSection = routeStack.length === 0
     && (currentSection?.terminal === true
       || currentSectionIndex >= sections.length - 1);
+
+  // Peek the section index that the NEXT section transition will land on,
+  // without advancing. Mirrors the routing logic in advanceSection /
+  // routeToSection so MasterModule can eagerly resolve the destination
+  // section's first-screen header BEFORE the body-fade timeout starts —
+  // that's what lets the persistent header crossfade run in parallel with
+  // the body fade for cross-section transitions, instead of waiting until
+  // the new section actually mounts (which would lag by FADE_MS).
+  //
+  // Pass `null` to peek the sequential `advanceSection` destination, or a
+  // routeConfig (`'_next'` | `'_complete'` | `'sectionId'` | `{to, bookmark}`)
+  // to peek `routeToSection`'s destination. Returns the section index, or
+  // null if the transition would end the module (terminal / past-last).
+  const peekNextSectionIndex = useCallback((routeConfig) => {
+    if (routeConfig != null) {
+      // Route-style: handle special routes + named targets
+      const config = typeof routeConfig === 'string'
+        ? { to: routeConfig }
+        : routeConfig;
+      if (config.to === '_complete') return null;
+      if (config.to === '_next') {
+        if (currentSection?.terminal === true) return null;
+        const idx = currentSectionIndex + 1;
+        return idx >= sections.length ? null : idx;
+      }
+      const idx = sections.findIndex((s) => s.id === config.to);
+      return idx >= 0 ? idx : null;
+    }
+
+    // Sequential advance — terminal short-circuits, otherwise pop bookmark
+    // (with stale guard) or skip already-visited sections.
+    if (currentSection?.terminal === true) return null;
+    if (routeStack.length > 0) {
+      const continuationIndex = routeStack[routeStack.length - 1];
+      const continuationId = sections[continuationIndex]?.id;
+      const isStaleBookmark =
+        continuationIndex >= sections.length
+        || continuationIndex === currentSectionIndex
+        || visitedSections.includes(continuationId);
+      if (!isStaleBookmark) return continuationIndex;
+    }
+    let nextIndex = currentSectionIndex + 1;
+    while (nextIndex < sections.length && visitedSections.includes(sections[nextIndex]?.id)) {
+      nextIndex++;
+    }
+    return nextIndex >= sections.length ? null : nextIndex;
+  }, [currentSection, currentSectionIndex, sections, routeStack, visitedSections]);
 
   return {
     // Navigation
@@ -506,6 +570,7 @@ export default function useMasterModuleState(content, module, callbacks = {}) {
     complete,
     goBackToPreviousSection,
     handleSkip,
+    peekNextSectionIndex,
 
     // Response handlers
     setPromptResponse,

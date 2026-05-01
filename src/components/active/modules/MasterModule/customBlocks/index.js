@@ -147,6 +147,7 @@ import MeditationTimePillBlock from './MeditationTimePillBlock';
 import IntentionWelcomeBlock from './IntentionWelcomeBlock';
 import IntentionExampleBlock from './IntentionExampleBlock';
 import IntentionPrepTextBlock from './IntentionPrepTextBlock';
+import SelectionDisplayBlock from './SelectionDisplayBlock';
 import StemIntentionBlock from './StemIntentionBlock';
 import IntentionPromptBlock from './IntentionPromptBlock';
 import IntentionDisplayBlock from './IntentionDisplayBlock';
@@ -161,6 +162,7 @@ const MASTER_CUSTOM_BLOCKS = {
   'intention-welcome': IntentionWelcomeBlock,
   'intention-example': IntentionExampleBlock,
   'intention-prep-text': IntentionPrepTextBlock,
+  'selection-display': SelectionDisplayBlock,
   'stem-intention': StemIntentionBlock,
   'intention-prompt': IntentionPromptBlock,
   'intention-display': IntentionDisplayBlock,

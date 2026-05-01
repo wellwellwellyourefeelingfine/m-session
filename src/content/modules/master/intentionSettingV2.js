@@ -29,11 +29,13 @@
  *      choice's named bookmark route — sequential walk-through cannot fall
  *      into it because closing's terminal flag fires `finalizeModule` first.
  *
- *   4. `journal: { saveOnComplete: false }` — the wrapper component
- *      (IntentionSettingMaster.jsx) owns the journal upsert end-to-end so
- *      it can update the intake-created entry rather than create a duplicate.
- *      Flipping this on would cause `useMasterModuleState.finalizeModule` to
- *      ALSO write a new entry via journalAssembler — a duplicate.
+ *   4. `journal.upsertEntryIdField: 'intentionJournalEntryId'` — the assembler
+ *      writes a single rich entry (intention text + territory + feeling +
+ *      narrowing/reflection prompts) and upserts into the journal entry the
+ *      intake flow created at `sessionProfile.intentionJournalEntryId`. If
+ *      that field is unset (e.g. user typed no intention during intake), a
+ *      new entry is created and its id is written back. The wrapper only
+ *      handles the pre-substance activity completion signal.
  */
 
 import {
@@ -43,11 +45,10 @@ import {
 
 // ── Shared header constants (rule #5: single JS reference for header continuity) ──
 const WELCOME_HEADER = { type: 'header', title: 'Refine Your Intention', animation: 'leaf' };
-const VS_EXP_HEADER = { type: 'header', title: 'Intention, Not Expectation', animation: 'leaf' };
 const MED_OFFER_HEADER = { type: 'header', title: 'Slow Down First', animation: 'leaf' };
 const TERRITORY_HEADER = { type: 'header', title: "What's Alive Right Now", animation: 'leaf' };
 const FEELING_HEADER = { type: 'header', title: 'What Comes Up', animation: 'leaf' };
-const ONE_THING_HEADER = { type: 'header', title: 'One Thing', animation: 'leaf' };
+const NARROWING_HEADER = { type: 'header', title: 'Narrowing It Down', animation: 'leaf' };
 const STEMS_HEADER = { type: 'header', title: 'A Starting Point', animation: 'leaf' };
 const WRITING_HEADER = { type: 'header', title: 'My Intention', animation: 'ascii-moon' };
 const REFLECT_FEEL_HEADER = { type: 'header', title: 'Feel Into It', animation: 'leaf' };
@@ -58,6 +59,7 @@ const CLOSING_HEADER = { type: 'header', title: 'Hold It Lightly', animation: 'a
 const SEP_1 = { type: 'dot-separator', count: 1, tightAbove: true };
 const SEP_2 = { type: 'dot-separator', count: 2, tightAbove: true };
 const SEP_3 = { type: 'dot-separator', count: 3, tightAbove: true };
+const SEP_4 = { type: 'dot-separator', count: 4, tightAbove: true };
 
 // ── Stem rows for the consolidated stems page.
 // NOTE — TBD copy: the example sentences below are reasonable defaults
@@ -90,43 +92,33 @@ export const intentionSettingV2Content = {
   },
   idleAnimation: 'leaf',
 
-  // Wrapper owns the journal write end-to-end. Setting this false prevents
-  // useMasterModuleState.finalizeModule from creating a duplicate entry via
-  // journalAssembler.
-  journal: { saveOnComplete: false },
+  // MasterModule's finalizeModule assembles a rich entry (intention +
+  // territory + feeling + narrowing/reflection responses) and upserts into
+  // the journal entry created during intake (id stored at
+  // sessionProfile.intentionJournalEntryId). No wrapper-side write needed.
+  journal: {
+    saveOnComplete: true,
+    titlePrefix: 'INTENTION SETTING',
+    moduleTitle: 'Pre-Session Intention Setting',
+    upsertEntryIdField: 'intentionJournalEntryId',
+  },
 
   sections: [
     // ──────────────────────────────────────────────────────────
-    // 0. Welcome
+    // 0. Intro — welcome + intention-vs-expectation merged into one reveal
     //
-    // Single-paragraph welcome. The OLD module's getWelcomeContent defines
-    // a bodySecondary that the renderer never displays (dead code), so we
-    // intentionally render only the conditional body — matching actual OLD
-    // behavior. No multi-paragraph reveal needed.
-    // ──────────────────────────────────────────────────────────
-    {
-      id: 'welcome',
-      type: 'screens',
-      ritualFade: true,
-      screens: [
-        { blocks: [WELCOME_HEADER, { type: 'intention-welcome' }] },
-      ],
-    },
-
-    // ──────────────────────────────────────────────────────────
-    // 1. Intention vs. Expectation — multi-paragraph reveal with 3 separators
-    //
-    // Per-user direction: separators flank both the second text block AND
-    // the example block, so the reveal reads as four discrete beats with
-    // visual punctuation between every step. This intentionally extends
-    // the dot-separator pattern beyond strict text→text — kept confined
-    // to this section.
+    // Header reads "Refine Your Intention" throughout. The first beat is
+    // the conditional welcome paragraph (rendered by IntentionWelcomeBlock,
+    // which branches on whether the user wrote an intention during intake).
+    // From there the reveal walks through the intention-vs-expectation
+    // education with dot separators between every step.
     //
     // Reveal order:
-    //   TEXT_1 → SEP_1 → TEXT_2 → SEP_2 → EXAMPLE → SEP_3 → FOOTER
+    //   WELCOME → SEP_1 → TEXT_1 → SEP_2 → TEXT_2 → SEP_3 → EXAMPLE → SEP_4 → FOOTER
     // ──────────────────────────────────────────────────────────
     (() => {
-      const TEXT_1 = { type: 'text', lines: [
+      const WELCOME = { type: 'intention-welcome' };
+      const TEXT_1 = { type: 'text', tightAbove: true, lines: [
         "An intention is a direction you want to face. It's not a destination you're demanding to arrive at.",
       ] };
       const TEXT_2 = { type: 'text', tightAbove: true, lines: [
@@ -142,15 +134,16 @@ export const intentionSettingV2Content = {
         'The difference is subtle but important. Intentions leave room for the session to surprise you.',
       ] };
       return {
-        id: 'intention-vs-expectation',
+        id: 'intro',
         type: 'screens',
         persistBlocks: true,
         ritualFade: true,
         screens: [
-          { blocks: [VS_EXP_HEADER, TEXT_1] },
-          { blocks: [VS_EXP_HEADER, TEXT_1, SEP_1, TEXT_2] },
-          { blocks: [VS_EXP_HEADER, TEXT_1, SEP_1, TEXT_2, SEP_2, EXAMPLE] },
-          { blocks: [VS_EXP_HEADER, TEXT_1, SEP_1, TEXT_2, SEP_2, EXAMPLE, SEP_3, FOOTER] },
+          { blocks: [WELCOME_HEADER, WELCOME] },
+          { blocks: [WELCOME_HEADER, WELCOME, SEP_1, TEXT_1] },
+          { blocks: [WELCOME_HEADER, WELCOME, SEP_1, TEXT_1, SEP_2, TEXT_2] },
+          { blocks: [WELCOME_HEADER, WELCOME, SEP_1, TEXT_1, SEP_2, TEXT_2, SEP_3, EXAMPLE] },
+          { blocks: [WELCOME_HEADER, WELCOME, SEP_1, TEXT_1, SEP_2, TEXT_2, SEP_3, EXAMPLE, SEP_4, FOOTER] },
         ],
       };
     })(),
@@ -216,6 +209,7 @@ export const intentionSettingV2Content = {
               type: 'selector',
               key: 'territory',
               multiSelect: false,
+              columns: 1,
               options: TERRITORY_OPTIONS.map((o) => ({ id: o.value, label: o.label })),
             },
           ],
@@ -242,6 +236,7 @@ export const intentionSettingV2Content = {
               type: 'selector',
               key: 'feeling',
               multiSelect: false,
+              columns: 1,
               options: FEELING_OPTIONS.map((o) => ({ id: o.value, label: o.label })),
             },
           ],
@@ -250,24 +245,52 @@ export const intentionSettingV2Content = {
     },
 
     // ──────────────────────────────────────────────────────────
-    // 5. Inquiry: One Thing — single-screen text-only reflective beat
+    // 5. Narrowing It Down — synthesis page with progressive reveal
+    //
+    // Replays the user's two prior selections (territory + feeling) in
+    // accent boxes and asks them to narrow toward the "one thing" the
+    // session could help with. SelectionDisplayBlock reads from the
+    // MasterModule selectorValues map (populated by the territory/feeling
+    // selectors above) and resolves the chosen option's display label.
+    //
+    // Reveal order:
+    //   INTRO → SEP_1 → TERRITORY_DISPLAY → SEP_2 → FEELING_DISPLAY → SEP_3 → PROMPT
     // ──────────────────────────────────────────────────────────
-    {
-      id: 'inquiry-one-thing',
-      type: 'screens',
-      screens: [
-        {
-          blocks: [
-            ONE_THING_HEADER,
-            { type: 'text', lines: [
-              'If this session could help you with just one thing, what would it be?',
-              '§',
-              "You don't need to write it down yet. Just let the question sit for a moment.",
-            ] },
-          ],
-        },
-      ],
-    },
+    (() => {
+      const INTRO_TEXT = { type: 'text', lines: ["Here's what we have so far..."] };
+      const TERRITORY_DISPLAY = {
+        type: 'selection-display',
+        tightAbove: true,
+        label: 'What resonates:',
+        selectorKey: 'territory',
+        options: TERRITORY_OPTIONS,
+      };
+      const FEELING_DISPLAY = {
+        type: 'selection-display',
+        tightAbove: true,
+        label: 'How it feels:',
+        selectorKey: 'feeling',
+        options: FEELING_OPTIONS,
+      };
+      const PROMPT = {
+        type: 'prompt',
+        tightAbove: true,
+        prompt: 'Based on what resonates and how it feels, if there is one thing this session could help you with, what would it be?',
+        placeholder: 'One thing this session could help is...',
+        rows: 4,
+      };
+      return {
+        id: 'narrowing-it-down',
+        type: 'screens',
+        persistBlocks: true,
+        screens: [
+          { blocks: [NARROWING_HEADER, INTRO_TEXT] },
+          { blocks: [NARROWING_HEADER, INTRO_TEXT, SEP_1, TERRITORY_DISPLAY] },
+          { blocks: [NARROWING_HEADER, INTRO_TEXT, SEP_1, TERRITORY_DISPLAY, SEP_2, FEELING_DISPLAY] },
+          { blocks: [NARROWING_HEADER, INTRO_TEXT, SEP_1, TERRITORY_DISPLAY, SEP_2, FEELING_DISPLAY, SEP_3, PROMPT] },
+        ],
+      };
+    })(),
 
     // ──────────────────────────────────────────────────────────
     // 6. Stems Consolidated — single screen, no reveal

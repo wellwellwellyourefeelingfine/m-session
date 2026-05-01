@@ -420,17 +420,33 @@ export default function ActiveView() {
         if (currentModule && currentModule.phase === 'follow-up') {
           const isExiting = moduleExitingId === currentModule.instanceId;
           return (
-            <div
-              key={currentModule.instanceId}
-              className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
-              style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
-            >
-              <ModuleRenderer
-                module={currentModule}
-                onProgressUpdate={handleProgressUpdate}
-                onComplete={() => fadeOutThenDo(currentModule.instanceId, () => completeModule(currentModule.instanceId))}
-                onSkip={() => fadeOutThenDo(currentModule.instanceId, () => abandonModule(currentModule.instanceId))}
-              />
+            <div className="relative">
+              <div
+                key={currentModule.instanceId}
+                className={`transition-opacity duration-500 ${isExiting ? '' : 'animate-fadeIn'}`}
+                style={{ opacity: isExiting ? 0 : 1, pointerEvents: isExiting ? 'none' : 'auto' }}
+              >
+                <ModuleStatusBar
+                  progress={moduleProgressState.progress}
+                  isPaused={moduleProgressState.isPaused}
+                  leftLabel="Follow-up"
+                  centerContent={buildTimerCenterContent()}
+                  rightContent={
+                    <span className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider whitespace-nowrap">
+                      {sessionElapsed}
+                    </span>
+                  }
+                />
+
+                <div className="pt-9">
+                  <ModuleRenderer
+                    module={currentModule}
+                    onProgressUpdate={handleProgressUpdate}
+                    onComplete={() => fadeOutThenDo(currentModule.instanceId, () => completeModule(currentModule.instanceId))}
+                    onSkip={() => fadeOutThenDo(currentModule.instanceId, () => abandonModule(currentModule.instanceId))}
+                  />
+                </div>
+              </div>
             </div>
           );
         }

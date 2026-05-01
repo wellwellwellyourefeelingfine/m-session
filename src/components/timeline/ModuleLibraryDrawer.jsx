@@ -180,7 +180,7 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
         <BookHeartIcon
           size={40}
           strokeWidth={2.5}
-          className="absolute top-7 left-6 text-[var(--accent)] pointer-events-none z-10"
+          className="absolute top-7 left-3 text-[var(--accent)] pointer-events-none z-10"
         />
 
         {/* Handle */}
@@ -190,8 +190,8 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
 
         {/* Header */}
         <div className="pb-4 border-b border-[var(--color-border)]">
-          <div className="mb-4 pl-18 pr-24">
-            <h3 className="text-3xl" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Activity Library</h3>
+          <div className="mb-4 pl-16 pr-14">
+            <h3 className="text-3xl whitespace-nowrap" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>Activity Library</h3>
           </div>
 
           {/* Filter buttons — scrolls edge-to-edge, inner padding for inset */}
@@ -217,14 +217,19 @@ export default function ModuleLibraryDrawer({ phase, onSelect, onClose, external
                 <>
                   <input
                     ref={searchInputRef}
-                    type="text"
+                    type="search"
+                    name="activity-library-search"
+                    inputMode="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Escape') collapseSearch(); }}
                     onBlur={handleSearchBlur}
                     placeholder="Search..."
-                    className="bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] w-full animate-fadeIn"
+                    className="bg-transparent border-none outline-none text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] w-full animate-fadeIn [&::-webkit-search-cancel-button]:appearance-none"
                     autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
                   />
                   {searchQuery && (
                     <button

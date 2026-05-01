@@ -21,7 +21,7 @@
  * - Header fades out with body when the next screen has no header
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import ModuleLayout from '../../../capabilities/ModuleLayout';
 import ModuleControlBar, { SlotButton } from '../../../capabilities/ModuleControlBar';
 import { ViewImageIcon } from '../../../capabilities/ImageViewerModal';
@@ -32,20 +32,7 @@ import {
 } from '../blockRenderers';
 import { ANIMATION_MAP } from '../blockRenderers/HeaderBlock';
 import { renderLineWithMarkup } from '../utils/renderContentLines';
-
-// Resolve a header block's animation key. Distinguishes three cases:
-//   undefined → default 'ascii-moon'
-//   null      → no animation (text-heavy beat)
-//   'name'    → explicit animation
-// Matters for the sameAnimation comparison in handleNext/handleBack so that
-// two consecutive screens with explicit `animation: null` are treated as the
-// same (no fade), and a transition from null → ascii-moon (or vice versa)
-// fades the animation slot.
-function resolveAnimationKey(headerBlock) {
-  if (!headerBlock) return null;
-  if (headerBlock.animation === null) return null;
-  return headerBlock.animation || 'ascii-moon';
-}
+import resolveAnimationKey from '../utils/resolveAnimationKey';
 import expandScreenToBlocks from '../utils/expandScreenToBlocks';
 import evaluateCondition from '../utils/evaluateCondition';
 import { smoothScrollToElement } from '../../../../../utils/smoothScroll';
@@ -91,6 +78,18 @@ export default function ScreensSection({
   onRouteToSection,
   // Progress reporting (called when screen position changes)
   onScreenChange,
+  // Persistent-header bridge — when provided, ScreensSection suppresses its
+  // own title/animation render and reports the current screen's header to
+  // the parent (MasterModule) on every screen change. The parent owns the
+  // crossfade so the header survives section unmounts. When ABSENT (e.g.
+  // TransitionModule), ScreensSection renders its own header inline as before.
+  onHeaderChange,
+  // Peek the destination section's first-screen header for the next
+  // transition (sequential advance with `null`, or a routeConfig). Lets
+  // ScreensSection eagerly tell the parent about the future header at t=0
+  // for cross-section transitions, so the persistent header's crossfade
+  // runs in parallel with the body fade instead of lagging by FADE_MS.
+  peekNextSectionHeader,
   // ── Transition-module extensions (absent when used by MasterModule) ──
   customBlockRegistry,        // { blockType: Component } — custom block renderers
   sessionData,                // derived session-level data (passed to condition evaluator + custom blocks)
@@ -98,6 +97,7 @@ export default function ScreensSection({
   skipEnabled = true,         // transition configs can disable Skip entirely
   skipConfirmMessage = 'Skip this activity?',
 }) {
+  const headerExternal = typeof onHeaderChange === 'function';
   const screens = useMemo(() => section.screens || [], [section.screens]);
   const FADE_MS = section.ritualFade ? FADE_RITUAL : FADE_DEFAULT;
   const [screenIndex, setScreenIndex] = useState(0);
@@ -220,6 +220,29 @@ export default function ScreensSection({
   const HeaderAnimationComp = headerAnimationKey ? ANIMATION_MAP[headerAnimationKey] : null;
   const headerAnimationProps = headerBlock?.animationProps || {};
 
+  // Report current screen's header up to the parent (MasterModule) when the
+  // parent is managing the persistent header. Fires on mount and whenever the
+  // current screen's title or animation key changes — including remount after
+  // a section transition (the new section's first screen reasserts its header
+  // here, and MasterModule decides whether to crossfade or persist).
+  //
+  // For within-section advance/back, handleNext/handleBack ALSO report the
+  // future screen's header BEFORE the body-fade timeout so the parent's
+  // crossfade runs in parallel with the body fade. This effect catches the
+  // initial mount and any state-driven header recomputation that handleNext
+  // doesn't pre-announce.
+  const reportedTitleRef = useRef(null);
+  const reportedAnimRef = useRef(null);
+  useEffect(() => {
+    if (!headerExternal) return;
+    const title = headerBlock?.title || null;
+    const anim = headerAnimationKey || null;
+    if (reportedTitleRef.current === title && reportedAnimRef.current === anim) return;
+    reportedTitleRef.current = title;
+    reportedAnimRef.current = anim;
+    onHeaderChange({ title, animationKey: anim, durationMs: FADE_MS });
+  }, [headerExternal, headerBlock?.title, headerAnimationKey, onHeaderChange, FADE_MS]);
+
   const bodyBlocks = useMemo(() => {
     const rawBody = currentBlocks[0]?.type === 'header' ? currentBlocks.slice(1) : currentBlocks;
     return rawBody.filter((block) => evaluateCondition(block.condition, conditionContext));
@@ -292,6 +315,19 @@ export default function ScreensSection({
     const shouldFireRoute = selectedRoute && onRouteToSection;
 
     if (shouldFireRoute) {
+      // Eagerly tell the parent about the route destination's first-screen
+      // header so its crossfade runs in PARALLEL with the body fade. Without
+      // this, the destination section would mount FADE_MS later and only
+      // then reassert its header — visible as the title/animation lagging
+      // the body by a full fade cycle.
+      if (headerExternal && peekNextSectionHeader) {
+        const futureHeader = peekNextSectionHeader(selectedRoute);
+        onHeaderChange({
+          title: futureHeader?.title || null,
+          animationKey: futureHeader?.animationKey || null,
+          durationMs: FADE_MS,
+        });
+      }
       setIsBodyVisible(false);
       setIsTitleVisible(false);
       setIsAnimationVisible(false);
@@ -305,7 +341,17 @@ export default function ScreensSection({
     const nextVisible = findNextVisibleScreen(screenIndex + 1);
 
     if (nextVisible === -1) {
-      // No more visible screens — fade everything and complete section
+      // No more visible screens — fade everything and complete section.
+      // Eagerly tell the parent about the next section's first-screen header
+      // for parallel crossfade (same rationale as the route branch above).
+      if (headerExternal && peekNextSectionHeader) {
+        const futureHeader = peekNextSectionHeader(null);
+        onHeaderChange({
+          title: futureHeader?.title || null,
+          animationKey: futureHeader?.animationKey || null,
+          durationMs: FADE_MS,
+        });
+      }
       setIsBodyVisible(false);
       setIsTitleVisible(false);
       setIsAnimationVisible(false);
@@ -318,6 +364,20 @@ export default function ScreensSection({
       const sameTitle = headerBlock?.title && nextHeader?.title && headerBlock.title === nextHeader.title;
       const sameAnimation = headerBlock && nextHeader
         && resolveAnimationKey(headerBlock) === resolveAnimationKey(nextHeader);
+
+      // Eagerly tell the parent about the next screen's header so its
+      // crossfade runs IN PARALLEL with the body fade. Without this, the
+      // useEffect on `headerBlock?.title`/`headerAnimationKey` would fire only
+      // after `setScreenIndex(nextVisible)` re-renders — i.e. one full
+      // FADE_MS later — which would stagger the title/animation fade behind
+      // the body. Same-value reports are deduped by the parent.
+      if (headerExternal) {
+        onHeaderChange({
+          title: nextHeader?.title || null,
+          animationKey: resolveAnimationKey(nextHeader),
+          durationMs: FADE_MS,
+        });
+      }
 
       // persistBlocks: keep the body mounted across screens in this section.
       // React's keyed reconciliation reuses DOM for blocks at matching indexes,
@@ -392,7 +452,7 @@ export default function ScreensSection({
         }
       }, FADE_MS);
     }
-  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks, screens, moduleTitle, conditionContext]);
+  }, [screenIndex, bodyBlocks, choiceValues, headerBlock, findNextVisibleScreen, onSectionComplete, onRouteToSection, getScreenHeader, FADE_MS, section.persistBlocks, screens, moduleTitle, conditionContext, headerExternal, onHeaderChange, peekNextSectionHeader]);
 
   const handleBack = useCallback(() => {
     const prevVisible = findPrevVisibleScreen(screenIndex - 1);
@@ -413,6 +473,17 @@ export default function ScreensSection({
     const sameTitle = headerBlock?.title && prevHeader?.title && headerBlock.title === prevHeader.title;
     const sameAnimation = headerBlock && prevHeader
       && resolveAnimationKey(headerBlock) === resolveAnimationKey(prevHeader);
+
+    // Eagerly tell the parent about the previous screen's header so its
+    // crossfade runs in parallel with the body fade — same rationale as
+    // the eager call in handleNext.
+    if (headerExternal) {
+      onHeaderChange({
+        title: prevHeader?.title || null,
+        animationKey: resolveAnimationKey(prevHeader),
+        durationMs: FADE_MS,
+      });
+    }
 
     // persistBlocks: same rationale as handleNext — keep the body mounted.
     if (section.persistBlocks) {
@@ -447,7 +518,7 @@ export default function ScreensSection({
         setIsAnimationVisible(true);
       }
     }, FADE_MS);
-  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader, FADE_MS, section.persistBlocks]);
+  }, [screenIndex, headerBlock, findPrevVisibleScreen, canGoBackToPreviewSection, onBackToPreviousSection, getScreenHeader, FADE_MS, section.persistBlocks, onBackToIdle, headerExternal, onHeaderChange]);
 
   const handleChoiceSelect = useCallback((key, optionId) => {
     onChoiceSelect(key, optionId);
@@ -582,9 +653,10 @@ export default function ScreensSection({
   return (
     <>
       <ModuleLayout layout={{ centered: false, maxWidth: 'sm', padding: 'normal' }}>
-        <div className="pt-2">
-          {/* Header title — fades independently */}
-          {headerBlock?.title && (
+        <div className={headerExternal ? '' : 'pt-2'}>
+          {/* Header title — fades independently. Suppressed when the parent
+              owns the persistent header (MasterModule path). */}
+          {!headerExternal && headerBlock?.title && (
             <div
               className={`transition-opacity ${isTitleVisible ? 'opacity-100' : 'opacity-0'}`}
               style={{ transitionDuration: `${FADE_MS}ms` }}
@@ -598,8 +670,9 @@ export default function ScreensSection({
             </div>
           )}
 
-          {/* Header animation — fades independently */}
-          {HeaderAnimationComp && (
+          {/* Header animation — fades independently. Suppressed when the parent
+              owns the persistent header (MasterModule path). */}
+          {!headerExternal && HeaderAnimationComp && (
             <div
               className={`transition-opacity ${isAnimationVisible ? 'opacity-100' : 'opacity-0'}`}
               style={{ transitionDuration: `${FADE_MS}ms` }}

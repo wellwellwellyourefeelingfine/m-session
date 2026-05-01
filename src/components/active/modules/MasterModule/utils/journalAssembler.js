@@ -225,6 +225,29 @@ export function assembleJournalEntry({
       return;
     }
 
+    // `intention-prompt` writes directly to sessionProfile.holdingQuestion
+    // (via IntentionPromptBlock's onBlur). The same block can appear on
+    // multiple sections (write-intention, reflection-feel, reflection-beneath
+    // all spread an `intention-prompt`), so we dedupe on the storeField path
+    // and emit a single labeled entry. Empty drafts get the
+    // `[no entry — time]` placeholder so physical journalers see the prompt.
+    if (block.type === 'intention-prompt' && storeState) {
+      const key = 'sessionProfile.holdingQuestion';
+      if (emittedStoreKeys.has(key)) return;
+      emittedStoreKeys.add(key);
+
+      const label = block.journalLabel ? `${block.journalLabel}:` : 'Intention:';
+      content += `\n${label}\n`;
+
+      const value = resolvePath(key, storeState);
+      if (value != null && String(value).trim() !== '') {
+        content += `${String(value).trim()}\n`;
+      } else {
+        content += `[no entry — ${timestamp}]\n`;
+      }
+      return;
+    }
+
     // `touchstone-prompt` writes directly to a store path (block.storeField)
     // rather than into the local `responses` map, so it needs its own emit.
     // Matches the physical-journal-friendly pattern: the label always prints,

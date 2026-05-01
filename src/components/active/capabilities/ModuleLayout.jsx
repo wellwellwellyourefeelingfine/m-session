@@ -229,7 +229,7 @@ export function VoicePill({ voices, selectedVoiceId, onVoiceChange }) {
         </svg>
       </button>
 
-      <div className="rounded-full border-[1.5px] border-[var(--accent)] px-4 py-1 min-w-[12rem] flex items-center justify-center gap-2">
+      <div className="rounded-full border-[1.5px] border-[var(--accent)] px-4 py-1 min-w-[14rem] flex items-center justify-start gap-2 whitespace-nowrap">
         <span className="text-sm font-bold text-[var(--accent)] lowercase tracking-wide">voice:</span>
         <span
           className={`text-sm text-[var(--color-text-primary)] transition-opacity duration-200 ${opacityClass}`}

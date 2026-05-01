@@ -1,8 +1,12 @@
 /**
  * SelectorBlock — Grid selection with optional follow-up textarea
  *
- * Renders a prompt + grid of toggle buttons (2 or 3 columns).
- * Supports single-select and multi-select modes.
+ * Renders a prompt + grid of toggle buttons. Supports 1, 2, or 3 columns
+ * (default: 2). Use `columns: 1` for stacked full-width options when the
+ * label copy is long or when a single-column rhythm feels more deliberate
+ * than a grid (e.g., the inquiry beats in intentionSettingV2).
+ *
+ * Single-select and multi-select modes both supported.
  * Optional follow-up journal textarea below the grid.
  */
 
@@ -63,7 +67,11 @@ export default function SelectorBlock({
         {screen.prompt}
       </p>
 
-      <div className={`grid gap-2 ${columns === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      <div className={`grid gap-2 ${
+        columns === 1 ? 'grid-cols-1'
+        : columns === 3 ? 'grid-cols-3'
+        : 'grid-cols-2'
+      }`}>
         {screen.options.map((option) => (
           <button
             key={option.id}

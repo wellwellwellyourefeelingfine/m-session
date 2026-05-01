@@ -38,15 +38,20 @@
  *      → DM Serif prompt question → input/selector/choice
  *    The body text orients; the DM Serif prompt is the actual ask.
  *
- * 4. Header + animation continuity ACROSS SCREENS within a section:
- *    ScreensSection compares headerBlock.title and the resolved animation
- *    key between consecutive screens — when both match, neither fades on
- *    transition. The header stays anchored while only the body content fades.
+ * 4. Header + animation continuity ACROSS SCREENS (within OR across sections):
+ *    The persistent header (title + animation) is OWNED BY MasterModule, not
+ *    ScreensSection. ScreensSection reports its current screen's header via
+ *    `onHeaderChange`; MasterModule independently crossfades title and
+ *    animation when each changes. Title and animation persist independently
+ *    — sharing a `leaf` animation across consecutive sections keeps the leaf
+ *    anchored even when titles differ; sharing a title across screens keeps
+ *    the title anchored even when animations differ.
  *
- *    To extend this across what feels like "two pages" of one experience,
- *    combine them into ONE section with multiple screens. Two SEPARATE
- *    sections always remount fresh DOM and re-fade everything, even if their
- *    headers happen to match — there's no cross-section persistence.
+ *    Cross-section transitions: ScreensSection unmounts/remounts on section
+ *    change, but MasterModule's persistent header survives. The new section's
+ *    first-screen header is reported on mount → MasterModule decides whether
+ *    to fade based on what changed. No restructuring of sections needed to
+ *    get cross-section anchoring.
  *
  *    Optional `persistBlocks: true` on the section keeps body blocks at
  *    matching indexes mounted across screens (progressive-reveal pattern).
@@ -61,7 +66,7 @@
  *    re-running its mount animations.
  */
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useSessionStore } from '../../../../stores/useSessionStore';
 import useMasterModuleState from './useMasterModuleState';
 import { ScreensSection, MeditationSection, TimerSection, GenerateSection } from './sectionRenderers';
@@ -71,8 +76,18 @@ import ModuleControlBar from '../../capabilities/ModuleControlBar';
 import RevealOverlay from '../../capabilities/animations/RevealOverlay';
 import ImageViewerModal from '../../capabilities/ImageViewerModal';
 import { ANIMATION_MAP } from './blockRenderers/HeaderBlock';
+import { renderLineWithMarkup } from './utils/renderContentLines';
+import resolveAnimationKey from './utils/resolveAnimationKey';
 import MASTER_CUSTOM_BLOCKS from './customBlocks';
 import { CirclePlusIcon, CircleSkipIcon } from '../../../shared/Icons';
+
+// Persistent-header crossfade duration FALLBACK. ScreensSection passes its
+// own FADE_MS in the `onHeaderChange({..., durationMs})` payload so ritualFade
+// sections (700ms body fade) get a 700ms header crossfade and standard
+// sections (400ms) get 400ms. This fallback only kicks in if a caller
+// forgets to pass durationMs (e.g. the section-type-change effect that
+// clears the header when entering a meditation section).
+const HEADER_FADE_FALLBACK_MS = 400;
 
 // Inline collapsible used by the idle landing for richer module layouts.
 // Mirrors the ExpandableBlock visual but lives outside the section/blocks
@@ -131,6 +146,133 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
     protectorName: protector?.name || 'your protector',
     bodyLocation: protector?.bodyLocation || 'in your body',
   }), [content?.accentTerms, protector?.name, protector?.bodyLocation]);
+
+  // ── Persistent header (title + animation) ─────────────────────────────────
+  //
+  // Lifted up out of ScreensSection so the header survives section unmounts.
+  // ScreensSection reports its current screen's header via `onHeaderChange`;
+  // title and animation crossfade INDEPENDENTLY so two consecutive screens
+  // (within OR across sections) sharing a `leaf` animation stay anchored
+  // even when the title differs.
+  //
+  //   renderedHeader — what's currently mounted in the DOM (lags during fade)
+  //   isTitleVisible / isAnimationVisible — opacity controls per slot
+  //
+  // Why imperative (setState in the callback) and NOT a useEffect:
+  // ScreensSection's eager `onHeaderChange` call sits in the SAME React batch
+  // as its own `setIsBodyVisible(false)`. If the header fade-out went through
+  // a useEffect it would land one render cycle later — visible as the title
+  // and animation lagging the body fade by ~one paint frame. By calling
+  // setIsTitleVisible(false) / setIsAnimationVisible(false) synchronously
+  // here, all three opacity flips commit in the same render and start their
+  // CSS transitions in the same paint frame. The renderedHeader swap +
+  // fade-IN runs on a setTimeout(HEADER_FADE_MS) so the new content appears
+  // exactly when the body's fade-in begins.
+  const [renderedHeader, setRenderedHeader] = useState({ title: null, animationKey: null });
+  const [isTitleVisible, setIsTitleVisible] = useState(false);
+  const [isAnimationVisible, setIsAnimationVisible] = useState(false);
+  const renderedHeaderRef = useRef({ title: null, animationKey: null });
+  const swapTimerRef = useRef(null);
+
+  const [headerFadeMs, setHeaderFadeMs] = useState(HEADER_FADE_FALLBACK_MS);
+
+  const handleHeaderChange = useCallback((next) => {
+    const nextTitle = next?.title || null;
+    const nextAnim = next?.animationKey || null;
+    const durationMs = next?.durationMs || HEADER_FADE_FALLBACK_MS;
+    const current = renderedHeaderRef.current;
+
+    // Dedupe — if what's already rendered (or pending swap) matches, no-op.
+    if (current.title === nextTitle && current.animationKey === nextAnim) return;
+
+    // Track the duration so the rendered slots' CSS transition matches the
+    // current section's fade speed (ritualFade=700ms vs default=400ms).
+    setHeaderFadeMs(durationMs);
+
+    const titleChanged = current.title !== nextTitle;
+    const animationChanged = current.animationKey !== nextAnim;
+
+    // Cancel any in-flight swap from a prior transition (rapid sequential
+    // header changes — e.g. user clicks Continue twice quickly).
+    if (swapTimerRef.current) {
+      clearTimeout(swapTimerRef.current);
+      swapTimerRef.current = null;
+    }
+
+    // Initial mount path (nothing to fade out): set rendered + RAF the
+    // visibility flip so the new content fades IN via CSS transition.
+    const isInitialMount = current.title == null && current.animationKey == null;
+    if (isInitialMount) {
+      setRenderedHeader({ title: nextTitle, animationKey: nextAnim });
+      renderedHeaderRef.current = { title: nextTitle, animationKey: nextAnim };
+      requestAnimationFrame(() => {
+        if (nextTitle != null) setIsTitleVisible(true);
+        if (nextAnim != null) setIsAnimationVisible(true);
+      });
+      return;
+    }
+
+    // Synchronously trigger fade-out for changed fields. Same React batch as
+    // ScreensSection's setIsBodyVisible(false) → all three start fading in
+    // the SAME paint frame. (This is the fix for the "header lags body"
+    // visual stagger.)
+    if (titleChanged && current.title != null) setIsTitleVisible(false);
+    if (animationChanged && current.animationKey != null) setIsAnimationVisible(false);
+
+    // Schedule swap + fade-in to land exactly when the body fade-in begins.
+    swapTimerRef.current = setTimeout(() => {
+      setRenderedHeader({ title: nextTitle, animationKey: nextAnim });
+      renderedHeaderRef.current = { title: nextTitle, animationKey: nextAnim };
+      if (titleChanged && nextTitle != null) setIsTitleVisible(true);
+      if (animationChanged && nextAnim != null) setIsAnimationVisible(true);
+      swapTimerRef.current = null;
+    }, durationMs);
+  }, []);
+
+  // When the section is non-screens (meditation/timer/generate), those
+  // sections render their own UI; clear the persistent header so it fades
+  // out cleanly. ScreensSection reasserts its own header on remount.
+  useEffect(() => {
+    if (state.currentSection?.type && state.currentSection.type !== 'screens') {
+      handleHeaderChange({ title: null, animationKey: null });
+    }
+  }, [state.currentSection?.id, state.currentSection?.type, handleHeaderChange]);
+
+  // Cleanup pending swap on unmount.
+  useEffect(() => {
+    return () => {
+      if (swapTimerRef.current) clearTimeout(swapTimerRef.current);
+    };
+  }, []);
+
+  // Resolve the first-screen header of the section that the next transition
+  // would land on (sequential advance, or a route). ScreensSection calls this
+  // BEFORE its body-fade timeout so the persistent header crossfade kicks off
+  // in the same paint frame as the body fade — keeping cross-section
+  // transitions visually in sync (instead of header lagging by FADE_MS while
+  // the new section mounts and reasserts its header on its own).
+  //
+  // Returns `null` if the transition would end the module (terminal /
+  // off-the-end / non-screens section), which signals "fade the persistent
+  // header out entirely."
+  const peekNextSectionHeader = useCallback((routeConfig = null) => {
+    const sectionList = content?.sections || [];
+    const nextIdx = state.peekNextSectionIndex(routeConfig);
+    if (nextIdx == null) return null;
+    const nextSection = sectionList[nextIdx];
+    if (!nextSection || nextSection.type !== 'screens') return null;
+    const firstScreen = nextSection.screens?.[0];
+    if (!firstScreen?.blocks) return null;
+    const headerBlock = firstScreen.blocks[0]?.type === 'header' ? firstScreen.blocks[0] : null;
+    return {
+      title: headerBlock?.title || null,
+      animationKey: resolveAnimationKey(headerBlock),
+    };
+  }, [content, state.peekNextSectionIndex]);
+
+  const PersistentHeaderAnim = renderedHeader.animationKey
+    ? ANIMATION_MAP[renderedHeader.animationKey]
+    : null;
 
   // ── Progress reporting (screen-level granularity) ─────────────────────────
 
@@ -402,6 +544,8 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
           onOpenViewer={state.openViewer}
           onRouteToSection={state.routeToSection}
           onScreenChange={handleScreenChange}
+          onHeaderChange={handleHeaderChange}
+          peekNextSectionHeader={peekNextSectionHeader}
           customBlockRegistry={MASTER_CUSTOM_BLOCKS}
         />
       );
@@ -461,6 +605,44 @@ export default function MasterModule({ module, onComplete, onSkip, onProgressUpd
 
   return (
     <>
+      {/*
+        Persistent header — title + animation, lifted up out of ScreensSection
+        so they SURVIVE section unmounts. ScreensSection reports its current
+        screen's header via `onHeaderChange`; the crossfade effect above
+        independently fades title vs animation when each changes. The leaf
+        animation (or any other) stays anchored across consecutive sections
+        that share it; title fades when titles differ.
+      */}
+      {(renderedHeader.title || PersistentHeaderAnim) && (
+        <div className="px-6 pt-2">
+          <div className="max-w-sm mx-auto w-full">
+            {renderedHeader.title && (
+              <div
+                className={`transition-opacity ${isTitleVisible ? 'opacity-100' : 'opacity-0'}`}
+                style={{ transitionDuration: `${headerFadeMs}ms` }}
+              >
+                <h2
+                  className="text-xl font-light mb-2 text-center"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  {renderLineWithMarkup(renderedHeader.title, accentTerms)}
+                </h2>
+              </div>
+            )}
+            {PersistentHeaderAnim && (
+              <div
+                className={`transition-opacity ${isAnimationVisible ? 'opacity-100' : 'opacity-0'}`}
+                style={{ transitionDuration: `${headerFadeMs}ms` }}
+              >
+                <div className="flex justify-center mb-4">
+                  <PersistentHeaderAnim />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {sectionContent}
 
       {/* RevealOverlay — rendered at root so it persists across section transitions */}
