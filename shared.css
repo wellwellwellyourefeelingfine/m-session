@@ -22,6 +22,7 @@ html, body, * {
 }
 html, body {
   overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
 /* VARIABLES — Dark Mode (default) */
