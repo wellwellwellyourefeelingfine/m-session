@@ -322,17 +322,6 @@ html.light .cta::before {
 .principles {
   border-bottom: 1px solid var(--border);
 }
-.principles-intro {
-  font-family: var(--serif);
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--accent);
-  line-height: 2;
-  letter-spacing: 0.26em;
-  word-spacing: 0.45em;
-  text-align: left;
-  padding: 0 16% 32px;
-}
 .principles-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -737,9 +726,6 @@ html.light .cta::before {
   .hero-leaves-wrap {
     transform: translateX(-50%) scale(0.815);
     transform-origin: top center;
-  }
-  .principles-intro {
-    padding: 0 0 12px;
   }
   .principles-grid {
     grid-template-columns: 1fr;
