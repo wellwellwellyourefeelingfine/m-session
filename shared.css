@@ -21,7 +21,7 @@ html, body, * {
   display: none;
 }
 html, body {
-  overflow-x: hidden;
+  overflow-x: clip;
   overscroll-behavior-y: none;
 }
 
@@ -125,7 +125,7 @@ html.theme-transitioning *::after {
 /* BASE */
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -136,7 +136,7 @@ body {
   line-height: 1.7;
   letter-spacing: 0.02em;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Noise overlay */

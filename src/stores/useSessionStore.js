@@ -981,16 +981,18 @@ export const useSessionStore = create(
       insertAtActive: (libraryId) => {
         const state = get();
         // Determine which phase to insert into:
-        //   - During an active session, use timeline.currentPhase (come-up,
-        //     peak, or integration).
-        //   - After session completion, the timeline phase is null, but the
-        //     user is in the post-session 'completed' phase where modules
-        //     live under phase: 'follow-up'. Treat that as the target.
-        // This lets the helper modal insert activities into the follow-up
-        // timeline when the user navigates a triage tree post-session.
+        //   - If the session is completed, route to 'follow-up' regardless
+        //     of what timeline.currentPhase says. completeSession/endSession
+        //     leave timeline.currentPhase set to its last value (typically
+        //     'integration'), so we MUST check sessionPhase first — otherwise
+        //     post-session insertions land in the stale integration phase
+        //     and never appear in the follow-up section of the home tab.
+        //   - Otherwise, use the live timeline.currentPhase (come-up, peak,
+        //     or integration).
         const currentPhase =
-          state.timeline.currentPhase
-          || (state.sessionPhase === 'completed' ? 'follow-up' : null);
+          state.sessionPhase === 'completed'
+            ? 'follow-up'
+            : state.timeline.currentPhase || null;
         if (!currentPhase) return { success: false, error: 'No active phase' };
 
         const libraryModule = getModuleById(libraryId);
