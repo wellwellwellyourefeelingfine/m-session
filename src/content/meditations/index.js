@@ -20,6 +20,8 @@ import { pendulationMeditation } from './pendulation';
 import { transitionOpening } from './transition-opening';
 import { transitionCenteringBreath } from './transition-centering-breath';
 import { transitionClosing } from './transition-closing';
+import { mettaHeartMeditation } from './metta-heart';
+import { houseOfJungMeditation } from './house-of-jung';
 
 // Registry of all available meditations. Modules consume these via
 // `getMeditationById(id)`; no individual named re-exports are needed.
@@ -39,6 +41,8 @@ export const meditationLibrary = {
   'transition-opening': transitionOpening,
   'transition-centering-breath': transitionCenteringBreath,
   'transition-closing': transitionClosing,
+  'metta-heart': mettaHeartMeditation,
+  'house-of-jung': houseOfJungMeditation,
 };
 
 /**

@@ -16,6 +16,8 @@ const OpenAwarenessModule = lazy(() => import('./modules/OpenAwarenessModule'));
 const BodyScanModule = lazy(() => import('./modules/BodyScanModule'));
 const SelfCompassionModule = lazy(() => import('./modules/SelfCompassionModule'));
 const SimpleGroundingModule = lazy(() => import('./modules/SimpleGroundingModule'));
+const MettaHeartModule = lazy(() => import('./modules/MettaHeartModule'));
+const HouseOfJungModule = lazy(() => import('./modules/HouseOfJungModule'));
 const MusicListeningModule = lazy(() => import('./modules/MusicListeningModule'));
 const OpenSpaceModule = lazy(() => import('./modules/OpenSpaceModule'));
 const LeavesOnAStreamModule = lazy(() => import('./modules/LeavesOnAStreamModule'));
@@ -69,6 +71,12 @@ export const CUSTOM_MODULES = {
 
   // Self-compassion has variation selection + audio-text sync
   'self-compassion': SelfCompassionModule,
+
+  // Metta Heart — fixed-duration loving-kindness meditation with audio-text sync
+  'metta-heart': MettaHeartModule,
+
+  // House of Jung — fixed-duration guided imagery descent with audio-text sync
+  'house-of-jung': HouseOfJungModule,
 
   // Simple grounding has fixed-duration audio-text sync
   'simple-grounding': SimpleGroundingModule,
