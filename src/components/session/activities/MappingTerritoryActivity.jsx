@@ -8,8 +8,8 @@
  * Screen types: text, journal, choice
  * No audio, no meditation, no timer — purely self-paced.
  *
- * Follows IntentionSettingActivity pattern for step navigation,
- * fade transitions, control bar, and data persistence.
+ * Step navigation, fade transitions, control bar, and data persistence
+ * follow the standard pre-substance activity pattern.
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';

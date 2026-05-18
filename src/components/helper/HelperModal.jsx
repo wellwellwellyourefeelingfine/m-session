@@ -35,6 +35,7 @@ import HelperTopBar from './HelperTopBar';
 import PreSessionContent from './PreSessionContent';
 import CategoryGrid from './CategoryGrid';
 import EmergencyContactView from './EmergencyContactView';
+import IntentionView from './IntentionView';
 import TriageStepRunner from './TriageStepRunner';
 import PlaceholderCategory from './PlaceholderCategory';
 
@@ -48,6 +49,7 @@ const DEFAULT_MODAL_HEIGHT_PX = 550;
 export default function HelperModal() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const emergencyContactDetails = useSessionStore((state) => state.sessionProfile?.emergencyContactDetails);
+  const holdingQuestion = useSessionStore((state) => state.sessionProfile?.holdingQuestion);
   const sessionId = useSessionStore((state) => state.sessionId);
   const insertAtActive = useSessionStore((state) => state.insertAtActive);
 
@@ -66,6 +68,9 @@ export default function HelperModal() {
   // taps "I need more help" inside the contact view, mirroring how it
   // expands when they tap Edit.
   const [isContactEmergencyExpanded, setIsContactEmergencyExpanded] = useState(false);
+  // Lifted from IntentionView so the modal can grow to the expanded height
+  // when the user taps Edit on their intention, and reset when they back out.
+  const [isEditingIntention, setIsEditingIntention] = useState(false);
   // Has the user committed to a rating value inside the current triage flow?
   // Drives the modal height: stays at default until this flips true, then
   // expands and stays expanded until the user backs out past the rating
@@ -170,6 +175,9 @@ export default function HelperModal() {
         setIsEditingContact(false);
         setIsContactEmergencyExpanded(false);
       }
+      if (currentStep === 'intention') {
+        setIsEditingIntention(false);
+      }
     });
   }, [currentStep, stepHistory, fadeTransition]);
 
@@ -245,6 +253,11 @@ export default function HelperModal() {
     pushStep('emergency-contact');
   }, [pushStep]);
 
+  // Intention card on the initial step — pushes to the dedicated view/edit page.
+  const handleIntentionSelect = useCallback(() => {
+    pushStep('intention');
+  }, [pushStep]);
+
   // Determine which categories to show based on session phase. Categories
   // declare a `phases` array — a category can be eligible for `'active'`,
   // `'follow-up'`, or both. The 4 core categories (Intense Feeling, Trauma,
@@ -258,14 +271,16 @@ export default function HelperModal() {
   //     step has been committed inside the triage flow, OR while editing the
   //     emergency contact, OR while the contact view's "I need more help"
   //     emergency block is expanded.
-  //   - Expanded (95vh): triggered by any of the above three states.
+  //   - Expanded: bottom edge sits flush with the top of the footer tab bar
+  //     on every viewport — height = 100vh minus the tab bar's height.
   const isExpanded =
     (currentStep === 'triage' && hasRatedInTriage) ||
     (currentStep === 'emergency-contact' &&
-      (isEditingContact || isContactEmergencyExpanded));
+      (isEditingContact || isContactEmergencyExpanded)) ||
+    (currentStep === 'intention' && isEditingIntention);
   const modalHeightCss = isExpanded
-    ? `min(95vh, calc(100vh - var(--tabbar-height) - 12px))`
-    : `min(calc(${DEFAULT_MODAL_HEIGHT_PX}px + env(safe-area-inset-top, 0px)), calc(100vh - var(--tabbar-height) - 12px))`;
+    ? `calc(100vh - var(--tabbar-height))`
+    : `min(calc(${DEFAULT_MODAL_HEIGHT_PX}px + env(safe-area-inset-top, 0px)), calc(100vh - var(--tabbar-height)))`;
 
   // Render content based on current major view.
   const renderContent = () => {
@@ -286,6 +301,8 @@ export default function HelperModal() {
         <PreSessionContent
           emergencyContact={emergencyContactDetails}
           onSelectEmergencyContact={handleEmergencyContactSelect}
+          intention={holdingQuestion}
+          onSelectIntention={handleIntentionSelect}
         />
       );
     }
@@ -298,6 +315,8 @@ export default function HelperModal() {
             onSelect={handleCategorySelect}
             emergencyContact={emergencyContactDetails}
             onSelectEmergencyContact={handleEmergencyContactSelect}
+            intention={holdingQuestion}
+            onSelectIntention={handleIntentionSelect}
           />
         );
 
@@ -325,6 +344,14 @@ export default function HelperModal() {
             onEditToggle={setIsEditingContact}
             onContactAction={handleEmergencyAction}
             onEmergencyExpandedChange={setIsContactEmergencyExpanded}
+          />
+        );
+
+      case 'intention':
+        return (
+          <IntentionView
+            isEditing={isEditingIntention}
+            onEditToggle={setIsEditingIntention}
           />
         );
 

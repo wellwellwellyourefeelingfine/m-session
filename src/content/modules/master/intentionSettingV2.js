@@ -1,13 +1,7 @@
 /**
  * Intention Setting v2 — MasterModule content config.
  *
- * Pre-session activity. Replaces the legacy custom-component
- * IntentionSettingActivity (kept on disk during the cutover; reachable in
- * code via library id 'intention-setting' for reference, not surfaced in
- * any timeline configuration).
- *
- * See [/Users/jordanellingwood/.claude/plans/okay-great-this-looks-tidy-tiger.md]
- * for the migration design and the rationale behind each section's shape.
+ * Pre-session activity.
  *
  * Notable structural choices:
  *
@@ -38,10 +32,23 @@
  *      handles the pre-substance activity completion signal.
  */
 
-import {
-  TERRITORY_OPTIONS,
-  FEELING_OPTIONS,
-} from '../../../components/session/activities/intentionSettingContent';
+const TERRITORY_OPTIONS = [
+  { value: 'relationship', label: 'A relationship' },
+  { value: 'avoidance', label: "Something I've been avoiding" },
+  { value: 'feeling', label: "A feeling I can't shake" },
+  { value: 'self-relation', label: 'How I relate to myself' },
+  { value: 'unsure', label: "I'm not sure yet" },
+];
+
+const FEELING_OPTIONS = [
+  { value: 'sadness', label: 'Sadness' },
+  { value: 'frustration', label: 'Frustration' },
+  { value: 'confusion', label: 'Confusion' },
+  { value: 'longing', label: 'Longing' },
+  { value: 'fear', label: 'Fear' },
+  { value: 'numbness', label: 'Numbness' },
+  { value: 'unnamed', label: "Something I can't name" },
+];
 
 // ── Shared header constants (rule #5: single JS reference for header continuity) ──
 const WELCOME_HEADER = { type: 'header', title: 'Refine Your Intention', animation: 'leaf' };
@@ -295,8 +302,7 @@ export const intentionSettingV2Content = {
     // ──────────────────────────────────────────────────────────
     // 6. Stems Consolidated — single screen, no reveal
     //
-    // Replaces the OLD module's separate stems-education + stems-interactive
-    // pages. StemIntentionBlock renders three independent toggle rows.
+    // StemIntentionBlock renders three independent toggle rows.
     // ──────────────────────────────────────────────────────────
     {
       id: 'stems-consolidated',
@@ -323,8 +329,7 @@ export const intentionSettingV2Content = {
     // so ScreensSection detects matching title+animation across screens →
     // header doesn't re-fade → AsciiMoon stays anchored as body fades from
     // prep text → textarea. ritualFade extends body fade to 700ms for
-    // ceremonial feel — the idiomatic replacement for the OLD module's
-    // auto-advancing moon transition step.
+    // ceremonial feel.
     //
     // Prep beat is two short sentences inside ONE text block (no §) so it
     // doesn't trigger the multi-paragraph reveal pattern. The whole

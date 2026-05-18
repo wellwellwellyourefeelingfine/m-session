@@ -22,29 +22,37 @@ import CategoryGrid from './CategoryGrid';
 import { helperCategories } from '../../content/helper/categories';
 import { HeartIcon } from '../shared/Icons';
 
-export default function PreSessionContent({ emergencyContact, onSelectEmergencyContact }) {
+export default function PreSessionContent({
+  emergencyContact,
+  onSelectEmergencyContact,
+  intention,
+  onSelectIntention,
+}) {
   // Use the same active-phase categories the in-session modal would show.
   const activeCategories = helperCategories.filter((c) => c.phases?.includes('active'));
 
   return (
     <div className="relative animate-fadeIn">
-      {/* Real CategoryGrid with dimmed categories. The contact card at the
-          bottom remains fully interactive so the user can set up their
-          emergency contact during pre-session. */}
+      {/* Real CategoryGrid with dimmed categories. The contact card and
+          intention card at the bottom remain fully interactive so the user
+          can set up their emergency contact and/or intention during
+          pre-session. */}
       <CategoryGrid
         categories={activeCategories}
         onSelect={() => {}}
         emergencyContact={emergencyContact}
         onSelectEmergencyContact={onSelectEmergencyContact}
+        intention={intention}
+        onSelectIntention={onSelectIntention}
         categoriesDimmed
       />
 
       {/* Centered explanatory overlay. Absolutely positioned over the
           dimmed category grid only — sized so it doesn't extend down over
-          the live emergency contact card at the bottom. */}
+          the live intention card or emergency contact card at the bottom. */}
       <div
         className="absolute left-0 right-0 flex items-center justify-center px-4 pointer-events-none"
-        style={{ top: 0, bottom: '92px' }}
+        style={{ top: 0, bottom: '156px' }}
       >
         <div
           className="relative w-full max-w-[300px] border rounded-md text-center pointer-events-auto"

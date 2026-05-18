@@ -1,7 +1,6 @@
 /**
  * StemIntentionBlock — Three independently-collapsible stem rows for the
- * intention-setting writing warm-up. Replaces the OLD module's separate
- * stems-education + stems-interactive pages with a single consolidated UI.
+ * intention-setting writing warm-up.
  *
  * Per row:
  *   - prefix     — DM Serif accent label (e.g. "Teach me…")
@@ -10,10 +9,9 @@
  *                    that reveals a single-line input below it
  *   - input      — single-line text field with the stem fragment as placeholder
  *
- * Drafts are LOCAL ONLY — never written to any store or journal. This is
- * intentional and matches OLD behavior: the warm-ups are a thinking aid,
- * not a captured response. The actual intention gets written on the
- * write-intention section (IntentionPromptBlock).
+ * Drafts are LOCAL ONLY — never written to any store or journal. The
+ * warm-ups are a thinking aid, not a captured response. The actual
+ * intention gets written on the write-intention section (IntentionPromptBlock).
  *
  * The block calls neither `reportReady` nor `setPrimaryOverride` — Continue
  * is never gated regardless of whether the user expanded any rows or typed

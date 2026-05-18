@@ -10,7 +10,7 @@
  */
 
 import * as Icons from '../shared/Icons';
-import { PhoneIcon } from '../shared/Icons';
+import { PhoneIcon, CompassIcon } from '../shared/Icons';
 
 // Circle is sized to sit closely around the 26px icon (was 40 — now hugs tighter).
 // CIRCLE_OFFSET is recalculated so the icon's visual center stays in the same
@@ -20,12 +20,20 @@ import { PhoneIcon } from '../shared/Icons';
 //   new:     -8 + 18 = 10  ✓
 const CIRCLE_SIZE = 36;
 const CIRCLE_OFFSET = -8; // how far the circle overhangs the card edges
+// Fixed card height — sized to fit a 3-line description with tight padding.
+// All category cards share this height regardless of their description length,
+// so descriptions no longer drive box size.
+//   4 (top pad) + 18 (title 15px×1.2) + 6 (title→desc gap)
+//   + ~42 (3 lines × 10px × 1.375 leading-snug) + 4 (bottom pad) ≈ 74px
+const CARD_HEIGHT_PX = 74;
 
 export default function CategoryGrid({
   categories,
   onSelect,
   emergencyContact,
   onSelectEmergencyContact,
+  intention,
+  onSelectIntention,
   // When true, the 6 category cards are dimmed and made non-interactive
   // (used by the pre-session preview). The wide emergency contact card
   // at the bottom stays fully active so the user can still set up their
@@ -39,6 +47,10 @@ export default function CategoryGrid({
   const contactDescription = hasContact
     ? [contactName, contactPhone].filter(Boolean).join(' — ')
     : 'Tap to add details';
+
+  const intentionText = (intention || '').trim();
+  const hasIntention = intentionText.length > 0;
+  const intentionDescription = hasIntention ? intentionText : 'Tap to add your intention';
 
   return (
     <div
@@ -66,7 +78,8 @@ export default function CategoryGrid({
               className="relative text-left border transition-colors overflow-visible flex flex-col items-start rounded-md"
               style={{
                 borderColor: 'var(--color-border)',
-                padding: `5px 12px 6px 12px`,
+                padding: `8px 12px 8px 12px`,
+                height: CARD_HEIGHT_PX,
               }}
             >
               {/* Circular escutcheon — overlaps top-left corner of card */}
@@ -101,7 +114,7 @@ export default function CategoryGrid({
               </p>
               {/* Description — full width, flows right after the title */}
               <p
-                className="text-[10px] uppercase tracking-wider leading-snug mt-[12px]"
+                className="text-[9px] uppercase tracking-wider leading-snug mt-[4px]"
                 style={{ color: 'var(--color-text-tertiary)' }}
               >
                 {cat.description}
@@ -110,6 +123,61 @@ export default function CategoryGrid({
           );
         })}
       </div>
+
+      {/* Slim full-width intention card — sits below the grid, above the
+          emergency contact card. Tap opens the dedicated IntentionView for
+          view/edit. The description preview can wrap to TWO lines (line-clamp-2);
+          the tightened mt gap + tighter bottom padding + leading-tight absorb
+          the existing whitespace below the line so the card's total height is
+          essentially unchanged. A minHeight pins the 1-line state to the same
+          visual height as the emergency contact card below. */}
+      {onSelectIntention && (
+        <button
+          type="button"
+          onClick={onSelectIntention}
+          className="relative w-full text-left border transition-colors overflow-visible flex flex-col items-start rounded-md mt-4"
+          style={{
+            borderColor: 'var(--color-border)',
+            padding: '4px 14px 2px 14px',
+            minHeight: '52px',
+          }}
+        >
+          {/* Circular escutcheon — same overhang as category cards */}
+          <div
+            className="absolute flex items-center justify-center"
+            style={{
+              width: CIRCLE_SIZE,
+              height: CIRCLE_SIZE,
+              top: CIRCLE_OFFSET,
+              left: CIRCLE_OFFSET,
+              borderRadius: '50%',
+              border: '1px solid var(--color-border)',
+              backgroundColor: 'var(--bg-primary)',
+              zIndex: 1,
+            }}
+          >
+            <CompassIcon size={22} className="text-[var(--accent)]" />
+          </div>
+          <p
+            className="text-[15px] m-0"
+            style={{
+              fontFamily: "'DM Serif Text', serif",
+              textTransform: 'none',
+              lineHeight: 1.2,
+              color: 'var(--color-text-primary)',
+              paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 5,
+            }}
+          >
+            My Intention
+          </p>
+          <p
+            className="text-[10px] uppercase tracking-wider leading-tight mt-[10px] w-full line-clamp-2 overflow-hidden"
+            style={{ color: 'var(--color-text-tertiary)' }}
+          >
+            {intentionDescription}
+          </p>
+        </button>
+      )}
 
       {/* Slim full-width emergency contact card — sits below the grid.
           Intentionally short: title + name/phone line, no description block. */}

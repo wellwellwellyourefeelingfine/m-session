@@ -640,7 +640,7 @@ export const useSessionStore = create(
 
         // If the user set an intention during intake, persist it as a journal
         // entry now so it's visible on the Home timeline immediately. The
-        // IntentionSettingActivity later updates this same entry rather than
+        // intention-setting module later updates this same entry rather than
         // creating a duplicate.
         const intentionText = profile.holdingQuestion?.trim();
         let intentionJournalEntryId = state.sessionProfile?.intentionJournalEntryId ?? null;
@@ -1078,7 +1078,13 @@ export const useSessionStore = create(
             if (part2Lib.meditationId) precacheAudioForModule(part2Lib.id, voiceId);
           }
 
-          useAppStore.getState().setCurrentTab('active');
+          // Active-session insertions jump to the live tab so the new module
+          // is queued up and visible immediately. Follow-up insertions just
+          // sit in the follow-up timeline on the home tab — no auto-nav, the
+          // user runs them on their own schedule.
+          if (currentPhase !== 'follow-up') {
+            useAppStore.getState().setCurrentTab('active');
+          }
           return { success: true, instanceId: newPart1.instanceId };
         }
 
@@ -1122,8 +1128,13 @@ export const useSessionStore = create(
           },
         });
 
-        // Navigate to active tab
-        useAppStore.getState().setCurrentTab('active');
+        // Active-session insertions navigate to the live tab so the new
+        // module is the visible next-up; follow-up insertions just land in
+        // the follow-up timeline without yanking the user away from their
+        // current tab.
+        if (currentPhase !== 'follow-up') {
+          useAppStore.getState().setCurrentTab('active');
+        }
 
         // Precache audio (non-blocking)
         precacheAudioForModule(libraryId, useAppStore.getState().preferences?.defaultVoiceId || null);

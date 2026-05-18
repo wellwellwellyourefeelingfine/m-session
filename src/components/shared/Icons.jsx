@@ -1,4 +1,4 @@
-export const CompassIcon = ({ size = 24, className }) => (
+export const CompassIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -6,7 +6,7 @@ export const CompassIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -16,7 +16,7 @@ export const CompassIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const HeartHandshakeIcon = ({ size = 24, className }) => (
+export const HeartHandshakeIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -24,7 +24,7 @@ export const HeartHandshakeIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -33,7 +33,7 @@ export const HeartHandshakeIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const LeafIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const LeafIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -51,7 +51,7 @@ export const LeafIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const PaletteIcon = ({ size = 24, className }) => (
+export const PaletteIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -59,7 +59,7 @@ export const PaletteIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -72,7 +72,7 @@ export const PaletteIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const SnailIcon = ({ size = 24, className }) => (
+export const SnailIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -80,7 +80,7 @@ export const SnailIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -93,7 +93,7 @@ export const SnailIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const SparkleIcon = ({ size = 24, className }) => (
+export const SparkleIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -101,7 +101,7 @@ export const SparkleIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -110,7 +110,7 @@ export const SparkleIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const WavesIcon = ({ size = 24, className }) => (
+export const WavesIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -118,7 +118,7 @@ export const WavesIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -129,7 +129,7 @@ export const WavesIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const NotebookPenIcon = ({ size = 24, className }) => (
+export const NotebookPenIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -137,7 +137,7 @@ export const NotebookPenIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -151,7 +151,7 @@ export const NotebookPenIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const BoatIcon = ({ size = 24, className }) => (
+export const BoatIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -159,7 +159,7 @@ export const BoatIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -170,7 +170,7 @@ export const BoatIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const MusicIcon = ({ size = 24, className }) => (
+export const MusicIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -178,7 +178,7 @@ export const MusicIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -190,7 +190,7 @@ export const MusicIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const ClockIcon = ({ size = 24, className }) => (
+export const ClockIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -198,7 +198,7 @@ export const ClockIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -208,7 +208,7 @@ export const ClockIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const AwardIcon = ({ size = 24, className, number }) => (
+export const AwardIcon = ({ size = 24, strokeWidth = 2.5, className, number }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -216,7 +216,7 @@ export const AwardIcon = ({ size = 24, className, number }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -241,7 +241,7 @@ export const AwardIcon = ({ size = 24, className, number }) => (
   </svg>
 );
 
-export const CircleIcon = ({ size = 24, className }) => (
+export const CircleIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -249,7 +249,7 @@ export const CircleIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -258,7 +258,7 @@ export const CircleIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const CircleCheckBigIcon = ({ size = 24, className }) => (
+export const CircleCheckBigIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -266,7 +266,7 @@ export const CircleCheckBigIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -276,7 +276,7 @@ export const CircleCheckBigIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const CircleCheckIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const CircleCheckIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -294,7 +294,7 @@ export const CircleCheckIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const CircleSkipIcon = ({ size = 24, className }) => (
+export const CircleSkipIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -302,7 +302,7 @@ export const CircleSkipIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -312,7 +312,7 @@ export const CircleSkipIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const CirclePlusIcon = ({ size = 24, className }) => (
+export const CirclePlusIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -320,7 +320,7 @@ export const CirclePlusIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -331,7 +331,7 @@ export const CirclePlusIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const LockIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const LockIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -350,7 +350,7 @@ export const LockIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const CircleXIcon = ({ size = 24, className }) => (
+export const CircleXIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -358,7 +358,7 @@ export const CircleXIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -369,7 +369,7 @@ export const CircleXIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const StarIcon = ({ size = 24, className, filled = false }) => (
+export const StarIcon = ({ size = 24, strokeWidth = 2.5, className, filled = false }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -377,7 +377,7 @@ export const StarIcon = ({ size = 24, className, filled = false }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -387,7 +387,7 @@ export const StarIcon = ({ size = 24, className, filled = false }) => (
   </svg>
 );
 
-export const SearchIcon = ({ size = 24, className }) => (
+export const SearchIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={size}
@@ -395,7 +395,7 @@ export const SearchIcon = ({ size = 24, className }) => (
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth={2}
+    strokeWidth={strokeWidth}
     strokeLinecap="round"
     strokeLinejoin="round"
     className={className}
@@ -405,7 +405,7 @@ export const SearchIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const FireIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const FireIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4" />
   </svg>
@@ -419,14 +419,14 @@ export const HeartIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   </svg>
 );
 
-export const EyeIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const EyeIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
-export const HandIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const HandIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" />
     <path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" />
@@ -435,7 +435,7 @@ export const HandIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const AngryIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const AngryIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="12" cy="12" r="10" />
     <path d="M16 16s-1.5-2-4-2-4 2-4 2" />
@@ -446,7 +446,7 @@ export const AngryIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const LaughIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const LaughIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="12" cy="12" r="10" />
     <path d="M18 13a6 6 0 0 1-6 5 6 6 0 0 1-6-5h12Z" />
@@ -455,26 +455,26 @@ export const LaughIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const EggIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const EggIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <circle cx="11.5" cy="12.5" r="3.5" />
     <path d="M3 8c0-3.5 2.5-6 6.5-6 5 0 4.83 3 7.5 5s5 2 5 6c0 4.5-2.5 6.5-7 6.5-2.5 0-2.5 2.5-6 2.5s-7-2-7-5.5c0-3 1.5-3 1.5-5C3.5 10 3 9 3 8Z" />
   </svg>
 );
 
-export const TearIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const TearIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
   </svg>
 );
 
-export const ChevronLeftIcon = ({ size = 24, className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+export const ChevronLeftIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="m15 18-6-6 6-6" />
   </svg>
 );
 
-export const ArrowUpRightIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const ArrowUpRightIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M7 17 17 7" />
     <path d="M7 7h10v10" />
@@ -493,8 +493,8 @@ export const MessageIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   </svg>
 );
 
-export const RainCloudIcon = ({ size = 24, className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={className}>
+export const RainCloudIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
     <path d="M8 19v1" />
     <path d="M8 14v1" />
@@ -505,7 +505,7 @@ export const RainCloudIcon = ({ size = 24, className }) => (
   </svg>
 );
 
-export const OrigamiIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const OrigamiIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12 12V4a1 1 0 0 1 1-1h6.297a1 1 0 0 1 .651 1.759l-4.696 4.025" />
     <path d="m12 21-7.414-7.414A2 2 0 0 1 4 12.172V6.415a1.002 1.002 0 0 1 1.707-.707L20 20.009" />
@@ -513,7 +513,7 @@ export const OrigamiIcon = ({ size = 24, strokeWidth = 2, className }) => (
   </svg>
 );
 
-export const BookHeartIcon = ({ size = 24, strokeWidth = 2, className }) => (
+export const BookHeartIcon = ({ size = 24, strokeWidth = 2.5, className }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20" />
     <path d="M8.62 9.8A2.25 2.25 0 1 1 12 6.836a2.25 2.25 0 1 1 3.38 2.966l-2.626 2.856a.998.998 0 0 1-1.507 0z" />

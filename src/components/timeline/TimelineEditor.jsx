@@ -8,7 +8,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useSessionStore, calculateBoosterDose } from '../../stores/useSessionStore';
-import { useJournalStore } from '../../stores/useJournalStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { getModuleById } from '../../content/modules';
 import PhaseSection from './PhaseSection';
@@ -142,7 +141,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const session = useSessionStore((state) => state.session);
   const followUp = useSessionStore((state) => state.followUp);
-  const getEntryById = useJournalStore((state) => state.getEntryById);
   const addModule = useSessionStore((state) => state.addModule);
   const updateModuleDuration = useSessionStore((state) => state.updateModuleDuration);
   const removeModule = useSessionStore((state) => state.removeModule);
@@ -476,34 +474,11 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                 Booster: +{booster.boosterDoseMg || calculateBoosterDose(sessionProfile?.plannedDosageMg)}mg at {formatTime(booster.boosterTakenAt)}
               </p>
             )}
-            {(() => {
-              // Try to get the intention from the journal entry (which may have been edited)
-              // Fall back to sessionProfile.holdingQuestion if no journal entry exists
-              const intentionEntry = sessionProfile?.intentionJournalEntryId
-                ? getEntryById(sessionProfile.intentionJournalEntryId)
-                : null;
-
-              // Parse only the intention part (before any "---" separator for insights)
-              let intentionText = null;
-              if (intentionEntry?.content) {
-                const contentBeforeSeparator = intentionEntry.content.split('\n\n---')[0];
-                // Strip the "PRE-SESSION\n\n" marker (added post-module to pre-session entries)
-                // and then the "INTENTION:\n\n" prefix.
-                intentionText = contentBeforeSeparator
-                  .replace(/^PRE-SESSION\n\n/i, '')
-                  .replace(/^INTENTION:\n\n/i, '')
-                  .trim();
-              }
-
-              // Fall back to sessionProfile holdingQuestion if no journal entry or empty
-              const displayIntention = intentionText || sessionProfile?.holdingQuestion;
-
-              return displayIntention ? (
-                <p className="text-[var(--color-text-secondary)]">
-                  Intention: <span className="text-[var(--color-text-tertiary)]">{displayIntention}</span>
-                </p>
-              ) : null;
-            })()}
+            {sessionProfile?.holdingQuestion && (
+              <p className="text-[var(--color-text-secondary)]">
+                Intention: <span className="text-[var(--color-text-tertiary)]">{sessionProfile.holdingQuestion}</span>
+              </p>
+            )}
             {/* Large elapsed time clock - tappable during active session to open clock note */}
             {isActiveSession && !isCompletedSession ? (
               <button

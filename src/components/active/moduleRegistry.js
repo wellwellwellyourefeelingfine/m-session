@@ -27,7 +27,6 @@ const LetsDanceModule = lazy(() => import('./modules/LetsDanceModule'));
 const FeltSenseModule = lazy(() => import('./modules/FeltSenseModule'));
 const TheDescentModule = lazy(() => import('./modules/TheDescentModule'));
 const TheCycleModule = lazy(() => import('./modules/TheCycleModule'));
-const IntentionSettingActivity = lazy(() => import('../session/activities/IntentionSettingActivity'));
 const IntentionSettingMaster = lazy(() => import('./modules/IntentionSettingMaster'));
 const LifeGraphActivity = lazy(() => import('../session/activities/LifeGraphActivity'));
 const MappingTerritoryActivity = lazy(() => import('../session/activities/MappingTerritoryActivity'));
@@ -118,11 +117,7 @@ export const CUSTOM_MODULES = {
   // The Cycle (EFT Relationship) — cycle mapping + diagram + closing meditation (Part 2 of linked pair)
   'the-cycle': TheCycleModule,
 
-  // Intention Setting (OLD) — kept reachable in code for reference during v2 cutover.
-  // No timeline configuration references this id; only direct lookups would hit it.
-  'intention-setting': IntentionSettingActivity,
-
-  // Intention Setting v2 — MasterModule-driven, with a thin wrapper that
+  // Intention Setting — MasterModule-driven, with a thin wrapper that
   // bridges journal upsert + completePreSubstanceActivity to the standard
   // MasterModule completion path.
   'intention-setting-v2': IntentionSettingMaster,
@@ -196,7 +191,6 @@ export const MODULE_CATEGORIES = {
     'values-compass',
     'leaves-on-a-stream',
     'felt-sense',
-    'intention-setting',
     'intention-setting-v2',
     'life-graph',
     'mapping-territory',

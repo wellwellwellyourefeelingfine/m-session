@@ -10,7 +10,7 @@
  * Optional "go deeper" branch (from check-in): 3 guided journaling pages
  * inserted before closing. Responses saved as a single combined journal entry.
  *
- * Follows IntentionSettingActivity pattern for step navigation.
+ * Step navigation follows the standard pre-substance activity pattern.
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
