@@ -356,8 +356,8 @@ const TriageStepRunner = forwardRef(function TriageStepRunner(
   );
 
   const handleEmergencyAction = useCallback(
-    (label) => {
-      onEmergencyAction(label, triageState, getCurrentResolvedResult());
+    (label, actionType) => {
+      onEmergencyAction(label, actionType, triageState, getCurrentResolvedResult());
     },
     [onEmergencyAction, triageState, getCurrentResolvedResult],
   );

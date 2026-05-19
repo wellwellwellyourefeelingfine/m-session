@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { syncAnalyticsOptOut } from '../services/analyticsService';
 
 export const useAppStore = create(
   persist(
@@ -30,11 +31,15 @@ export const useAppStore = create(
         readableFont: true, // false = Azeret Mono caps, true = Lora readable serif
         fontSizeAdjustment: 0, // -1 | 0 | 1 | 2 — px shift applied to body text tokens
         defaultVoiceId: 'theo', // Preferred meditation voice for offline-cached assets
+        analyticsEnabled: true, // Anonymous usage counts via Plausible (opt-out in Settings)
       },
-      setPreference: (key, value) =>
+      setPreference: (key, value) => {
         set((state) => ({
           preferences: { ...state.preferences, [key]: value },
-        })),
+        }));
+        // Sync Plausible opt-out flag whenever analytics preference changes
+        if (key === 'analyticsEnabled') syncAnalyticsOptOut(value);
+      },
 
       // Dismissed banners (persisted so they don't reappear)
       dismissedBanners: {},
@@ -72,10 +77,19 @@ export const useAppStore = create(
     }),
     {
       name: 'mdma-guide-app-state',
-      version: 1,
+      version: 2,
       partialize: (state) => {
         const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, logoAnimationTrigger: _logoAnimationTrigger, ...rest } = state;
         return rest;
+      },
+      onRehydrateStorage: () => {
+        // After store rehydrates from localStorage, sync the Plausible opt-out
+        // flag so it's correct on first page load (before any user interaction).
+        return (state) => {
+          if (state?.preferences) {
+            syncAnalyticsOptOut(state.preferences.analyticsEnabled ?? true);
+          }
+        };
       },
       migrate: (persistedState, version) => {
         if (!persistedState) return persistedState;
@@ -84,6 +98,13 @@ export const useAppStore = create(
           persistedState.preferences = {
             ...(persistedState.preferences || {}),
             defaultVoiceId: persistedState.preferences?.defaultVoiceId ?? 'theo',
+          };
+        }
+        if (version < 2) {
+          // v1 → v2: introduce preferences.analyticsEnabled for Plausible opt-out
+          persistedState.preferences = {
+            ...(persistedState.preferences || {}),
+            analyticsEnabled: persistedState.preferences?.analyticsEnabled ?? true,
           };
         }
         return persistedState;

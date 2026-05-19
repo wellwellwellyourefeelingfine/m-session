@@ -11,6 +11,7 @@ import { TIMELINE_CONFIGS } from '../content/timeline/configurations';
 import { useAppStore } from './useAppStore';
 import { useJournalStore } from './useJournalStore';
 import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAssets } from '../services/audioCacheService';
+import { track, getDoseBucket } from '../services/analyticsService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
 export const SESSION_STORE_VERSION = 32;
@@ -557,6 +558,7 @@ export const useSessionStore = create(
           sessionId: get().sessionId || generateId(),
           intake: { ...get().intake, currentSection: 'A' },
         });
+        track('intake-start');
       },
 
       // Universal user-data writer. Replaces updateIntakeResponse,
@@ -681,6 +683,13 @@ export const useSessionStore = create(
 
         // Generate timeline from session profile
         get().generateTimelineFromIntake();
+
+        track('intake-complete', {
+          sessionMode: profile.sessionMode,
+          guidanceLevel: profile.guidanceLevel,
+          duration: profile.sessionDuration,
+          primaryFocus: profile.primaryFocus,
+        });
       },
 
       // ============================================
@@ -1585,6 +1594,7 @@ export const useSessionStore = create(
             // hideBoosterModal() handles dismissal + playback resume when user clicks Continue.
           },
         });
+        track('booster-decision', { decision: 'taken', boosterRange: getDoseBucket(finalDose) });
       },
 
       confirmBoosterTime: (adjustedTime) => {
@@ -1626,6 +1636,7 @@ export const useSessionStore = create(
             items: updatedItems,
           },
         });
+        track('booster-decision', { decision: 'skipped' });
         // Resume module timer
         if (state.meditationPlayback.hasStarted && !state.meditationPlayback.isPlaying) {
           get().resumeMeditationPlayback();
@@ -1793,6 +1804,10 @@ export const useSessionStore = create(
             // Same mechanism handles initial appearance and post-snooze re-appearance.
             nextPromptAt: now + 10 * 60 * 1000,
           },
+        });
+
+        track('session-start', {
+          dosageRange: getDoseBucket(state.sessionProfile?.plannedDosageMg),
         });
       },
 
@@ -2019,6 +2034,7 @@ export const useSessionStore = create(
               : state.modules.items,
           },
         });
+        track('phase-peak');
       },
 
       // Begin the peak to integration transition (shows IntegrationTransition component)
@@ -2098,6 +2114,7 @@ export const useSessionStore = create(
           },
           peakCheckIn: { isVisible: false },
         });
+        track('phase-integration');
       },
 
       // ============================================
@@ -2382,6 +2399,18 @@ export const useSessionStore = create(
             phaseUnlockTime: now + 8 * HOUR_MS,
           },
         });
+
+        // Track session completion with bucketed duration
+        const hours = finalDurationSeconds ? finalDurationSeconds / 3600 : null;
+        let durationBucket = 'unknown';
+        if (hours !== null) {
+          if (hours < 2) durationBucket = 'under-2h';
+          else if (hours < 4) durationBucket = '2-4h';
+          else if (hours < 6) durationBucket = '4-6h';
+          else if (hours < 8) durationBucket = '6-8h';
+          else durationBucket = '8h-plus';
+        }
+        track('session-complete', { durationBucket });
       },
 
       // Record that session data was exported
@@ -2576,6 +2605,11 @@ export const useSessionStore = create(
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module) return;
+
+        track('module-complete', {
+          libraryId: module.libraryId,
+          phase: module.phase,
+        });
 
         const now = Date.now();
         const currentPhase = state.timeline.currentPhase;

@@ -28,6 +28,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { useHelperStore } from '../../stores/useHelperStore';
 import { helperCategories } from '../../content/helper/categories';
+import { track } from '../../services/analyticsService';
 import { formatHelperModalLog, buildStepResponses } from '../../content/helper/formatLog';
 import { classifyPhaseWindow, classifyFollowUpWindow } from '../../content/helper/resolverUtils';
 import { getModuleById } from '../../content/modules';
@@ -228,7 +229,14 @@ export default function HelperModal() {
   //   - Fireside Project Call/Text (from EmergencyFlow only)
   // When called from the dedicated contact view (no triageState), the category
   // and step responses are omitted from the entry by formatHelperModalLog.
-  const handleEmergencyAction = useCallback((actionLabel, triageState) => {
+  //
+  // Signature: (actionLabel, actionType, triageState).
+  //   `actionLabel` is the human-readable button text (may contain the user's
+  //     contact first name) and stays local — only written into the journal.
+  //   `actionType` is a stable categorical enum and is the ONLY field sent to
+  //     analytics, so contact names never leave the device.
+  const handleEmergencyAction = useCallback((actionLabel, actionType, triageState) => {
+    track('emergency-support', { action: actionType || 'unknown' });
     useJournalStore.getState().addEntry({
       content: formatHelperModalLog({
         categoryLabel: selectedCategory?.label ?? null,

@@ -815,18 +815,24 @@ export default function FAQTool() {
 
       <Question q="Is my data private?">
         <p>
-          Yes. Everything is stored locally on your device using your browser's
-          local storage. We don't have servers, accounts, or any way to see your
-          data. Your intake responses, journal entries, and session history never
-          leave your device.
+          Yes. Your session data, journal entries, and intake responses are stored
+          locally on your device and never leave it. There are no accounts, no
+          cookies, and no personal data collection of any kind.
+        </p>
+        <p>
+          We do use Plausible Analytics — a privacy-first, open-source analytics
+          tool — to count anonymous usage events. This helps us understand how the
+          app is used so we can improve it. No personal data or session content is
+          ever included. You can opt out at any time in{' '}
+          <span className="text-[var(--color-text-primary)]">Settings → Usage Data</span>.
         </p>
         <p>
           After completing a session, you can download all your session data as
-          a file—useful for keeping a personal record or sharing with a therapist
+          a file — useful for keeping a personal record or sharing with a therapist
           or integration coach.
         </p>
         <p>
-          This is by design. What you explore in a session is yours alone.
+          What you explore in a session is yours alone.
         </p>
       </Question>
 

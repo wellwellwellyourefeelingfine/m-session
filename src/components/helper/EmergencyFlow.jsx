@@ -15,16 +15,19 @@
  *
  * The optional `onAction` callback is fired BEFORE the browser navigates to
  * any tel:/sms: link, so the parent can write a journal entry capturing the
- * action. Argument is a short label describing what the user did. Fired for
- * every actionable button: the user contact card's Call/Text (when shown),
- * 911/112, and the Fireside Project Call/Text.
+ * action. Signature: (label, actionType). `label` is a short human-readable
+ * string (may contain the user's contact name — journal use only, NOT safe
+ * for analytics). `actionType` is a stable categorical enum:
+ * 'saved-contact-call' | 'saved-contact-text' | 'emergency-services-911' |
+ * 'emergency-services-112' | 'fireside-call' | 'fireside-text'. Fired for
+ * every actionable button.
  */
 
 import EmergencyContactCard from './EmergencyContactCard';
 
 export default function EmergencyFlow({ emergencyContact, onAction, hideContactCard = false }) {
-  const reportAction = (label) => {
-    if (typeof onAction === 'function') onAction(label);
+  const reportAction = (label, actionType) => {
+    if (typeof onAction === 'function') onAction(label, actionType);
   };
 
   return (
@@ -51,7 +54,7 @@ export default function EmergencyFlow({ emergencyContact, onAction, hideContactC
         <div className="flex gap-2">
           <a
             href="tel:911"
-            onClick={() => reportAction('Call 911 (US)')}
+            onClick={() => reportAction('Call 911 (US)', 'emergency-services-911')}
             className="no-underline flex-1 px-3 py-2 border rounded-md text-center text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >
@@ -59,7 +62,7 @@ export default function EmergencyFlow({ emergencyContact, onAction, hideContactC
           </a>
           <a
             href="tel:112"
-            onClick={() => reportAction('Call 112 (EU)')}
+            onClick={() => reportAction('Call 112 (EU)', 'emergency-services-112')}
             className="no-underline flex-1 px-3 py-2 border rounded-md text-center text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >
@@ -76,7 +79,7 @@ export default function EmergencyFlow({ emergencyContact, onAction, hideContactC
         <div className="flex gap-2">
           <a
             href="tel:62347373433"
-            onClick={() => reportAction('Call Fireside Project')}
+            onClick={() => reportAction('Call Fireside Project', 'fireside-call')}
             className="no-underline flex-1 px-3 py-2 border rounded-md text-center text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >
@@ -84,7 +87,7 @@ export default function EmergencyFlow({ emergencyContact, onAction, hideContactC
           </a>
           <a
             href="sms:62373&body=FIRESIDE"
-            onClick={() => reportAction('Text Fireside Project')}
+            onClick={() => reportAction('Text Fireside Project', 'fireside-text')}
             className="no-underline flex-1 px-3 py-2 border rounded-md text-center text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >

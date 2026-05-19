@@ -36,9 +36,12 @@ export default function EmergencyContactCard({
   isEditing,
   onEditToggle,
   // Optional callback fired when the user taps a Call or Text button.
-  // The argument is a short label describing the action ("Call <name>" /
-  // "Text <name>"), suitable for use in a journal entry. Fired BEFORE the
-  // browser navigates to the tel:/sms: link, so it always runs.
+  // Signature: (label, actionType). `label` is a short human-readable string
+  // describing the action ("Call <name>" / "Text <name>") suitable for a
+  // journal entry — it may contain the user's contact first name and must
+  // NOT be sent to analytics. `actionType` is a stable categorical enum
+  // ('saved-contact-call' | 'saved-contact-text') safe for analytics.
+  // Fired BEFORE the browser navigates to the tel:/sms: link, so it always runs.
   onContactAction,
 }) {
   const contactName = emergencyContact?.name?.trim() || '';
@@ -276,7 +279,7 @@ export default function EmergencyContactCard({
         <div className="flex gap-2" style={{ marginTop: '-14px' }}>
           <a
             href={`tel:${contactPhone}`}
-            onClick={() => onContactAction && onContactAction(callLabel)}
+            onClick={() => onContactAction && onContactAction(callLabel, 'saved-contact-call')}
             className="no-underline flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
             style={{
               borderColor: 'var(--accent)',
@@ -290,7 +293,7 @@ export default function EmergencyContactCard({
           </a>
           <a
             href={`sms:${contactPhone}`}
-            onClick={() => onContactAction && onContactAction(textLabel)}
+            onClick={() => onContactAction && onContactAction(textLabel, 'saved-contact-text')}
             className="no-underline flex-1 flex items-center justify-center gap-2 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
             style={{
               borderColor: 'var(--accent)',

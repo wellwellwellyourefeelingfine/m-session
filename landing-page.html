@@ -1,13 +1,18 @@
-<!DOCTYPE html>
-<html lang="en" class="light" style="background:#f2f0eb">
+<!doctype html>
+<html lang="en" class="light" style="background: #f2f0eb">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>if(localStorage.getItem('m-session-theme')==='dark'){document.documentElement.style.background='#0a0a0c';document.documentElement.classList.remove('light')}</script>
+    <script>
+      if (localStorage.getItem("m-session-theme") === "dark") {
+        document.documentElement.style.background = "#0a0a0c";
+        document.documentElement.classList.remove("light");
+      }
+    </script>
     <title>m-session — Guided MDMA Session Companion</title>
     <meta
       name="description"
-      content="A free, open-source guided companion for MDMA sessions focused on personal growth. Use alone, with a partner, or with a sitter. Meditation, breathwork, IFS parts work, ACT exercises, journaling, harm reduction, and integration tools. Runs locally in your browser. No accounts, no data collection."
+      content="A free, open-source guided companion for MDMA sessions focused on personal growth. Use alone, with a partner, or with a sitter. Meditation, breathwork, IFS parts work, ACT exercises, journaling, harm reduction, and integration tools. Runs locally in your browser. No accounts, no cookies, no personal data."
     />
     <link rel="canonical" href="https://m-session.com/" />
     <meta property="og:type" content="website" />
@@ -21,7 +26,10 @@
       content="Structure and support for MDMA sessions focused on personal growth. Meditation, breathwork, IFS, ACT, journaling, and integration tools. Free, open-source, completely private."
     />
     <meta property="og:image" content="https://m-session.com/og-image.png" />
-    <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
+    <meta
+      property="og:image:alt"
+      content="m-session — Guided support for intentional MDMA experiences"
+    />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="m-session" />
@@ -40,10 +48,34 @@
     <meta name="twitter:image" content="https://m-session.com/og-image.png" />
 
     <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-light-32x32.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-light-16x16.png"
+      media="(prefers-color-scheme: light)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/favicon-dark-32x32.png"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/favicon-dark-16x16.png"
+      media="(prefers-color-scheme: dark)"
+    />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Structured Data -->
@@ -76,7 +108,7 @@
           "Medication interaction checks",
           "Time-locked follow-up integration modules",
           "Offline-capable PWA",
-          "No data collection"
+          "No accounts, no cookies, no personal data"
         ]
       }
     </script>
@@ -100,17 +132,18 @@
         "name": "m-session",
         "url": "https://m-session.com",
         "logo": "https://m-session.com/m-session-logo-light.png",
-        "sameAs": [
-          "https://github.com/wellwellwellyourefeelingfine/m-session"
-        ],
+        "sameAs": ["https://github.com/wellwellwellyourefeelingfine/m-session"],
         "description": "Open-source guided companion for intentional MDMA experiences. Privacy-first, community-driven."
       }
     </script>
 
     <!-- Redirect existing standalone PWA installs to /app/ -->
     <script>
-      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-        window.location.replace('/app/');
+      if (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone
+      ) {
+        window.location.replace("/app/");
       }
     </script>
 
@@ -124,6 +157,25 @@
     <link rel="stylesheet" href="/shared.css" />
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script
+      async
+      src="https://plausible.io/js/pa-DzI0Rd9uRCiiIXpXBD8gl.js"
+    ></script>
+    <script>
+      ((window.plausible =
+        window.plausible ||
+        function () {
+          (plausible.q = plausible.q || []).push(arguments);
+        }),
+        (plausible.init =
+          plausible.init ||
+          function (i) {
+            plausible.o = i || {};
+          }));
+      plausible.init();
+    </script>
   </head>
   <body>
     <!-- ─── HEADER ─── -->
@@ -136,7 +188,16 @@
           ><span class="logo-session">SESSION</span>
         </a>
         <div class="header-nav">
-          <a href="/app" class="btn btn-primary" style="padding: 8px 22px" target="_blank" rel="noopener"
+          <a
+            href="/app"
+            class="btn btn-primary"
+            style="padding: 8px 22px"
+            target="_blank"
+            rel="noopener"
+            onclick="
+              window.plausible &&
+                plausible('launch-app', { props: { location: 'header' } })
+            "
             >Launch App &rarr;</a
           >
           <div
@@ -148,7 +209,12 @@
           >
             <div class="theme-toggle-thumb"></div>
           </div>
-          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+          <button
+            class="menu-toggle"
+            id="menu-toggle"
+            aria-label="Open navigation menu"
+            aria-expanded="false"
+          >
             <span class="menu-toggle-line"></span>
             <span class="menu-toggle-line"></span>
             <span class="menu-toggle-line"></span>
@@ -164,531 +230,658 @@
           <a href="/" class="menu-link" data-page="home">Home</a>
           <a href="/about" class="menu-link" data-page="about">About</a>
           <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
-          <a href="/contribute" class="menu-link" data-page="contribute">Contribute</a>
+          <a href="/contribute" class="menu-link" data-page="contribute"
+            >Contribute</a
+          >
           <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
         </div>
         <div class="menu-overlay-footer">
-          <a href="/app" class="btn btn-primary" style="padding: 12px 28px" target="_blank" rel="noopener">Launch App &rarr;</a>
+          <a
+            href="/app"
+            class="btn btn-primary"
+            style="padding: 12px 28px"
+            target="_blank"
+            rel="noopener"
+            onclick="
+              window.plausible &&
+                plausible('launch-app', { props: { location: 'menu' } })
+            "
+            >Launch App &rarr;</a
+          >
         </div>
       </div>
     </nav>
 
     <main>
-    <!-- ─── HERO ─── -->
-    <section class="hero">
-      <div class="container">
-        <div class="hero-grid">
-          <div class="hero-heading rv visible">
-            <h1>
-              Your pace.<br />Your intention.<br />Your
-              <span class="accent">session</span>.
-            </h1>
+      <!-- ─── HERO ─── -->
+      <section class="hero">
+        <div class="container">
+          <div class="hero-grid">
+            <div class="hero-heading rv visible">
+              <h1>
+                Your pace.<br />Your intention.<br />Your
+                <span class="accent">session</span>.
+              </h1>
+            </div>
+            <div class="hero-body">
+              <p class="hero-tagline rv visible rv-d1">
+                A structured guide for MDMA sessions. Use it solo, with a
+                partner, or with a sitter. Choose from activities grounded in
+                trusted therapeutic frameworks: meditation, somatic work, values
+                mapping, journaling, and more. Every phase, from first intention
+                to lasting integration.
+              </p>
+              <div class="hero-actions rv visible rv-d2">
+                <a
+                  href="/app"
+                  class="btn btn-primary"
+                  target="_blank"
+                  rel="noopener"
+                  onclick="
+                    window.plausible &&
+                      plausible('launch-app', { props: { location: 'hero' } })
+                  "
+                  >Launch App &rarr;</a
+                >
+                <a href="#install" class="btn btn-outline">Install on Phone</a>
+              </div>
+              <div class="hero-stats rv visible rv-d3">
+                <div>
+                  <span class="hero-stat-value">30+</span>
+                  <span class="hero-stat-label">Guided activities</span>
+                </div>
+                <div>
+                  <span class="hero-stat-value">15+</span>
+                  <span class="hero-stat-label">Audio meditations</span>
+                </div>
+                <div>
+                  <span class="hero-stat-value">6</span>
+                  <span class="hero-stat-label">Session phases</span>
+                </div>
+              </div>
+            </div>
+            <div class="phone-showcase rv visible rv-d2">
+              <!-- Organic leaves growing from behind the phone -->
+              <div class="hero-leaves-wrap">
+                <svg
+                  class="hero-leaf hero-leaf-l1"
+                  viewBox="55 2 130 248"
+                  data-offset="0"
+                ></svg>
+                <svg
+                  class="hero-leaf hero-leaf-l2"
+                  viewBox="55 2 130 248"
+                  data-offset="0.4"
+                ></svg>
+                <svg
+                  class="hero-leaf hero-leaf-r1"
+                  viewBox="55 2 130 248"
+                  data-offset="0.2"
+                ></svg>
+                <svg
+                  class="hero-leaf hero-leaf-r2"
+                  viewBox="55 2 130 248"
+                  data-offset="0.55"
+                ></svg>
+                <svg
+                  class="hero-leaf hero-leaf-r3"
+                  viewBox="55 2 130 248"
+                  data-offset="0.75"
+                ></svg>
+              </div>
+              <div class="phone" id="hero-phone">
+                <div class="phone-screen" id="phone-screen"></div>
+              </div>
+            </div>
           </div>
-          <div class="hero-body">
-            <p class="hero-tagline rv visible rv-d1">
-              A structured guide for MDMA sessions. Use it solo, with a
-              partner, or with a sitter. Choose from activities grounded in
-              trusted therapeutic frameworks: meditation, somatic work, values
-              mapping, journaling, and more. Every phase, from first intention
-              to lasting integration.
+        </div>
+      </section>
+
+      <!-- ─── PRINCIPLES STRIP ─── -->
+      <div class="principles">
+        <div class="container">
+          <div class="principles-grid">
+            <div class="principle rv">
+              <div class="principle-icon">
+                <svg><use href="#icon-compass"></use></svg>
+              </div>
+              <div class="principle-title">Non-directive</div>
+              <div class="principle-desc">
+                Structure, not instructions. The app trusts your inner wisdom
+                and follows your pace rather than imposing a rigid protocol.
+              </div>
+            </div>
+            <div class="principle rv rv-d1">
+              <div class="principle-icon">
+                <svg><use href="#icon-book-heart"></use></svg>
+              </div>
+              <div class="principle-title">Research-grounded</div>
+              <div class="principle-desc">
+                Built on established therapeutic frameworks: Internal Family
+                Systems, ACT, Coherence Therapy, and Focusing. Adapted for
+                self-guided use.
+              </div>
+            </div>
+            <div class="principle rv rv-d2">
+              <div class="principle-icon">
+                <svg><use href="#icon-eye-closed"></use></svg>
+              </div>
+              <div class="principle-title">Privacy focused</div>
+              <div class="principle-desc">
+                No accounts, no cookies, no personal data ever leaves your
+                device &mdash; only anonymous usage counts. Open source.
+              </div>
+            </div>
+            <div class="principle rv rv-d3">
+              <div class="principle-icon">
+                <svg><use href="#icon-waves"></use></svg>
+              </div>
+              <div class="principle-title">Audio-first</div>
+              <div class="principle-desc">
+                Guided meditations designed for eyes-closed use.
+                Duration-adjustable: extending the length adds more silence
+                between prompts.
+              </div>
+            </div>
+            <div class="principle rv rv-d4">
+              <div class="principle-icon">
+                <svg><use href="#icon-notebook-pen"></use></svg>
+              </div>
+              <div class="principle-title">Physical journal compatible</div>
+              <div class="principle-desc">
+                Every journal prompt can be progressed without typing.
+                Timestamps are saved so you can cross-reference your notebook
+                during integration.
+              </div>
+            </div>
+            <div class="principle rv rv-d5">
+              <div class="principle-icon">
+                <svg><use href="#icon-snail"></use></svg>
+              </div>
+              <div class="principle-title">Altered-state aware</div>
+              <div class="principle-desc">
+                Built around a single accent color per theme that guides the eye
+                without overwhelming it. Flat, minimal, easy to set down.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── ABOUT ─── -->
+      <section id="about">
+        <div class="container">
+          <div class="section-label rv">What this is</div>
+          <h2 class="section-title rv rv-d1">
+            A structured guide for MDMA sessions
+          </h2>
+          <p class="section-body rv rv-d2">
+            MDMA is a psychoactive substance that temporarily reduces the
+            brain's defensive responses while preserving cognitive clarity. In a
+            therapeutic context, this creates a window where people can examine
+            their lives, relationships, and emotional patterns with unusual
+            honesty and self-compassion. MDMA therapy has its roots in clinical
+            work from the 1970s and has seen renewed scientific interest through
+            clinical trials showing significant results in treating PTSD. But
+            its value extends beyond clinical applications. Many people use it
+            intentionally for personal growth, self-understanding, and deepening
+            their connection with themselves or a partner.
+          </p>
+          <p class="section-body rv rv-d2" style="margin-top: 20px">
+            m-session gives your session shape: preparation, intention-setting,
+            guided activities drawn from established therapeutic frameworks, and
+            integration tools for the days that follow. It works whether you're
+            on your own, with a partner, or with a trusted sitter.
+          </p>
+          <p class="section-body rv rv-d3" style="margin-top: 20px">
+            The app doesn't tell you what to think or feel. It provides
+            structure and lets you lead. You choose which activities to engage
+            with, how long to spend with them, and when to move on. The design
+            philosophy is non-directive: the app trusts that you know what you
+            need, even when you don't know it yet.
+          </p>
+          <p class="section-body rv rv-d4" style="margin-top: 20px">
+            m-session can be used solo, with a sitter, or with a partner. On
+            your own, it brings intention and structure to a solo practice. With
+            a sitter, it provides a research-informed framework for
+            facilitation, giving someone without formal training a grounded
+            structure to work from. With a partner, it opens into
+            relationship-focused exercises designed to be done together. For
+            serious psychiatric conditions such as PTSD or complex trauma, a
+            professional therapeutic setting with trained facilitators is
+            recommended.
+          </p>
+          <p class="section-body rv rv-d5" style="margin-top: 20px">
+            Every design decision has been made with the altered state in mind.
+            The visual language is flat and calm, more like an open notebook
+            than an app competing for your attention. Text is kept minimal per
+            screen. Light and dark modes each carry a single accent color that
+            is used sparingly to guide the eye without overwhelming it, which
+            matters when your pupils are dilated and light sensitivity is high.
+            The app runs offline, saves your state automatically, and can be
+            closed and reopened at any point without losing progress. It's
+            designed to feel as stable and undemanding as a surface you can set
+            down and pick back up whenever you're ready.
+          </p>
+          <p class="section-body rv rv-d6" style="margin-top: 20px">
+            m-session is a free, open-source project built on the belief that
+            the tools for honest self-exploration should be accessible to anyone
+            who wants them. In a time when many people feel stuck, disconnected,
+            or unable to access the kind of support they need, this is an
+            attempt to close that gap.
+            <a
+              href="/about"
+              style="
+                color: var(--accent);
+                text-decoration: none;
+                border-bottom: 1px solid var(--border-accent);
+              "
+              >Learn more about the case for m-session</a
+            >.
+          </p>
+
+          <div class="trust-grid rv rv-d4">
+            <div class="trust-item">
+              <div class="trust-icon">
+                <svg><use href="#icon-lock"></use></svg>
+              </div>
+              <div class="trust-title">No accounts</div>
+              <div class="trust-desc">
+                No signup, no email, no login. Open the app and begin. Your
+                identity stays yours.
+              </div>
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">
+                <svg><use href="#icon-waves"></use></svg>
+              </div>
+              <div class="trust-title">Open source</div>
+              <div class="trust-desc">
+                Every line of code is auditable. Licensed under AGPL-3.0. You
+                can verify exactly what runs on your device.
+                <a
+                  href="/contribute"
+                  style="
+                    color: var(--accent);
+                    text-decoration: none;
+                    border-bottom: 1px solid var(--border-accent);
+                    font-size: inherit;
+                  "
+                  >Get involved</a
+                >.
+              </div>
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">
+                <svg><use href="#icon-heart-handshake"></use></svg>
+              </div>
+              <div class="trust-title">Harm reduction</div>
+              <div class="trust-desc">
+                Built-in safety features for informed use: a dosage assistant,
+                links to local drug testing services, and direct access to
+                trusted support services like <a href="https://firesideproject.org" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border-accent)">Fireside Project</a>.
+              </div>
+            </div>
+            <div class="trust-item">
+              <div class="trust-icon">
+                <svg><use href="#icon-boat"></use></svg>
+              </div>
+              <div class="trust-title">Works offline</div>
+              <div class="trust-desc">
+                Install it as a PWA and it works without internet. Your session
+                won't be interrupted by connectivity.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── APP PREVIEW ─── -->
+      <section class="preview-section" id="preview">
+        <div class="container">
+          <div style="text-align: center">
+            <div class="section-label rv">Inside the app</div>
+            <h2 class="section-title rv rv-d1">Designed for the experience</h2>
+            <p class="section-body rv rv-d2" style="margin: 0 auto">
+              Low-stimulation design. Generous spacing. Content that meets you
+              where you are without overwhelming the moment.
             </p>
-            <div class="hero-actions rv visible rv-d2">
-              <a href="/app" class="btn btn-primary" target="_blank" rel="noopener">Launch App &rarr;</a>
-              <a href="#install" class="btn btn-outline">Install on Phone</a>
-            </div>
-            <div class="hero-stats rv visible rv-d3">
-              <div>
-                <span class="hero-stat-value">30+</span>
-                <span class="hero-stat-label">Guided activities</span>
-              </div>
-              <div>
-                <span class="hero-stat-value">6</span>
-                <span class="hero-stat-label">Session phases</span>
-              </div>
-              <div>
-                <span class="hero-stat-value">0</span>
-                <span class="hero-stat-label">Data collected</span>
-              </div>
-            </div>
+            <p class="section-body rv rv-d3" style="margin: 16px auto 0">
+              <a
+                href="/about#ux"
+                style="
+                  color: var(--accent);
+                  text-decoration: none;
+                  border-bottom: 1px solid var(--border-accent);
+                "
+                >Read more about our Altered-state UX design</a
+              >.
+            </p>
           </div>
-          <div class="phone-showcase rv visible rv-d2">
-            <!-- Organic leaves growing from behind the phone -->
-            <div class="hero-leaves-wrap">
-              <svg class="hero-leaf hero-leaf-l1" viewBox="55 2 130 248" data-offset="0"></svg>
-              <svg class="hero-leaf hero-leaf-l2" viewBox="55 2 130 248" data-offset="0.4"></svg>
-              <svg class="hero-leaf hero-leaf-r1" viewBox="55 2 130 248" data-offset="0.2"></svg>
-              <svg class="hero-leaf hero-leaf-r2" viewBox="55 2 130 248" data-offset="0.55"></svg>
-              <svg class="hero-leaf hero-leaf-r3" viewBox="55 2 130 248" data-offset="0.75"></svg>
+
+          <div class="preview-phones">
+            <!-- Phone 1: Peak transition w/ moon -->
+            <div class="rv rv-d1">
+              <div class="preview-phone">
+                <div class="preview-screen" id="preview-moon-screen"></div>
+              </div>
+              <div class="preview-label">Peak transition</div>
             </div>
-            <div class="phone" id="hero-phone">
-              <div class="phone-screen" id="phone-screen"></div>
+            <!-- Phone 2: Body sensations -->
+            <div class="rv rv-d2">
+              <div class="preview-phone">
+                <div class="preview-screen" id="preview-body-screen"></div>
+              </div>
+              <div class="preview-label">Body check-in</div>
+            </div>
+            <!-- Phone 3: Closing ritual -->
+            <div class="rv rv-d3">
+              <div class="preview-phone">
+                <div class="preview-screen" id="preview-closing-screen"></div>
+              </div>
+              <div class="preview-label">Closing ritual</div>
+            </div>
+            <!-- Phone 4: Values Compass -->
+            <div class="rv rv-d4">
+              <div class="preview-phone">
+                <div class="preview-screen" id="preview-values-screen"></div>
+              </div>
+              <div class="preview-label">Values compass</div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── PRINCIPLES STRIP ─── -->
-    <div class="principles">
-      <div class="container">
-        <div class="principles-grid">
-          <div class="principle rv">
-            <div class="principle-icon"><svg><use href="#icon-compass"></use></svg></div>
-            <div class="principle-title">Non-directive</div>
-            <div class="principle-desc">
-              Structure, not instructions. The app trusts your inner wisdom and
-              follows your pace rather than imposing a rigid protocol.
-            </div>
-          </div>
-          <div class="principle rv rv-d1">
-            <div class="principle-icon"><svg><use href="#icon-book-heart"></use></svg></div>
-            <div class="principle-title">Research-grounded</div>
-            <div class="principle-desc">
-              Built on established therapeutic frameworks: Internal Family
-              Systems, ACT, Coherence Therapy, and Focusing. Adapted for
-              self-guided use.
-            </div>
-          </div>
-          <div class="principle rv rv-d2">
-            <div class="principle-icon"><svg><use href="#icon-eye-closed"></use></svg></div>
-            <div class="principle-title">Fully private</div>
-            <div class="principle-desc">
-              No accounts, no analytics, no data leaves your device. Everything
-              runs locally in your browser. Open source.
-            </div>
-          </div>
-          <div class="principle rv rv-d3">
-            <div class="principle-icon"><svg><use href="#icon-waves"></use></svg></div>
-            <div class="principle-title">Audio-first</div>
-            <div class="principle-desc">
-              Guided meditations designed for eyes-closed use. Duration-adjustable:
-              extending the length adds more silence between prompts.
-            </div>
-          </div>
-          <div class="principle rv rv-d4">
-            <div class="principle-icon"><svg><use href="#icon-notebook-pen"></use></svg></div>
-            <div class="principle-title">Physical journal compatible</div>
-            <div class="principle-desc">
-              Every journal prompt can be progressed without typing. Timestamps
-              are saved so you can cross-reference your notebook during integration.
-            </div>
-          </div>
-          <div class="principle rv rv-d5">
-            <div class="principle-icon"><svg><use href="#icon-snail"></use></svg></div>
-            <div class="principle-title">Altered-state aware</div>
-            <div class="principle-desc">
-              Built around a single accent color per theme that guides the eye
-              without overwhelming it. Flat, minimal, easy to set down.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ─── ABOUT ─── -->
-    <section id="about">
-      <div class="container">
-        <div class="section-label rv">What this is</div>
-        <h2 class="section-title rv rv-d1">
-          A structured guide for MDMA sessions
-        </h2>
-        <p class="section-body rv rv-d2">
-          MDMA is a psychoactive substance that temporarily reduces the brain's
-          defensive responses while preserving cognitive clarity. In a therapeutic
-          context, this creates a window where people can examine their lives,
-          relationships, and emotional patterns with unusual honesty and
-          self-compassion. MDMA therapy has its roots in clinical work from the
-          1970s and has seen renewed scientific interest through clinical trials
-          showing significant results in treating PTSD. But its value extends
-          beyond clinical applications. Many people use it intentionally for
-          personal growth, self-understanding, and deepening their connection with
-          themselves or a partner.
-        </p>
-        <p class="section-body rv rv-d2" style="margin-top: 20px">
-          m-session gives your session shape: preparation, intention-setting,
-          guided activities drawn from established therapeutic frameworks, and
-          integration tools for the days that follow. It works whether you're on
-          your own, with a partner, or with a trusted sitter.
-        </p>
-        <p class="section-body rv rv-d3" style="margin-top: 20px">
-          The app doesn't tell you what to think or feel. It provides structure
-          and lets you lead. You choose which activities to engage with, how long
-          to spend with them, and when to move on. The design philosophy is
-          non-directive: the app trusts that you know what you need, even when
-          you don't know it yet.
-        </p>
-        <p class="section-body rv rv-d4" style="margin-top: 20px">
-          m-session can be used solo, with a sitter, or with a partner. On your
-          own, it brings intention and structure to a solo practice. With a
-          sitter, it provides a research-informed framework for facilitation,
-          giving someone without formal training a grounded structure to work
-          from. With a partner, it opens into relationship-focused exercises
-          designed to be done together. For serious psychiatric conditions such
-          as PTSD or complex trauma, a professional therapeutic setting with
-          trained facilitators is recommended.
-        </p>
-        <p class="section-body rv rv-d5" style="margin-top: 20px">
-          Every design decision has been made with the altered state in mind.
-          The visual language is flat and calm, more like an open notebook than
-          an app competing for your attention. Text is kept minimal per screen.
-          Light and dark modes each carry a single accent color that is used
-          sparingly to guide the eye without overwhelming it, which matters when
-          your pupils are dilated and light sensitivity is high. The app runs
-          offline, saves your state automatically, and can be closed and reopened
-          at any point without losing progress. It's designed to feel as stable
-          and undemanding as a surface you can set down and pick back up whenever
-          you're ready.
-        </p>
-        <p class="section-body rv rv-d6" style="margin-top: 20px">
-          m-session is a free, open-source project built on the belief that the
-          tools for honest self-exploration should be accessible to anyone who
-          wants them. In a time when many people feel stuck, disconnected, or
-          unable to access the kind of support they need, this is an attempt to
-          close that gap. <a href="/about" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border-accent)">Learn more about the case for m-session</a>.
-        </p>
-
-        <div class="trust-grid rv rv-d4">
-          <div class="trust-item">
-            <div class="trust-icon"><svg><use href="#icon-lock"></use></svg></div>
-            <div class="trust-title">No accounts</div>
-            <div class="trust-desc">
-              No signup, no email, no login. Open the app and begin. Your
-              identity stays yours.
-            </div>
-          </div>
-          <div class="trust-item">
-            <div class="trust-icon"><svg><use href="#icon-waves"></use></svg></div>
-            <div class="trust-title">Open source</div>
-            <div class="trust-desc">
-              Every line of code is auditable. Licensed under AGPL-3.0. You can
-              verify exactly what runs on your device. <a href="/contribute" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border-accent); font-size: inherit">Get involved</a>.
-            </div>
-          </div>
-          <div class="trust-item">
-            <div class="trust-icon"><svg><use href="#icon-circle-skip"></use></svg></div>
-            <div class="trust-title">Zero telemetry</div>
-            <div class="trust-desc">
-              No analytics, no tracking pixels, no error reporting. We don't
-              know who you are or what you do in the app.
-            </div>
-          </div>
-          <div class="trust-item">
-            <div class="trust-icon"><svg><use href="#icon-boat"></use></svg></div>
-            <div class="trust-title">Works offline</div>
-            <div class="trust-desc">
-              Install it as a PWA and it works without internet. Your session
-              won't be interrupted by connectivity.
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── APP PREVIEW ─── -->
-    <section class="preview-section" id="preview">
-      <div class="container">
-        <div style="text-align: center">
-          <div class="section-label rv">Inside the app</div>
-          <h2 class="section-title rv rv-d1">Designed for the experience</h2>
-          <p class="section-body rv rv-d2" style="margin: 0 auto">
-            Low-stimulation design. Generous spacing. Content that meets you
-            where you are without overwhelming the moment.
+      <!-- ─── SESSION FLOW ─── -->
+      <section id="flow">
+        <div class="container">
+          <div class="section-label rv">Session flow</div>
+          <h2 class="section-title rv rv-d1">
+            Pre-session through integration
+          </h2>
+          <p class="section-body rv rv-d2">
+            Six phases guide you from intention setting to the days that follow.
+            Each phase adapts to your choices and timing.
           </p>
-          <p class="section-body rv rv-d3" style="margin: 16px auto 0">
-            <a href="/about#ux" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border-accent)">Read more about our Altered-state UX design</a>.
+
+          <div class="flow-timeline">
+            <div class="flow-step rv">
+              <div class="flow-num">01</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-notebook-pen"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Preparation</div>
+                <div class="flow-desc">
+                  Intake questionnaire, intention setting, harm reduction
+                  information, dosage guidance, and medication interaction
+                  checks. Your responses generate a personalized session
+                  timeline across five focus areas and three guidance levels.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">02</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-snail"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Come-up</div>
+                <div class="flow-desc">
+                  Grounding meditations and body awareness exercises for the
+                  onset period. Body scan and guided support as the substance
+                  takes effect. A brief transition marks your arrival: body
+                  check-in, a single word to capture what you&rsquo;re feeling,
+                  and reassurance if you need it.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">03</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-sparkle"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Peak</div>
+                <div class="flow-desc">
+                  The most open phase of the session. Guided meditations, parts
+                  work, values mapping, cognitive defusion, self-compassion
+                  practice, journaling, somatic exercises, and open space.
+                  Choose what draws you in or let the timeline guide you.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">04</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-wheel"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Synthesis</div>
+                <div class="flow-desc">
+                  The intensity is easing but the openness remains. This phase
+                  sits between the peak and the close, where emotional depth
+                  meets returning clarity. Reflective modules, letter writing,
+                  and re-grounding exercises help you begin making sense of what
+                  surfaced.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">05</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-book-open"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Closing</div>
+                <div class="flow-desc">
+                  A structured ending that honors what happened. A message to
+                  your future self. One commitment to carry forward. A bridge
+                  between the session and the days ahead.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">06</div>
+              <div class="flow-icon">
+                <svg><use href="#icon-leaf"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Follow-up</div>
+                <div class="flow-desc">
+                  Five time-locked modules that unlock over the following days.
+                  Check-ins, journal revisits, values compass follow-up, and
+                  integration reflection during the neuroplasticity window.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── MODULES ─── -->
+      <section
+        id="modules"
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
+        <div class="container">
+          <div class="section-label rv">Toolkit</div>
+          <h2 class="section-title rv rv-d1">30+ guided activities</h2>
+          <p class="section-body rv rv-d2">
+            Each module is grounded in an established therapeutic framework. Use
+            them in sequence or choose your own path.
           </p>
-        </div>
 
-        <div class="preview-phones">
-          <!-- Phone 1: Peak transition w/ moon -->
-          <div class="rv rv-d1">
-            <div class="preview-phone">
-              <div class="preview-screen" id="preview-moon-screen"></div>
+          <div class="modules-grid rv rv-d3">
+            <div class="module-card">
+              <div class="module-phase">Peak</div>
+              <div class="module-title">Stay With It</div>
+              <div class="module-desc">
+                Surface a felt sense, find its emotional signature, and explore
+                the original learning beneath it. Guided memory reconsolidation
+                process.
+              </div>
+              <div class="module-framework">Coherence Therapy</div>
             </div>
-            <div class="preview-label">Peak transition</div>
-          </div>
-          <!-- Phone 2: Body sensations -->
-          <div class="rv rv-d2">
-            <div class="preview-phone">
-              <div class="preview-screen" id="preview-body-screen"></div>
+            <div class="module-card">
+              <div class="module-phase">Peak / Synthesis</div>
+              <div class="module-title">Values Compass</div>
+              <div class="module-desc">
+                Build an interactive four-quadrant map of your toward-moves,
+                away-moves, values, and inner obstacles. Guided journaling
+                follows.
+              </div>
+              <div class="module-framework">ACT</div>
             </div>
-            <div class="preview-label">Body check-in</div>
-          </div>
-          <!-- Phone 3: Closing ritual -->
-          <div class="rv rv-d3">
-            <div class="preview-phone">
-              <div class="preview-screen" id="preview-closing-screen"></div>
+            <div class="module-card">
+              <div class="module-phase">Peak &rarr; Synthesis</div>
+              <div class="module-title">Protector Dialogue</div>
+              <div class="module-desc">
+                Meet a protective part through guided meditation. Deepen the
+                dialogue with structured journaling and visualization.
+              </div>
+              <div class="module-framework">IFS</div>
             </div>
-            <div class="preview-label">Closing ritual</div>
-          </div>
-          <!-- Phone 4: Values Compass -->
-          <div class="rv rv-d4">
-            <div class="preview-phone">
-              <div class="preview-screen" id="preview-values-screen"></div>
+            <div class="module-card">
+              <div class="module-phase">Peak / Synthesis</div>
+              <div class="module-title">Leaves on a Stream</div>
+              <div class="module-desc">
+                A cognitive defusion exercise. Place each thought on a leaf and
+                watch it float downstream. Practice observing without holding
+                on.
+              </div>
+              <div class="module-framework">ACT</div>
             </div>
-            <div class="preview-label">Values compass</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ─── SESSION FLOW ─── -->
-    <section id="flow">
-      <div class="container">
-        <div class="section-label rv">Session flow</div>
-        <h2 class="section-title rv rv-d1">Pre-session through integration</h2>
-        <p class="section-body rv rv-d2">
-          Six phases guide you from intention setting to the days that follow.
-          Each phase adapts to your choices and timing.
-        </p>
-
-        <div class="flow-timeline">
-          <div class="flow-step rv">
-            <div class="flow-num">01</div>
-            <div class="flow-icon"><svg><use href="#icon-notebook-pen"></use></svg></div>
-            <div>
-              <div class="flow-title">Preparation</div>
-              <div class="flow-desc">
-                Intake questionnaire, intention setting, harm reduction
-                information, dosage guidance, and medication interaction
-                checks. Your responses generate a personalized session
-                timeline across five focus areas and three guidance levels.
+            <div class="module-card">
+              <div class="module-phase">All Phases</div>
+              <div class="module-title">Self-Compassion</div>
+              <div class="module-desc">
+                Guided meditation drawing on Kristin Neff's framework.
+                Mindfulness, common humanity, and self-kindness practices.
               </div>
             </div>
-          </div>
-          <div class="flow-step rv">
-            <div class="flow-num">02</div>
-            <div class="flow-icon"><svg><use href="#icon-snail"></use></svg></div>
-            <div>
-              <div class="flow-title">Come-up</div>
-              <div class="flow-desc">
-                Grounding meditations and body awareness exercises for the
-                onset period. Body scan and guided support as the substance
-                takes effect. A brief transition marks your arrival: body
-                check-in, a single word to capture what you&rsquo;re feeling,
-                and reassurance if you need it.
+            <div class="module-card">
+              <div class="module-phase">All Phases</div>
+              <div class="module-title">Body Scan</div>
+              <div class="module-desc">
+                Audio-guided body awareness. Move attention slowly through the
+                body, noticing whatever is present without trying to change it.
               </div>
             </div>
-          </div>
-          <div class="flow-step rv">
-            <div class="flow-num">03</div>
-            <div class="flow-icon"><svg><use href="#icon-sparkle"></use></svg></div>
-            <div>
-              <div class="flow-title">Peak</div>
-              <div class="flow-desc">
-                The most open phase of the session. Guided meditations, parts
-                work, values mapping, cognitive defusion, self-compassion
-                practice, journaling, somatic exercises, and open space.
-                Choose what draws you in or let the timeline guide you.
+            <div class="module-card">
+              <div class="module-phase">All Phases</div>
+              <div class="module-title">Journaling &amp; Letters</div>
+              <div class="module-desc">
+                Multiple modes: light journaling, deep journaling, letter
+                writing, parts work. Write to a person, to yourself, or to a
+                feeling.
               </div>
             </div>
-          </div>
-          <div class="flow-step rv">
-            <div class="flow-num">04</div>
-            <div class="flow-icon"><svg><use href="#icon-wheel"></use></svg></div>
-            <div>
-              <div class="flow-title">Synthesis</div>
-              <div class="flow-desc">
-                The intensity is easing but the openness remains. This phase
-                sits between the peak and the close, where emotional depth
-                meets returning clarity. Reflective modules, letter writing,
-                and re-grounding exercises help you begin making sense of what
-                surfaced.
+            <div class="module-card">
+              <div class="module-phase">Pre-Session</div>
+              <div class="module-title">Life Graph</div>
+              <div class="module-desc">
+                Chart your life milestones against a well-being scale on an
+                interactive graph. See the shape of your story.
               </div>
             </div>
-          </div>
-          <div class="flow-step rv">
-            <div class="flow-num">05</div>
-            <div class="flow-icon"><svg><use href="#icon-book-open"></use></svg></div>
-            <div>
-              <div class="flow-title">Closing</div>
-              <div class="flow-desc">
-                A structured ending that honors what happened. A message to
-                your future self. One commitment to carry forward. A bridge
-                between the session and the days ahead.
-              </div>
-            </div>
-          </div>
-          <div class="flow-step rv">
-            <div class="flow-num">06</div>
-            <div class="flow-icon"><svg><use href="#icon-leaf"></use></svg></div>
-            <div>
-              <div class="flow-title">Follow-up</div>
-              <div class="flow-desc">
-                Five time-locked modules that unlock over the following days.
-                Check-ins, journal revisits, values compass follow-up, and
-                integration reflection during the neuroplasticity window.
+            <div class="module-card">
+              <div class="module-phase">Follow-Up</div>
+              <div class="module-title">Integration Modules</div>
+              <div class="module-desc">
+                Time-locked modules that unlock after session close. Check-ins,
+                journal revisits, values compass follow-up, and open reflection
+                during the integration window.
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── MODULES ─── -->
-    <section
-      id="modules"
-      style="
-        background: var(--bg-elevated);
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-      "
-    >
-      <div class="container">
-        <div class="section-label rv">Toolkit</div>
-        <h2 class="section-title rv rv-d1">30+ guided activities</h2>
-        <p class="section-body rv rv-d2">
-          Each module is grounded in an established therapeutic framework. Use
-          them in sequence or choose your own path.
-        </p>
-
-        <div class="modules-grid rv rv-d3">
-          <div class="module-card">
-            <div class="module-phase">Peak</div>
-            <div class="module-title">Stay With It</div>
-            <div class="module-desc">
-              Surface a felt sense, find its emotional signature, and explore
-              the original learning beneath it. Guided memory reconsolidation
-              process.
-            </div>
-            <div class="module-framework">Coherence Therapy</div>
+      <!-- ─── INSTALL ─── -->
+      <section id="install" class="install-section">
+        <div class="container">
+          <div class="section-label rv" style="text-align: center">
+            Designed for mobile
           </div>
-          <div class="module-card">
-            <div class="module-phase">Peak / Synthesis</div>
-            <div class="module-title">Values Compass</div>
-            <div class="module-desc">
-              Build an interactive four-quadrant map of your toward-moves,
-              away-moves, values, and inner obstacles. Guided journaling
-              follows.
+          <h2 class="section-title rv rv-d1" style="text-align: center">
+            Install on your phone
+          </h2>
+          <p
+            class="section-body rv rv-d2"
+            style="margin: 0 auto; text-align: center"
+          >
+            Add m-session to your home screen for a full-screen experience that
+            works offline. No app store needed. (Also works on desktop.)
+          </p>
+          <div class="install-steps rv rv-d3">
+            <div class="install-step">
+              <div class="install-num">1</div>
+              <div class="install-text">
+                Open m-session.com in your mobile browser on iOS or Android
+              </div>
             </div>
-            <div class="module-framework">ACT</div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">Peak &rarr; Synthesis</div>
-            <div class="module-title">Protector Dialogue</div>
-            <div class="module-desc">
-              Meet a protective part through guided meditation. Deepen the
-              dialogue with structured journaling and visualization.
+            <div class="install-step">
+              <div class="install-num">2</div>
+              <div class="install-text">
+                Tap share, then "Add to Home Screen"
+              </div>
             </div>
-            <div class="module-framework">IFS</div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">Peak / Synthesis</div>
-            <div class="module-title">Leaves on a Stream</div>
-            <div class="module-desc">
-              A cognitive defusion exercise. Place each thought on a leaf and
-              watch it float downstream. Practice observing without holding on.
-            </div>
-            <div class="module-framework">ACT</div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">All Phases</div>
-            <div class="module-title">Self-Compassion</div>
-            <div class="module-desc">
-              Guided meditation drawing on Kristin Neff's framework.
-              Mindfulness, common humanity, and self-kindness practices.
-            </div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">All Phases</div>
-            <div class="module-title">Body Scan</div>
-            <div class="module-desc">
-              Audio-guided body awareness. Move attention slowly through the
-              body, noticing whatever is present without trying to change it.
-            </div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">All Phases</div>
-            <div class="module-title">Journaling &amp; Letters</div>
-            <div class="module-desc">
-              Multiple modes: light journaling, deep journaling, letter writing,
-              parts work. Write to a person, to yourself, or to a feeling.
-            </div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">Pre-Session</div>
-            <div class="module-title">Life Graph</div>
-            <div class="module-desc">
-              Chart your life milestones against a well-being scale on an
-              interactive graph. See the shape of your story.
-            </div>
-          </div>
-          <div class="module-card">
-            <div class="module-phase">Follow-Up</div>
-            <div class="module-title">Integration Modules</div>
-            <div class="module-desc">
-              Time-locked modules that unlock after session close. Check-ins,
-              journal revisits, values compass follow-up, and open reflection
-              during the integration window.
+            <div class="install-step">
+              <div class="install-num">3</div>
+              <div class="install-text">
+                Launch from home screen. Works fully offline.
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ─── INSTALL ─── -->
-    <section id="install" class="install-section">
-      <div class="container">
+      <!-- ─── CTA ─── -->
+      <div class="cta">
         <div class="section-label rv" style="text-align: center">
-          Designed for mobile
+          Your session, your way
         </div>
         <h2 class="section-title rv rv-d1" style="text-align: center">
-          Install on your phone
+          Ready when you are
         </h2>
         <p
           class="section-body rv rv-d2"
           style="margin: 0 auto; text-align: center"
         >
-          Add m-session to your home screen for a full-screen experience that
-          works offline. No app store needed. (Also works on desktop.)
+          Whether you're exploring self-understanding, working through something
+          specific, or simply creating space to be honest with yourself. Read
+          the
+          <a
+            href="/faq"
+            style="
+              color: var(--accent);
+              text-decoration: none;
+              border-bottom: 1px solid var(--border-accent);
+            "
+            >FAQ &amp; safety guide</a
+          >
+          if you have questions.
         </p>
-        <div class="install-steps rv rv-d3">
-          <div class="install-step">
-            <div class="install-num">1</div>
-            <div class="install-text">
-              Open m-session.com in your mobile browser on iOS or Android
-            </div>
-          </div>
-          <div class="install-step">
-            <div class="install-num">2</div>
-            <div class="install-text">Tap share, then "Add to Home Screen"</div>
-          </div>
-          <div class="install-step">
-            <div class="install-num">3</div>
-            <div class="install-text">
-              Launch from home screen. Works fully offline.
-            </div>
-          </div>
+        <div class="rv rv-d3" style="margin-top: 48px; text-align: center">
+          <a
+            href="/app"
+            class="btn btn-primary"
+            style="padding: 14px 36px; font-size: 12px"
+            target="_blank"
+            rel="noopener"
+            onclick="
+              window.plausible &&
+                plausible('launch-app', { props: { location: 'cta' } })
+            "
+            >Launch App &rarr;</a
+          >
         </div>
       </div>
-    </section>
-
-    <!-- ─── CTA ─── -->
-    <div class="cta">
-      <div class="section-label rv" style="text-align: center">
-        Your session, your way
-      </div>
-      <h2 class="section-title rv rv-d1" style="text-align: center">
-        Ready when you are
-      </h2>
-      <p
-        class="section-body rv rv-d2"
-        style="margin: 0 auto; text-align: center"
-      >
-        Whether you're exploring self-understanding, working through something
-        specific, or simply creating space to be honest with yourself. Read the <a href="/faq" style="color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--border-accent)">FAQ &amp; safety guide</a> if you have questions.
-      </p>
-      <div class="rv rv-d3" style="margin-top: 48px; text-align: center">
-        <a
-          href="/app"
-          class="btn btn-primary"
-          style="padding: 14px 36px; font-size: 12px"
-          target="_blank"
-          rel="noopener"
-          >Launch App &rarr;</a
-        >
-      </div>
-    </div>
     </main>
 
     <!-- ─── FOOTER ─── -->
@@ -700,10 +893,22 @@
           <a href="/faq">FAQ &amp; Safety</a>
           <a href="/contribute">Contribute</a>
           <a href="/privacy">Privacy</a>
-          <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener"
+          <a
+            href="https://github.com/wellwellwellyourefeelingfine/m-session"
+            target="_blank"
+            rel="noopener"
             >GitHub</a
           >
-          <a href="/app" target="_blank" rel="noopener">Launch App</a>
+          <a
+            href="/app"
+            target="_blank"
+            rel="noopener"
+            onclick="
+              window.plausible &&
+                plausible('launch-app', { props: { location: 'footer' } })
+            "
+            >Launch App</a
+          >
         </nav>
       </div>
     </footer>
@@ -753,7 +958,8 @@
         // Description below moon
         var descBelow = document.createElement("div");
         descBelow.className = "phone-desc";
-        descBelow.innerHTML = 'Let the experience unfold.<br>Be open to what arises.';
+        descBelow.innerHTML =
+          "Let the experience unfold.<br>Be open to what arises.";
         moonWrap.appendChild(descBelow);
 
         // Nav

@@ -80,7 +80,7 @@
           "name": "Is my data private in m-session?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Yes. Everything is stored locally on your device using your browser's local storage. There are no servers, accounts, or any way to see your data. Your intake responses, journal entries, and session history never leave your device."
+            "text": "Yes. Your session data, journal entries, and intake responses are stored locally on your device and never leave it. There are no accounts, no cookies, and no personal data collection. We use Plausible, a privacy-first open-source analytics tool, to count anonymous usage events (not who, just what). You can opt out in Settings."
           }
         },
         {
@@ -119,6 +119,13 @@
         { "@type": "ListItem", "position": 2, "name": "FAQ & Safety" }
       ]
     }
+    </script>
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://plausible.io/js/pa-DzI0Rd9uRCiiIXpXBD8gl.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
     </script>
   </head>
   <body>
@@ -511,9 +518,10 @@
                 <svg class="faq-chevron" viewBox="0 0 12 12"><line x1="2" y1="4" x2="6" y2="8"/><line x1="6" y1="8" x2="10" y2="4"/></svg>
               </div>
               <div class="faq-answer">
-                <p>Yes. Everything is stored locally on your device using your browser&rsquo;s local storage. We don&rsquo;t have servers, accounts, or any way to see your data. Your intake responses, journal entries, and session history never leave your device.</p>
-                <p>After completing a session, you can download all your session data as a file&mdash;useful for keeping a personal record or sharing with a therapist or integration coach.</p>
-                <p>This is by design. What you explore in a session is yours alone.</p>
+                <p>Yes. Your session data, journal entries, and intake responses are stored locally on your device and never leave it. There are no accounts, no cookies, and no personal data collection of any kind.</p>
+                <p>We do use <a href="https://plausible.io" target="_blank" rel="noopener">Plausible Analytics</a> &mdash; a privacy-first, open-source analytics tool &mdash; to count anonymous usage events. This helps us understand how the app is used so we can improve it. Plausible does not use cookies, does not track individuals, and never receives any personal data or session content. You can opt out at any time in <strong>Settings &rarr; Usage Data</strong>.</p>
+                <p>After completing a session, you can download all your session data as a file &mdash; useful for keeping a personal record or sharing with a therapist or integration coach.</p>
+                <p>What you explore in a session is yours alone.</p>
               </div>
             </div>
 

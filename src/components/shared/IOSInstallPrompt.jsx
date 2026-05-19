@@ -68,11 +68,11 @@ export default function IOSInstallPrompt() {
       }`}
     >
       <div
-        className={`w-full max-w-md bg-[var(--color-bg)] border-t border-[var(--color-border)] p-6 pb-8 rounded-t-2xl shadow-xl pointer-events-auto transition-transform duration-300 ${
+        className={`w-full max-w-md bg-[var(--color-bg)] border-t border-[var(--color-border)] p-4 pb-5 rounded-t-2xl shadow-xl pointer-events-auto transition-transform duration-300 ${
           hiding ? 'translate-y-full' : 'animate-slideUp'
         }`}
       >
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-3">
           <h3 className="text-[var(--color-text-primary)] text-xs uppercase tracking-wider font-medium">
             Install m-session
           </h3>
@@ -84,21 +84,18 @@ export default function IOSInstallPrompt() {
           </button>
         </div>
 
-        <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed mb-4">
-          This app doesn&apos;t use any cookies, trackers, or analytics.
-          All of your data is stored locally on your device &mdash; nothing
-          is ever sent to any servers.
+        <p className="text-[var(--color-text-secondary)] text-[11px] leading-relaxed mb-2">
+          This app is a PWA (Progressive Web App) and should live on your home screen.
         </p>
 
-        <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed mb-5">
-          For the best experience &mdash; offline access, full screen,
-          and no browser distractions &mdash; save this app to your home screen:
+        <p className="text-[var(--color-text-secondary)] text-[11px] leading-relaxed mb-3">
+          For the best experience (offline access, full screen, and no browser distractions) install this app to your home screen:
         </p>
 
-        <div className="space-y-3 mb-5">
+        <div className="space-y-2 mb-3">
           <div className="flex items-start gap-3">
-            <span className="text-[var(--accent)] text-sm mt-0.5 shrink-0">1.</span>
-            <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
+            <span className="text-[var(--accent)] text-[11px] mt-0.5 shrink-0">1.</span>
+            <p className="text-[var(--color-text-secondary)] text-[11px] leading-relaxed">
               Tap the{' '}
               <span className="inline-block align-middle mx-0.5">
                 <ShareIcon />
@@ -107,14 +104,14 @@ export default function IOSInstallPrompt() {
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-[var(--accent)] text-sm mt-0.5 shrink-0">2.</span>
-            <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
+            <span className="text-[var(--accent)] text-[11px] mt-0.5 shrink-0">2.</span>
+            <p className="text-[var(--color-text-secondary)] text-[11px] leading-relaxed">
               Scroll down and tap <strong className="text-[var(--color-text-primary)]">Add to Home Screen</strong>
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="text-[var(--accent)] text-sm mt-0.5 shrink-0">3.</span>
-            <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed">
+            <span className="text-[var(--accent)] text-[11px] mt-0.5 shrink-0">3.</span>
+            <p className="text-[var(--color-text-secondary)] text-[11px] leading-relaxed">
               Tap <strong className="text-[var(--color-text-primary)]">Add</strong> to confirm
             </p>
           </div>
@@ -122,7 +119,7 @@ export default function IOSInstallPrompt() {
 
         <button
           onClick={handleDismiss}
-          className="w-full py-3 border border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase tracking-wider text-[10px] hover:bg-[var(--color-bg-secondary)] transition-colors"
+          className="w-full py-2 border border-[var(--color-border)] text-[var(--color-text-secondary)] uppercase tracking-wider text-[11px] hover:bg-[var(--color-bg-secondary)] transition-colors"
         >
           Okay, sounds good
         </button>

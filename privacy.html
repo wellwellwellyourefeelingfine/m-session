@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>if(localStorage.getItem('m-session-theme')==='dark'){document.documentElement.style.background='#0a0a0c';document.documentElement.classList.remove('light')}</script>
     <title>Privacy Policy — m-session</title>
-    <meta name="description" content="m-session privacy policy. Zero data collection, no analytics, no accounts, no cookies. Everything stays on your device. Open source and auditable." />
+    <meta name="description" content="m-session privacy policy. No accounts, no cookies, no personal data collection. Anonymous usage counts via Plausible (opt-out in Settings). Everything stays on your device. Open source and auditable." />
     <link rel="canonical" href="https://m-session.com/privacy" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://m-session.com/privacy" />
     <meta property="og:title" content="Privacy Policy — m-session" />
-    <meta property="og:description" content="Zero data collection. No analytics, no accounts, no cookies. Everything stays on your device." />
+    <meta property="og:description" content="No accounts, no cookies, no personal data. Anonymous usage counts via Plausible (opt-out anytime). Everything stays on your device." />
     <meta property="og:image" content="https://m-session.com/og-image.png" />
     <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
     <meta property="og:image:width" content="1200" />
@@ -20,7 +20,7 @@
     <meta name="robots" content="index, follow" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Privacy Policy — m-session" />
-    <meta name="twitter:description" content="Zero data collection. Everything stays on your device. Open source and auditable." />
+    <meta name="twitter:description" content="No accounts, no cookies, no personal data. Anonymous usage counts via Plausible (opt-out anytime). Open source and auditable." />
     <meta name="twitter:image" content="https://m-session.com/og-image.png" />
 
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
@@ -43,7 +43,7 @@
       "@type": "WebPage",
       "name": "Privacy Policy — m-session",
       "url": "https://m-session.com/privacy",
-      "description": "m-session privacy policy. Zero data collection, no analytics, no accounts, no cookies. Everything stays on your device.",
+      "description": "m-session privacy policy. No accounts, no cookies, no personal data collection. Anonymous usage counts via Plausible (opt-out in Settings). Everything stays on your device.",
       "isPartOf": {
         "@type": "WebSite",
         "name": "m-session",
@@ -60,6 +60,13 @@
         { "@type": "ListItem", "position": 2, "name": "Privacy" }
       ]
     }
+    </script>
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://plausible.io/js/pa-DzI0Rd9uRCiiIXpXBD8gl.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
     </script>
   </head>
   <body>
@@ -105,7 +112,7 @@
           <div class="section-label rv visible">Privacy</div>
           <h1 class="section-title rv visible rv-d1">Privacy policy</h1>
           <p class="section-body rv visible rv-d2">
-            Effective March 2026. Last updated March 2026.
+            Effective March 2026. Last updated May 2026.
           </p>
         </div>
       </section>
@@ -116,7 +123,7 @@
           <div class="prose rv">
             <div class="callout">
               <p>
-                <strong>The short version:</strong> m-session collects no data. We do not know who you are, what you do in the app, or that you visited this website. There are no accounts, no analytics, no cookies, no telemetry. Everything you create in the app stays on your device and is never transmitted anywhere.
+                <strong>The short version:</strong> Your session data never leaves your device. There are no accounts, no cookies, and no personal data collection of any kind. We use Plausible &mdash; a privacy-first, open-source analytics tool &mdash; to count anonymous usage events (not who, just what, and only in broad categories). You can opt out of this anytime in <strong>Settings &rarr; Usage Data</strong>.
               </p>
             </div>
           </div>
@@ -154,24 +161,52 @@
         </div>
       </section>
 
-      <!-- What we do NOT collect -->
+      <!-- Your right to deletion -->
+      <section style="background: var(--bg-elevated); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border)">
+        <div class="container">
+          <div class="prose rv">
+            <h2>Your right to deletion</h2>
+            <p>
+              Under GDPR and similar privacy laws, you have the right to request deletion of your personal data. Here is how to exercise that right with m-session:
+            </p>
+            <p>
+              Clear your browser storage.
+            </p>
+            <p>
+              That&rsquo;s it. There is no account to delete, no server to contact, no form to fill out, no 30-day waiting period, and no team of people to process your request. Everything is on your device. You are, in the most literal sense, already in full control of your data. GDPR was written for a different kind of app.
+            </p>
+            <p>
+              In Chrome or Brave: Settings &rarr; Privacy and security &rarr; Clear browsing data. In Safari: Settings &rarr; Safari &rarr; Clear History and Website Data. In Firefox: Settings &rarr; Privacy &amp; Security &rarr; Clear Data.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Anonymous usage counts -->
       <section>
         <div class="container">
           <div class="prose rv">
-            <h2>What we do not collect</h2>
+            <h2>How we collect anonymous usage counts</h2>
+            <p>
+              m-session uses <a href="https://plausible.io" target="_blank" rel="noopener">Plausible Analytics</a> &mdash; an open-source, privacy-first analytics tool &mdash; to count anonymous usage events. Plausible does not use cookies, does not track individuals across sessions or sites, and does not store IP addresses or any personal data.
+            </p>
+            <p>The following events are counted:</p>
             <ul>
-              <li>No personally identifiable information (name, email, phone, location)</li>
-              <li>No analytics or usage tracking</li>
-              <li>No telemetry or error reporting</li>
-              <li>No cookies</li>
-              <li>No IP address logging</li>
-              <li>No browser fingerprinting</li>
-              <li>No advertising identifiers</li>
-              <li>No third-party tracking scripts</li>
-              <li>No social media integrations that report back</li>
+              <li><strong>intake-start</strong> &mdash; When a user begins the intake questionnaire</li>
+              <li><strong>intake-complete</strong> &mdash; When intake is finished; includes session mode (solo / partner / sitter), guidance level, session duration range, and primary focus area</li>
+              <li><strong>session-start</strong> &mdash; When a session begins; includes a bucketed dosage range (e.g. &ldquo;moderate&rdquo;, &ldquo;strong&rdquo;) &mdash; never an exact amount</li>
+              <li><strong>booster-decision</strong> &mdash; Whether a booster dose was taken or skipped; if taken, includes a bucketed dose range</li>
+              <li><strong>phase-peak</strong> &mdash; When the peak phase begins</li>
+              <li><strong>phase-integration</strong> &mdash; When the integration phase begins</li>
+              <li><strong>session-complete</strong> &mdash; When a session ends; includes a bucketed session duration (e.g. &ldquo;4&ndash;6h&rdquo;)</li>
+              <li><strong>module-complete</strong> &mdash; When a guided activity is completed; includes the module name and session phase</li>
+              <li><strong>emergency-support</strong> &mdash; When an emergency support action is used (e.g. &ldquo;Call Fireside Project&rdquo;); includes the action label</li>
             </ul>
             <p>
-              This is not a simplified summary. This is the complete list. There is no data collection of any kind built into m-session.
+              All values are categorical. No free-text, no journal content, no session timestamps, and no personally identifiable information is ever included. Events are sent as anonymous counts only.
+            </p>
+            <p>
+              You can opt out of all analytics at any time in <strong>Settings &rarr; Usage Data</strong>. When disabled, no events are sent.
             </p>
           </div>
         </div>
@@ -191,6 +226,9 @@
               </li>
               <li>
                 <strong>Google Fonts</strong> &mdash; Provides the Azeret Mono and DM Serif Text typefaces. Loading fonts from Google&rsquo;s CDN means your browser makes requests to Google&rsquo;s servers. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google&rsquo;s privacy policy</a>.
+              </li>
+              <li>
+                <strong>Plausible Analytics</strong> &mdash; Counts anonymous usage events to help improve the app. Plausible is open-source, does not use cookies, does not store IP addresses, and does not track individuals across sessions or sites. See <a href="https://plausible.io/privacy" target="_blank" rel="noopener">Plausible&rsquo;s privacy policy</a> and <a href="https://plausible.io/data-policy" target="_blank" rel="noopener">data policy</a>.
               </li>
               <li>
                 <strong>Tally</strong> &mdash; Powers our optional feedback form. Tally is a privacy-focused form builder &mdash; no tracking cookies, no advertising, GDPR-compliant. If you choose to submit feedback, your responses are stored on Tally&rsquo;s servers. This is entirely optional and external to the app. See <a href="https://tally.so/help/privacy-policy" target="_blank" rel="noopener">Tally&rsquo;s privacy policy</a>.
@@ -224,7 +262,7 @@
               m-session is open source under the <strong>AGPL-3.0 license</strong>. The complete source code is available on <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub</a>. You do not have to take our word for any privacy claim &mdash; you can read the code and verify it yourself.
             </p>
             <p>
-              You can also use your browser&rsquo;s developer tools (Network tab) to confirm that no data is transmitted while using the app. There are zero outbound network requests during a session.
+              You can also use your browser&rsquo;s developer tools (Network tab) to verify that the only outbound requests during a session are anonymous event counts sent to Plausible &mdash; no personal data is ever included.
             </p>
           </div>
         </div>
@@ -236,7 +274,7 @@
           <div class="section-label">Explore</div>
           <h2 class="section-title">Ready to begin?</h2>
           <p class="section-body">
-            Your session, your device, your data. Nothing leaves your browser.
+            Your session data stays on your device. Anonymous usage counts help us improve the app &mdash; opt out anytime in Settings.
           </p>
           <div class="page-cta-actions">
             <a href="/app" class="btn btn-primary" target="_blank" rel="noopener">Launch App &rarr;</a>

@@ -7,15 +7,18 @@
  *   - 'emergency-contact' — Saved emergency contact with Call/Text (or fallback copy)
  *   - 'find-therapist'    — Advisory card, no action buttons
  *
- * Action buttons fire `onAction(label)` BEFORE navigating via tel:/sms: links,
- * following the same pattern as EmergencyContactCard and EmergencyFlow.
+ * Action buttons fire `onAction(label, actionType)` BEFORE navigating via tel:/sms:
+ * links, following the same pattern as EmergencyContactCard and EmergencyFlow.
+ * `actionType` is a stable categorical enum safe to send to analytics; `label`
+ * is the human-readable string (may include the user's contact name) and is
+ * only used for the local journal entry.
  */
 
 import { PhoneIcon, MessageIcon } from '../shared/Icons';
 
 export default function SupportResourceCard({ resource, emergencyContact, onAction }) {
-  const reportAction = (label) => {
-    if (typeof onAction === 'function') onAction(label);
+  const reportAction = (label, actionType) => {
+    if (typeof onAction === 'function') onAction(label, actionType);
   };
 
   if (resource.type === 'fireside') {
@@ -30,7 +33,7 @@ export default function SupportResourceCard({ resource, emergencyContact, onActi
         <div className="flex gap-2 pt-1">
           <a
             href="tel:+16234737433"
-            onClick={() => reportAction('Call Fireside Project')}
+            onClick={() => reportAction('Call Fireside Project', 'fireside-call')}
             className="no-underline flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >
@@ -39,7 +42,7 @@ export default function SupportResourceCard({ resource, emergencyContact, onActi
           </a>
           <a
             href="sms:+16234737433"
-            onClick={() => reportAction('Text Fireside Project')}
+            onClick={() => reportAction('Text Fireside Project', 'fireside-text')}
             className="no-underline flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
           >
@@ -71,7 +74,7 @@ export default function SupportResourceCard({ resource, emergencyContact, onActi
               <div className="flex gap-2 pt-1">
                 <a
                   href={`tel:${contactPhone}`}
-                  onClick={() => reportAction(`Call ${contactName || 'Emergency Contact'}`)}
+                  onClick={() => reportAction(`Call ${contactName || 'Emergency Contact'}`, 'saved-contact-call')}
                   className="no-underline flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
                 >
@@ -80,7 +83,7 @@ export default function SupportResourceCard({ resource, emergencyContact, onActi
                 </a>
                 <a
                   href={`sms:${contactPhone}`}
-                  onClick={() => reportAction(`Text ${contactName || 'Emergency Contact'}`)}
+                  onClick={() => reportAction(`Text ${contactName || 'Emergency Contact'}`, 'saved-contact-text')}
                   className="no-underline flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 border rounded-md text-[11px] uppercase tracking-wider transition-colors"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-primary)', textDecoration: 'none' }}
                 >

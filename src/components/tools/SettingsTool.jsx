@@ -499,6 +499,34 @@ export default function SettingsTool() {
           </button>
         </div>
 
+        {/* Anonymous Usage Data */}
+        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] uppercase tracking-wider">Usage Data</span>
+            <button
+              onClick={() => setPreference('analyticsEnabled', !preferences.analyticsEnabled)}
+              className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
+              style={{ fontFamily: 'Azeret Mono, monospace' }}
+            >
+              {preferences.analyticsEnabled !== false ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          <p className="mt-1.5 text-[9px] leading-relaxed" style={{ color: 'var(--color-text-tertiary)' }}>
+            Help improve m-session by sharing anonymous event counts.
+            No cookies, no personal data. Powered by{' '}
+            <a
+              href="https://plausible.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:opacity-70"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              Plausible
+            </a>
+            , an open-source privacy tool.
+          </p>
+        </div>
+
         {/* Download Data */}
         <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <div className="flex items-center justify-between mb-3">

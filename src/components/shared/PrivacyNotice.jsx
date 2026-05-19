@@ -1,8 +1,8 @@
 /**
  * Privacy Notice (Desktop)
- * Shows on non-mobile devices to inform users that
- * no cookies, trackers, or analytics are used.
- * All data stays on-device via localStorage.
+ * Shows on non-mobile devices to inform users about
+ * the app's privacy model: all session data stays
+ * on-device, with optional anonymous usage counts.
  */
 
 import { useState, useEffect } from 'react';
@@ -56,9 +56,10 @@ export default function PrivacyNotice() {
           Your Privacy
         </h3>
         <p className="text-[var(--color-text-secondary)] text-[10px] leading-relaxed mb-4">
-          This app doesn&apos;t use any cookies, trackers, or analytics.
-          All of your data is stored locally on your device &mdash; nothing
-          is ever sent to any servers.
+          This app doesn&apos;t use any cookies or trackers, and only uses
+          anonymous usage count analytics to improve the app. All of your
+          data is stored locally on your device. You can opt out of
+          anonymous analytics anytime in Settings.
         </p>
         <button
           onClick={handleDismiss}

@@ -210,6 +210,9 @@ var __ms = {};
 
 // PJAX Navigation — client-side content swap
 (function () {
+  // Disable browser scroll restoration so our explicit scrollTo(0,0) always wins
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   var body = document.body;
   var main = document.querySelector('main');
   if (!main) return;

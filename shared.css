@@ -595,11 +595,11 @@ body.menu-closing .menu-overlay-panel {
 .menu-link.active::after {
   content: '';
   position: absolute;
-  bottom: 10px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent);
 }
