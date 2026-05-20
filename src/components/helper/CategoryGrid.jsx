@@ -137,7 +137,7 @@ export default function CategoryGrid({
               {/* Title — serif, flush with the top of the card, with a small left margin
                   so it sits just to the right of the icon circle (not behind it) */}
               <p
-                className="text-[16px] m-0"
+                className="text-[15px] m-0"
                 style={{
                   fontFamily: "'DM Serif Text', serif",
                   textTransform: 'none',
@@ -210,7 +210,7 @@ export default function CategoryGrid({
             <CompassIcon size={22} className="text-[var(--accent)]" />
           </div>
           <p
-            className="text-[16px] m-0"
+            className="text-[15px] m-0"
             style={{
               fontFamily: "'DM Serif Text', serif",
               textTransform: 'none',
@@ -278,7 +278,7 @@ export default function CategoryGrid({
             <PhoneIcon size={22} className="text-[var(--accent)]" />
           </div>
           <p
-            className="text-[16px] m-0"
+            className="text-[15px] m-0"
             style={{
               fontFamily: "'DM Serif Text', serif",
               textTransform: 'none',
