@@ -20,12 +20,48 @@ import { PhoneIcon, CompassIcon } from '../shared/Icons';
 //   new:     -8 + 18 = 10  ✓
 const CIRCLE_SIZE = 36;
 const CIRCLE_OFFSET = -8; // how far the circle overhangs the card edges
-// Fixed card height — sized to fit a 3-line description with tight padding.
-// All category cards share this height regardless of their description length,
-// so descriptions no longer drive box size.
-//   4 (top pad) + 18 (title 15px×1.2) + 6 (title→desc gap)
-//   + ~42 (3 lines × 10px × 1.375 leading-snug) + 4 (bottom pad) ≈ 74px
-const CARD_HEIGHT_PX = 74;
+
+// Description typography — explicit values so the clamp math is exact.
+// 9px mono at 13px line-height × 3 lines = 39px of description box.
+const DESC_FONT_SIZE_PX = 9;
+const DESC_LINE_HEIGHT_PX = 13;
+const DESC_MAX_LINES = 3;
+const DESC_BLOCK_HEIGHT_PX = DESC_LINE_HEIGHT_PX * DESC_MAX_LINES; // 39
+
+// Wide-card (intention + emergency contact) descriptions are intentionally
+// two px larger than the category-card descriptions — those cards have a lot
+// more horizontal room, so the bigger type sits more comfortably and reads
+// better at a glance.
+const WIDE_DESC_FONT_SIZE_PX = 11;
+const WIDE_DESC_LINE_HEIGHT_PX = 14;
+
+// Fixed height for the wide cards (intention + emergency contact). Sized
+// so toggling between 1-line and 2-line descriptions never changes the
+// card's outer height. With justify-between the description anchors near
+// the bottom of the card and grows upward into the title→description gap.
+//
+// Bottom padding is intentionally small (6px) so the description sits low
+// in the card; that frees up vertical space above the description and gives
+// the 2-line case ~8px of breathing room below the title rather than
+// crowding up against it.
+//   6  (top pad)
+// + 18 (title: 15px × 1.2)
+// + 28 (description: 2 × 14px, the worst case)
+// +  6 (bottom pad)
+// +  8 (residual gap above description, distributed by justify-between)
+// = 66
+const WIDE_CARD_HEIGHT_PX = 66;
+const WIDE_CARD_PADDING = '4px 14px 6px 14px';
+
+// Fixed card height — sized so every card has room for the full 3-line
+// description with tight, deterministic padding.
+//   8  (top pad)
+// + 18 (title: 15px × 1.2)
+// +  4 (title → description gap)
+// + 42 (description: 3 × 14px)
+// +  8 (bottom pad)
+// = 80
+const CARD_HEIGHT_PX = 80;
 
 export default function CategoryGrid({
   categories,
@@ -78,7 +114,7 @@ export default function CategoryGrid({
               className="relative text-left border transition-colors overflow-visible flex flex-col items-start rounded-md"
               style={{
                 borderColor: 'var(--color-border)',
-                padding: `8px 12px 8px 12px`,
+                padding: `4px 12px 8px 12px`,
                 height: CARD_HEIGHT_PX,
               }}
             >
@@ -101,21 +137,39 @@ export default function CategoryGrid({
               {/* Title — serif, flush with the top of the card, with a small left margin
                   so it sits just to the right of the icon circle (not behind it) */}
               <p
-                className="text-[15px] m-0"
+                className="text-[16px] m-0"
                 style={{
                   fontFamily: "'DM Serif Text', serif",
                   textTransform: 'none',
-                  lineHeight: 1.2,
+                  lineHeight: 1.15,
                   color: 'var(--color-text-primary)',
                   paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 5,
                 }}
               >
                 {cat.label}
               </p>
-              {/* Description — full width, flows right after the title */}
+              {/* Description — Azeret Mono uppercase. Clamped to exactly 3
+                  lines with an ellipsis. The explicit lineHeight + maxHeight
+                  pair guarantees the text never overflows the card, even if
+                  the browser doesn't honor -webkit-line-clamp. Positioned 2px
+                  lower than before via marginTop to give more breathing room
+                  above the description text. */}
               <p
-                className="text-[9px] uppercase tracking-wider leading-snug mt-[4px]"
-                style={{ color: 'var(--color-text-tertiary)' }}
+                className="m-0 w-full uppercase tracking-wider"
+                style={{
+                  fontFamily: "'Azeret Mono', monospace",
+                  color: 'var(--color-text-tertiary)',
+                  opacity: 0.7,
+                  fontSize: `${DESC_FONT_SIZE_PX}px`,
+                  lineHeight: `${DESC_LINE_HEIGHT_PX}px`,
+                  marginTop: '6px',
+                  maxHeight: `${DESC_BLOCK_HEIGHT_PX}px`,
+                  display: '-webkit-box',
+                  WebkitLineClamp: DESC_MAX_LINES,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
               >
                 {cat.description}
               </p>
@@ -125,12 +179,9 @@ export default function CategoryGrid({
       </div>
 
       {/* Slim full-width intention card — sits below the grid, above the
-          emergency contact card. Tap opens the dedicated IntentionView for
-          view/edit. The description preview can wrap to TWO lines (line-clamp-2);
-          the tightened mt gap + tighter bottom padding + leading-tight absorb
-          the existing whitespace below the line so the card's total height is
-          essentially unchanged. A minHeight pins the 1-line state to the same
-          visual height as the emergency contact card below. */}
+          emergency contact card. Title sits at the top in normal flow,
+          description uses auto margins to center vertically in the remaining
+          space. This works for both 1-line and 2-line descriptions. */}
       {onSelectIntention && (
         <button
           type="button"
@@ -138,8 +189,8 @@ export default function CategoryGrid({
           className="relative w-full text-left border transition-colors overflow-visible flex flex-col items-start rounded-md mt-4"
           style={{
             borderColor: 'var(--color-border)',
-            padding: '4px 14px 2px 14px',
-            minHeight: '52px',
+            padding: WIDE_CARD_PADDING,
+            height: `${WIDE_CARD_HEIGHT_PX}px`,
           }}
         >
           {/* Circular escutcheon — same overhang as category cards */}
@@ -159,20 +210,37 @@ export default function CategoryGrid({
             <CompassIcon size={22} className="text-[var(--accent)]" />
           </div>
           <p
-            className="text-[15px] m-0"
+            className="text-[16px] m-0"
             style={{
               fontFamily: "'DM Serif Text', serif",
               textTransform: 'none',
-              lineHeight: 1.2,
+              lineHeight: 1.15,
               color: 'var(--color-text-primary)',
               paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 5,
             }}
           >
             My Intention
           </p>
+          {/* Auto margins center the description vertically in the remaining
+              space below the title. Works for both 1-line and 2-line cases:
+              flex distributes space equally above and below the description. */}
           <p
-            className="text-[10px] uppercase tracking-wider leading-tight mt-[10px] w-full line-clamp-2 overflow-hidden"
-            style={{ color: 'var(--color-text-tertiary)' }}
+            className="w-full text-center uppercase tracking-wider"
+            style={{
+              margin: '0',
+              marginTop: 'auto',
+              marginBottom: 'auto',
+              fontFamily: "'Azeret Mono', monospace",
+              color: 'var(--color-text-tertiary)',
+              fontSize: `${WIDE_DESC_FONT_SIZE_PX}px`,
+              lineHeight: `${WIDE_DESC_LINE_HEIGHT_PX}px`,
+              maxHeight: `${WIDE_DESC_LINE_HEIGHT_PX * 2}px`,
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
           >
             {intentionDescription}
           </p>
@@ -180,7 +248,8 @@ export default function CategoryGrid({
       )}
 
       {/* Slim full-width emergency contact card — sits below the grid.
-          Intentionally short: title + name/phone line, no description block. */}
+          Title at top, description centered vertically in the remaining space
+          using auto margins (same as intention card above). */}
       {onSelectEmergencyContact && (
         <button
           type="button"
@@ -188,7 +257,8 @@ export default function CategoryGrid({
           className="relative w-full text-left border transition-colors overflow-visible flex flex-col items-start rounded-md mt-4"
           style={{
             borderColor: 'var(--color-border)',
-            padding: '4px 14px 6px 14px',
+            padding: WIDE_CARD_PADDING,
+            height: `${WIDE_CARD_HEIGHT_PX}px`,
           }}
         >
           {/* Circular escutcheon — same overhang as category cards */}
@@ -208,11 +278,11 @@ export default function CategoryGrid({
             <PhoneIcon size={22} className="text-[var(--accent)]" />
           </div>
           <p
-            className="text-[15px] m-0"
+            className="text-[16px] m-0"
             style={{
               fontFamily: "'DM Serif Text', serif",
               textTransform: 'none',
-              lineHeight: 1.2,
+              lineHeight: 1.15,
               color: 'var(--color-text-primary)',
               paddingLeft: CIRCLE_SIZE + CIRCLE_OFFSET - 5,
             }}
@@ -220,8 +290,16 @@ export default function CategoryGrid({
             Emergency Contact
           </p>
           <p
-            className="text-[10px] uppercase tracking-wider leading-snug mt-[10px]"
-            style={{ color: 'var(--color-text-tertiary)' }}
+            className="w-full text-center truncate uppercase tracking-wider"
+            style={{
+              margin: '0',
+              marginTop: 'auto',
+              marginBottom: 'auto',
+              fontFamily: "'Azeret Mono', monospace",
+              color: 'var(--color-text-tertiary)',
+              fontSize: `${WIDE_DESC_FONT_SIZE_PX}px`,
+              lineHeight: `${WIDE_DESC_LINE_HEIGHT_PX}px`,
+            }}
           >
             {contactDescription}
           </p>

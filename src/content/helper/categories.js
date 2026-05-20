@@ -53,7 +53,7 @@ export const helperCategories = [
     phases: ['active', 'follow-up'],
     icon: 'HandIcon',
     label: 'Intense feeling',
-    description: 'Pressure or sensation in the body that demands attention',
+    description: 'Pressure or sensation in the body that demands attention.',
     expandedDescription:
       "I\u2019m feeling pressure or sensation in my body that\u2019s hard to ignore. There\u2019s tightness, trembling, heat, or buzzing energy pulling all of my attention.",
     acknowledgeText:
@@ -92,7 +92,7 @@ export const helperCategories = [
     phases: ['active', 'follow-up'],
     icon: 'EyeIcon',
     label: 'Trauma',
-    description: 'Past experiences surfacing as if they\u2019re happening now',
+    description: 'Past experiences surfacing as if they\u2019re happening now.',
     expandedDescription:
       "Something from my past is surfacing and feels like it\u2019s happening right now. I\u2019m seeing, hearing, or feeling things from another moment in my life, and my body is reacting as if it\u2019s here in the room.",
     acknowledgeText: 'Something surfaced but it isn\u2019t running the show. You\u2019re here.',
@@ -127,7 +127,7 @@ export const helperCategories = [
     phases: ['active', 'follow-up'],
     icon: 'AngryIcon',
     label: 'Resistance',
-    description: 'Something inside is pushing back against the process',
+    description: 'Something inside is pushing back against the process.',
     expandedDescription:
       "A part of me is pushing back against what\u2019s happening. I\u2019m having urgent thoughts about figuring something out or taking control, and the harder I try to surrender, the more it digs in.",
     acknowledgeText: 'Noticing resistance without it running the show. That\u2019s a step.',
@@ -163,7 +163,7 @@ export const helperCategories = [
     phases: ['active', 'follow-up'],
     icon: 'TearIcon',
     label: 'Grief',
-    description: 'A wave of sadness, loss, or old ache rising up',
+    description: 'A wave of sadness, loss, or old ache rising up.',
     expandedDescription:
       "A wave of sadness has moved through me without warning. I might be crying without understanding why, or feeling the weight of an old loss that\u2019s bigger than the moment I\u2019m in.",
     acknowledgeText: 'Something touched the surface. You don\u2019t have to chase it.',
@@ -202,7 +202,7 @@ export const helperCategories = [
     phases: ['active'],
     icon: 'EggIcon',
     label: 'Ego dissolution',
-    description: 'The sense of self feels uncertain or far away',
+    description: 'The sense of self feels uncertain or far away.',
     expandedDescription:
       "My sense of who I am feels uncertain. The boundary between me and everything else is softer than usual, and reality feels strange or far away.",
     acknowledgeText: 'Something shifted, but you\u2019re still here. That flicker is part of it.',
@@ -238,7 +238,7 @@ export const helperCategories = [
     phases: ['active'],
     icon: 'LaughIcon',
     label: 'I feel so good',
-    description: 'Energy moving through, hard to sit still or focus',
+    description: 'Energy moving through, hard to sit still or focus.',
     expandedDescription:
       "I\u2019m full of energy and I can feel it moving through me. It\u2019s hard to sit still or focus, and I\u2019m not sure if this is too much.",
     acknowledgeText: 'Noted.',
@@ -280,7 +280,7 @@ export const helperCategories = [
     phases: ['follow-up'],
     icon: 'RainCloudIcon',
     label: 'Low mood',
-    description: 'Feeling down, flat, or emotionally depleted',
+    description: 'Feeling down, flat, or emotionally depleted.',
     expandedDescription:
       "My mood has dropped since the session. I feel flat, sad, anxious, or irritable, and it\u2019s weighing on me.",
     acknowledgeText: 'You checked in, and that matters. Come back if anything shifts.',
@@ -328,7 +328,7 @@ export const helperCategories = [
     phases: ['follow-up'],
     icon: 'OrigamiIcon',
     label: 'Integration',
-    description: 'Struggling to process the experience',
+    description: 'Struggling to process the experience.',
     expandedDescription:
       "I\u2019m finding it hard to process what happened during my session, or to turn what I experienced into something useful in my daily life.",
     acknowledgeText: 'Integration takes time. There\u2019s no rush to make sense of everything right away.',

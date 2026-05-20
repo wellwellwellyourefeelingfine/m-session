@@ -7,7 +7,7 @@ import { ChevronLeftIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function HelperTopBar({ canGoBack, onBack, onClose }) {
   return (
-    <div className="flex items-start justify-between px-5 pt-2 pb-0">
+    <div className="flex items-start justify-between px-5 pt-2 pb-0" style={{ background: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
       {/* Back button */}
       <button
         type="button"
@@ -22,17 +22,14 @@ export default function HelperTopBar({ canGoBack, onBack, onClose }) {
         <ChevronLeftIcon size={20} />
       </button>
 
-      {/* Center: header + description */}
+      {/* Center: header only */}
       <div className="flex-1 text-center px-2" style={{ marginTop: '3px' }}>
         <h2
-          className="text-2xl"
-          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)', lineHeight: 1, margin: 0 }}
+          className="text-3xl"
+          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)', lineHeight: 1, margin: 0, marginTop: '14px', marginBottom: '26px' }}
         >
           What&rsquo;s happening?
         </h2>
-        <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-text-tertiary)', marginTop: '6px' }}>
-          You&rsquo;re safe. Take a moment to notice what&rsquo;s coming up for you.
-        </p>
       </div>
 
       {/* Close button */}

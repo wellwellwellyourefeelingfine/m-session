@@ -10,6 +10,7 @@
 import { useEffect, useState, lazy, Suspense } from 'react';
 import { useAppStore } from './stores/useAppStore';
 import { useAIStore } from './stores/useAIStore';
+import { detectRegion } from './utils/detectRegion';
 import AppShell from './components/layout/AppShell';
 import HomeView from './components/home/HomeView';
 import PrivacyNotice from './components/shared/PrivacyNotice';
@@ -40,6 +41,14 @@ function App() {
       setMountedTabs((prev) => ({ ...prev, [currentTab]: true }));
     }
   }, [currentTab, mountedTabs]);
+
+  // Region auto-detection on first load (helper modal regional emergency/peer support)
+  useEffect(() => {
+    const { preferences, setPreference } = useAppStore.getState();
+    if (preferences?.region == null) {
+      setPreference('region', detectRegion());
+    }
+  }, []);
 
   // AI key expiration check
   const checkKeyExpiration = useAIStore((state) => state.checkKeyExpiration);

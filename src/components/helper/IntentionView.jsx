@@ -222,6 +222,7 @@ export default function IntentionView({ isEditing, onEditToggle }) {
               placeholder="Write your intention here..."
               rows={6}
               autoFocus={isEditing}
+              autoComplete="off"
               tabIndex={isEditing ? 0 : -1}
               className="w-full py-3 px-4 border rounded-md bg-transparent
                 focus:outline-none focus:border-[var(--accent)]

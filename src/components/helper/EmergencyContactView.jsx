@@ -369,6 +369,7 @@ export default function EmergencyContactView({
           }}
           rows={3}
           placeholder={NOTES_PLACEHOLDER}
+          autoComplete="off"
           className="w-full px-3 py-2 border bg-transparent focus:outline-none transition-colors text-xs leading-relaxed resize-none"
           style={{
             borderColor: 'var(--color-border)',

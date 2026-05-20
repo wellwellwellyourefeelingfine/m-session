@@ -32,6 +32,7 @@ export const useAppStore = create(
         fontSizeAdjustment: 0, // -1 | 0 | 1 | 2 — px shift applied to body text tokens
         defaultVoiceId: 'theo', // Preferred meditation voice for offline-cached assets
         analyticsEnabled: true, // Anonymous usage counts via Plausible (opt-out in Settings)
+        region: null, // Helper modal region (null = not yet detected; auto-detected on first load)
       },
       setPreference: (key, value) => {
         set((state) => ({
@@ -77,7 +78,7 @@ export const useAppStore = create(
     }),
     {
       name: 'mdma-guide-app-state',
-      version: 2,
+      version: 3,
       partialize: (state) => {
         const { showInstallPrompt: _showInstallPrompt, previewOverlay: _previewOverlay, logoAnimationTrigger: _logoAnimationTrigger, ...rest } = state;
         return rest;
@@ -105,6 +106,14 @@ export const useAppStore = create(
           persistedState.preferences = {
             ...(persistedState.preferences || {}),
             analyticsEnabled: persistedState.preferences?.analyticsEnabled ?? true,
+          };
+        }
+        if (version < 3) {
+          // v2 → v3: introduce preferences.region for region-aware helper modal.
+          // Set null so App-level detection runs on next load.
+          persistedState.preferences = {
+            ...(persistedState.preferences || {}),
+            region: persistedState.preferences?.region ?? null,
           };
         }
         return persistedState;
