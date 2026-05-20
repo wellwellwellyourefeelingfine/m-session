@@ -137,10 +137,13 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
     setShowCompletion(false);
   }, [playback]);
 
-  // Transition from completed meditation screen → CompletionScreen
-  const handleContinueToCompletion = useCallback(() => {
-    setShowCompletion(true);
-  }, []);
+  // Transition from completed meditation screen → CompletionScreen.
+  // Two-phase: await the hook's active-leaving fade, then flip showCompletion
+  // so CompletionScreen fades in cleanly afterwards.
+  const handleContinueToCompletion = useCallback(async () => {
+    const ok = await playback.handleContinueToCompletionWithTransition();
+    if (ok) setShowCompletion(true);
+  }, [playback]);
 
   // Final completion — cleanup + advance to next module
   const handleFinalComplete = useCallback(() => {
@@ -255,11 +258,14 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
           />
         )}
 
-        {/* Active/completed state — gated on transitionStage === 'active' so
-            the loading screen finishes fading before this fades in. */}
-        {playback.hasStarted && !showCompletion && playback.transitionStage === 'active' && (
+        {/* Active/completed state — visible during 'active' and 'active-leaving'
+            (the latter applies fadeOut on Continue → Well Done). */}
+        {playback.hasStarted && !showCompletion &&
+          (playback.transitionStage === 'active' || playback.transitionStage === 'active-leaving') && (
           <div
-            className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
+            className={`flex flex-col items-center text-center w-full px-4 ${
+              playback.transitionStage === 'active-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'
+            }`}
             style={{
               alignSelf: 'stretch',
               minHeight: 'var(--meditation-page-min-height)',

@@ -408,7 +408,7 @@ export default function HelperModal() {
         <div
           className={`flex-1 px-5 pt-0 pb-6 ${
             currentStep === 'triage' || currentStep === 'emergency-contact'
-              ? 'overflow-y-auto'
+              ? 'overflow-y-auto overflow-x-hidden'
               : 'overflow-y-hidden'
           }`}
         >

@@ -76,8 +76,10 @@ export function useMeditationPlayback({
   const promptTimeMapRef = useRef([]);
   const composedDurationRef = useRef(0); // Actual physical blob duration from real byte count
 
-  // Multi-phase begin transition: 'idle' | 'idle-leaving' | 'preparing' | 'preparing-leaving' | 'active'
-  // Only driven by handleBeginWithTransition. Legacy handleStart leaves it at 'idle'.
+  // Multi-phase transition: 'idle' | 'idle-leaving' | 'preparing' | 'preparing-leaving' | 'active' | 'active-leaving'
+  // Driven by handleBeginWithTransition (idle → active) and
+  // handleContinueToCompletionWithTransition (active → active-leaving).
+  // Legacy handleStart leaves it at 'idle'.
   const [transitionStage, setTransitionStage] = useState('idle');
   const isTransitioningRef = useRef(false);
 
@@ -384,6 +386,30 @@ export function useMeditationPlayback({
     gongSound,
   ]);
 
+  // Continue → Well Done transition. Mirrors handleBeginWithTransition's
+  // idle-leaving phase: the caller awaits this, then flips its own
+  // showCompletion flag once the active block has finished fading out.
+  //
+  // Returns true on completion, false if another transition was already in
+  // flight (rapid double-click). Callers should only set showCompletion on
+  // a `true` return so a suppressed call doesn't skip past the fade.
+  //
+  // fadeMs is coupled to the CSS `.animate-fadeOut` duration (0.3s in
+  // src/index.css). Keep them in sync if either changes.
+  const handleContinueToCompletionWithTransition = useCallback(async ({
+    fadeMs = 300,
+  } = {}) => {
+    if (isTransitioningRef.current) return false;
+    isTransitioningRef.current = true;
+    try {
+      setTransitionStage('active-leaving');
+      await sleep(fadeMs);
+      return true;
+    } finally {
+      isTransitioningRef.current = false;
+    }
+  }, []);
+
   // Handlers
   const handleStart = useCallback(async () => {
     setError(null);
@@ -446,17 +472,21 @@ export function useMeditationPlayback({
     }
   }, [pauseMeditationPlayback, resumeMeditationPlayback, audio]);
 
+  // Note: we intentionally do NOT call resetMeditationPlayback() or
+  // setTransitionStage('idle') here. The module is about to unmount via
+  // ActiveView's fadeOutThenDo wrapper fade; resetting playback state mid-fade
+  // re-satisfies each module's IdleScreen render condition and flashes the
+  // idle layout through the fading Well Done page. The next meditation's
+  // startMeditationPlayback fully overwrites the slice when it begins.
   const handleComplete = useCallback(() => {
     const blobUrl = blobUrlRef.current;
     blobUrlRef.current = null;
     audio.stop();
-    resetMeditationPlayback();
-    setTransitionStage('idle');
     if (blobUrl) {
       revokeMeditationBlobUrl(blobUrl);
     }
     onComplete();
-  }, [resetMeditationPlayback, audio, onComplete]);
+  }, [audio, onComplete]);
 
   // Reset to idle state so the user can restart from scratch.
   // Same cleanup as handleSkip/handleComplete but does NOT navigate away —
@@ -596,6 +626,7 @@ export function useMeditationPlayback({
     // Handlers
     handleStart,
     handleBeginWithTransition,
+    handleContinueToCompletionWithTransition,
     handlePauseResume,
     handleComplete,
     handleSkip,

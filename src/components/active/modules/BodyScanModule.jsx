@@ -133,10 +133,13 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
     setShowCompletion(false);
   }, [playback]);
 
-  // Transition from completed meditation screen → CompletionScreen
-  const handleContinueToCompletion = useCallback(() => {
-    setShowCompletion(true);
-  }, []);
+  // Transition from completed meditation screen → CompletionScreen.
+  // Two-phase: await the hook's active-leaving fade, then flip showCompletion
+  // so CompletionScreen fades in cleanly afterwards.
+  const handleContinueToCompletion = useCallback(async () => {
+    const ok = await playback.handleContinueToCompletionWithTransition();
+    if (ok) setShowCompletion(true);
+  }, [playback]);
 
   // Final completion — cleanup + advance to next module
   const handleFinalComplete = useCallback(() => {
@@ -223,12 +226,14 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
           />
         )}
 
-        {/* Active/completed state — title, animation, paused indicator, prompt
-            display. Gated on transitionStage === 'active' so the loading screen
-            finishes fading out before this fades in (sequential, not overlapping). */}
-        {playback.hasStarted && !showCompletion && playback.transitionStage === 'active' && (
+        {/* Active/completed state — visible during 'active' and 'active-leaving'
+            (the latter applies fadeOut on Continue → Well Done). */}
+        {playback.hasStarted && !showCompletion &&
+          (playback.transitionStage === 'active' || playback.transitionStage === 'active-leaving') && (
           <div
-            className="flex flex-col items-center text-center w-full px-4 animate-fadeIn"
+            className={`flex flex-col items-center text-center w-full px-4 ${
+              playback.transitionStage === 'active-leaving' ? 'animate-fadeOut' : 'animate-fadeIn'
+            }`}
             style={{
               alignSelf: 'stretch',
               minHeight: 'var(--meditation-page-min-height)',
