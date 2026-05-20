@@ -7,7 +7,7 @@ import { ChevronLeftIcon, CircleSkipIcon } from '../shared/Icons';
 
 export default function HelperTopBar({ canGoBack, onBack, onClose }) {
   return (
-    <div className="flex items-start justify-between px-5 pt-2 pb-0" style={{ background: 'color-mix(in srgb, var(--bg-primary) 80%, transparent)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
+    <div className="flex items-start justify-between px-5 pt-2 pb-0">
       {/* Back button */}
       <button
         type="button"
