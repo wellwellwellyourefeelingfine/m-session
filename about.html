@@ -80,6 +80,7 @@
     <link rel="stylesheet" href="/shared.css" />
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
+    <link rel="stylesheet" href="/notes.css" />
 
     <script type="application/ld+json">
       {
@@ -177,6 +178,7 @@
         <div class="menu-overlay-content">
           <a href="/" class="menu-link" data-page="home">Home</a>
           <a href="/about" class="menu-link" data-page="about">About</a>
+          <a href="/notes" class="menu-link" data-page="notes">Notes</a>
           <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
           <a href="/contribute" class="menu-link" data-page="contribute"
             >Contribute</a
@@ -603,8 +605,83 @@
         </div>
       </section>
 
+      <!-- ─── LATEST NOTES ─── -->
+      <!--
+        KEEP IN SYNC: when publishing a new post in notes.html, replace the
+        OLDEST card below with the new post. The same grid lives in
+        landing-page.html.
+      -->
+      <section class="notes-previews">
+        <div class="container">
+          <div style="text-align: center">
+            <div class="section-label rv">Latest notes</div>
+            <h2 class="section-title rv rv-d1">News, notes, and updates</h2>
+            <p class="section-body rv rv-d2" style="margin: 0 auto">
+              Short pieces on what we&rsquo;re learning and the work behind
+              m-session.
+            </p>
+          </div>
+          <div class="notes-preview-grid rv rv-d3">
+            <a
+              class="notes-preview-card"
+              href="/notes#post-two-new-meditations"
+              onclick="window.plausible && plausible('notes-preview-click', { props: { post: 'two-new-meditations', location: 'about' } })"
+            >
+              <div
+                class="notes-preview-image"
+                style="background-image: url('/notes/two-new-meditations-hero.jpg')"
+                role="img"
+                aria-label="Warm amber and deep blue gradients merging in a dark field"
+              ></div>
+              <div class="notes-preview-body">
+                <div class="notes-preview-meta">May 20, 2026</div>
+                <h3 class="notes-preview-title">
+                  Two new meditations: Metta Heart and The House of Jung
+                </h3>
+                <p class="notes-preview-excerpt">
+                  Two 30-minute audio meditations for the peak phase &mdash;
+                  a somatic loving-kindness practice rooted in Buddhist metta
+                  tradition, and a Jungian guided imagery journey into the
+                  depths of the unconscious.
+                </p>
+                <span class="notes-preview-cta">Read more &rarr;</span>
+              </div>
+            </a>
+            <a
+              class="notes-preview-card"
+              href="/notes#post-why-meditation-and-mdma-mix"
+              onclick="window.plausible && plausible('notes-preview-click', { props: { post: 'why-meditation-and-mdma-mix', location: 'about' } })"
+            >
+              <div
+                class="notes-preview-image"
+                style="background-image: url('/notes/why-meditation-and-mdma-mix-hero.jpg'); background-position: center bottom;"
+                role="img"
+                aria-label="Warm rose-and-red color field with soft orange flecks and a small blue mark near the bottom"
+              ></div>
+              <div class="notes-preview-body">
+                <div class="notes-preview-meta">Apr 10, 2026</div>
+                <h3 class="notes-preview-title">Why meditation and MDMA mix</h3>
+                <p class="notes-preview-excerpt">
+                  Most people assume someone on MDMA would be too scattered to
+                  meditate. The research says the opposite &mdash; the
+                  capacities meditation depends on are not only preserved but
+                  often feel enhanced.
+                </p>
+                <span class="notes-preview-cta">Read more &rarr;</span>
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
       <!-- Open Source -->
-      <section>
+      <section
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
           <div class="prose rv">
             <h2>Open by design</h2>
@@ -638,13 +715,7 @@
       </section>
 
       <!-- Contact -->
-      <section
-        style="
-          background: var(--bg-elevated);
-          border-top: 1px solid var(--border);
-          border-bottom: 1px solid var(--border);
-        "
-      >
+      <section>
         <div class="container">
           <div class="prose rv">
             <h2>Contact</h2>
@@ -661,12 +732,24 @@
                 >feedback form</a
               >, or reach out directly at dasloops@protonmail.com.
             </p>
+            <p style="margin-top: 20px">
+              We have a presence on the following social media pages:
+              <a href="https://www.instagram.com/m_session.mdma" target="_blank" rel="noopener">Instagram</a>
+              and <a href="https://x.com/m_session_mdma" target="_blank" rel="noopener">Twitter X</a>.
+            </p>
           </div>
         </div>
       </section>
 
       <!-- CTA -->
-      <div class="page-cta rv">
+      <div
+        class="page-cta rv"
+        style="
+          background: var(--bg-elevated);
+          border-top: 1px solid var(--border);
+          border-bottom: 1px solid var(--border);
+        "
+      >
         <div class="container">
           <div class="section-label">Ready to begin</div>
           <h2 class="section-title">Your session, your way</h2>
@@ -693,6 +776,7 @@
         <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
         <nav class="footer-links" aria-label="Footer">
           <a href="/about">About</a>
+          <a href="/notes">Notes</a>
           <a href="/faq">FAQ &amp; Safety</a>
           <a href="/contribute">Contribute</a>
           <a href="/privacy">Privacy</a>
@@ -703,6 +787,14 @@
             >GitHub</a
           >
           <a href="/app" target="_blank" rel="noopener">Launch App</a>
+          <div class="footer-social">
+            <a href="https://www.instagram.com/m_session.mdma" target="_blank" rel="noopener" aria-label="Follow m-session on Instagram" title="Instagram">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-instagram"></use></svg>
+            </a>
+            <a href="https://x.com/m_session_mdma" target="_blank" rel="noopener" aria-label="Follow m-session on Twitter X" title="Twitter X">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-twitter"></use></svg>
+            </a>
+          </div>
         </nav>
       </div>
     </footer>

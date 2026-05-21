@@ -4,10 +4,21 @@
  */
 
 import { ChevronLeftIcon, CircleSkipIcon } from '../shared/Icons';
+import { useAppStore } from '../../stores/useAppStore';
 
 export default function HelperTopBar({ canGoBack, onBack, onClose }) {
+  const glassEffect = useAppStore((s) => s.preferences?.glassEffect ?? true);
   return (
-    <div className="flex items-start justify-between px-5 pt-2 pb-0">
+    <div
+      className="flex items-start justify-between px-5 pt-2 pb-0"
+      style={{
+        background: glassEffect
+          ? 'color-mix(in srgb, var(--bg-primary) 60%, transparent)'
+          : 'var(--bg-primary)',
+        backdropFilter: glassEffect ? 'blur(24px)' : 'none',
+        WebkitBackdropFilter: glassEffect ? 'blur(24px)' : 'none',
+      }}
+    >
       {/* Back button */}
       <button
         type="button"
@@ -26,7 +37,7 @@ export default function HelperTopBar({ canGoBack, onBack, onClose }) {
       <div className="flex-1 text-center px-2" style={{ marginTop: '3px' }}>
         <h2
           className="text-3xl"
-          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)', lineHeight: 1, margin: 0, marginTop: '14px', marginBottom: '26px' }}
+          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)', lineHeight: 1, margin: 0, marginTop: '14px', marginBottom: '8px' }}
         >
           What&rsquo;s happening?
         </h2>

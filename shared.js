@@ -130,7 +130,7 @@ var __ms = {};
   var isClosing = false;
   var CLOSE_DURATION = 700;
 
-  var pageMap = { '/': 'home', '/about': 'about', '/faq': 'faq', '/contribute': 'contribute', '/privacy': 'privacy' };
+  var pageMap = { '/': 'home', '/about': 'about', '/notes': 'notes', '/faq': 'faq', '/contribute': 'contribute', '/privacy': 'privacy' };
 
   __ms.updateMenuActive = function () {
     var path = window.location.pathname.replace(/\/index\.html$/, '/').replace(/\.html$/, '').replace(/\/$/, '') || '/';

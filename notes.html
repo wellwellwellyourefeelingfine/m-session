@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en" class="light" style="background:#f2f0eb">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>if(localStorage.getItem('m-session-theme')==='dark'){document.documentElement.style.background='#0a0a0c';document.documentElement.classList.remove('light')}</script>
+    <title>Notes — m-session</title>
+    <meta name="description" content="News, updates, and behind-the-scenes notes from the m-session project. Research, integration, and the work of building a guided MDMA session companion." />
+    <link rel="canonical" href="https://m-session.com/notes" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://m-session.com/notes" />
+    <meta property="og:title" content="Notes — m-session" />
+    <meta property="og:description" content="News, updates, and notes from building m-session." />
+    <meta property="og:image" content="https://m-session.com/og-image.png" />
+    <meta property="og:image:alt" content="m-session — Guided support for intentional MDMA experiences" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="m-session" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="robots" content="index, follow" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Notes — m-session" />
+    <meta name="twitter:description" content="News, updates, and notes from building m-session." />
+    <meta name="twitter:image" content="https://m-session.com/og-image.png" />
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-light-32x32.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-light-16x16.png" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-dark-32x32.png" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-dark-16x16.png" media="(prefers-color-scheme: dark)" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500&family=DM+Serif+Text&family=JetBrains+Mono:wght@500&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="/shared.css" />
+    <link rel="stylesheet" href="/landing.css" />
+    <link rel="stylesheet" href="/pages.css" />
+    <link rel="stylesheet" href="/notes.css" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Blog",
+      "name": "m-session notes",
+      "url": "https://m-session.com/notes",
+      "description": "News, updates, and behind-the-scenes notes from building m-session.",
+      "publisher": { "@type": "Person", "name": "dasloops" }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://m-session.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Notes" }
+      ]
+    }
+    </script>
+
+    <!-- Privacy-friendly analytics by Plausible -->
+    <script async src="https://plausible.io/js/pa-DzI0Rd9uRCiiIXpXBD8gl.js"></script>
+    <script>
+      window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+      plausible.init()
+    </script>
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <a href="/" class="logo" id="logo">
+          <span class="logo-m">M</span><span class="logo-collapse" id="logo-dma">DMA</span><span class="logo-hyphen" id="logo-hyphen">-</span><span class="logo-session">SESSION</span>
+        </a>
+        <div class="header-nav">
+          <a href="/app" class="btn btn-primary" style="padding: 8px 22px" target="_blank" rel="noopener">Launch App &rarr;</a>
+          <div class="theme-toggle" id="theme-toggle" role="button" aria-label="Toggle light and dark mode" tabindex="0">
+            <div class="theme-toggle-thumb"></div>
+          </div>
+          <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation menu" aria-expanded="false">
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+            <span class="menu-toggle-line"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <nav class="menu-overlay" id="menu-overlay" aria-hidden="true">
+      <div class="menu-overlay-backdrop"></div>
+      <div class="menu-overlay-panel">
+        <div class="menu-overlay-content">
+          <a href="/" class="menu-link" data-page="home">Home</a>
+          <a href="/about" class="menu-link" data-page="about">About</a>
+          <a href="/notes" class="menu-link" data-page="notes">Notes</a>
+          <a href="/faq" class="menu-link" data-page="faq">FAQ &amp; Safety</a>
+          <a href="/contribute" class="menu-link" data-page="contribute">Contribute</a>
+          <a href="/privacy" class="menu-link" data-page="privacy">Privacy</a>
+        </div>
+        <div class="menu-overlay-footer">
+          <a href="/app" class="btn btn-primary" style="padding: 12px 28px" target="_blank" rel="noopener">Launch App &rarr;</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <!-- Page hero -->
+      <section class="notes-hero">
+        <div class="container">
+          <div class="notes-hero-eyebrow rv visible">Notes</div>
+          <h1 class="notes-hero-title rv visible rv-d1">m-session notes</h1>
+          <p class="notes-hero-tagline rv visible rv-d2">
+            News, updates, and things we&rsquo;ve learned while building
+            m-session.
+          </p>
+        </div>
+      </section>
+
+      <!-- Mobile archive (sticky button + collapsible panel) -->
+      <div class="notes-archive-mobile">
+        <button
+          type="button"
+          class="notes-archive-mobile-btn"
+          id="notes-archive-mobile-btn"
+          aria-expanded="false"
+          aria-controls="notes-archive-mobile-panel"
+        >
+          <span>Archive</span>
+          <svg
+            class="notes-archive-mobile-chevron"
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="3,5 6,8 9,5"></polyline>
+          </svg>
+        </button>
+        <div
+          class="notes-archive-mobile-panel"
+          id="notes-archive-mobile-panel"
+        >
+          <div class="notes-archive-mobile-panel-inner">
+            <ol class="notes-archive-list">
+              <li>
+                <a href="#post-two-new-meditations" data-slug="two-new-meditations">
+                  <span class="date">May 20, 2026</span>
+                  <span class="title">Two new meditations: Metta Heart and The House of Jung</span>
+                </a>
+              </li>
+              <li>
+                <a href="#post-why-meditation-and-mdma-mix" data-slug="why-meditation-and-mdma-mix">
+                  <span class="date">Apr 10, 2026</span>
+                  <span class="title">Why meditation and MDMA mix</span>
+                </a>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two-column layout: sticky sidebar + posts stream -->
+      <div class="notes-layout">
+        <aside
+          class="notes-archive"
+          aria-label="Notes archive"
+        >
+          <div class="notes-archive-title">Archive</div>
+          <ol class="notes-archive-list">
+            <li>
+              <a href="#post-two-new-meditations" data-slug="two-new-meditations">
+                <span class="date">May 20, 2026</span>
+                <span class="title">Two new meditations: Metta Heart and The House of Jung</span>
+              </a>
+            </li>
+            <li>
+              <a href="#post-why-meditation-and-mdma-mix" data-slug="why-meditation-and-mdma-mix">
+                <span class="date">Apr 10, 2026</span>
+                <span class="title">Why meditation and MDMA mix</span>
+              </a>
+            </li>
+          </ol>
+        </aside>
+
+        <div class="notes-posts">
+          <!--
+            Each post lives in this stream as a self-contained <article>.
+            When publishing a new post:
+              1. Add the new <article> at the TOP of this list.
+              2. Add a matching <li> to BOTH archive lists above (desktop + mobile).
+              3. Drop a hero image into /public/notes/{slug}-hero.{jpg,webp,svg}.
+              4. In landing-page.html and about.html, replace the OLDEST of the
+                 three preview cards with the new post.
+              5. Bump <lastmod> for /notes in public/sitemap.xml.
+          -->
+
+          <article
+            id="post-two-new-meditations"
+            class="notes-article"
+            aria-labelledby="post-two-new-meditations-title"
+          >
+            <img
+              class="notes-article-hero"
+              src="/notes/two-new-meditations-hero.jpg"
+              alt="Warm amber and deep blue gradients merging in a dark field"
+              loading="eager"
+            />
+            <div class="notes-meta">May 20, 2026 &middot; 5 min read</div>
+            <h2 class="notes-article-title" id="post-two-new-meditations-title">
+              Two new meditations: Metta Heart and The House of Jung
+            </h2>
+            <div class="prose">
+              <p>
+                We recently added two long-form guided meditations to the
+                m-session library. Both are around 30 minutes, audio-guided
+                with two voice options, and designed for the peak phase of a
+                session. They represent two very different approaches to inner
+                work, and they&rsquo;re both among the deepest activities in
+                the app.
+              </p>
+
+              <h3>Metta Heart</h3>
+              <p>
+                Metta, often translated as loving-kindness, is one of the
+                oldest meditation practices in Buddhist tradition. The classical
+                Theravada approach, codified in Buddhaghosa&rsquo;s
+                Visuddhimagga in the 5th century, progresses through categories
+                of people: first yourself, then a benefactor, a friend, a
+                neutral person, a difficult person, and finally all beings. You
+                silently repeat phrases like &ldquo;may you be happy, may you
+                be free from suffering&rdquo; at each stage, gradually expanding
+                the circle of who you&rsquo;re willing to wish well.
+              </p>
+              <p>
+                Metta Heart draws on this tradition but synthesizes it with two
+                other streams. The first is somatic. Rather than treating metta
+                as a purely mental intention, the meditation anchors it in the
+                body. You guide the breath into the heart center, feel for
+                whatever warmth or sensation is there, and let it radiate
+                physically through the chest, the limbs, the skin. Under MDMA,
+                where the body is already unusually vivid and available, this
+                somatic dimension makes the practice tangible in a way that
+                purely phrase-based metta sometimes isn&rsquo;t. The second
+                stream is contemplative and non-dual. After the traditional
+                progression from self to another to all beings, the meditation
+                moves into territory that most loving-kindness practices
+                don&rsquo;t enter: dissolving the boundary between sender and
+                receiver. The one who is offering love and the love itself
+                become harder to distinguish. This is where the meditation gets
+                genuinely deep, and where MDMA&rsquo;s capacity to thin the
+                sense of a separate self meets contemplative ground that
+                normally takes years of practice to reach.
+              </p>
+              <p>
+                The phrases we use are &ldquo;May I be well. May I feel deep
+                love. May I be filled with light.&rdquo; That last one may seem
+                a bit unusual or nonsensical (what does it actually mean to be
+                filled with light?), but this wording is drawing on ideas of
+                Rob Burbea and other Jhana practitioners who use imagery to make
+                it easier for somatic sensations to arise &mdash; the feeling
+                of Piti in the body. The meditation makes clear that these are
+                seeds, not scripture, and if different words carry more meaning,
+                you&rsquo;re encouraged to use those.
+              </p>
+
+              <h3>The House of Jung</h3>
+              <p>
+                Carl Jung believed the unconscious communicates through images,
+                not arguments. His concept of archetypes &mdash; recurring
+                symbolic patterns that appear across cultures and throughout
+                human history &mdash; was rooted in the observation that the
+                psyche organizes itself around certain fundamental structures:
+                the shadow (what we&rsquo;ve disowned), the anima or animus
+                (the contrasexual dimension of the self), the wise figure, the
+                descent and return. Jung&rsquo;s method of active imagination
+                invited people to engage these images directly, to enter a kind
+                of waking dream and let the unconscious populate it with
+                whatever needed to be seen.
+              </p>
+              <p>
+                Hanscarl Leuner, a German psychiatrist working at the University
+                of G&ouml;ttingen in the 1950s, took this idea further. He
+                developed a clinical method he called Psycholytic Therapy,
+                combining guided mental imagery with low-dose hallucinogens to
+                help patients access preconscious material that talk therapy
+                alone couldn&rsquo;t reach. He founded the European Medical
+                Society for Psycholytic Therapy in 1961 and published
+                extensively on the patterns he observed: that when you give the
+                unconscious a narrative scaffold and reduce the mind&rsquo;s
+                usual defenses, the material that emerges is remarkably
+                consistent and therapeutically meaningful. After hallucinogens
+                were prohibited across Europe, Leuner adapted his approach into
+                what he called Guided Affective Imagery, a non-pharmacological
+                method that preserved the same principles. You provide the
+                architecture of a scene, and the patient&rsquo;s unconscious
+                fills in every significant detail.
+              </p>
+              <p>
+                The House of Jung is built directly on this lineage. It&rsquo;s
+                a complete guided imagery journey: arrival at a house on the
+                coast at dusk, exploration of its rooms, the discovery of a
+                childhood bedroom, a hidden door, a spiral descent into the
+                depths beneath the house, an encounter with a shadowy figure,
+                an offering, and a return through a renewed greenhouse to dawn
+                over the ocean. The meditation doesn&rsquo;t tell you what the
+                house looks like, what the figure is, or what you feel. It
+                provides the scaffolding and trusts the unconscious to do what
+                it does. Under MDMA, where the fear response that normally
+                censors unconscious material is softened, this projective
+                capacity is heightened. People see things they wouldn&rsquo;t
+                ordinarily let themselves see, and they can stay with what they
+                find rather than flinching away. The descent-and-return
+                structure maps to what Jung called individuation: meeting the
+                parts of yourself that have been kept underground, offering them
+                something, and carrying what you&rsquo;ve found back into the
+                light.
+              </p>
+
+              <p>
+                Both meditations are available now in the module library. If you
+                try either of them during a session, we&rsquo;d genuinely like
+                to hear what the experience was like.
+              </p>
+            </div>
+          </article>
+
+          <article
+            id="post-why-meditation-and-mdma-mix"
+            class="notes-article"
+            aria-labelledby="post-why-meditation-and-mdma-mix-title"
+          >
+            <img
+              class="notes-article-hero"
+              src="/notes/why-meditation-and-mdma-mix-hero.jpg"
+              alt="Warm rose-and-red color field with soft orange flecks and a small blue mark near the bottom"
+              loading="lazy"
+              style="object-position: center bottom;"
+            />
+            <div class="notes-meta">Apr 10, 2026 &middot; 4 min read</div>
+            <h2 class="notes-article-title" id="post-why-meditation-and-mdma-mix-title">
+              Why meditation and MDMA mix
+            </h2>
+            <div class="prose">
+              <p>
+                When I tell people I&rsquo;m building a guided meditation app
+                for MDMA sessions, I can usually see the confusion before they
+                say anything. The assumption is that someone on MDMA would be
+                too high to follow a meditation. That they&rsquo;d be
+                hallucinating, or too scattered, or too far gone to do anything
+                structured.
+              </p>
+              <p>
+                It&rsquo;s a reasonable assumption if you think of MDMA as a
+                classical psychedelic. But most would actually put MDMA into a
+                category of its own. Some refer to it as an empathogen, a
+                portmanteau meaning &ldquo;to generate empathy,&rdquo; and
+                others as an entactogen, derived from the Latin
+                <em>entacto</em> meaning to touch something inside or interior
+                to the self. It doesn&rsquo;t dissolve your sense of self or
+                warp your perception of reality. Most people who take it at a
+                therapeutic dose report the opposite: that their thinking
+                becomes clearer, not cloudier. That they can see themselves and
+                their lives with a kind of honest, undefended lucidity that is
+                normally very hard to access.
+              </p>
+              <p>
+                The research backs this up. A 2024 cross-over study in the
+                American Journal of Psychiatry compared MDMA directly against
+                LSD and found that cognitive and perceptual lucidity remain
+                fully intact under MDMA. A meta-analysis the same year
+                confirmed the pattern: psychedelics impair attention and
+                executive function during use, while MDMA leaves both
+                unaffected. The capacities that meditation depends on &mdash;
+                sustained attention, the ability to follow instructions, honest
+                self-observation &mdash; are not only preserved under MDMA but
+                often feel enhanced.
+              </p>
+              <p>
+                That combination of clarity and emotional openness is what makes
+                the pairing so effective. The body becomes more available.
+                Tension you didn&rsquo;t know you were carrying becomes
+                obvious. The felt sense &mdash; a concept from Gendlin&rsquo;s
+                Focusing that many people struggle to locate sober &mdash;
+                often becomes immediately accessible. At the same time, the
+                defensive filter that usually intercepts difficult material
+                before you can really look at it quiets down. The MAPS
+                treatment manual describes this as an &ldquo;internal awareness
+                that even painful feelings that arise are an important part of
+                the therapeutic process.&rdquo; Meditation provides the
+                container for that awareness. It gives the openness a direction
+                rather than letting it dissipate as a pleasant but formless
+                feeling.
+              </p>
+              <p>
+                There&rsquo;s also a specific overlap between loving-kindness
+                meditation and MDMA&rsquo;s empathogenic effects, with recent
+                papers in the Journal of Psychedelic Studies (2025) and
+                Pharmacological Reports (2023) both pointing to shared
+                mechanisms around empathy and self-compassion. The warmth that
+                metta practitioners spend years learning to cultivate often
+                arrives within minutes under MDMA. The meditation gives that
+                warmth somewhere to go and builds that &ldquo;muscle&rdquo; to
+                make it more easily accessible.
+              </p>
+              <p>
+                This convergence is central to how m-session is built. The
+                guided meditations in the app are designed for a state where the
+                body and mind are unusually receptive, and they form the
+                backbone of the session experience. The research on this synergy
+                is still early, but the foundation is strong and the lived
+                experience of people who have combined the two consistently
+                points in the same direction.
+              </p>
+              <p>
+                My own experience is that MDMA allows me to really slow down and
+                experience moment by moment what is most important to me,
+                whether that&rsquo;s feeling love, feeling something in my body,
+                or going deeper into my mind. I wouldn&rsquo;t describe it as
+                being high. More as being more in touch. Meditation is the
+                practice that helps me stay there.
+              </p>
+              <p>&mdash;dasloops</p>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Floating seek arrows (always rendered; idle/active state is JS-driven) -->
+    <div class="notes-seek" aria-label="Post navigation">
+      <button
+        type="button"
+        class="notes-seek-up"
+        aria-label="Scroll to newest post"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="3,7 6,4 9,7"></polyline>
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="notes-seek-down"
+        aria-label="Scroll to older post"
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 12 12"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <polyline points="3,5 6,8 9,5"></polyline>
+        </svg>
+      </button>
+    </div>
+
+    <footer>
+      <div class="container">
+        <div class="footer-text">m-session &middot; AGPL-3.0 &middot; 2026</div>
+        <nav class="footer-links" aria-label="Footer">
+          <a href="/about">About</a>
+          <a href="/notes">Notes</a>
+          <a href="/faq">FAQ &amp; Safety</a>
+          <a href="/contribute">Contribute</a>
+          <a href="/privacy">Privacy</a>
+          <a href="https://github.com/wellwellwellyourefeelingfine/m-session" target="_blank" rel="noopener">GitHub</a>
+          <a href="/app" target="_blank" rel="noopener">Launch App</a>
+          <div class="footer-social">
+            <a href="https://www.instagram.com/m_session.mdma" target="_blank" rel="noopener" aria-label="Follow m-session on Instagram" title="Instagram">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-instagram"></use></svg>
+            </a>
+            <a href="https://x.com/m_session_mdma" target="_blank" rel="noopener" aria-label="Follow m-session on Twitter X" title="Twitter X">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-twitter"></use></svg>
+            </a>
+          </div>
+        </nav>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script>
+      // ═══════════════════════════════════════
+      // NOTES — active-post highlighting + seek arrows + mobile dropdown
+      // ═══════════════════════════════════════
+      (function () {
+        var articles = Array.from(document.querySelectorAll('.notes-article'));
+        if (!articles.length) return;
+
+        var archiveLinks = Array.from(
+          document.querySelectorAll(
+            '.notes-archive .notes-archive-list a, .notes-archive-mobile-panel .notes-archive-list a'
+          )
+        );
+        var upBtn = document.querySelector('.notes-seek-up');
+        var downBtn = document.querySelector('.notes-seek-down');
+        var mobileBtn = document.getElementById('notes-archive-mobile-btn');
+        var mobilePanel = document.getElementById('notes-archive-mobile-panel');
+
+        function track(event, props) {
+          if (window.plausible) {
+            if (props) window.plausible(event, { props: props });
+            else window.plausible(event);
+          }
+        }
+
+        // Active-post highlight via IntersectionObserver.
+        // rootMargin pulls the "active band" to the top third of the viewport.
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              var slug = e.target.id.replace(/^post-/, '');
+              archiveLinks.forEach(function (a) {
+                a.classList.toggle('active', a.dataset.slug === slug);
+              });
+            });
+            updateSeekState();
+          },
+          { rootMargin: '-15% 0px -65% 0px' }
+        );
+        articles.forEach(function (a) {
+          io.observe(a);
+        });
+
+        // Which article is currently nearest the top of the viewport?
+        function currentIndex() {
+          for (var i = articles.length - 1; i >= 0; i--) {
+            if (articles[i].getBoundingClientRect().top < 120) return i;
+          }
+          return 0;
+        }
+
+        function updateSeekState() {
+          var i = currentIndex();
+          var hasDown = i < articles.length - 1;
+          var hasUp = i > 0;
+          if (downBtn) {
+            downBtn.classList.toggle('active', hasDown);
+            downBtn.disabled = !hasDown;
+          }
+          if (upBtn) {
+            upBtn.classList.toggle('active', hasUp);
+            upBtn.disabled = !hasUp;
+          }
+        }
+
+        if (downBtn) {
+          downBtn.addEventListener('click', function () {
+            var next = articles[currentIndex() + 1];
+            if (!next) return;
+            next.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            track('notes-arrow-click', { direction: 'down' });
+          });
+        }
+        if (upBtn) {
+          upBtn.addEventListener('click', function () {
+            articles[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            track('notes-arrow-click', { direction: 'up' });
+          });
+        }
+
+        // Mobile dropdown
+        if (mobileBtn && mobilePanel) {
+          mobileBtn.addEventListener('click', function () {
+            var willOpen = !mobilePanel.classList.contains('open');
+            mobilePanel.classList.toggle('open', willOpen);
+            mobileBtn.classList.toggle('open', willOpen);
+            mobileBtn.setAttribute('aria-expanded', String(willOpen));
+            track('notes-mobile-archive-toggle', {
+              state: willOpen ? 'open' : 'closed',
+            });
+          });
+          mobilePanel.querySelectorAll('a').forEach(function (a) {
+            a.addEventListener('click', function () {
+              mobilePanel.classList.remove('open');
+              mobileBtn.classList.remove('open');
+              mobileBtn.setAttribute('aria-expanded', 'false');
+            });
+          });
+        }
+
+        // Archive click tracking (both desktop sidebar and mobile dropdown)
+        archiveLinks.forEach(function (a) {
+          a.addEventListener('click', function () {
+            track('notes-archive-click', { post: a.dataset.slug || 'unknown' });
+          });
+        });
+
+        // Honor a /notes#post-slug deep link with a small smoothing delay.
+        if (
+          window.location.hash &&
+          document.querySelector(window.location.hash)
+        ) {
+          setTimeout(function () {
+            var t = document.querySelector(window.location.hash);
+            if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 60);
+        }
+
+        updateSeekState();
+        window.addEventListener('scroll', updateSeekState, { passive: true });
+      })();
+    </script>
+  </body>
+</html>

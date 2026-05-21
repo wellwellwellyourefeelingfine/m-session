@@ -6,29 +6,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { getModuleById, CATEGORY_ICONS, MODULE_ICONS, FRAMEWORKS } from '../../content/modules';
-import { SparkleIcon, CompassIcon, WavesIcon, BoatIcon, NotebookPenIcon, LeafIcon, MusicIcon, HeartHandshakeIcon, SnailIcon, ClockIcon, CircleXIcon, CirclePlusIcon, CircleSkipIcon, StarIcon, FireIcon } from '../shared/Icons';
+import { getModuleById, FRAMEWORKS } from '../../content/modules';
+import { CircleXIcon, CirclePlusIcon, CircleSkipIcon, StarIcon, FireIcon } from '../shared/Icons';
 import { useAppStore } from '../../stores/useAppStore';
-
-const ICON_MAP = {
-  sparkle: SparkleIcon,
-  compass: CompassIcon,
-  waves: WavesIcon,
-  boat: BoatIcon,
-  'notebook-pen': NotebookPenIcon,
-  leaf: LeafIcon,
-  music: MusicIcon,
-  'heart-handshake': HeartHandshakeIcon,
-  snail: SnailIcon,
-  clock: ClockIcon,
-  fire: FireIcon,
-};
-
-function getModuleIcon(libraryId, category) {
-  if (libraryId && MODULE_ICONS[libraryId]) return ICON_MAP[MODULE_ICONS[libraryId]] || SparkleIcon;
-  if (category && CATEGORY_ICONS[category]) return ICON_MAP[CATEGORY_ICONS[category]] || SparkleIcon;
-  return SparkleIcon;
-}
 
 // Generate duration steps if not provided (5-minute increments)
 function generateDurationSteps(min, max) {
@@ -242,14 +222,6 @@ export default function ModuleDetailModal({
                 </button>
               )}
             </div>
-            {(() => {
-              const Icon = getModuleIcon(module.libraryId, libraryModule?.category);
-              return (
-                <div className="mt-2 mb-1">
-                  <Icon size={40} className="text-[var(--accent)]" />
-                </div>
-              );
-            })()}
           </div>
         )}
 

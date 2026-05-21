@@ -29,6 +29,7 @@ html, body {
 :root {
   --bg: #0a0a0c;
   --bg-elevated: #111114;
+  --bg-elevated-rgb: 17, 17, 20;
   --bg-surface: #17171b;
   --bg-hover: #1e1e23;
   --text-primary: #e8e6e1;
@@ -62,6 +63,7 @@ html, body {
 html.light {
   --bg: #f2f0eb;
   --bg-elevated: #e9e7e2;
+  --bg-elevated-rgb: 233, 231, 226;
   --bg-surface: #dfddd8;
   --bg-hover: #d6d4cf;
   --text-primary: #2a2a28;
@@ -397,9 +399,28 @@ footer .container {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   transition: color 0.3s;
+  white-space: nowrap;
 }
 .footer-links a:hover {
   color: var(--text-primary);
+}
+.footer-social {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+}
+.footer-social a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  transition: color 0.3s;
+}
+.footer-social a:hover {
+  color: var(--accent);
+}
+.footer-social svg {
+  display: block;
 }
 
 /* ═══════════════════════════════════════════
@@ -716,9 +737,25 @@ body.page-leaving .page-transition-wrap {
     padding: 6px 14px !important;
     font-size: 10px;
   }
+  footer {
+    padding: 24px 0 max(28px, env(safe-area-inset-bottom));
+  }
   footer .container {
     flex-direction: column;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
+    gap: 18px;
+  }
+  .footer-links {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    column-gap: 18px;
+    row-gap: 12px;
+    justify-content: start;
+    width: 100%;
+  }
+  .footer-social {
+    margin-left: 0;
     gap: 12px;
   }
   .menu-overlay-panel {

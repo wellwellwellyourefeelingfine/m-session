@@ -120,5 +120,17 @@
     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
   </symbol>
 
+  <!-- Instagram (Official Style) -->
+  <symbol id="icon-instagram" viewBox="0 0 24 24" fill="currentColor">
+    <rect x="2" y="2" width="20" height="20" rx="4.318" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/>
+  </symbol>
+
+  <!-- Twitter X (Official Style) -->
+  <symbol id="icon-twitter" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.207-6.8-5.95 6.8H2.422l7.723-8.835L1.248 2.25h6.886l4.713 6.231 5.375-6.231zM17.15 18.75h1.833L5.75 3.75H3.75L17.15 18.75z"/>
+  </symbol>
+
 </svg>
 

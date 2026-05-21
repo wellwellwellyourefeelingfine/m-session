@@ -35,6 +35,7 @@ For an overview of the project, see the root [README.md](../README.md).
 | [decisions](decisions.md) | Architecture decision rationale |
 | [timer-and-wake-lock](timer-and-wake-lock.md) | PWA timer strategy and wake lock usage |
 | [bundle-and-limits](bundle-and-limits.md) | Bundle size guidelines and current limitations |
+| [notes](notes.md) | Marketing-site notes: how posts are stored, hero images, publishing steps, build-pipeline gotcha |
 
 ---
 

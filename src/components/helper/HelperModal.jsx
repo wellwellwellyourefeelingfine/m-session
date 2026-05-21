@@ -383,37 +383,35 @@ export default function HelperModal() {
 
       {/* Panel — slides down from above, fully opaque the entire time */}
       <div
-        className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[800px] bg-[var(--bg-primary)] rounded-b-2xl flex flex-col overflow-hidden ${isClosing ? 'animate-slideUpOut' : 'animate-slideDownIn'}`}
+        className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[640px] bg-[var(--bg-primary)] rounded-b-2xl flex flex-col overflow-hidden ${isClosing ? 'animate-slideUpOut' : 'animate-slideDownIn'}`}
         style={{
           height: modalHeightCss,
           paddingTop: 'env(safe-area-inset-top, 0px)',
           transition: 'height 350ms cubic-bezier(0.65, 0, 0.35, 1)',
         }}
       >
-        {/* Top bar — back button, header, close button */}
-        <div style={{ marginBottom: '-2px' }}>
-          <HelperTopBar
-            canGoBack={stepHistory.length > 0 || (currentStep === 'triage' && hasRatedInTriage)}
-            onBack={handleBack}
-            onClose={handleClose}
-          />
-        </div>
-
-        {/* Content area — scroll is enabled only on views where it's actually
-            needed (triage and emergency-contact). The initial category grid
-            and pre-session content are sized to fit exactly, so scroll is
-            disabled there to prevent the bouncy "jiggle room" feeling.
-            pt-0 keeps the gap between the header subtitle and the content
-            below it as tight as possible. */}
+        {/* Scroll container — holds the sticky top bar and the body content.
+            Scroll is enabled only on views where it's actually needed (triage
+            and emergency-contact); other views are sized to fit exactly so
+            scroll is disabled to prevent the bouncy "jiggle room" feeling.
+            The sticky top bar overlays scrolled content (real glass effect)
+            rather than sitting above it as a flex sibling. */}
         <div
-          className={`flex-1 px-5 pt-0 pb-6 ${
+          className={`flex-1 pb-6 ${
             currentStep === 'triage' || currentStep === 'emergency-contact'
               ? 'overflow-y-auto overflow-x-hidden'
               : 'overflow-y-hidden'
           }`}
         >
+          <div className="sticky top-0 z-10" style={{ marginBottom: '16px' }}>
+            <HelperTopBar
+              canGoBack={stepHistory.length > 0 || (currentStep === 'triage' && hasRatedInTriage)}
+              onBack={handleBack}
+              onClose={handleClose}
+            />
+          </div>
           <div
-            className="transition-opacity duration-200"
+            className="px-5 transition-opacity duration-200"
             style={{ opacity: isContentVisible ? 1 : 0 }}
           >
             {renderContent()}
