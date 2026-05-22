@@ -10,8 +10,9 @@ export default function HelperTopBar({ canGoBack, onBack, onClose }) {
   const glassEffect = useAppStore((s) => s.preferences?.glassEffect ?? true);
   return (
     <div
-      className="flex items-start justify-between px-5 pt-2 pb-0"
+      className="flex items-start justify-between px-5 pb-0"
       style={{
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)',
         background: glassEffect
           ? 'color-mix(in srgb, var(--bg-primary) 60%, transparent)'
           : 'var(--bg-primary)',

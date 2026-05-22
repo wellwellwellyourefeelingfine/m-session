@@ -386,7 +386,6 @@ export default function HelperModal() {
         className={`absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[640px] bg-[var(--bg-primary)] rounded-b-2xl flex flex-col overflow-hidden ${isClosing ? 'animate-slideUpOut' : 'animate-slideDownIn'}`}
         style={{
           height: modalHeightCss,
-          paddingTop: 'env(safe-area-inset-top, 0px)',
           transition: 'height 350ms cubic-bezier(0.65, 0, 0.35, 1)',
         }}
       >
