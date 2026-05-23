@@ -186,6 +186,7 @@ export default function HelperModal() {
   // runner handles whether the category has a step tree or is a placeholder).
   // No journal entry is created here — entries are created on action only.
   const handleCategorySelect = useCallback((category) => {
+    track('helper-category-click', { category: category.id });
     setSelectedCategory(category);
     setHasRatedInTriage(false);
     pushStep('triage');
@@ -258,11 +259,13 @@ export default function HelperModal() {
 
   // Emergency contact card on the initial step — pushes to the dedicated view/edit page.
   const handleEmergencyContactSelect = useCallback(() => {
+    track('helper-category-click', { category: 'emergency-contact' });
     pushStep('emergency-contact');
   }, [pushStep]);
 
   // Intention card on the initial step — pushes to the dedicated view/edit page.
   const handleIntentionSelect = useCallback(() => {
+    track('helper-category-click', { category: 'my-intention' });
     pushStep('intention');
   }, [pushStep]);
 

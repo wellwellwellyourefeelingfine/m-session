@@ -7,6 +7,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { useToolsStore } from '../../stores/useToolsStore';
+import { track } from '../../services/analyticsService';
 import ToolPanel from './ToolPanel';
 import DosageTool from './DosageTool';
 import ResourcesTool from './ResourcesTool';
@@ -39,7 +40,9 @@ export default function ToolsView() {
   }, []);
 
   const handleToolClick = (toolId) => {
+    const willOpen = !openTools.includes(toolId);
     toggleTool(toolId);
+    if (willOpen) track('tool-used', { tool: toolId });
   };
 
   return (

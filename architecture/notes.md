@@ -17,7 +17,7 @@ mdma-session-guide/
 ├── about.html                  ← same preview cards as landing
 ├── public/sitemap.xml          ← lists /notes with a lastmod date
 ├── shared.js                   ← /notes registered in pageMap for PJAX
-└── privacy.html                ← documents the 4 notes-specific Plausible events
+└── privacy.html                ← documents the Plausible events (see analytics.md)
 ```
 
 The marketing site lives outside the React PWA (`src/` and `/app/`). Don't touch those when publishing.
@@ -164,7 +164,7 @@ The grid uses `grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))`, so 
 A `<!-- KEEP IN SYNC: ... -->` comment sits above each preview grid as a reminder.
 
 Card differences between landing and about:
-1. The `onclick` Plausible call uses `location: 'landing'` vs `location: 'about'`.
+1. The `onclick` `blog-preview-click` call uses `location: 'landing'` vs `location: 'about'`.
 2. The about section has `class="notes-previews has-top-rule"` adding a hairline top border, because both neighbors there happen to be default-bg sections.
 
 Background alternation is intentional: on landing, the preview section is default `--bg` between elevated `install-section` and default `.cta`. On about, the preview section is default `--bg` before the elevated Contact section.
@@ -221,16 +221,9 @@ If a marketing asset 404s on the deployed site, [scripts/build-pages.mjs](../scr
 
 ## Plausible analytics
 
-Four categorical events are tracked on the notes. All are documented in [privacy.html](../privacy.html) alongside the existing app events.
+The notes/blog page itself is **not** custom-instrumented — Plausible's automatic pageview is the only signal collected when a user visits `/notes`. The previous in-page events (archive clicks, seek-arrow clicks, mobile dropdown toggles) were removed as over-tracking.
 
-| Event                          | Props                                     | Fires when                                            |
-| ------------------------------ | ----------------------------------------- | ----------------------------------------------------- |
-| `notes-archive-click`           | `{ post: '<slug>' }`                      | Sidebar or mobile-dropdown archive item clicked.      |
-| `notes-arrow-click`             | `{ direction: 'up' \| 'down' }`           | Floating seek arrow clicked.                          |
-| `notes-mobile-archive-toggle`   | `{ state: 'open' \| 'closed' }`           | Mobile dropdown opened or closed.                     |
-| `notes-preview-click`           | `{ post: '<slug>', location: 'landing' \| 'about' }` | Home/about preview card clicked.        |
-
-No event ever contains free-text content. Slugs are categorical (a finite list of post identifiers), which matches the project's blanket "no PII in analytics" rule documented in privacy.html.
+Clicks on the blog preview cards on the landing and about pages do fire a `blog-preview-click` event (with `post` slug and `location`). See [analytics.md](analytics.md) for the full event catalog and the rationale for the `blog-` vs `notes-` naming distinction.
 
 ---
 

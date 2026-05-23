@@ -550,7 +550,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     // First Begin press (from the idle/framing page) — stamp startedAt.
     // Subsequent Continue presses within the flow do not re-stamp.
     if (phase === 'framing') {
-      useSessionStore.getState().beginModule(module.instanceId);
+      useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     }
 
     // Special: entering psychoed from response
@@ -599,7 +599,7 @@ export default function TheCycleModule({ module, onComplete, onSkip, onProgressU
     }
 
     fadeToPhase(next);
-  }, [phase, psychoedStep, getNextPhase, fadeToPhase, handleDiagramReveal, module.instanceId]);
+  }, [phase, psychoedStep, getNextPhase, fadeToPhase, handleDiagramReveal, module.instanceId, selectedVoiceId]);
 
   // ─── Back navigation ──────────────────────────────────────────────────
 

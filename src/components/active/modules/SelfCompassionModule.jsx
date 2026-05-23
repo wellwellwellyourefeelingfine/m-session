@@ -127,7 +127,7 @@ export default function SelfCompassionModule({ module, onComplete, onSkip, onPro
   // screen window.
   const handleBeginWithTransition = useCallback(() => {
     activeVoiceRef.current = selectedVoiceId;
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
   }, [playback, module.instanceId, selectedVoiceId]);
 

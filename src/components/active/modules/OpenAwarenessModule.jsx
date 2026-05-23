@@ -112,7 +112,7 @@ export default function OpenAwarenessModule({ module, onComplete, onSkip, onProg
   // screen window.
   const handleBeginWithTransition = useCallback(() => {
     activeVoiceRef.current = selectedVoiceId;
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
   }, [playback, module.instanceId, selectedVoiceId]);
 

@@ -316,9 +316,9 @@ export default function TheDescentModule({ module, onComplete, onSkip, onProgres
   // for the minimum duration during composition, fades it out before active
   // playback. Same pattern as BodyScan / SimpleGrounding et al.
   const handleBeginWithTransition = useCallback(() => {
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
-  }, [playback, module.instanceId]);
+  }, [playback, module.instanceId, selectedVoiceId]);
 
   // Restart meditation from the beginning. playback.handleRestart() resets
   // the hook's internal transitionStage back to 'idle', so the idle screen

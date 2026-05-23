@@ -519,13 +519,6 @@
         var mobileBtn = document.getElementById('notes-archive-mobile-btn');
         var mobilePanel = document.getElementById('notes-archive-mobile-panel');
 
-        function track(event, props) {
-          if (window.plausible) {
-            if (props) window.plausible(event, { props: props });
-            else window.plausible(event);
-          }
-        }
-
         // Active-post highlight via IntersectionObserver.
         // rootMargin pulls the "active band" to the top third of the viewport.
         var io = new IntersectionObserver(
@@ -572,13 +565,11 @@
             var next = articles[currentIndex() + 1];
             if (!next) return;
             next.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            track('notes-arrow-click', { direction: 'down' });
           });
         }
         if (upBtn) {
           upBtn.addEventListener('click', function () {
             articles[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
-            track('notes-arrow-click', { direction: 'up' });
           });
         }
 
@@ -589,9 +580,6 @@
             mobilePanel.classList.toggle('open', willOpen);
             mobileBtn.classList.toggle('open', willOpen);
             mobileBtn.setAttribute('aria-expanded', String(willOpen));
-            track('notes-mobile-archive-toggle', {
-              state: willOpen ? 'open' : 'closed',
-            });
           });
           mobilePanel.querySelectorAll('a').forEach(function (a) {
             a.addEventListener('click', function () {
@@ -601,13 +589,6 @@
             });
           });
         }
-
-        // Archive click tracking (both desktop sidebar and mobile dropdown)
-        archiveLinks.forEach(function (a) {
-          a.addEventListener('click', function () {
-            track('notes-archive-click', { post: a.dataset.slug || 'unknown' });
-          });
-        });
 
         // Honor a /notes#post-slug deep link with a small smoothing delay.
         if (

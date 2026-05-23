@@ -123,7 +123,7 @@ export default function BodyScanModule({ module, onComplete, onSkip, onProgressU
   // pattern, which had no per-voice composition step.
   const handleBeginWithTransition = useCallback(() => {
     activeVoiceRef.current = selectedVoiceId;
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
   }, [playback, module.instanceId, selectedVoiceId]);
 

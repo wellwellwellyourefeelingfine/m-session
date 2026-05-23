@@ -14,6 +14,7 @@ import { downloadSessionData, downloadSessionImages } from '../../utils/download
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
 import { getAvailableVoices } from '../../content/meditations';
 import { precacheAudioForTimeline } from '../../services/audioCacheService';
+import { track } from '../../services/analyticsService';
 import { audioPath } from '../../utils/audioPath';
 import DebugModeTool from './DebugModeTool';
 import { APP_VERSION } from '../../constants';
@@ -61,6 +62,7 @@ export default function SettingsTool() {
     if (currentTab === 'tools') return;
     if (pendingVoiceId === committedVoiceIdRef.current) return;
     setPreference('defaultVoiceId', pendingVoiceId);
+    track('voice-selected', { voice: pendingVoiceId, source: 'settings' });
     committedVoiceIdRef.current = pendingVoiceId;
     const modules = useSessionStore.getState().modules?.items;
     if (Array.isArray(modules) && modules.length > 0) {

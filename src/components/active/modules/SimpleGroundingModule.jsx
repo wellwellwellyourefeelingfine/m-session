@@ -112,7 +112,7 @@ export default function SimpleGroundingModule({ module, onComplete, onSkip, onPr
   // so toggling the pill mid-session doesn't change the audio that's composing/playing.
   const handleBeginWithTransition = useCallback(() => {
     activeVoiceRef.current = selectedVoiceId;
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
   }, [playback, module.instanceId, selectedVoiceId]);
 

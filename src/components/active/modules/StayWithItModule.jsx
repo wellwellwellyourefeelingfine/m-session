@@ -369,7 +369,7 @@ export default function StayWithItModule({ module, onComplete, onSkip, onProgres
   // loading screen window.
   const handleBeginWithTransition = useCallback(() => {
     activeVoiceRef.current = selectedVoiceId;
-    useSessionStore.getState().beginModule(module.instanceId);
+    useSessionStore.getState().beginModule(module.instanceId, selectedVoiceId);
     playback.handleBeginWithTransition();
   }, [playback, module.instanceId, selectedVoiceId]);
 

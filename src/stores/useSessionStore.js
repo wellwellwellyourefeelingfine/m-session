@@ -2586,11 +2586,12 @@ export const useSessionStore = create(
       // Stamp startedAt when the user actually presses Begin on the idle page.
       // Every Begin press overwrites startedAt so actualDuration reflects the
       // latest engagement window, not an earlier abandoned attempt.
-      beginModule: (instanceId) => {
+      beginModule: (instanceId, voiceId = null) => {
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module || module.isBoosterModule) return;
         if (module.status !== 'active') return;
+        if (voiceId) track('voice-selected', { voice: voiceId, source: 'module' });
         set({
           modules: {
             ...state.modules,
@@ -2991,6 +2992,16 @@ export const useSessionStore = create(
       },
 
       resetSession: () => {
+        const prevIntake = get().intake;
+        if (
+          prevIntake &&
+          !prevIntake.isComplete &&
+          (prevIntake.currentSection !== 'A' || prevIntake.currentQuestionIndex > 0)
+        ) {
+          track('intake-abandoned', {
+            lastStep: `${prevIntake.currentSection}-${prevIntake.currentQuestionIndex}`,
+          });
+        }
         set({
           sessionPhase: 'not-started',
           sessionId: null,
