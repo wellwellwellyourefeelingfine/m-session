@@ -16,14 +16,7 @@ const PHASE_DESCRIPTIONS = {
   'integration': "Ease into the afterglow. The mind is still open, but clearer now — a good time to write, ask questions, and hold onto what matters.",
 };
 
-// Phase numbers
-const PHASE_NUMBERS = {
-  'come-up': 'Phase 1',
-  'peak': 'Phase 2',
-  'integration': 'Phase 3',
-};
-
-// Phase names (displayed in Azeret Mono)
+// Phase names
 const PHASE_NAMES = {
   'come-up': 'Come-Up',
   'peak': 'Peak',
@@ -191,16 +184,10 @@ const PhaseSection = forwardRef(function PhaseSection(
         <div data-tutorial={`phase-${phase}`}>
           <div className="flex items-start justify-between">
             <h3
-              className="flex items-baseline gap-2"
-              style={{ lineHeight: 1, marginBottom: '8px' }}
+              className="font-serif text-[22px]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
             >
-              <span className="font-serif text-[22px]" style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}>
-                {PHASE_NUMBERS[phase]}
-              </span>
-              <span className="text-[var(--color-text-primary)]">-</span>
-              <span className="text-[var(--color-text-primary)] text-[15px]">
-                {PHASE_NAMES[phase]}
-              </span>
+              {PHASE_NAMES[phase]}
             </h3>
             {phaseStatus === 'completed' ? (
               <button
