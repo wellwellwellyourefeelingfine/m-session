@@ -14,7 +14,7 @@ import PhaseSection from './PhaseSection';
 import ModuleCard from './ModuleCard';
 import { CircleSkipIcon, CirclePlusIcon, LockIcon } from '../shared/Icons';
 import ModuleLibraryDrawer from './ModuleLibraryDrawer';
-import TimelineSummary from './TimelineSummary';
+
 
 import AltSessionModuleModal from '../home/AltSessionModuleModal';
 import ClockNoteModal from './ClockNoteModal';
@@ -146,7 +146,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const removeModule = useSessionStore((state) => state.removeModule);
   const swapModuleOrder = useSessionStore((state) => state.swapModuleOrder);
   const getPhaseDuration = useSessionStore((state) => state.getPhaseDuration);
-  const getTotalDuration = useSessionStore((state) => state.getTotalDuration);
+
   const getCurrentModule = useSessionStore((state) => state.getCurrentModule);
 
   const currentModule = getCurrentModule();
@@ -172,7 +172,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const comeUpDuration = getPhaseDuration('come-up');
   const peakDuration = getPhaseDuration('peak');
   const integrationDuration = getPhaseDuration('integration');
-  const totalDuration = getTotalDuration();
+
 
   // Booster placement is phase-agnostic: the card always renders at the cumulative 90-min
   // mark, regardless of whether it was originally added to peak or integration. Stored
@@ -212,7 +212,6 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const comeUpMaxDuration = timeline?.phases?.comeUp?.maxDuration || 60;
   const peakAllocatedDuration = timeline?.phases?.peak?.allocatedDuration || 90;
   const integrationAllocatedDuration = timeline?.phases?.integration?.allocatedDuration || 120;
-  const targetDuration = timeline?.targetDuration || 240;
 
   // Update elapsed time every second during active session (for HH:MM:SS clock)
   // For completed sessions, use the frozen final duration
@@ -563,7 +562,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
                   </div>
                   {!isCompletedSession && (
                     <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3, marginBottom: '8px' }}>
-                      Optional activities to prepare you for your session. You can also preview any activity from the main session timeline here.
+                      Optional activities to prepare you for your session.
                     </p>
                   )}
                 </div>
@@ -945,17 +944,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         )}
       </div>
 
-      {/* Summary + Begin Session — wrapped for tutorial spotlight */}
+      {/* Begin Session — wrapped for tutorial spotlight */}
       <div data-tutorial="begin-session">
-        {!isCompletedSession && (
-          <TimelineSummary
-            totalDuration={totalDuration}
-            targetDuration={targetDuration}
-            moduleCount={moduleItems.length}
-            isActiveSession={isActiveSession}
-          />
-        )}
-
         {!isActiveSession && !isCompletedSession && onBeginSession && (
           <div className="mt-8 space-y-4">
             <button

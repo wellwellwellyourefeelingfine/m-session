@@ -265,13 +265,7 @@ const PhaseSection = forwardRef(function PhaseSection(
 
         {/* Modules list */}
         <div className="space-y-2">
-          {modules.length === 0 ? (
-            <div className="py-4 border border-dashed border-[var(--color-border)] text-center">
-              <p className="text-[var(--color-text-tertiary)] text-sm">
-                No activities scheduled
-              </p>
-            </div>
-          ) : (
+          {modules.length === 0 ? null : (
             modules.map((module, index) => {
               // Check if this is a booster module (should never show reorder buttons)
               const isBooster = module.isBoosterModule || module.libraryId === 'booster-consideration';
