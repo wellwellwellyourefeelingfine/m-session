@@ -697,6 +697,37 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           </div>
         )}
 
+        {/* Opening Ritual - first node on the main session timeline */}
+        <div className="relative flex">
+          {/* Timeline node — vertical bar extends down to connect to Come-Up */}
+          <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
+            <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
+              isActiveSession || isCompletedSession
+                ? 'bg-[var(--color-text-primary)] border-[var(--color-text-primary)]'
+                : 'bg-[var(--color-bg)] border-[var(--color-text-primary)]'
+            }`} />
+            <div className="w-0.5 flex-1 bg-[var(--color-text-primary)]" />
+          </div>
+
+          {/* Opening Ritual content */}
+          <div className="flex-1 pb-6">
+            <h3
+              className="font-serif text-[22px]"
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
+            >
+              Opening Ritual
+            </h3>
+            <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
+              {isActiveSession || isCompletedSession ? 'Completed' : 'Start of session'}
+            </p>
+            {!isActiveSession && !isCompletedSession && (
+              <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
+                A guided checklist and grounding meditation to prepare your space, take your substance, and settle into the session.
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Come-Up Phase */}
         <PhaseSection
           ref={phase1Ref}
