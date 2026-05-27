@@ -105,7 +105,7 @@ export default function IngestionTimeBlock({ context }) {
   useEffect(() => {
     if (ingestionTime != null && !ingestionTimeConfirmed) {
       context.setPrimaryOverride?.({
-        label: 'Confirm time',
+        label: 'Confirm',
         onClick: handleConfirmRequest,
       });
     } else {

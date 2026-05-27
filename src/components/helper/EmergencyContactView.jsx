@@ -190,7 +190,7 @@ export default function EmergencyContactView({
               zIndex: 1,
             }}
           >
-            <PhoneIcon size={26} className="text-[var(--accent)]" />
+            <PhoneIcon size={22} className="text-[var(--accent)]" />
           </div>
           <p
             className="text-[18px] m-0"

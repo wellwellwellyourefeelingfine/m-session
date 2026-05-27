@@ -16,13 +16,4 @@ export const sectionBQuestions = [
       { value: 'open', label: 'Open exploration' },
     ],
   },
-  {
-    field: 'holdingQuestion',
-    type: 'text',
-    label: 'What is your intention for this session?',
-    description: 'Optional. If nothing comes to mind yet, that\u2019s okay. You\u2019ll have time to sit with this question more deeply before your session begins.',
-    placeholder: 'What do you want to explore, heal, or understand?',
-    required: false,
-    multiline: true,
-  },
 ];

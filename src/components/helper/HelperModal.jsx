@@ -400,7 +400,7 @@ export default function HelperModal() {
             rather than sitting above it as a flex sibling. */}
         <div
           className={`flex-1 pb-6 ${
-            currentStep === 'triage' || currentStep === 'emergency-contact'
+            currentStep === 'triage' || currentStep === 'emergency-contact' || currentStep === 'intention'
               ? 'overflow-y-auto overflow-x-hidden'
               : 'overflow-y-hidden'
           }`}

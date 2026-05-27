@@ -23,12 +23,11 @@ import { getTutorialDelay } from './tutorialRevealFlag';
 
 const BOOSTER_TARGET_TIME = 90; // minutes from session start
 
-// The booster card is positioned by elapsed time, not by which phase the user originally
-// added it to. Walks peak modules cumulatively from the end of come-up; if the 90-min mark
-// crosses inside peak, the booster slots in there. Otherwise the walk continues into
-// integration. Sessions shorter than 90 min total pin the booster to the end of integration.
-function computeBoosterPlacement(comeUpDuration, nonBoosterPeak, nonBoosterIntegration) {
-  // Edge case: come-up alone already crosses the 90-min mark
+// The booster card is positioned by elapsed time within the peak phase only.
+// Walks peak modules cumulatively from the end of come-up; if the 90-min mark
+// crosses inside peak, the booster slots in there. Otherwise it pins to the
+// end of peak — it never spills into integration/synthesis.
+function computeBoosterPlacement(comeUpDuration, nonBoosterPeak) {
   if (comeUpDuration >= BOOSTER_TARGET_TIME) {
     return { phase: 'peak', index: 0 };
   }
@@ -41,15 +40,7 @@ function computeBoosterPlacement(comeUpDuration, nonBoosterPeak, nonBoosterInteg
     cumulative += nonBoosterPeak[i].duration;
   }
 
-  for (let i = 0; i < nonBoosterIntegration.length; i++) {
-    if (cumulative >= BOOSTER_TARGET_TIME) {
-      return { phase: 'integration', index: i };
-    }
-    cumulative += nonBoosterIntegration[i].duration;
-  }
-
-  // Session total < 90 min — pin to end of integration
-  return { phase: 'integration', index: nonBoosterIntegration.length };
+  return { phase: 'peak', index: nonBoosterPeak.length };
 }
 
 export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, isPreIntake = false, onBeginSession }) {
@@ -137,6 +128,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const timeline = useSessionStore((state) => state.timeline);
   const activeTransition = useSessionStore((state) => state.phaseTransitions?.activeTransition);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
+  const transitionCaptures = useSessionStore((state) => state.transitionCaptures);
   const booster = useSessionStore((state) => state.booster);
   const sessionProfile = useSessionStore((state) => state.sessionProfile);
   const session = useSessionStore((state) => state.session);
@@ -186,26 +178,14 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
   const nonBoosterIntegrationModules = integrationModulesRaw.filter((m) => !isBooster(m));
 
   let peakModules = nonBoosterPeakModules;
-  let integrationModules = nonBoosterIntegrationModules;
+  const integrationModules = nonBoosterIntegrationModules;
   if (boosterModule) {
-    const placement = computeBoosterPlacement(
-      comeUpDuration,
-      nonBoosterPeakModules,
-      nonBoosterIntegrationModules,
-    );
-    if (placement.phase === 'peak') {
-      peakModules = [
-        ...nonBoosterPeakModules.slice(0, placement.index),
-        boosterModule,
-        ...nonBoosterPeakModules.slice(placement.index),
-      ];
-    } else {
-      integrationModules = [
-        ...nonBoosterIntegrationModules.slice(0, placement.index),
-        boosterModule,
-        ...nonBoosterIntegrationModules.slice(placement.index),
-      ];
-    }
+    const placement = computeBoosterPlacement(comeUpDuration, nonBoosterPeakModules);
+    peakModules = [
+      ...nonBoosterPeakModules.slice(0, placement.index),
+      boosterModule,
+      ...nonBoosterPeakModules.slice(placement.index),
+    ];
   }
 
   // Safe access to phase durations with defaults
@@ -453,7 +433,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       <div className="mb-4 relative">
         <div className="flex items-start justify-between">
           <h2
-            className="mb-2 font-serif text-2xl"
+            className="mb-2 font-serif text-3xl"
             style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
           >
             My Timeline
@@ -698,7 +678,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         )}
 
         {/* Opening Ritual - first node on the main session timeline */}
-        <div className="relative flex">
+        <div className={`relative flex mt-6 ${isActiveSession ? 'opacity-50' : ''}`}>
           {/* Timeline node — vertical bar extends down to connect to Come-Up */}
           <div className="flex flex-col items-center mr-4 flex-shrink-0" style={{ width: '12px' }}>
             <div className={`w-3 h-3 rounded-full border-2 flex-shrink-0 ${
@@ -710,19 +690,27 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           </div>
 
           {/* Opening Ritual content */}
-          <div className="flex-1 pb-6">
+          <div className="flex-1 pb-1">
             <h3
               className="font-serif text-[22px]"
-              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '8px' }}
+              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', lineHeight: 1, marginBottom: '14px' }}
             >
               Opening Ritual
             </h3>
             <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-              {isActiveSession || isCompletedSession ? 'Completed' : 'Start of session'}
+              {isActiveSession || isCompletedSession
+                ? <>
+                    {substanceChecklist?.ingestionTime
+                      ? new Date(substanceChecklist.ingestionTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : 'Completed'}
+                    {timeline?.phases?.comeUp?.startedAt &&
+                      ` – ${new Date(timeline.phases.comeUp.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </>
+                : 'Start of session'}
             </p>
             {!isActiveSession && !isCompletedSession && (
               <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
-                A guided checklist and grounding meditation to prepare your space, take your substance, and settle into the session.
+                A guided checklist and opening meditation to prepare your space, take your substance, and settle into the session.
               </p>
             )}
           </div>
@@ -735,7 +723,8 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           modules={comeUpModules}
           duration={comeUpDuration}
           maxDuration={comeUpMaxDuration}
-          isFirst={true}
+          isFirst={false}
+          previousPhaseCompleted={isActiveSession}
           onAddModule={() => handleAddModuleClick('come-up')}
           onRemoveModule={handleRemoveModule}
           isActiveSession={isActiveSession}
@@ -821,11 +810,17 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
               Closing Ritual
             </h3>
             <p className="text-[var(--color-text-tertiary)] text-xs" style={{ lineHeight: 1, marginBottom: '6px' }}>
-              {isCompletedSession ? 'Completed' : 'End of session'}
+              {isCompletedSession && transitionCaptures?.closing?.startedAt
+                ? <>
+                    {new Date(transitionCaptures.closing.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {transitionCaptures.closing.completedAt &&
+                      ` – ${new Date(transitionCaptures.closing.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                  </>
+                : isCompletedSession ? 'Completed' : 'End of session'}
             </p>
             {!isCompletedSession && (
               <p className="text-[var(--color-text-secondary)]" style={{ lineHeight: 1.3 }}>
-                A gentle way to mark the end of your journey and honor the experience.
+                A guided closing meditation to tie up loose threads and mark the end of your session.
               </p>
             )}
           </div>
@@ -978,7 +973,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
       {/* Begin Session — wrapped for tutorial spotlight */}
       <div data-tutorial="begin-session">
         {!isActiveSession && !isCompletedSession && onBeginSession && (
-          <div className="mt-8 space-y-4">
+          <div className="mt-5 space-y-4">
             <button
               onClick={onBeginSession}
               disabled={isPreIntake}
@@ -992,11 +987,7 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
             >
               Begin Session
             </button>
-            {isPreIntake ? (
-              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider text-left leading-tight">
-                Complete the intake form above to enable this button.
-              </p>
-            ) : (
+            {!isPreIntake && (
               <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
                 Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
               </p>

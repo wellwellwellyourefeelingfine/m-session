@@ -118,9 +118,9 @@ export default function IntentionView({ isEditing, onEditToggle }) {
           </p>
         </div>
 
-        {/* Saved intention card with Edit/Save toggle in its top-right corner */}
+        {/* Saved intention card with Edit/Save toggle in bottom-right corner */}
         <div
-          className="relative w-full border rounded-md mt-3"
+          className="w-full border rounded-md mt-3"
           style={{
             borderColor: 'var(--accent)',
             backgroundColor: 'var(--accent-bg)',
@@ -128,44 +128,44 @@ export default function IntentionView({ isEditing, onEditToggle }) {
             minHeight: '64px',
           }}
         >
-          <button
-            type="button"
-            onClick={handleEditToggle}
-            className="absolute top-2 right-2 px-2 py-0.5 text-[10px] uppercase tracking-wider transition-opacity"
-            style={{
-              color: 'var(--accent)',
-              background: 'transparent',
-              border: '1px solid var(--accent)',
-              borderRadius: '9999px',
-              cursor: 'pointer',
-            }}
-          >
-            {isEditing ? 'Save' : 'Edit'}
-          </button>
-
           {hasSaved ? (
             <p
-              className="text-[15px] italic leading-relaxed"
+              className="text-[15px] leading-relaxed whitespace-pre-wrap"
               style={{
                 fontFamily: "'DM Serif Text', serif",
                 textTransform: 'none',
                 color: 'var(--color-text-primary)',
-                paddingRight: 56,
               }}
             >
-              &ldquo;{savedIntention}&rdquo;
+              {savedIntention}
             </p>
           ) : (
             <p
               className="text-[12px] leading-relaxed"
               style={{
                 color: 'var(--color-text-tertiary)',
-                paddingRight: 56,
               }}
             >
               No intention saved yet. Tap Edit to add one.
             </p>
           )}
+
+          <div className="flex justify-end mt-2">
+            <button
+              type="button"
+              onClick={handleEditToggle}
+              className="px-2 py-0.5 text-[10px] uppercase tracking-wider transition-opacity"
+              style={{
+                color: 'var(--accent)',
+                background: 'transparent',
+                border: '1px solid var(--accent)',
+                borderRadius: '9999px',
+                cursor: 'pointer',
+              }}
+            >
+              {isEditing ? 'Save' : 'Edit'}
+            </button>
+          </div>
         </div>
 
         {/* Unboxed meta description — sits below the accent intention card in

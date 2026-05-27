@@ -1,8 +1,8 @@
 /**
  * IntakeFlow Component
- * Manages the intake questionnaire as a unified 17-page flow.
- * Pages 1-15 are question pages from the section configs, page 16
- * is privacy/PWA info, and page 17 is the "Ready to Begin" completion
+ * Manages the intake questionnaire as a unified 15-page flow.
+ * Pages 1-13 are question pages from the section configs, page 14
+ * is privacy/PWA info, and page 15 is the "Ready to Begin" completion
  * screen. All pages share a single fade transition system.
  */
 
@@ -177,14 +177,14 @@ export default function IntakeFlow({ onComplete }) {
   };
 
   // Navigate to next question with fade animation.
-  // Unified — all 17 pages use the same transition pattern:
+  // Unified — all 15 pages use the same transition pattern:
   //   1. 300ms pre-delay (lets filled button state register visually)
   //   2. setIsVisible(false) starts the CSS opacity fade-out (300ms)
   //   3. After TRANSITION_MS (350ms), swap content and fade back in
   // Every caller — single-select auto-advance, Continue buttons
   // (nav, ContactInput, DosageCalculator), TextInput Enter, warning
   // acknowledgment — all go through this function so timing is
-  // consistent across all 17 pages.
+  // consistent across all 15 pages.
   const goToNextQuestion = () => {
     let nextIndex = currentQuestionIndex + 1;
     // Skip questions whose skip condition is met (virtual pages never have skipWhen)
@@ -322,17 +322,6 @@ export default function IntakeFlow({ onComplete }) {
             )}
 
             <div className="mt-8">
-              <p
-                className="text-lg mb-4"
-                style={{
-                  fontFamily: "'DM Serif Text', serif",
-                  textTransform: 'none',
-                  color: 'var(--text-primary)',
-                }}
-              >
-                Your personalized session timeline will be generated based on your responses.
-              </p>
-
               <p className="mb-6" style={{ color: 'var(--text-primary)' }}>
                 In the days before your planned session, we recommend reviewing your timeline.
                 You can add, remove, or reorder different activities based on the session focus
@@ -395,7 +384,7 @@ export default function IntakeFlow({ onComplete }) {
               {renderQuestion()}
             </div>
 
-            {/* Navigation — unified across all 17 pages */}
+            {/* Navigation — unified across all 15 pages */}
             <div className="mt-6 space-y-1">
             {/* Continue / Generate button.
                 When pressed, the button transitions to the shared
@@ -413,7 +402,7 @@ export default function IntakeFlow({ onComplete }) {
                   borderColor: continuePressed ? 'var(--text-secondary)' : 'var(--text-primary)',
                 }}
               >
-                Generate My Timeline
+                Complete Intake
               </button>
             ) : !isSelfAdvancing && (
               <button

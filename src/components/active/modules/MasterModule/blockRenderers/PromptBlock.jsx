@@ -20,9 +20,9 @@ export default function PromptBlock({
 
   const getFontSizeClass = () => {
     switch (settings.fontSize) {
-      case 'small': return 'text-sm';
-      case 'large': return 'text-lg';
-      default: return 'text-base';
+      case 'small': return 'text-xs';
+      case 'large': return 'text-base';
+      default: return 'text-sm';
     }
   };
 

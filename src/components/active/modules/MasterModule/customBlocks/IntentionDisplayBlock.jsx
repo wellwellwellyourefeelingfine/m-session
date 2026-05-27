@@ -22,10 +22,10 @@ export default function IntentionDisplayBlock() {
   return (
     <div className="py-4 px-4 border border-[var(--accent)] bg-[var(--accent-bg)] text-left">
       <p
-        className="text-[var(--color-text-primary)] text-sm italic leading-relaxed"
+        className="text-[var(--color-text-primary)] text-sm leading-relaxed whitespace-pre-wrap"
         style={{ textTransform: 'none' }}
       >
-        &ldquo;{trimmed}&rdquo;
+        {trimmed}
       </p>
     </div>
   );

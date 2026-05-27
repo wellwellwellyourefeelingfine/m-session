@@ -18,6 +18,7 @@ import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
 
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
+import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { AwardIcon, CirclePlusIcon, CircleXIcon } from '../shared/Icons';
@@ -224,21 +225,27 @@ export default function HomeView() {
       case 'not-started':
         return (
           <div className={`transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-            {/* Intake + Preview Activity buttons */}
+            {/* Welcome header + Intake button */}
             <div className="max-w-md mx-auto px-6 pt-6 flex flex-col items-center">
               <div className="w-full text-left mb-2 px-1">
-                <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-1">
-                  Intake
-                </p>
-                <p className="text-sm leading-relaxed text-[var(--color-text-secondary)] tracking-wider">
-                  A brief questionnaire to understand your intentions and preferences, best completed a few days before your session.
+                <h2
+                  className="text-3xl mb-3 text-center"
+                  style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none', color: 'var(--color-text-primary)' }}
+                >
+                  Welcome
+                </h2>
+                <div className="flex justify-center mb-3">
+                  <LeafDrawV2 />
+                </div>
+                <p className="text-sm leading-snug text-[var(--color-text-secondary)] tracking-wider">
+                  This is your timeline for the session. Feel free to add or remove activities, or begin pre-session activities. Complete the intake form prior to your session (ideally 1–2 days before).
                 </p>
               </div>
               <button
                 type="button"
                 onClick={handleBeginIntake}
                 disabled={welcomeFadingOut}
-                className="w-full py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+                className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
               >
                 Begin Intake
               </button>
@@ -250,7 +257,7 @@ export default function HomeView() {
                     type="button"
                     onClick={() => setPreviewDrawerOpen(true)}
                     disabled={welcomeFadingOut}
-                    className="w-full py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
+                    className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
                   >
                     Preview Activity
                   </button>
@@ -296,6 +303,11 @@ export default function HomeView() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Separator between welcome section and timeline */}
+            <div className="max-w-md mx-auto px-6 mt-8 mb-4">
+              <div className="border-t border-[var(--color-border)]" />
             </div>
 
             {/* Timeline (editable, Begin Session disabled until intake completes) */}

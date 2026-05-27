@@ -41,10 +41,10 @@ export default function StoreDisplayBlock({ block }) {
     const accentBox = (
       <div className="py-4 px-4 border border-[var(--accent)] bg-[var(--accent-bg)]">
         <p
-          className={`text-[var(--color-text-primary)] text-sm leading-relaxed text-center ${hasValue ? '' : 'italic opacity-70'}`}
+          className={`text-[var(--color-text-primary)] text-sm leading-relaxed whitespace-pre-wrap text-center ${hasValue ? '' : 'italic opacity-70'}`}
           style={{ textTransform: 'none' }}
         >
-          {hasValue ? `"${textToShow}"` : textToShow}
+          {textToShow}
         </p>
       </div>
     );
@@ -70,7 +70,7 @@ export default function StoreDisplayBlock({ block }) {
   if (style === 'italic') {
     return (
       <p
-        className={`text-[var(--color-text-primary)] text-sm leading-relaxed italic text-center`}
+        className={`text-[var(--color-text-primary)] text-sm leading-relaxed text-center`}
         style={{ textTransform: 'none' }}
       >
         {textToShow}

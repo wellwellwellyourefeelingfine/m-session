@@ -224,7 +224,7 @@ const PhaseSection = forwardRef(function PhaseSection(
                 {new Date(phaseStartedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 {phaseEndedAt && ` – ${new Date(phaseEndedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
               </>
-            : phase === 'come-up' ? '0 – 1 hours' : '1 – 2 hours'
+            : phase === 'come-up' ? '15 mins – 1 hour' : '1 – 2 hours'
           }
         </p>
 

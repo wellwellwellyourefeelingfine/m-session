@@ -779,7 +779,7 @@ export default function SubstanceChecklist() {
         className="fixed left-0 right-0 overflow-auto"
         style={{
           top: 'var(--header-height)',
-          bottom: 'var(--bottom-chrome)',
+          bottom: 'var(--tabbar-height)',
           paddingTop: showStatusBar ? 'var(--status-bar-height)' : 0,
         }}
       >

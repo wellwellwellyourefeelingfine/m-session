@@ -717,6 +717,13 @@ export const useSessionStore = create(
           },
         });
 
+        if (considerBooster) {
+          const existing = get().modules.items.find(m => m.libraryId === 'booster-consideration');
+          if (!existing) {
+            get().addModule('booster-consideration', 'peak');
+          }
+        }
+
         track('intake-complete', {
           sessionMode: profile.sessionMode,
           guidanceLevel: profile.guidanceLevel,
@@ -2360,6 +2367,13 @@ export const useSessionStore = create(
             ...state.phaseTransitions,
             activeTransition: 'session-closing',
             transitionCompleted: false,
+          },
+          transitionCaptures: {
+            ...state.transitionCaptures,
+            closing: {
+              ...state.transitionCaptures.closing,
+              startedAt: state.transitionCaptures.closing?.startedAt ?? now,
+            },
           },
           closingCheckIn: { isVisible: false },
         });
