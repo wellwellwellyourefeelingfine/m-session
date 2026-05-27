@@ -16,7 +16,7 @@ import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
-import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
+
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { useJournalStore } from '../../stores/useJournalStore';
@@ -222,18 +222,10 @@ export default function HomeView() {
     switch (sessionPhase) {
       case 'not-started':
         return (
-          <div className={`max-w-md mx-auto px-6 flex flex-col items-center pt-4 transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
-            <div className="text-center mt-4">
-              <h2
-                className="text-3xl mb-4"
-                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none', color: 'var(--color-text-primary)' }}
-              >
-                Welcome
-              </h2>
-              <div className="flex justify-center mb-1">
-                <LeafDrawV2 />
-              </div>
-              <div className="px-5 py-2 mb-1 text-left">
+          <div className={`transition-opacity duration-700 ease-out ${welcomeFadingOut ? 'opacity-0' : 'opacity-100'}`}>
+            {/* Intake + Preview Activity buttons */}
+            <div className="max-w-md mx-auto px-6 pt-6 flex flex-col items-center">
+              <div className="w-full text-left mb-2 px-1">
                 <p className="uppercase tracking-[0.18em] text-[10px] text-[var(--accent)] mb-1">
                   Intake
                 </p>
@@ -245,25 +237,25 @@ export default function HomeView() {
                 type="button"
                 onClick={handleBeginIntake}
                 disabled={welcomeFadingOut}
-                className="w-48 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+                className="w-full py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
               >
                 Begin Intake
               </button>
 
               {/* Preview Activity */}
-              <div className="mt-3 pb-24 flex flex-col items-center">
+              <div className="mt-3 w-full flex flex-col items-center">
                 {!previewModule ? (
                   <button
                     type="button"
                     onClick={() => setPreviewDrawerOpen(true)}
                     disabled={welcomeFadingOut}
-                    className="w-48 py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
+                    className="w-full py-3 uppercase tracking-wider text-xs hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
                   >
                     Preview Activity
                   </button>
                 ) : (
                   <div
-                    className="w-full max-w-xs overflow-hidden transition-all duration-300 ease-out"
+                    className="w-full overflow-hidden transition-all duration-300 ease-out"
                     style={{
                       maxHeight: previewDismissing ? '42px' : '300px',
                       opacity: previewDismissing ? 0 : 1,
@@ -304,6 +296,9 @@ export default function HomeView() {
                 )}
               </div>
             </div>
+
+            {/* Timeline (editable, Begin Session disabled until intake completes) */}
+            <TimelineEditor onBeginSession={handleBeginSession} isPreIntake={true} />
           </div>
         );
 

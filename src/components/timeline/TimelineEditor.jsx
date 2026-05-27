@@ -52,7 +52,7 @@ function computeBoosterPlacement(comeUpDuration, nonBoosterPeak, nonBoosterInteg
   return { phase: 'integration', index: nonBoosterIntegration.length };
 }
 
-export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, onBeginSession }) {
+export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, isPreIntake = false, onBeginSession }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(null);
   const [warningModal, setWarningModal] = useState(null);
@@ -960,13 +960,26 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
           <div className="mt-8 space-y-4">
             <button
               onClick={onBeginSession}
-              className="w-full py-4 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider hover:opacity-80 transition-opacity"
+              disabled={isPreIntake}
+              className="w-full py-4 uppercase tracking-wider transition-opacity"
+              style={{
+                backgroundColor: isPreIntake ? 'var(--border)' : 'var(--color-text-primary)',
+                color: isPreIntake ? 'var(--color-text-tertiary)' : 'var(--color-bg)',
+                cursor: isPreIntake ? 'not-allowed' : 'pointer',
+                opacity: isPreIntake ? 1 : undefined,
+              }}
             >
               Begin Session
             </button>
-            <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
-              Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
-            </p>
+            {isPreIntake ? (
+              <p className="text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-wider text-left leading-tight">
+                Complete the intake form above to enable this button.
+              </p>
+            ) : (
+              <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
+                Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
+              </p>
+            )}
           </div>
         )}
       </div>

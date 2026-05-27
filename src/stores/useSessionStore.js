@@ -14,10 +14,38 @@ import { precacheAudioForModule, precacheAudioForTimeline, precacheComposerAsset
 import { track, getDoseBucket } from '../services/analyticsService';
 
 // Session store schema version — exported so useSessionHistoryStore stays in sync
-export const SESSION_STORE_VERSION = 32;
+export const SESSION_STORE_VERSION = 33;
 
 // Helper to generate unique IDs
 const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
+// Default timeline modules shown on the welcome page before intake.
+function createDefaultModules() {
+  const specs = [
+    { libraryId: 'intention-setting-v2', phase: 'pre-session' },
+    { libraryId: 'simple-grounding', phase: 'come-up' },
+    { libraryId: 'music-listening', phase: 'come-up' },
+  ];
+  const orderCounters = {};
+  return specs.map((spec) => {
+    const lib = getModuleById(spec.libraryId);
+    const phase = spec.phase;
+    orderCounters[phase] = orderCounters[phase] || 0;
+    const order = orderCounters[phase]++;
+    return {
+      instanceId: generateId(),
+      libraryId: spec.libraryId,
+      phase,
+      title: lib?.title || spec.libraryId,
+      duration: lib?.defaultDuration || 10,
+      status: 'upcoming',
+      order,
+      content: lib?.content || {},
+      startedAt: null,
+      completedAt: null,
+    };
+  });
+}
 
 /**
  * Calculate recommended booster dose from initial dose
@@ -229,7 +257,7 @@ export const useSessionStore = create(
             endedAt: null,
           },
           integration: {
-            allocatedDuration: null,  // Calculated: targetDuration - comeUp - peak
+            allocatedDuration: 105,   // targetDuration(240) - comeUp(45) - peak(90)
             startedAt: null,
             endedAt: null,
           },
@@ -240,8 +268,8 @@ export const useSessionStore = create(
       // MODULES STATE
       // ============================================
       modules: {
-        // All modules in the timeline (editable in pre-session)
-        items: [],
+        // All modules in the timeline (editable before and during pre-session)
+        items: createDefaultModules(),
         // Currently active module instance ID
         currentModuleInstanceId: null,
         // Completed/skipped modules history
@@ -674,15 +702,19 @@ export const useSessionStore = create(
             ...state.timeline,
             targetDuration,
             scheduledStartTime: profile.startTime,
+            phases: {
+              ...state.timeline.phases,
+              integration: {
+                ...state.timeline.phases.integration,
+                allocatedDuration: targetDuration - 45 - 90,
+              },
+            },
           },
           booster: {
             ...state.booster,
             considerBooster,
           },
         });
-
-        // Generate timeline from session profile
-        get().generateTimelineFromIntake();
 
         track('intake-complete', {
           sessionMode: profile.sessionMode,
@@ -3083,14 +3115,14 @@ export const useSessionStore = create(
                 endedAt: null,
               },
               integration: {
-                allocatedDuration: null,
+                allocatedDuration: 105,
                 startedAt: null,
                 endedAt: null,
               },
             },
           },
           modules: {
-            items: [],
+            items: createDefaultModules(),
             currentModuleInstanceId: null,
             history: [],
             inOpenSpace: false,
@@ -4046,6 +4078,21 @@ export function migrateSessionState(persistedState, version) {
             state.modules.history = state.modules.history.map((m) => (
               m?.libraryId ? { ...m, libraryId: remapId(m.libraryId) } : m
             ));
+          }
+        }
+
+        // Version 32 → 33: Pre-populate default timeline modules for
+        // existing users in not-started phase with an empty timeline.
+        // New installs get these from the initial state; this migration
+        // handles users who already had a persisted not-started session.
+        if (version < 33) {
+          if (state.sessionPhase === 'not-started' && (!state.modules?.items?.length)) {
+            state.modules = state.modules || {};
+            state.modules.items = createDefaultModules();
+          }
+          if (state.timeline?.phases?.integration?.allocatedDuration == null) {
+            const target = state.timeline?.targetDuration || 240;
+            state.timeline.phases.integration.allocatedDuration = target - 45 - 90;
           }
         }
 
