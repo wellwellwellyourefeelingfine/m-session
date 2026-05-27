@@ -566,6 +566,7 @@ export const useSessionStore = create(
 
       // Active pre-session module (renders in Active tab before session starts)
       activePreSessionModule: null, // instanceId | null
+      previewInstanceId: null,      // instanceId of a preview-only module (removed on complete/skip/exit)
 
       // ============================================
       // MEDITATION PLAYBACK STATE
@@ -2471,6 +2472,8 @@ export const useSessionStore = create(
         });
       },
 
+      setPreviewInstanceId: (id) => set({ previewInstanceId: id }),
+
       // Start a pre-session module (renders in Active tab)
       startPreSessionModule: (instanceId) => {
         const state = get();
@@ -2497,22 +2500,25 @@ export const useSessionStore = create(
         if (!module) return;
 
         const now = Date.now();
+        const isPreview = instanceId === state.previewInstanceId;
 
         // Mark journal entries with PRE-SESSION header
         if (module.startedAt) {
           get()._markPreSessionJournalEntries(module.startedAt);
         }
 
-        // Mark module as completed, clear active module, stay on Active tab
         set({
           activePreSessionModule: null,
+          ...(isPreview ? { previewInstanceId: null } : {}),
           modules: {
             ...state.modules,
-            items: state.modules.items.map((m) =>
-              m.instanceId === instanceId
-                ? { ...m, status: 'completed', completedAt: now }
-                : m
-            ),
+            items: isPreview
+              ? state.modules.items.filter((m) => m.instanceId !== instanceId)
+              : state.modules.items.map((m) =>
+                  m.instanceId === instanceId
+                    ? { ...m, status: 'completed', completedAt: now }
+                    : m
+                ),
           },
           meditationPlayback: {
             moduleInstanceId: null,
@@ -2529,13 +2535,14 @@ export const useSessionStore = create(
       exitPreSessionModule: () => {
         const state = get();
         const instanceId = state.activePreSessionModule;
+        const isPreview = instanceId === state.previewInstanceId;
         if (instanceId) {
           const module = state.modules.items.find((m) => m.instanceId === instanceId);
           if (module?.startedAt) {
             get()._markPreSessionJournalEntries(module.startedAt);
           }
         }
-        set({
+        const updates = {
           activePreSessionModule: null,
           meditationPlayback: {
             moduleInstanceId: null,
@@ -2544,7 +2551,15 @@ export const useSessionStore = create(
             startedAt: null,
             accumulatedTime: 0,
           },
-        });
+        };
+        if (isPreview) {
+          updates.previewInstanceId = null;
+          updates.modules = {
+            ...state.modules,
+            items: state.modules.items.filter((m) => m.instanceId !== instanceId),
+          };
+        }
+        set(updates);
         useAppStore.getState().setCurrentTab('home');
       },
 
@@ -2555,10 +2570,31 @@ export const useSessionStore = create(
         const state = get();
         const module = state.modules.items.find((m) => m.instanceId === instanceId);
         if (!module) return;
+        const isPreview = instanceId === state.previewInstanceId;
 
         // Mark any journal entries written during the attempt
         if (module.startedAt) {
           get()._markPreSessionJournalEntries(module.startedAt);
+        }
+
+        // Preview modules are removed entirely, not kept in the timeline
+        if (isPreview) {
+          set({
+            activePreSessionModule: null,
+            previewInstanceId: null,
+            modules: {
+              ...state.modules,
+              items: state.modules.items.filter((m) => m.instanceId !== instanceId),
+            },
+            meditationPlayback: {
+              moduleInstanceId: null,
+              isPlaying: false,
+              hasStarted: false,
+              startedAt: null,
+              accumulatedTime: 0,
+            },
+          });
+          return;
         }
 
         const updates = {
@@ -2988,7 +3024,7 @@ export const useSessionStore = create(
        */
       snapshotForArchive: () => {
         const state = get();
-        const { meditationPlayback: _mp, activePreSessionModule: _aps, ...rest } = state;
+        const { meditationPlayback: _mp, activePreSessionModule: _aps, previewInstanceId: _pi, ...rest } = state;
         // Strip all function-valued keys (actions) — keep only data
         const snapshot = {};
         for (const [key, value] of Object.entries(rest)) {
@@ -3318,7 +3354,7 @@ export const useSessionStore = create(
       version: SESSION_STORE_VERSION,
       partialize: (state) => {
         // Exclude transient UI state and runtime playback from persistence
-        const { meditationPlayback: _meditationPlayback, activePreSessionModule: _activePreSessionModule, ...rest } = state;
+        const { meditationPlayback: _meditationPlayback, activePreSessionModule: _activePreSessionModule, previewInstanceId: _previewInstanceId, ...rest } = state;
         return {
           ...rest,
           // Reset transient flags within nested objects

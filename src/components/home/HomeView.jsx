@@ -123,6 +123,7 @@ export default function HomeView() {
       const result = addModule(previewModule.id, 'pre-session');
       if (result?.success) {
         setPreviewModule(null);
+        useSessionStore.getState().setPreviewInstanceId(result.module.instanceId);
         startPreSessionModule(result.module.instanceId);
       }
       setTimeout(() => setPreviewOverlay('exit'), 100);
