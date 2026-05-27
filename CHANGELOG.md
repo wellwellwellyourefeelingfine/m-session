@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.3.2] - 2026-05-27
+
+### Added
+
+- **Welcome page with editable timeline**: New users now see an editable timeline pre-populated with default activities (Intention Setting, Simple Grounding, Music Listening) instead of a blank welcome screen. Users can add, remove, and reorder activities before completing intake.
+- **Opening Ritual timeline node**: New node above Come-Up phase describing the guided checklist and opening meditation, with timestamps showing ingestion time through ritual completion.
+- **Closing Ritual timestamps**: Closing Ritual node now shows start/end timestamps on completed sessions, matching the format used by all other phases.
+- **Metta Heart meditation**: New guided loving-kindness meditation module with full Theo Silk audio.
+- **House of Jung meditation**: New Jungian shadow-work guided meditation module with full Theo Silk audio.
+- **Plausible privacy analytics**: Privacy-respecting analytics integration with event tracking across session lifecycle, helper modal interactions, and settings changes. Analytics opt-out toggle added to Settings. Architecture documentation in `architecture/analytics.md`.
+- **Helper modal IntentionView**: Dedicated intention viewing and editing page inside the helper modal with accent-bordered card display, inline edit/save toggle, and journal entry creation on updates.
+- **Helper modal regional emergency support**: Country/region-based emergency contact and peer support options. Auto-detection via `detectRegion()` utility with `regions.js` data covering crisis lines and peer support for 30+ countries. Region preference saved in app store.
+- **Social media links**: Twitter, Instagram, and r/msession subreddit icon links added to the landing page.
+- **Blog / Notes section**: New notes page (`notes.html`, `notes.css`) added to the landing site with architecture documentation in `architecture/notes.md`.
+- **Privacy policy expansion**: Comprehensive privacy page rewrite covering data storage, analytics, and third-party services.
+
+### Changed
+
+- **Architecture documentation refactored**: Monolithic `ARCHITECTURE.md` (2,497 lines) split into 22 focused chapter files in `architecture/` folder (~95 lines average), with `architecture/README.md` as table of contents.
+- **Intake form streamlined**: Removed "What is your intention?" and "What activities interest you?" pages (15 pages, down from 17). Intention setting is now handled by the dedicated pre-session activity. Final page button changed from "Generate My Timeline" to "Complete Intake".
+- **Timeline no longer generated from intake**: The intake form no longer drives timeline generation via the focus/guidance matrix. Users start with sensible defaults and customize freely.
+- **Phase headers simplified**: Removed "Phase 1/2/3" numbering — headers now show Come-Up, Peak, and Synthesis directly in DM Serif Text.
+- **Phase duration labels**: Come-Up shows "15 mins – 1 hour", Peak/Synthesis show "1 – 2 hours".
+- **Booster dose constrained to peak phase**: The booster check-in card no longer spills into the Synthesis phase timeline — pins to end of Peak if the 90-minute mark falls past all peak activities. Booster is now added to the timeline on intake completion if opted in.
+- **Intention display improvements**: Removed italic styling and quotation marks from intention displays across all views (helper modal, closing screen, transitions). Intention text now preserves line breaks (whitespace-pre-wrap).
+- **Helper modal UI cleanup**: Category grid layout improvements, intention card on initial step, helper modal intention view scrolling when content overflows modal height.
+- **Opening checklist transparent control bar**: Control panel background now matches the Opening Ritual's transparent style.
+- **Prompt textarea font size reduced**: Default journal prompt textareas stepped down one size tier for better mobile readability.
+- **Emergency contact icon consistency**: Phone icon in EmergencyContactView reduced from 26px to 22px to match the main helper modal page.
+- **Welcome page design**: Centered "Welcome" header in DM Serif Text, LeafDraw animation, description copy, Begin Intake and Preview Activity buttons sized to match Begin Session, subtle horizontal separator between welcome section and timeline.
+- **Timeline polish**: Removed TimelineSummary box, removed empty-phase "No activities scheduled" placeholder, reduced spacing between Opening Ritual and Come-Up, Opening Ritual and Closing Ritual descriptions updated.
+- **Completion screen text**: "Well done" subtitle bumped from 10px to 12px (text-xs).
+- **Opening Ritual grays out**: Node and connecting bar properly fade to 50% opacity when completed during active sessions.
+- **Category header size**: Reduced to fit helper modal boxes.
+- **Ingestion confirm button**: Changed from "Confirm time" to "Confirm".
+- **Landing page polish**: Additional HTML/CSS cleanup across landing-page.html, about.html, contribute.html, faq.html. Updated Plausible analytics script and configuration.
+
+### Fixed
+
+- **Preview activity persistence bug**: Activities started via Preview Activity no longer appear in the pre-session timeline after completion or skip. Preview modules are now tracked separately and cleaned up on exit.
+- **Well done page transition**: Fixed transition animation on module completion screen.
+- **Helper modal overscroll**: Fixed horizontal rubber-band scroll and region overscroll issues.
+- **Glass header helper modal notch**: Fixed glass header rendering for devices with display notch.
+- **Mobile HTML footer bar**: Fixed footer bar display on mobile.
+- **HTML overflow scroll bug**: Fixed overflow:hidden preventing page scroll.
+- **Helper modal follow-up suggestion**: Fixed intention addition and follow-up suggestion logic.
+- **HTML overscroll disable**: Fixed overscroll behavior on root HTML element.
+
+### Removed
+
+- **`tree-draw-3d.js`**: Removed unused 1,159-line animation file.
+- **`INTENTION_V2_ISSUES.md`**: Cleaned up resolved issue tracking document.
+- **Legacy `IntentionSettingActivity`**: Removed 1,002-line standalone component and `intentionSettingContent.js` (211 lines), superseded by MasterModule-based Intention Setting v2 and helper modal IntentionView.
+- **Temporary meditation script files**: Removed `temporary-files/house-of-jung` and `temporary-files/metta-heart` working directories after audio generation.
+
+[1.3.2]: https://github.com/wellwellwellyourefeelingfine/m-session/compare/v1.3.1...v1.3.2
+
 ## [1.3.1] - 2026-05-01
 
 ### Added
