@@ -156,7 +156,7 @@ export function CompletionScreen({
         <AsciiMoon />
       </div>
 
-      <p className="tracking-wider text-[10px] text-[var(--color-text-secondary)]">
+      <p className="tracking-wider text-xs text-[var(--color-text-secondary)]">
         {message}
       </p>
     </div>
