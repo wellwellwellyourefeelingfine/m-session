@@ -1,29 +1,76 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1A1A1A"/>
-      <stop offset="100%" style="stop-color:#2D2D2D"/>
-    </linearGradient>
-    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#9D8CD9"/>
-      <stop offset="100%" style="stop-color:#B8A9E8"/>
-    </linearGradient>
-  </defs>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 
-  <!-- Background -->
-  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
-
-  <!-- Outer ring -->
-  <circle cx="256" cy="256" r="160" fill="none" stroke="url(#accent)" stroke-width="8" opacity="0.3"/>
-
-  <!-- Inner breathing orb -->
-  <circle cx="256" cy="256" r="100" fill="url(#accent)" opacity="0.15"/>
-  <circle cx="256" cy="256" r="80" fill="url(#accent)" opacity="0.25"/>
-  <circle cx="256" cy="256" r="60" fill="url(#accent)" opacity="0.4"/>
-
-  <!-- Center glow -->
-  <circle cx="256" cy="256" r="40" fill="url(#accent)" opacity="0.7"/>
-
-  <!-- Moon marker on orbit -->
-  <circle cx="256" cy="96" r="16" fill="url(#accent)"/>
-</svg>
+<svg
+   version="1.1"
+   id="svg1"
+   width="1024"
+   height="1024"
+   viewBox="0 0 1024 1024"
+   xml:space="preserve"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs1"><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath14"><rect
+         style="opacity:1;fill:none;fill-opacity:0.764706;stroke:none;stroke-width:11.6399;stroke-linecap:round;stroke-miterlimit:3;stroke-opacity:1"
+         id="rect15"
+         width="24.107763"
+         height="23.864012"
+         x="237.95038"
+         y="-176.55298"
+         ry="11.932006" /></clipPath></defs><g
+       id="g52"
+       style="display:inline"
+       transform="matrix(1,0,0,1.8377078,0,21.573472)"><rect
+         style="display:inline;opacity:1;fill:#f8f8f5;fill-opacity:1;stroke:none;stroke-width:0.753471;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1;stroke-dasharray:none;stroke-opacity:1"
+         id="rect52"
+         width="1250.4772"
+         height="680.68726"
+         x="-29.426231"
+         y="-25.752979"
+         rx="9.4770536"
+         ry="8.1014481" /></g></g><g
+     id="g45"
+     style="display:inline"
+     transform="matrix(2.1997642,0,0,2.1997642,149.94151,733.68251)"><text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:249.01px;line-height:0.83;font-family:Calistoga;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:-10.2133px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;opacity:1;fill:#ede3da;fill-opacity:1;stroke:none;stroke-width:14.5904;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1;stroke-dasharray:none;stroke-opacity:1"
+       x="46.988106"
+       y="87.356674"
+       id="text59"
+       transform="scale(1,-1)"><tspan
+         id="tspan59"
+         style="fill:#ede3da;fill-opacity:1;stroke:none;stroke-width:14.5904"
+         x="46.988106"
+         y="87.356674">m</tspan></text><text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:249.01px;line-height:0.83;font-family:Calistoga;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:-10.2133px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;opacity:1;fill:#f2ebe6;fill-opacity:1;stroke:none;stroke-width:14.5904;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1;stroke-dasharray:none;stroke-opacity:1"
+       x="46.988106"
+       y="87.356674"
+       id="text60"
+       transform="scale(1,-1)"><tspan
+         id="tspan60"
+         style="fill:#f2ebe6;fill-opacity:1;stroke:none;stroke-width:14.5904"
+         x="46.988106"
+         y="87.356674">m</tspan></text><text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:249.01px;line-height:0.83;font-family:Calistoga;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;letter-spacing:-10.2133px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;opacity:1;fill:#3a3a3a;fill-opacity:1;stroke:none;stroke-width:14.5904;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1;stroke-dasharray:none;stroke-opacity:1"
+       x="47.006245"
+       y="-87.33773"
+       id="text46"><tspan
+         id="tspan46"
+         style="fill:#3a3a3a;fill-opacity:1;stroke:none;stroke-width:14.5904"
+         x="47.006245"
+         y="-87.33773">m</tspan></text><text
+       xml:space="preserve"
+       style="font-style:italic;font-weight:600;font-size:85.3333px;line-height:0.83;font-family:'Plus Jakarta Sans';text-align:start;letter-spacing:-3.5px;word-spacing:0px;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;opacity:1;fill:#e8a87c;fill-opacity:1;stroke:none;stroke-width:7.55906;stroke-linecap:round;stroke-miterlimit:3;stroke-opacity:1"
+       x="-26.060823"
+       y="-104.25648"
+       id="text58"
+       clip-path="url(#clipPath14)"
+       transform="matrix(2.9156953,0,0,2.9156953,-569.2122,216.32791)"><tspan
+         id="tspan58"
+         x="-26.060823"
+         y="-104.25648"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:85.3333px;font-family:Calistoga;font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#e8a87c;fill-opacity:1">m-session</tspan></text></g></svg>

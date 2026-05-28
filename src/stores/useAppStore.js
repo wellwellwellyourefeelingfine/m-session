@@ -26,7 +26,7 @@ export const useAppStore = create(
         reduceMotion: false, // Disable animations
         timerSound: false, // Audio alert when timer completes
         gongSound: true, // Meditation bell at start/end of meditations
-        alternateAppLogo: false, // PNG logo instead of animated text
+        alternateAppLogo: false, // Animated text logo instead of PNG
         autoUpdate: true, // Automatic background app updates (silent install + activation on next cold launch)
         readableFont: true, // false = Azeret Mono caps, true = Lora readable serif
         fontSizeAdjustment: 0, // -1 | 0 | 1 | 2 — px shift applied to body text tokens

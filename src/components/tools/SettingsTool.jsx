@@ -13,12 +13,13 @@ import { useSessionHistoryStore } from '../../stores/useSessionHistoryStore';
 import { downloadSessionData, downloadSessionImages } from '../../utils/downloadSessionData';
 import { AIService, getAvailableModels, getProviderInfo } from '../../services/aiService';
 import { getAvailableVoices } from '../../content/meditations';
+import ToggleSwitch from '../ui/ToggleSwitch';
 import { precacheAudioForTimeline } from '../../services/audioCacheService';
 import { track } from '../../services/analyticsService';
 import { audioPath } from '../../utils/audioPath';
 import DebugModeTool from './DebugModeTool';
 import { APP_VERSION } from '../../constants';
-import { CircleSkipIcon, CirclePlusIcon } from '../shared/Icons';
+import { CircleSkipIcon, CirclePlusIcon, ArrowUpRightIcon } from '../shared/Icons';
 
 const EXPIRATION_OPTIONS = [
   { value: 12, label: '12 HOURS' },
@@ -313,20 +314,18 @@ export default function SettingsTool() {
 
                 <button
                   onClick={handlePreviewToggle}
-                  className="flex items-center gap-2 text-[12px] uppercase tracking-wider text-[var(--accent)] hover:opacity-70 transition-opacity"
-                  style={{ fontFamily: 'Azeret Mono, monospace' }}
+                  className="text-[var(--accent)] hover:opacity-70 transition-opacity"
                   aria-label={isPreviewPlaying ? 'Stop preview' : `Preview ${availableVoices[index]?.label}`}
                 >
-                  <span>Preview</span>
                   {isPreviewPlaying ? (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="10" />
-                      <rect x="9" y="9" width="6" height="6" fill="currentColor" stroke="none" />
+                      <rect x="9" y="9" width="6" height="6" rx="1" fill="currentColor" stroke="none" />
                     </svg>
                   ) : (
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <circle cx="12" cy="12" r="10" />
-                      <polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none" />
+                      <polygon points="10 8 16 12 10 16" rx="1" fill="currentColor" stroke="none" strokeLinejoin="round" />
                     </svg>
                   )}
                 </button>
@@ -337,14 +336,13 @@ export default function SettingsTool() {
 
         {/* Dark Mode */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Appearance</span>
-          <button
-            onClick={toggleDarkMode}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {darkMode ? 'DARK' : 'LIGHT'}
-          </button>
+          <span className="text-[12px] uppercase tracking-wider">Dark – Light Mode</span>
+          <ToggleSwitch
+            checked={darkMode}
+            onChange={toggleDarkMode}
+            ariaLabel={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            alwaysAccent
+          />
         </div>
 
         {/* Font Style */}
@@ -406,45 +404,40 @@ export default function SettingsTool() {
 
         {/* Alternate App Logo */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Alternate App Logo</span>
-          <button
-            onClick={() => setPreference('alternateAppLogo', !preferences.alternateAppLogo)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.alternateAppLogo ? 'ON' : 'OFF'}
-          </button>
+          <span className="text-[12px] uppercase tracking-wider">Animated Text Logo</span>
+          <ToggleSwitch
+            checked={preferences.alternateAppLogo}
+            onChange={() => setPreference('alternateAppLogo', !preferences.alternateAppLogo)}
+            ariaLabel="Toggle animated text logo"
+          />
         </div>
 
         {/* Glass Effect */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Glass Effect</span>
-          <button
-            onClick={() => setPreference('glassEffect', !preferences.glassEffect)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.glassEffect ? 'ON' : 'OFF'}
-          </button>
+          <ToggleSwitch
+            checked={preferences.glassEffect}
+            onChange={() => setPreference('glassEffect', !preferences.glassEffect)}
+            ariaLabel="Toggle glass effect"
+          />
         </div>
 
         {/* Automatic Updates */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Automatic Updates</span>
-          <button
-            onClick={() => setPreference('autoUpdate', !preferences.autoUpdate)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.autoUpdate ? 'ON' : 'OFF'}
-          </button>
+          <ToggleSwitch
+            checked={preferences.autoUpdate}
+            onChange={() => setPreference('autoUpdate', !preferences.autoUpdate)}
+            ariaLabel="Toggle automatic updates"
+          />
         </div>
 
         {/* Notifications */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Notifications</span>
-          <button
-            onClick={async () => {
+          <ToggleSwitch
+            checked={preferences.notificationsEnabled}
+            onChange={async () => {
               if (!preferences.notificationsEnabled) {
                 if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
                   const permission = await Notification.requestPermission();
@@ -458,75 +451,63 @@ export default function SettingsTool() {
                 setPreference('notificationsEnabled', false);
               }
             }}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.notificationsEnabled ? 'ON' : 'OFF'}
-          </button>
+            ariaLabel="Toggle notifications"
+          />
         </div>
 
         {/* Reduce Motion */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
           <span className="text-[12px] uppercase tracking-wider">Reduce Motion</span>
-          <button
-            onClick={() => setPreference('reduceMotion', !preferences.reduceMotion)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.reduceMotion ? 'ON' : 'OFF'}
-          </button>
+          <ToggleSwitch
+            checked={preferences.reduceMotion}
+            onChange={() => setPreference('reduceMotion', !preferences.reduceMotion)}
+            ariaLabel="Toggle reduce motion"
+          />
         </div>
 
-        {/* Timer Sound */}
+        {/* Timer Bell */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Timer Sound</span>
-          <button
-            onClick={() => setPreference('timerSound', !preferences.timerSound)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.timerSound ? 'ON' : 'OFF'}
-          </button>
+          <span className="text-[12px] uppercase tracking-wider">Timer Bell</span>
+          <ToggleSwitch
+            checked={preferences.timerSound}
+            onChange={() => setPreference('timerSound', !preferences.timerSound)}
+            ariaLabel="Toggle timer bell"
+          />
         </div>
 
-        {/* Gong Sound */}
+        {/* Meditation Bell */}
         <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <span className="text-[12px] uppercase tracking-wider">Gong Sound</span>
-          <button
-            onClick={() => setPreference('gongSound', !preferences.gongSound)}
-            className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-            style={{ fontFamily: 'Azeret Mono, monospace' }}
-          >
-            {preferences.gongSound !== false ? 'ON' : 'OFF'}
-          </button>
+          <span className="text-[12px] uppercase tracking-wider">Meditation Bell</span>
+          <ToggleSwitch
+            checked={preferences.gongSound !== false}
+            onChange={() => setPreference('gongSound', !preferences.gongSound)}
+            ariaLabel="Toggle meditation bell"
+          />
         </div>
 
         {/* Anonymous Usage Data */}
-        <div className="py-3 border-b border-app-gray-200 dark:border-app-gray-800">
-          <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between py-3 border-b border-app-gray-200 dark:border-app-gray-800">
+          <div className="flex items-center gap-2">
             <span className="text-[12px] uppercase tracking-wider">Usage Data</span>
             <button
-              onClick={() => setPreference('analyticsEnabled', !preferences.analyticsEnabled)}
-              className="text-[12px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-              style={{ fontFamily: 'Azeret Mono, monospace' }}
+              onClick={() => {
+                const { openTools, toggleTool, setPendingSection } = useToolsStore.getState();
+                // Deep-link: queue the privacy section, open FAQ, close Settings
+                setPendingSection('privacy');
+                if (!openTools.includes('faq')) toggleTool('faq');
+                if (openTools.includes('settings')) toggleTool('settings');
+              }}
+              className="text-[var(--accent)] hover:opacity-70 transition-opacity"
+              aria-label="Learn more about privacy"
             >
-              {preferences.analyticsEnabled !== false ? 'ON' : 'OFF'}
+              <ArrowUpRightIcon size={14} strokeWidth={2.5} />
             </button>
           </div>
-          <p className="mt-1.5 text-[9px] leading-relaxed" style={{ color: 'var(--color-text-tertiary)' }}>
-            Help improve m-session by sharing anonymous event counts.
-            No cookies, no personal data. Powered by{' '}
-            <a
-              href="https://plausible.io"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:opacity-70"
-              style={{ color: 'var(--color-text-tertiary)' }}
-            >
-              Plausible
-            </a>
-            , an open-source privacy tool.
-          </p>
+          <ToggleSwitch
+            checked={preferences.analyticsEnabled !== false}
+            onChange={() => setPreference('analyticsEnabled', !preferences.analyticsEnabled)}
+            ariaLabel="Toggle usage data"
+          />
         </div>
 
         {/* Download Data */}
@@ -718,16 +699,15 @@ export default function SettingsTool() {
                     <span className="text-[11px] uppercase tracking-wider">
                       Save Conversations
                     </span>
-                    <button
-                      onClick={() =>
+                    <ToggleSwitch
+                      checked={aiSettings.persistConversations}
+                      onChange={() =>
                         updateSettings({
                           persistConversations: !aiSettings.persistConversations,
                         })
                       }
-                      className="text-[11px] uppercase tracking-wider hover:opacity-70 transition-opacity"
-                    >
-                      {aiSettings.persistConversations ? 'ON' : 'OFF'}
-                    </button>
+                      ariaLabel="Toggle save conversations"
+                    />
                   </div>
 
                   {/* Key Expiration */}

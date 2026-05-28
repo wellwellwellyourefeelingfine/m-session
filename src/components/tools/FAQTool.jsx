@@ -7,10 +7,11 @@
  *
  * Deep-linking: other parts of the app can navigate to a specific
  * section by setting `pendingSection` on the tools store before
- * opening this tool. The current handler covers `'booster'`, which
- * opens the two booster-dose questions and scrolls the section
- * header into view. Scrolling lives at the FAQTool level (not on
- * each Question) so multiple questions can be opened by a single
+ * opening this tool. Current handlers cover `'booster'` (opens
+ * the two booster-dose questions) and `'privacy'` (opens "Is my
+ * data private?" and scrolls the Privacy & Technical header into
+ * view). Scrolling lives at the FAQTool level (not on each
+ * Question) so multiple questions can be opened by a single
  * deep-link without competing scroll calls.
  */
 
@@ -71,12 +72,14 @@ export default function FAQTool() {
   // lets us re-trigger the same section if the user navigates away and
   // comes back to the same deep-link.
   const [boosterOpenSignal, setBoosterOpenSignal] = useState(0);
+  const [privacyOpenSignal, setPrivacyOpenSignal] = useState(0);
 
   // Ref on the "Booster Dose" section header. The header sits just above
   // the first question of the section, so scrolling it to the top of the
   // viewport lands the user at the start of the section with both
   // questions visible beneath it.
   const boosterHeaderRef = useRef(null);
+  const privacyHeaderRef = useRef(null);
 
   // Step 1: react to the deep-link signal. Bumping boosterOpenSignal
   // tells the booster Questions to open; clearing pendingSection retires
@@ -88,6 +91,9 @@ export default function FAQTool() {
   useEffect(() => {
     if (pendingSection === 'booster') {
       setBoosterOpenSignal((n) => n + 1);
+      clearPendingSection();
+    } else if (pendingSection === 'privacy') {
+      setPrivacyOpenSignal((n) => n + 1);
       clearPendingSection();
     }
   }, [pendingSection, clearPendingSection]);
@@ -108,6 +114,18 @@ export default function FAQTool() {
     }, 750);
     return () => clearTimeout(timer);
   }, [boosterOpenSignal]);
+
+  // Same pattern for privacy deep-link.
+  useEffect(() => {
+    if (privacyOpenSignal === 0) return;
+    const timer = setTimeout(() => {
+      privacyHeaderRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 750);
+    return () => clearTimeout(timer);
+  }, [privacyOpenSignal]);
 
   return (
     <div className="py-6 px-6 max-w-xl mx-auto space-y-2">
@@ -811,9 +829,9 @@ export default function FAQTool() {
       </Question>
 
       {/* Privacy & Technical */}
-      <SectionHeader>Privacy & Technical</SectionHeader>
+      <SectionHeader headerRef={privacyHeaderRef}>Privacy & Technical</SectionHeader>
 
-      <Question q="Is my data private?">
+      <Question q="Is my data private?" openSignal={privacyOpenSignal}>
         <p>
           Yes. Your session data, journal entries, and intake responses are stored
           locally on your device and never leave it. There are no accounts, no
