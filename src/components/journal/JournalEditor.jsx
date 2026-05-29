@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useJournalStore } from '../../stores/useJournalStore';
 import { getImage } from '../../utils/imageStorage';
+import ConfirmModal from './ConfirmModal';
 
 // Debounce helper
 const useDebounce = (callback, delay) => {
@@ -81,6 +82,8 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
   const [isFocused, setIsFocused] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isContentReady, setIsContentReady] = useState(false);
+  const [isSessionLocked, setIsSessionLocked] = useState(false);
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
 
   const [imageUrl, setImageUrl] = useState(null);
   const imageUrlRef = useRef(null);
@@ -105,15 +108,18 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
       const entry = getEntryById(entryId);
       if (entry) {
         setContent(entry.content);
+        setIsSessionLocked(entry.source === 'session' && !entry.isEdited);
         isNewEntryRef.current = false;
         createdEntryIdRef.current = null;
       } else {
         setContent('');
+        setIsSessionLocked(false);
         isNewEntryRef.current = true;
         createdEntryIdRef.current = null;
       }
     } else {
       setContent('');
+      setIsSessionLocked(false);
       isNewEntryRef.current = true;
       createdEntryIdRef.current = null;
     }
@@ -256,9 +262,8 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
     textarea.setSelectionRange(len, len);
   };
 
-  // Handle click on textarea - no special behavior needed
-  const handleTextareaClick = () => {
-    // No-op
+  const handleLockedTap = () => {
+    setShowEditConfirm(true);
   };
 
   // Get font size class based on settings
@@ -332,20 +337,17 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
       {/* Floating back button - accent styled circle */}
       <button
         onClick={handleBack}
-        className="absolute top-3 left-4 z-20 w-10 h-10 rounded-full border border-[var(--accent)] bg-[var(--accent-bg)] flex items-center justify-center transition-opacity hover:opacity-80"
+        className="absolute top-3 left-2.5 z-20 w-8 h-8 flex items-center justify-center transition-opacity hover:opacity-80"
         aria-label="Back to entries"
       >
         <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
+          width="32"
+          height="32"
+          viewBox="0 0 32 32"
           fill="none"
-          stroke="var(--accent)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
         >
-          <polyline points="15 18 9 12 15 6" />
+          <circle cx="16" cy="16" r="14" stroke="var(--accent)" strokeWidth="1.5" fill="var(--accent-bg)" />
+          <polyline points="18.5 10.5 12.5 16 18.5 21.5" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
       </button>
 
@@ -411,7 +413,7 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
               <div
                 className={`absolute left-0 right-0 px-4 text-[var(--color-text-tertiary)] pointer-events-none select-none
                   ${getFontSizeClass()} ${getFontFamilyClass()} ${getLineHeightClass()}`}
-                style={{ textTransform: 'none', top: '10px' }}
+                style={{ textTransform: 'none', top: '12px' }}
               >
                 What's on your mind?
               </div>
@@ -422,7 +424,6 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
             ref={textareaRef}
             value={content}
             onChange={handleChange}
-            onClick={handleTextareaClick}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className={`w-full bg-transparent resize-none outline-none px-4
@@ -432,10 +433,18 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
             style={{
               textTransform: 'none',
               minHeight: 'auto',
-              paddingTop: '10px',
+              paddingTop: '12px',
             }}
             placeholder=""
           />
+
+            {/* Tap overlay for locked session entries */}
+            {isSessionLocked && (
+              <div
+                className="absolute inset-0 z-10"
+                onClick={handleLockedTap}
+              />
+            )}
           </div>
 
           {/* Virtual scroll space - allows last line to scroll to halfway point */}
@@ -448,11 +457,29 @@ export default function JournalEditor({ entryId, onBack, isVisible = true }) {
         </div>
       </div>
 
-      {/* Save indicator - floating at bottom */}
+      {/* Save indicator - floating above footer */}
       {hasUnsavedChanges && (
-        <div className="absolute bottom-0 left-0 right-0 text-center text-[var(--color-text-tertiary)] text-xs pointer-events-none">
+        <div
+          className="absolute bottom-2 left-0 right-0 text-center text-[var(--color-text-tertiary)] text-[10px] uppercase tracking-widest pointer-events-none"
+          style={{ fontFamily: 'Azeret Mono, monospace' }}
+        >
           Saving...
         </div>
+      )}
+
+      {showEditConfirm && (
+        <ConfirmModal
+          title="Edit Session Entry"
+          message="This entry was created during a session. Are you sure you want to edit it?"
+          confirmLabel="Edit"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            setIsSessionLocked(false);
+            setShowEditConfirm(false);
+            setTimeout(() => textareaRef.current?.focus(), 50);
+          }}
+          onCancel={() => setShowEditConfirm(false)}
+        />
       )}
     </div>
   );

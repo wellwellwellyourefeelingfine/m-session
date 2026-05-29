@@ -62,10 +62,10 @@ export default function IntentionPromptBlock({ block }) {
         aria-label="Edit intention"
       >
         <p
-          className="text-base text-[var(--color-text-primary)] italic leading-relaxed"
-          style={{ fontFamily: "'DM Serif Text', serif", textTransform: 'none' }}
+          className="text-sm text-[var(--color-text-primary)] leading-relaxed whitespace-pre-wrap"
+          style={{ textTransform: 'none' }}
         >
-          &ldquo;{savedValue}&rdquo;
+          {savedValue}
         </p>
       </button>
     );

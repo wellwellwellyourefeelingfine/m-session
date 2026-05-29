@@ -54,7 +54,7 @@ export const useJournalStore = create(
       // ============================================
       settings: {
         fontSize: 'medium', // 'small' | 'medium' | 'large'
-        fontFamily: 'mono', // 'sans' | 'serif' | 'mono'
+        fontFamily: 'serif', // 'sans' | 'serif' | 'mono'
         lineHeight: 'normal', // 'compact' | 'normal' | 'relaxed'
       },
 

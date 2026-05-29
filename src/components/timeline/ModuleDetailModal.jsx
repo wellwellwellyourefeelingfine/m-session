@@ -228,10 +228,10 @@ export default function ModuleDetailModal({
         {/* Body */}
         {isBoosterMode ? (
           <div className="px-6 pt-1 pb-0 space-y-3">
-            {/* Activity Summary */}
+            {/* Activity Summary + collapsible more info */}
             <div>
               <p
-                className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                className="text-base text-[var(--color-text-tertiary)] mb-1"
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
                 Activity Summary:
@@ -239,28 +239,23 @@ export default function ModuleDetailModal({
               <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                 A guided check-in to help you decide whether a supplemental dose is right for you at this point in your session.
               </p>
-            </div>
 
-            {/* More info — collapsible educational content */}
-            <div>
               <button
                 onClick={handleToggleInfo}
-                className="flex items-center gap-1.5 mb-1 cursor-pointer"
+                className="flex -mt-2.5 cursor-pointer"
                 aria-expanded={!isInfoCollapsed}
+                aria-label={isInfoCollapsed ? 'Show more info' : 'Hide more info'}
               >
-                <span
-                  className="text-lg text-[var(--color-text-tertiary)]"
-                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                <svg
+                  width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className="text-[var(--color-text-tertiary)] opacity-50 transition-transform duration-200"
+                  style={{ transform: isInfoCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
                 >
-                  More Info:
-                </span>
-                <span className="text-[var(--color-text-tertiary)] flex items-center">
-                  {isInfoCollapsed
-                    ? <CirclePlusIcon size={16} className="text-current" />
-                    : <CircleSkipIcon size={16} className="text-current" />
-                  }
-                </span>
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
+              <div className="mt-2" />
 
               <div
                 className="overflow-hidden"
@@ -312,11 +307,11 @@ export default function ModuleDetailModal({
           </div>
         ) : (
           <div className="px-6 pt-1 pb-0 space-y-3">
-            {/* Description */}
+            {/* Description + collapsible more info */}
             {libraryModule?.description && (
               <div>
                 <p
-                  className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                  className="text-base text-[var(--color-text-tertiary)] mb-1"
                   style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                 >
                   Activity Summary:
@@ -324,51 +319,61 @@ export default function ModuleDetailModal({
                 <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                   {libraryModule.description}
                 </p>
-              </div>
-            )}
 
-            {/* More info — collapsible instructions */}
-            {libraryModule?.content?.instructions && (
-              <div>
-                <button
-                  onClick={handleToggleInfo}
-                  className="flex items-center gap-1.5 mb-1 cursor-pointer"
-                  aria-expanded={!isInfoCollapsed}
-                >
-                  <span
-                    className="text-lg text-[var(--color-text-tertiary)]"
-                    style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-                  >
-                    More Info:
-                  </span>
-                  <span className="text-[var(--color-text-tertiary)] flex items-center">
-                    {isInfoCollapsed
-                      ? <CirclePlusIcon size={16} className="text-current" />
-                      : <CircleSkipIcon size={16} className="text-current" />
-                    }
-                  </span>
-                </button>
+                {libraryModule?.content?.instructions && (
+                  <>
+                    <button
+                      onClick={handleToggleInfo}
+                      className="flex -mt-2.5 cursor-pointer"
+                      aria-expanded={!isInfoCollapsed}
+                      aria-label={isInfoCollapsed ? 'Show more info' : 'Hide more info'}
+                    >
+                      <svg
+                        width="22" height="22" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        className="text-[var(--color-text-tertiary)] opacity-50 transition-transform duration-200"
+                        style={{ transform: isInfoCollapsed ? 'rotate(0deg)' : 'rotate(180deg)' }}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    <div className="mt-2" />
 
-                <div
-                  className="overflow-hidden"
-                  style={{
-                    maxHeight: infoHeightCollapsed ? 0 : '500px',
-                    transition: infoHeightCollapsed
-                      ? 'max-height 250ms ease-in-out'
-                      : 'max-height 350ms ease-in-out',
-                  }}
-                >
-                  <div
-                    style={{
-                      opacity: infoContentVisible ? 1 : 0,
-                      transition: 'opacity 200ms ease-in-out',
-                    }}
-                  >
+                    <div
+                      className="overflow-hidden"
+                      style={{
+                        maxHeight: infoHeightCollapsed ? 0 : '500px',
+                        transition: infoHeightCollapsed
+                          ? 'max-height 250ms ease-in-out'
+                          : 'max-height 350ms ease-in-out',
+                      }}
+                    >
+                      <div
+                        style={{
+                          opacity: infoContentVisible ? 1 : 0,
+                          transition: 'opacity 200ms ease-in-out',
+                        }}
+                      >
                     <p className="text-[var(--color-text-primary)] text-sm tracking-wider leading-relaxed">
                       {libraryModule.content.instructions}
                     </p>
-                  </div>
-                </div>
+                    {libraryModule?.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {libraryModule.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-xs text-[var(--color-text-tertiary)] border border-[var(--color-border)] rounded-full px-3 py-1 whitespace-nowrap"
+                            style={{ textTransform: 'none' }}
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -378,22 +383,24 @@ export default function ModuleDetailModal({
         {isBoosterMode ? (
           <>
             <div className="px-6 py-2">
-              <p
-                className="text-lg text-[var(--color-text-tertiary)] mb-2 text-center"
-                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-              >
-                Duration
-              </p>
-              <p
-                className="text-2xl text-center"
-                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-              >
-                5 - 10 min
-              </p>
+              <div className="flex items-baseline gap-2">
+                <p
+                  className="text-base text-[var(--color-text-tertiary)] flex-shrink-0"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  Duration:
+                </p>
+                <p
+                  className="text-2xl"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  5 - 10 min
+                </p>
+              </div>
             </div>
             <div className="px-6 pb-2">
               <p
-                className="text-lg text-[var(--color-text-tertiary)] mb-1"
+                className="text-base text-[var(--color-text-tertiary)] mb-1"
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
                 Window:
@@ -405,81 +412,72 @@ export default function ModuleDetailModal({
           </>
         ) : (
         <div className="px-6 pt-2 pb-0">
-          <p
-            className="text-lg text-[var(--color-text-tertiary)] mb-2 text-center"
-            style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-          >
-            Duration
-          </p>
-
           {hasVariableDuration && module.status !== 'completed' && module.status !== 'skipped' ? (
-            <div className="flex items-center justify-center gap-6">
-              <button
-                onClick={handleDecrement}
-                disabled={isAtMin}
-                className={`w-10 h-10 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
-                  isAtMin ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
-                }`}
-                aria-label="Decrease duration"
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="4" y1="10" x2="16" y2="10" />
-                </svg>
-              </button>
-
-              <span
-                className="text-3xl min-w-[70px] text-center"
+            <div className="flex items-baseline gap-3">
+              <p
+                className="text-base text-[var(--color-text-tertiary)] flex-shrink-0"
                 style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
               >
-                {formatDuration(validSteps[selectedIndex])}
-              </span>
+                Duration:
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDecrement}
+                  disabled={isAtMin}
+                  className={`translate-y-[3px] transition-opacity ${
+                    isAtMin ? 'opacity-20 cursor-not-allowed' : 'opacity-70 hover:opacity-100 active:opacity-60'
+                  }`}
+                  aria-label="Decrease duration"
+                >
+                  <CircleSkipIcon size={26} className="text-[var(--color-text-tertiary)]" />
+                </button>
 
-              <button
-                onClick={handleIncrement}
-                disabled={isAtMax}
-                className={`w-10 h-10 flex items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity ${
-                  isAtMax ? 'opacity-20 cursor-not-allowed' : 'opacity-100 active:opacity-60'
-                }`}
-                aria-label="Increase duration"
-              >
-                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <line x1="10" y1="4" x2="10" y2="16" />
-                  <line x1="4" y1="10" x2="16" y2="10" />
-                </svg>
-              </button>
+                <span
+                  className="text-2xl translate-y-[2px]"
+                  style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+                >
+                  {formatDuration(validSteps[selectedIndex])}
+                </span>
+
+                <button
+                  onClick={handleIncrement}
+                  disabled={isAtMax}
+                  className={`translate-y-[3px] transition-opacity ${
+                    isAtMax ? 'opacity-20 cursor-not-allowed' : 'opacity-70 hover:opacity-100 active:opacity-60'
+                  }`}
+                  aria-label="Increase duration"
+                >
+                  <CirclePlusIcon size={26} className="text-[var(--color-text-tertiary)]" />
+                </button>
+              </div>
             </div>
           ) : (
-            <p
-              className="text-2xl text-center"
-              style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
-            >
-              {formatDuration(module.duration)}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <p
+                className="text-base text-[var(--color-text-tertiary)] flex-shrink-0"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                Duration:
+              </p>
+              <p
+                className="text-2xl"
+                style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
+              >
+                {formatDuration(module.duration)}
+              </p>
+            </div>
           )}
         </div>
         )}
 
-        {/* Add to Timeline button — placed after duration, before metadata */}
-        {mode === 'add' && (
-          <div className="px-6 py-3">
-            <button
-              onClick={() => { onAdd?.(); handleClose(); }}
-              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
-              style={{ fontFamily: 'Azeret Mono, monospace' }}
-            >
-              Add to Timeline
-            </button>
-          </div>
-        )}
-
-        {/* Intensity + Tags — never shown in booster mode */}
-        {!isBoosterMode && (libraryModule?.intensity != null || libraryModule?.tags?.length > 0) && (
+        {/* Intensity + Frameworks — never shown in booster mode */}
+        {!isBoosterMode && (libraryModule?.intensity != null || libraryModule?.framework?.length > 0) && (
           <div className="px-6 pt-1.5 pb-2">
             {/* Intensity */}
             {libraryModule?.intensity != null && (
               <div className="flex items-baseline gap-2 -mb-2">
                 <p
-                  className="text-lg text-[var(--color-text-tertiary)] leading-none"
+                  className="text-base text-[var(--color-text-tertiary)] leading-none"
                   style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                 >
                   Intensity:
@@ -501,7 +499,7 @@ export default function ModuleDetailModal({
             {libraryModule?.framework?.length > 0 && (
               <p className="mb-0.5 leading-relaxed">
                 <span
-                  className="text-lg text-[var(--color-text-tertiary)]"
+                  className="text-base text-[var(--color-text-tertiary)]"
                   style={{ fontFamily: 'DM Serif Text, serif', textTransform: 'none' }}
                 >
                   Framework{libraryModule.framework.length > 1 ? 's' : ''}:
@@ -516,21 +514,6 @@ export default function ModuleDetailModal({
                 </span>
               </p>
             )}
-
-            {/* Tags */}
-            {libraryModule?.tags?.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                  {libraryModule.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs text-[var(--color-text-tertiary)] border border-[var(--color-border)] rounded-full px-3 py-1 whitespace-nowrap"
-                      style={{ textTransform: 'none' }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-              </div>
-            )}
           </div>
         )}
 
@@ -540,7 +523,7 @@ export default function ModuleDetailModal({
             {isBoosterReopenAvailable && (
               <button
                 onClick={() => { onGoToBooster?.(); handleClose(); }}
-                className="w-full py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+                className="w-full py-3 bg-[var(--accent)] text-white uppercase tracking-wider text-sm rounded-lg hover:opacity-80 transition-opacity"
                 style={{ fontFamily: 'Azeret Mono, monospace' }}
               >
                 Go to Booster
@@ -548,20 +531,20 @@ export default function ModuleDetailModal({
             )}
             <button
               onClick={handleClose}
-              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm rounded-lg hover:opacity-80 transition-opacity"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
               Close
             </button>
           </div>
-        ) : mode === 'info' && (
+        ) : (mode === 'info' || mode === 'add') && (
           <div className="px-6 pt-2 pb-4">
             <button
-              onClick={handleClose}
-              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm hover:opacity-80 transition-opacity"
+              onClick={mode === 'add' ? () => { onAdd?.(); handleClose(); } : handleClose}
+              className="w-full py-3 bg-[var(--color-text-primary)] text-[var(--color-bg)] uppercase tracking-wider text-sm rounded-lg hover:opacity-80 transition-opacity"
               style={{ fontFamily: 'Azeret Mono, monospace' }}
             >
-              Close
+              {mode === 'add' ? 'Add to Timeline' : 'Close'}
             </button>
           </div>
         )}

@@ -86,39 +86,39 @@ function getDotPositions(count, hGap, vGap) {
     case 4:
       // diamond, bottom-up bloom: bottom → left → right → top
       return [
-        { dx:  0,    dy:  vGap, order: 0 }, // bottom
-        { dx: -hGap, dy:  0,    order: 1 }, // left
-        { dx:  hGap, dy:  0,    order: 2 }, // right
-        { dx:  0,    dy: -vGap, order: 3 }, // top
+        { dx:  0,            dy:  vGap * 0.7, order: 0 }, // bottom
+        { dx: -hGap * 0.7,  dy:  0,          order: 1 }, // left
+        { dx:  hGap * 0.7,  dy:  0,          order: 2 }, // right
+        { dx:  0,            dy: -vGap * 0.7, order: 3 }, // top
       ];
 
     case 5:
       // diamond + center: center anchors first, then bottom-up bloom
       return [
-        { dx:  0,    dy:  0,    order: 0 }, // center anchor
-        { dx:  0,    dy:  vGap, order: 1 }, // bottom
-        { dx: -hGap, dy:  0,    order: 2 }, // left
-        { dx:  hGap, dy:  0,    order: 3 }, // right
-        { dx:  0,    dy: -vGap, order: 4 }, // top
+        { dx:  0,           dy:  0,          order: 0 }, // center anchor
+        { dx:  0,           dy:  vGap * 0.7, order: 1 }, // bottom
+        { dx: -hGap * 0.7,  dy:  0,          order: 2 }, // left
+        { dx:  hGap * 0.7,  dy:  0,          order: 3 }, // right
+        { dx:  0,           dy: -vGap * 0.7, order: 4 }, // top
       ];
 
     case 6:
       // 3×2 grid: top row left-to-right, then bottom row left-to-right
       return [
-        { dx: -hGap, dy: -vGap / 2, order: 0 }, // top-left
-        { dx:  0,    dy: -vGap / 2, order: 1 }, // top-center
-        { dx:  hGap, dy: -vGap / 2, order: 2 }, // top-right
-        { dx: -hGap, dy:  vGap / 2, order: 3 }, // bottom-left
-        { dx:  0,    dy:  vGap / 2, order: 4 }, // bottom-center
-        { dx:  hGap, dy:  vGap / 2, order: 5 }, // bottom-right
+        { dx: -hGap * 0.7,  dy: -vGap * 0.35, order: 0 }, // top-left
+        { dx:  0,           dy: -vGap * 0.35, order: 1 }, // top-center
+        { dx:  hGap * 0.7,  dy: -vGap * 0.35, order: 2 }, // top-right
+        { dx: -hGap * 0.7,  dy:  vGap * 0.35, order: 3 }, // bottom-left
+        { dx:  0,           dy:  vGap * 0.35, order: 4 }, // bottom-center
+        { dx:  hGap * 0.7,  dy:  vGap * 0.35, order: 5 }, // bottom-right
       ];
 
     default: {
       // 7+: horizontal line, sequential left-to-right
       const positions = [];
-      const startX = -((count - 1) / 2) * hGap;
+      const startX = -((count - 1) / 2) * hGap * 0.7;
       for (let i = 0; i < count; i++) {
-        positions.push({ dx: startX + i * hGap, dy: 0, order: i });
+        positions.push({ dx: startX + i * hGap * 0.7, dy: 0, order: i });
       }
       return positions;
     }
@@ -163,7 +163,7 @@ function DotSeparator({
         width={svgWidth}
         height={svgHeight}
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        style={{ overflow: 'visible' }}
+        style={{ overflow: 'visible', opacity: 0.65 }}
         focusable="false"
       >
         {positions.map((pos, i) => {

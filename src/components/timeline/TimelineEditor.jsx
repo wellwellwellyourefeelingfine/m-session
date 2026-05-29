@@ -43,7 +43,7 @@ function computeBoosterPlacement(comeUpDuration, nonBoosterPeak) {
   return { phase: 'peak', index: nonBoosterPeak.length };
 }
 
-export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, isPreIntake = false, onBeginSession }) {
+export default function TimelineEditor({ isActiveSession = false, isCompletedSession = false, isPreIntake = false, onBeginSession, onBeginIntake, intakeInProgress = false }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activePhase, setActivePhase] = useState(null);
   const [warningModal, setWarningModal] = useState(null);
@@ -970,28 +970,29 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
         )}
       </div>
 
-      {/* Begin Session — wrapped for tutorial spotlight */}
+      {/* Begin Session / Begin Intake — wrapped for tutorial spotlight */}
       <div data-tutorial="begin-session">
-        {!isActiveSession && !isCompletedSession && onBeginSession && (
+        {!isActiveSession && !isCompletedSession && isPreIntake && onBeginIntake && (
+          <div className="mt-5">
+            <button
+              onClick={onBeginIntake}
+              className="w-full py-4 uppercase tracking-wider transition-opacity hover:opacity-80 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
+            >
+              {intakeInProgress ? 'Continue Intake' : 'Begin Intake'}
+            </button>
+          </div>
+        )}
+        {!isActiveSession && !isCompletedSession && !isPreIntake && onBeginSession && (
           <div className="mt-5 space-y-4">
             <button
               onClick={onBeginSession}
-              disabled={isPreIntake}
-              className="w-full py-4 uppercase tracking-wider transition-opacity"
-              style={{
-                backgroundColor: isPreIntake ? 'var(--border)' : 'var(--color-text-primary)',
-                color: isPreIntake ? 'var(--color-text-tertiary)' : 'var(--color-bg)',
-                cursor: isPreIntake ? 'not-allowed' : 'pointer',
-                opacity: isPreIntake ? 1 : undefined,
-              }}
+              className="w-full py-4 uppercase tracking-wider transition-opacity hover:opacity-80 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
             >
               Begin Session
             </button>
-            {!isPreIntake && (
-              <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
-                Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
-              </p>
-            )}
+            <p className="text-[var(--accent)] text-[10px] uppercase tracking-wider text-left leading-tight">
+              Note: you&apos;ll be guided through everything, including when to take your substance. Don&apos;t take it yet.
+            </p>
           </div>
         )}
       </div>
@@ -1180,21 +1181,24 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
 /**
  * TimelineTutorialTrigger
- * Shows the tutorial after a delay set by the trigger source:
- * - Generate Timeline button → 7000ms (set in HomeView)
+ * Shows the tutorial after a delay, only when the home tab is active.
+ * - First visit to home tab → 2000ms (default)
  * - "Show Tutorial" menu item → 50ms (set in SessionMenu)
- * - Page refresh (default) → 50ms
  */
 function TimelineTutorialTrigger() {
   const dismissed = useAppStore((state) => state.dismissedBanners['timeline-tutorial']);
   const dismissBanner = useAppStore((state) => state.dismissBanner);
+  const currentTab = useAppStore((state) => state.currentTab);
   const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
-    if (dismissed) return;
+    if (dismissed || currentTab !== 'home') {
+      setShowTutorial(false);
+      return;
+    }
     const timer = setTimeout(() => setShowTutorial(true), getTutorialDelay());
     return () => clearTimeout(timer);
-  }, [dismissed]);
+  }, [dismissed, currentTab]);
 
   if (!showTutorial || dismissed) return null;
 

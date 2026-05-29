@@ -10,6 +10,7 @@ import { useState, useEffect } from 'react';
 import { useSessionStore } from '../../stores/useSessionStore';
 import SafetyWarning from './SafetyWarning';
 import ModuleProgressBar from '../active/capabilities/ModuleProgressBar';
+import { ConfirmationModal, BackIcon } from '../active/capabilities/ModuleControlBar';
 import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
 
 // Import question configurations
@@ -80,6 +81,7 @@ export default function IntakeFlow({ onComplete }) {
     sessionProfile,
     updateSessionProfile,
     setIntakeQuestionIndex,
+    pauseIntake,
   } = useSessionStore();
 
   // Use store for question index persistence. Clamp to valid range so
@@ -95,6 +97,7 @@ export default function IntakeFlow({ onComplete }) {
   // the page index changes.
   const [continuePressed, setContinuePressed] = useState(false);
   const [activeWarning, setActiveWarning] = useState(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Fade in entire component on initial mount
   const [mountedVisible, setMountedVisible] = useState(false);
@@ -285,13 +288,6 @@ export default function IntakeFlow({ onComplete }) {
               <li className="list-decimal">Tap <strong>Add</strong> to confirm</li>
             </ol>
 
-            <div aria-hidden="true" style={{ height: '6px' }} />
-
-            <p style={{ color: 'var(--text-tertiary)' }}>
-              This app doesn&apos;t use any cookies, trackers, or analytics.
-              All of your data is stored locally on your device &mdash; nothing
-              is ever sent to any servers.
-            </p>
           </div>
         );
 
@@ -321,13 +317,6 @@ export default function IntakeFlow({ onComplete }) {
               />
             )}
 
-            <div className="mt-8">
-              <p className="mb-6" style={{ color: 'var(--text-primary)' }}>
-                In the days before your planned session, we recommend reviewing your timeline.
-                You can add, remove, or reorder different activities based on the session focus
-                you wish to have.
-              </p>
-            </div>
           </div>
         );
 
@@ -461,6 +450,33 @@ export default function IntakeFlow({ onComplete }) {
           </div>
           </div>
         </div>
+
+      {/* Exit to timeline — back button */}
+      <div className="fixed left-0 right-0 h-14 z-30 pointer-events-none" style={{ bottom: 'var(--tabbar-height)' }}>
+        <div className="h-full flex items-center px-4 max-w-[1000px] mx-auto">
+          <button
+            onClick={() => setShowExitConfirm(true)}
+            className="w-8 h-8 rounded-full border border-[var(--color-text-tertiary)] flex items-center justify-center
+              text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] hover:border-[var(--color-text-secondary)] transition-colors pointer-events-auto"
+            aria-label="Save and return to timeline"
+          >
+            <BackIcon />
+          </button>
+        </div>
+      </div>
+
+      {showExitConfirm && (
+        <ConfirmationModal
+          message="Save your progress and return to the timeline?"
+          confirmLabel="Save & Exit"
+          cancelLabel="Continue Intake"
+          onConfirm={() => {
+            setShowExitConfirm(false);
+            pauseIntake();
+          }}
+          onCancel={() => setShowExitConfirm(false)}
+        />
+      )}
 
       {/* Health Warning Modal */}
       {activeWarning && HEALTH_WARNINGS[activeWarning] && (

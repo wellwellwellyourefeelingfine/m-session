@@ -126,7 +126,7 @@ export default function DosageCalculator({ question, onContinue }) {
 
       {/* Result */}
       {range && (
-        <div className="space-y-2 pt-4" style={{ borderTop: '1px solid var(--border)' }}>
+        <div className="space-y-2 pt-4">
           <div className="text-center space-y-1">
             <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--text-tertiary)' }}>
               Suggested range
@@ -143,7 +143,7 @@ export default function DosageCalculator({ question, onContinue }) {
               {range.low} – {range.high} mg
             </p>
           </div>
-          <p className="text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
+          <p className="text-left" style={{ color: 'var(--text-tertiary)' }}>
             Lower doses often produce profound experiences with easier comedowns. More isn't necessarily better.
           </p>
         </div>

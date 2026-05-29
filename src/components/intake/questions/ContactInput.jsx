@@ -1,16 +1,10 @@
 /**
  * ContactInput Component
- * Two-field contact input (name + phone) plus an optional notes textarea
- * for emergency contact details. Used in the intake flow as the page-13
- * "Who can you contact if you need help?" question. Notes share the same
- * placeholder text as the helper modal's EmergencyContactCard so the two
- * surfaces feel consistent.
+ * Two-field contact input (name + phone) for emergency contact details.
+ * Used in the intake flow. Notes can be added later via the helper modal.
  */
 
 import { useState } from 'react';
-
-const NOTES_PLACEHOLDER =
-  'My contact is available from 9am to 9pm. They live at 123 Main St. If unavailable, contact Jane at 555-0100.';
 
 export default function ContactInput({ question, value, onChange, onContinue }) {
   const [pressed, setPressed] = useState(false);
@@ -61,17 +55,6 @@ export default function ContactInput({ question, value, onChange, onContinue }) 
           />
         ))}
 
-        <textarea
-          value={contactValue.notes || ''}
-          onChange={(e) => handleFieldChange('notes', e.target.value)}
-          placeholder={NOTES_PLACEHOLDER}
-          rows={3}
-          className="w-full px-4 py-3 border bg-transparent focus:outline-none transition-colors text-xs leading-relaxed resize-none"
-          style={{
-            borderColor: 'var(--border)',
-            color: 'var(--text-primary)',
-          }}
-        />
       </div>
 
       {onContinue && (

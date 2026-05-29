@@ -5,6 +5,18 @@
 
 export const sectionDQuestions = [
   {
+    field: 'lastMDMAUse',
+    type: 'single-select',
+    label: 'When did you last use MDMA?',
+    options: [
+      { value: 'first-time', label: 'This is my first time' },
+      { value: 'more-than-3-months', label: 'More than 3 months ago' },
+      { value: '1-3-months', label: '1\u20133 months ago' },
+      { value: 'less-than-1-month', label: 'Less than 1 month ago' },
+      { value: 'unsure', label: 'I\u2019m not sure' },
+    ],
+  },
+  {
     field: 'hasResearchedDosage',
     type: 'dosage-calculator',
     label: 'Have you considered what dosage you plan to take?',
@@ -42,37 +54,6 @@ export const sectionDQuestions = [
     ],
   },
   {
-    field: 'physicalPreparation',
-    type: 'single-select',
-    label: 'Do you feel physically ready for a session?',
-    contentBlocks: [
-      { type: 'spacer' },
-      { type: 'text', text: 'An MDMA session can be demanding of the body. We recommend:' },
-      { type: 'list', items: [
-        'Being well-rested',
-        'Eating a light meal 2\u20133 hours beforehand',
-        'Avoiding alcohol for at least 24 hours before',
-        'Limiting or avoiding caffeine on session day',
-      ]},
-    ],
-    options: [
-      { value: 'yes', label: 'Yes' },
-      { value: 'not-yet', label: 'Not yet' },
-    ],
-  },
-  {
-    field: 'lastMDMAUse',
-    type: 'single-select',
-    label: 'When did you last use MDMA?',
-    options: [
-      { value: 'first-time', label: 'This is my first time' },
-      { value: 'more-than-3-months', label: 'More than 3 months ago' },
-      { value: '1-3-months', label: '1\u20133 months ago' },
-      { value: 'less-than-1-month', label: 'Less than 1 month ago' },
-      { value: 'unsure', label: 'I\u2019m not sure' },
-    ],
-  },
-  {
     field: 'emergencyContactDetails',
     type: 'contact-input',
     label: 'Who can you contact if you need help?',
@@ -92,6 +73,25 @@ export const sectionDQuestions = [
     inputs: [
       { field: 'name', placeholder: 'Emergency Name', required: false },
       { field: 'phone', placeholder: 'Emergency Number', required: false, inputMode: 'tel' },
+    ],
+  },
+  {
+    field: 'physicalPreparation',
+    type: 'single-select',
+    label: 'Do you feel physically ready for a session?',
+    contentBlocks: [
+      { type: 'spacer' },
+      { type: 'text', text: 'An MDMA session can be demanding of the body. We recommend:' },
+      { type: 'list', items: [
+        'Being well-rested',
+        'Eating a light meal 2–3 hours beforehand',
+        'Avoiding alcohol for at least 24 hours before',
+        'Limiting or avoiding caffeine on session day',
+      ]},
+    ],
+    options: [
+      { value: 'yes', label: 'Yes' },
+      { value: 'not-yet', label: 'Not yet' },
     ],
   },
   {

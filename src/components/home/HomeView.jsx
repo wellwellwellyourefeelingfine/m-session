@@ -12,7 +12,6 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
-import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
@@ -58,6 +57,7 @@ export default function HomeView() {
   const sessionPhase = useSessionStore((state) => state.sessionPhase);
   const session = useSessionStore((state) => state.session);
   const substanceChecklist = useSessionStore((state) => state.substanceChecklist);
+  const intakeQuestionIndex = useSessionStore((state) => state.intake?.currentQuestionIndex || 0);
   const startIntake = useSessionStore((state) => state.startIntake);
   const startSubstanceChecklist = useSessionStore((state) => state.startSubstanceChecklist);
   const completeIntake = useSessionStore((state) => state.completeIntake);
@@ -194,9 +194,6 @@ export default function HomeView() {
 
   // Called by IntakeFlow after its fade-out completes
   const handleIntakeComplete = () => {
-    // Tutorial appears 7s after button press (~1-1.5s after reveal finishes)
-    setTutorialDelay(7000);
-    useAppStore.getState().undismissBanner('timeline-tutorial');
     // Put the overlay up FIRST (covers whatever is currently rendered)
     setTransitionStep('moon-enter');
 
@@ -247,7 +244,7 @@ export default function HomeView() {
                 disabled={welcomeFadingOut}
                 className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300 bg-[var(--color-text-primary)] text-[var(--color-bg)]"
               >
-                Begin Intake
+                {intakeQuestionIndex > 0 ? 'Continue Intake' : 'Begin Intake'}
               </button>
 
               {/* Preview Activity */}
@@ -311,7 +308,7 @@ export default function HomeView() {
             </div>
 
             {/* Timeline (editable, Begin Session disabled until intake completes) */}
-            <TimelineEditor onBeginSession={handleBeginSession} isPreIntake={true} />
+            <TimelineEditor onBeginSession={handleBeginSession} isPreIntake={true} onBeginIntake={handleBeginIntake} intakeInProgress={intakeQuestionIndex > 0} />
           </div>
         );
 

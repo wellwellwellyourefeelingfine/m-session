@@ -648,6 +648,10 @@ export const useSessionStore = create(
         });
       },
 
+      pauseIntake: () => {
+        set({ sessionPhase: 'not-started' });
+      },
+
       completeIntake: () => {
         const state = get();
         const profile = state.sessionProfile;

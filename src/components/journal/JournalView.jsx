@@ -10,7 +10,6 @@ import { useJournalStore } from '../../stores/useJournalStore';
 import JournalEditor from './JournalEditor';
 import JournalList from './JournalList';
 import JournalSettings from './JournalSettings';
-import ConfirmModal from './ConfirmModal';
 
 // Navigation states
 const VIEW_EDITOR = 'editor';
@@ -30,11 +29,6 @@ export default function JournalView() {
   const [animationDirection, setAnimationDirection] = useState(null); // 'toList' | 'toEditor'
   // Settings modal
   const [showSettings, setShowSettings] = useState(false);
-  // Confirmation modals
-  const [showEditSessionConfirm, setShowEditSessionConfirm] = useState(false);
-  const [pendingSessionEntry, setPendingSessionEntry] = useState(null);
-
-  const getEntryById = useJournalStore((state) => state.getEntryById);
 
   // Navigate to list view (back button in editor)
   const navigateToList = useCallback(() => {
@@ -49,16 +43,6 @@ export default function JournalView() {
 
   // Navigate to editor view (from list or new entry button)
   const navigateToEditor = useCallback((entryId = null) => {
-    // If opening a session entry, show confirmation first
-    if (entryId) {
-      const entry = getEntryById(entryId);
-      if (entry?.source === 'session' && !entry.isEdited) {
-        setPendingSessionEntry(entryId);
-        setShowEditSessionConfirm(true);
-        return;
-      }
-    }
-
     setIsAnimating(true);
     setAnimationDirection('toEditor');
     setTimeout(() => {
@@ -66,27 +50,7 @@ export default function JournalView() {
       setIsAnimating(false);
       setAnimationDirection(null);
     }, 300);
-  }, [getEntryById, setNavigation]);
-
-  // Handle session entry edit confirmation
-  const handleConfirmEditSession = useCallback(() => {
-    setShowEditSessionConfirm(false);
-    if (pendingSessionEntry) {
-      setIsAnimating(true);
-      setAnimationDirection('toEditor');
-      setTimeout(() => {
-        setNavigation(VIEW_EDITOR, pendingSessionEntry);
-        setIsAnimating(false);
-        setAnimationDirection(null);
-        setPendingSessionEntry(null);
-      }, 300);
-    }
-  }, [pendingSessionEntry, setNavigation]);
-
-  const handleCancelEditSession = useCallback(() => {
-    setShowEditSessionConfirm(false);
-    setPendingSessionEntry(null);
-  }, []);
+  }, [setNavigation]);
 
   // Create new entry
   const handleNewEntry = useCallback(() => {
@@ -161,17 +125,6 @@ export default function JournalView() {
         <JournalSettings onClose={() => setShowSettings(false)} />
       )}
 
-      {/* Edit Session Entry Confirmation Modal */}
-      {showEditSessionConfirm && (
-        <ConfirmModal
-          title="Edit Session Entry"
-          message="This entry was created during a session. Are you sure you want to edit it?"
-          confirmLabel="Edit"
-          cancelLabel="Cancel"
-          onConfirm={handleConfirmEditSession}
-          onCancel={handleCancelEditSession}
-        />
-      )}
     </div>
   );
 }
