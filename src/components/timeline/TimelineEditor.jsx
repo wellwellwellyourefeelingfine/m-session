@@ -1181,8 +1181,9 @@ export default function TimelineEditor({ isActiveSession = false, isCompletedSes
 
 /**
  * TimelineTutorialTrigger
- * Shows the tutorial after a delay, only when the home tab is active.
- * - First visit to home tab → 2000ms (default)
+ * Shows the tutorial after an explicitly set delay, only when the home tab is active.
+ * Does NOT auto-trigger on first visit — only fires after:
+ * - Post-intake completion → 7000ms (set in HomeView)
  * - "Show Tutorial" menu item → 50ms (set in SessionMenu)
  */
 function TimelineTutorialTrigger() {
@@ -1192,11 +1193,12 @@ function TimelineTutorialTrigger() {
   const [showTutorial, setShowTutorial] = useState(false);
 
   useEffect(() => {
-    if (dismissed || currentTab !== 'home') {
+    const delay = getTutorialDelay();
+    if (dismissed || currentTab !== 'home' || delay === null) {
       setShowTutorial(false);
       return;
     }
-    const timer = setTimeout(() => setShowTutorial(true), getTutorialDelay());
+    const timer = setTimeout(() => setShowTutorial(true), delay);
     return () => clearTimeout(timer);
   }, [dismissed, currentTab]);
 

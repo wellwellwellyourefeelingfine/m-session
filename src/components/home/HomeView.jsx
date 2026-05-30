@@ -12,6 +12,7 @@ import { useSessionStore } from '../../stores/useSessionStore';
 import { useAppStore } from '../../stores/useAppStore';
 import IntakeFlow from '../intake/IntakeFlow';
 import TimelineEditor from '../timeline/TimelineEditor';
+import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
@@ -194,6 +195,9 @@ export default function HomeView() {
 
   // Called by IntakeFlow after its fade-out completes
   const handleIntakeComplete = () => {
+    // Tutorial appears 7s after button press (~1-1.5s after reveal finishes)
+    setTutorialDelay(7000);
+    useAppStore.getState().undismissBanner('timeline-tutorial');
     // Put the overlay up FIRST (covers whatever is currently rendered)
     setTransitionStep('moon-enter');
 

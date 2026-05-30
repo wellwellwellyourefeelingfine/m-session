@@ -2,13 +2,14 @@
  * Tutorial delay bridge.
  *
  * Two trigger paths set different delays before the tutorial effect fires:
- * - First visit to home tab: 2000ms (gentle reveal after tab switch)
+ * - Post-intake completion: 7000ms (waits for reveal animation + buffer)
  * - Hamburger menu "Show Tutorial": 50ms (near-instant)
  *
- * Reads are idempotent (no mutation), so StrictMode re-runs get the same value.
- * Resets to the default 2000ms on page refresh.
+ * Starts as `null` — the tutorial does NOT auto-trigger on first visit.
+ * Only fires after an explicit `setTutorialDelay(ms)` call.
+ * Resets to null on page refresh.
  */
-let _delay = 2000;
+let _delay = null;
 
 export function setTutorialDelay(ms) { _delay = ms; }
 export function getTutorialDelay() { return _delay; }
