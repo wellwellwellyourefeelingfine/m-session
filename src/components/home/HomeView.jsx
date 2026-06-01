@@ -16,6 +16,7 @@ import { setTutorialDelay } from '../timeline/tutorialRevealFlag';
 import ModuleLibraryDrawer from '../timeline/ModuleLibraryDrawer';
 import ModuleDetailModal from '../timeline/ModuleDetailModal';
 import { getModuleById } from '../../content/modules/library';
+import { track } from '../../services/analyticsService';
 
 import AsciiMoon from '../active/capabilities/animations/AsciiMoon';
 import LeafDrawV2 from '../active/capabilities/animations/LeafDrawV2';
@@ -104,6 +105,7 @@ export default function HomeView() {
   const handlePreviewSelect = (libraryId) => {
     const moduleDef = getModuleById(libraryId);
     if (moduleDef) {
+      track('preview-module-select', { libraryId });
       setPreviewModule(moduleDef);
     }
     // Wait for detail modal fade-out (200ms), then slide drawer down (300ms)
@@ -124,6 +126,7 @@ export default function HomeView() {
     setTimeout(() => {
       const result = addModule(previewModule.id, 'pre-session');
       if (result?.success) {
+        track('preview-module-start', { libraryId: previewModule.id });
         setPreviewModule(null);
         useSessionStore.getState().setPreviewInstanceId(result.module.instanceId);
         startPreSessionModule(result.module.instanceId);
@@ -256,7 +259,7 @@ export default function HomeView() {
                 {!previewModule ? (
                   <button
                     type="button"
-                    onClick={() => setPreviewDrawerOpen(true)}
+                    onClick={() => { track('preview-button-click'); setPreviewDrawerOpen(true); }}
                     disabled={welcomeFadingOut}
                     className="w-full py-4 uppercase tracking-wider hover:opacity-80 transition-opacity duration-300 border border-[var(--color-text-tertiary)] text-[var(--color-text-tertiary)]"
                   >

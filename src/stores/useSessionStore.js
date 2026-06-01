@@ -2520,6 +2520,10 @@ export const useSessionStore = create(
         const now = Date.now();
         const isPreview = instanceId === state.previewInstanceId;
 
+        if (isPreview) {
+          track('preview-module-complete', { libraryId: module.libraryId });
+        }
+
         // Mark journal entries with PRE-SESSION header
         if (module.startedAt) {
           get()._markPreSessionJournalEntries(module.startedAt);
