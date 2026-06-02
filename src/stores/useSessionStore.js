@@ -2522,6 +2522,8 @@ export const useSessionStore = create(
 
         if (isPreview) {
           track('preview-module-complete', { libraryId: module.libraryId });
+        } else {
+          track('module-complete', { libraryId: module.libraryId, phase: 'pre-session' });
         }
 
         // Mark journal entries with PRE-SESSION header

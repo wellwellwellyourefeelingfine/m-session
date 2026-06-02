@@ -360,6 +360,27 @@ html.light .cta::before {
 }
 
 /* ═══════════════════════════════════════════
+   3D BUSINESS CARD
+   ═══════════════════════════════════════════ */
+.card3d-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  aspect-ratio: 965 / 624;
+}
+.card3d-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.15));
+  transition: filter 0.55s ease;
+}
+html:not(.light) .card3d-wrap canvas {
+  filter: drop-shadow(0 0 40px rgba(184, 169, 232, 0.35))
+         drop-shadow(0 0 80px rgba(184, 169, 232, 0.15));
+}
+
+/* ═══════════════════════════════════════════
    SCREENSHOTS / APP PREVIEW
    ═══════════════════════════════════════════ */
 .preview-section {
@@ -727,6 +748,9 @@ html.light .cta::before {
     transform: translateX(-50%) scale(0.815);
     transform-origin: top center;
   }
+  .card3d-wrap {
+    max-width: 380px;
+  }
   .principles-grid {
     grid-template-columns: 1fr;
   }
@@ -789,6 +813,9 @@ html.light .cta::before {
 }
 
 @media (max-width: 480px) {
+  .card3d-wrap {
+    max-width: 100%;
+  }
   .hero {
     padding-top: 84px;
   }

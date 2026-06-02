@@ -37,6 +37,8 @@ const PUBLIC_ROOT_ASSETS = [
   'sitemap.xml',
   'apple-touch-icon.png',
   'site-icons.svg',
+  'empathogenic-business-card-msession-front-v1-2048px.png',
+  'empathogenic-business-card-msession-front-DARK-v1.png',
 ];
 
 const rootEntries = await readdir(root);
