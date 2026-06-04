@@ -81,6 +81,14 @@
     <link rel="stylesheet" href="/landing.css" />
     <link rel="stylesheet" href="/pages.css" />
     <link rel="stylesheet" href="/notes.css" />
+    <style>
+      .page-hero { padding-top: 100px; }
+      .card3d-wrap { margin: 0 0 40px; }
+      @media (max-width: 768px) {
+        .page-hero { padding-top: 120px; }
+        .card3d-wrap { margin: 0 auto 40px; }
+      }
+    </style>
 
     <script type="application/ld+json">
       {
@@ -202,7 +210,7 @@
       <!-- Hero -->
       <section class="page-hero">
         <div class="container">
-          <div class="card3d-wrap" style="margin: 0 auto 40px">
+          <div class="card3d-wrap">
             <canvas id="card3d-canvas"></canvas>
           </div>
           <div class="section-label rv visible">About</div>

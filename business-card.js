@@ -57,7 +57,7 @@
     // ── Renderer ──
     var w = wrap.clientWidth;
     var h = wrap.clientHeight;
-    var dpr = isMobile ? 1 : Math.min(window.devicePixelRatio, 2);
+    var dpr = Math.min(window.devicePixelRatio, 2);
 
     var renderer = new THREE.WebGLRenderer({
       canvas: canvas,
@@ -71,7 +71,7 @@
     var scene = new THREE.Scene();
 
     var camera = new THREE.PerspectiveCamera(30, w / h, 0.1, 100);
-    camera.position.set(0, 0, 5.2);
+    camera.position.set(0, 0, 6.0);
     camera.lookAt(0, 0, 0);
 
     // ── Lights ──

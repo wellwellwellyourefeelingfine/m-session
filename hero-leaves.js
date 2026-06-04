@@ -81,6 +81,7 @@
     // Circle group (dot at tip)
     var circleGroup = document.createElementNS(ns, 'g');
     circleGroup.setAttribute('opacity', '0');
+    circleGroup.style.display = 'none';
     svg.appendChild(circleGroup);
 
     // Create paths

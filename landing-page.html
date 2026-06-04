@@ -298,7 +298,7 @@
                   <span class="hero-stat-label">Audio meditations</span>
                 </div>
                 <div>
-                  <span class="hero-stat-value">6</span>
+                  <span class="hero-stat-value">7</span>
                   <span class="hero-stat-label">Session phases</span>
                 </div>
               </div>
@@ -330,6 +330,11 @@
                   class="hero-leaf hero-leaf-r3"
                   viewBox="55 2 130 248"
                   data-offset="0.75"
+                ></svg>
+                <svg
+                  class="hero-leaf hero-leaf-r4"
+                  viewBox="55 2 130 248"
+                  data-offset="0.9"
                 ></svg>
               </div>
               <div class="phone" id="hero-phone">
@@ -603,7 +608,7 @@
             Pre-session through integration
           </h2>
           <p class="section-body rv rv-d2">
-            Six phases guide you from intention setting to the days that follow.
+            Seven phases guide you from intention setting to the days that follow.
             Each phase adapts to your choices and timing.
           </p>
 
@@ -626,6 +631,21 @@
             <div class="flow-step rv">
               <div class="flow-num">02</div>
               <div class="flow-icon">
+                <svg><use href="#icon-waves"></use></svg>
+              </div>
+              <div>
+                <div class="flow-title">Opening Ritual</div>
+                <div class="flow-desc">
+                  A grounding ceremony to mark the threshold between preparation
+                  and the experience itself. Optional breathwork, intention
+                  refinement, guided substance taking, and a moment of
+                  stillness to arrive fully before the effects begin.
+                </div>
+              </div>
+            </div>
+            <div class="flow-step rv">
+              <div class="flow-num">03</div>
+              <div class="flow-icon">
                 <svg><use href="#icon-snail"></use></svg>
               </div>
               <div>
@@ -640,7 +660,7 @@
               </div>
             </div>
             <div class="flow-step rv">
-              <div class="flow-num">03</div>
+              <div class="flow-num">04</div>
               <div class="flow-icon">
                 <svg><use href="#icon-sparkle"></use></svg>
               </div>
@@ -655,7 +675,7 @@
               </div>
             </div>
             <div class="flow-step rv">
-              <div class="flow-num">04</div>
+              <div class="flow-num">05</div>
               <div class="flow-icon">
                 <svg><use href="#icon-wheel"></use></svg>
               </div>
@@ -671,12 +691,12 @@
               </div>
             </div>
             <div class="flow-step rv">
-              <div class="flow-num">05</div>
+              <div class="flow-num">06</div>
               <div class="flow-icon">
                 <svg><use href="#icon-book-open"></use></svg>
               </div>
               <div>
-                <div class="flow-title">Closing</div>
+                <div class="flow-title">Closing Ritual</div>
                 <div class="flow-desc">
                   A structured ending that honors what happened. A message to
                   your future self. One commitment to carry forward. A bridge
@@ -685,7 +705,7 @@
               </div>
             </div>
             <div class="flow-step rv">
-              <div class="flow-num">06</div>
+              <div class="flow-num">07</div>
               <div class="flow-icon">
                 <svg><use href="#icon-leaf"></use></svg>
               </div>
@@ -1019,7 +1039,14 @@
         var hdr = document.createElement("div");
         hdr.className = "phone-header";
         hdr.innerHTML =
-          '<span class="phone-header-title">m-session</span><span class="phone-header-tag">ACTIVE</span>';
+          '<img class="phone-header-logo phone-header-logo-light" src="/m-session-logo-light-128.png" alt="m-session" />' +
+          '<img class="phone-header-logo phone-header-logo-dark" src="/m-session-logo-black-128.png" alt="m-session" />' +
+          '<span class="phone-header-icons">' +
+            '<svg class="phone-header-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5" />' +
+            '</svg>' +
+            '<span class="phone-header-burger"><span></span><span></span><span></span></span>' +
+          '</span>';
         screen.appendChild(hdr);
 
         // Moon area

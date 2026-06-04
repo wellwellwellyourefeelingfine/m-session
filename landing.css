@@ -176,7 +176,7 @@ html.light .cta::before {
   z-index: 2;
 }
 .phone-screen {
-  padding: 36px 20px 16px;
+  padding: 16px 20px 16px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -191,7 +191,7 @@ html.light .cta::before {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 4px 0 12px;
+  padding: 4px 0 0;
   border-bottom: 1px solid var(--phone-border);
 }
 .phone-header-title {
@@ -204,6 +204,48 @@ html.light .cta::before {
   font-size: 8px;
   color: var(--phone-secondary);
   letter-spacing: 0.08em;
+}
+.phone-header-logo {
+  height: 40px;
+  width: auto;
+  display: block;
+}
+/* Default (dark theme): show dark-bg logo, hide light-bg logo */
+.phone-header-logo-light { display: none; }
+.phone-header-logo-dark { display: block; }
+/* Light theme: swap */
+html.light .phone-header-logo-light { display: block; }
+html.light .phone-header-logo-dark { display: none; }
+
+.phone-header-icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -6px;
+}
+.phone-header-heart {
+  width: 15px;
+  height: 15px;
+  color: var(--phone-accent);
+  display: block;
+  stroke-width: 3.5;
+}
+.phone-header-burger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  width: 13px;
+}
+.phone-header-burger span {
+  display: block;
+  width: 13px;
+  height: 2px;
+  background: #5a5852;
+  border-radius: 0;
+}
+html.light .phone-header-burger span {
+  background: #a8a6a0;
 }
 .phone-nav {
   display: flex;
@@ -274,8 +316,11 @@ html.light .cta::before {
   position: absolute;
   overflow: visible;
   color: var(--accent);
-  opacity: 0.45;
+  opacity: 0.4;
   transform-origin: center bottom;
+}
+html.light .hero-leaf {
+  color: #e08840;
 }
 /*
  * Left — two leaves growing from the bottom of the phone.
@@ -305,15 +350,15 @@ html.light .cta::before {
 }
 .hero-leaf-r2 {
   width: 125px;
-  left: 186px;
-  top: 62px;
-  transform: rotate(40deg);
+  left: 146px;
+  top: 25px;
+  transform: rotate(48deg);
 }
 .hero-leaf-r3 {
   width: 190px;
-  left: 85px;
-  top: 85px;
-  transform: rotate(65deg);
+  left: 105px;
+  top: 145px;
+  transform: rotate(45deg);
 }
 
 /* ═══════════════════════════════════════════
@@ -864,7 +909,25 @@ html:not(.light) .card3d-wrap canvas {
     border-radius: 0 0 10px 10px;
   }
   .phone-screen {
-    padding: 30px 16px 12px;
+    padding: 12px 14px 12px;
+  }
+  .phone-header-logo {
+    height: 30px;
+  }
+  .phone-header-heart {
+    width: 12px;
+    height: 12px;
+  }
+  .phone-header-burger {
+    width: 10px;
+    gap: 2.5px;
+  }
+  .phone-header-burger span {
+    width: 10px;
+    height: 1.5px;
+  }
+  .phone-header-icons {
+    gap: 7px;
   }
   #moon-pre {
     font-size: 5.2px;

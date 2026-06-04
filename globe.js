@@ -13,7 +13,7 @@
   // ── Config ──
   var isMobile = window.innerWidth <= 768;
   var SPHERE_RADIUS = 3.2,
-    CHAR_SIZE = 0.11,
+    CHAR_SIZE = isMobile ? 0.22 : 0.13,
     SPACING = isMobile ? 0.10 : 0.065,
     POLAR_CUTOFF_DEG = 89;
   var GLOBE_TILT = (23.5 * Math.PI) / 180,
@@ -198,12 +198,20 @@
 
   var scene = new THREE.Scene();
   var camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 100);
-  camera.position.set(0, 0, w > 768 ? 12 : 15);
+  camera.position.set(0, 0, w > 768 ? 11.5 : 13);
   camera.lookAt(0, 0, 0);
 
   var globeGroup = new THREE.Group();
   globeGroup.rotation.z = GLOBE_TILT;
   scene.add(globeGroup);
+
+  // ── Heart achievement ──
+  var heartEl = document.getElementById("globe-heart");
+  var mdmaCount = 0;
+  var heartState = "hidden";
+  var heartCheckTime = 0;
+  var HEART_THRESHOLD = 0.51;
+  var HEART_WINDOW = 5.0;
 
   // ── Build globe ──
   var points = null, globe = null, displaceDummy = new THREE.Object3D();
@@ -392,6 +400,8 @@
 
       var nz = inM ? "mdma" : p.isLand ? "land" : "ocean";
       if (nz !== p.zone) {
+        if (nz === "mdma") mdmaCount++;
+        else if (p.zone === "mdma") mdmaCount--;
         p.zone = nz;
         p.atlasIdx = pickIdx(nz);
         aArr[i] = p.atlasIdx;
@@ -446,6 +456,38 @@
       globe.mesh.instanceMatrix.needsUpdate = true;
     }
 
+    // ── Heart achievement ──
+    if (heartEl) {
+      if (heartState === "hidden") {
+        if (mdmaCount / N >= HEART_THRESHOLD) {
+          heartState = "appearing";
+          heartCheckTime = t + HEART_WINDOW;
+        }
+      } else if (heartState === "appearing") {
+        var ao = Math.min(parseFloat(heartEl.style.opacity || 0) + dt / 0.8, 1.0);
+        heartEl.style.opacity = ao;
+        if (ao >= 1.0) heartState = "active";
+      } else if (heartState === "active") {
+        if (t >= heartCheckTime) {
+          if (mdmaCount / N >= HEART_THRESHOLD) {
+            heartCheckTime = t + HEART_WINDOW;
+          } else {
+            heartState = "fading";
+          }
+        }
+      } else if (heartState === "fading") {
+        var fo = Math.max(parseFloat(heartEl.style.opacity || 1) - dt / 1.0, 0.0);
+        heartEl.style.opacity = fo;
+        if (fo <= 0.0) heartState = "hidden";
+      }
+      heartEl.style.pointerEvents = heartState === "active" ? "auto" : "none";
+      if (heartState !== "hidden") {
+        var hRot = (t * GLOBE_ROT_SPEED * 3 * 180 / Math.PI) % 360;
+        var hPulse = 1.0 + 0.08 * Math.sin(t * 2.5);
+        heartEl.style.transform = "translate(-50%,0) perspective(200px) rotateY(" + (-hRot).toFixed(1) + "deg) scale(" + hPulse.toFixed(3) + ")";
+      }
+    }
+
     // Render + post-fx
     renderer.render(scene, camera);
     trailCtx.fillStyle = activeBG.trail;
@@ -462,7 +504,7 @@
     if (!canvas.isConnected) return;
     var cw = heroContainer.clientWidth, ch = heroContainer.clientHeight;
     camera.aspect = cw / ch;
-    camera.position.z = cw > 768 ? 12 : 15;
+    camera.position.z = cw > 768 ? 11.5 : 13;
     camera.updateProjectionMatrix();
     renderer.setSize(cw, ch);
     sizePostFX();
