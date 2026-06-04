@@ -649,6 +649,12 @@ export const useSessionStore = create(
       },
 
       pauseIntake: () => {
+        const intake = get().intake;
+        if (intake && !intake.isComplete) {
+          track('intake-saved', {
+            lastStep: `${intake.currentSection}-${intake.currentQuestionIndex}`,
+          });
+        }
         set({ sessionPhase: 'not-started' });
       },
 

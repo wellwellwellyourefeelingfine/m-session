@@ -364,9 +364,35 @@
                 guidance level, session duration range, and primary focus area
               </li>
               <li>
+                <strong>intake-saved</strong> &mdash; When a user taps Save
+                &amp; Exit on the intake form to resume later; includes the
+                last intake step reached (e.g. &ldquo;B-2&rdquo;). Question
+                responses are never sent.
+              </li>
+              <li>
                 <strong>intake-abandoned</strong> &mdash; When a user resets the
                 session without completing intake; includes the last intake step
                 reached (e.g. &ldquo;B-2&rdquo;)
+              </li>
+              <li>
+                <strong>preview-button-click</strong> &mdash; When a user taps
+                the &ldquo;Preview Activity&rdquo; button on the welcome screen
+                before beginning intake. No properties.
+              </li>
+              <li>
+                <strong>preview-module-select</strong> &mdash; When a user
+                selects an activity from the preview drawer; includes the
+                activity&rsquo;s library id (e.g. &ldquo;body-scan&rdquo;).
+              </li>
+              <li>
+                <strong>preview-module-start</strong> &mdash; When a previewed
+                activity actually begins; includes the activity&rsquo;s library
+                id.
+              </li>
+              <li>
+                <strong>preview-module-complete</strong> &mdash; When a
+                previewed activity is completed; includes the activity&rsquo;s
+                library id.
               </li>
               <li>
                 <strong>session-start</strong> &mdash; When a session begins;
