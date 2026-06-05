@@ -206,8 +206,9 @@
               1. Add the new <article> at the TOP of this list.
               2. Add a matching <li> to BOTH archive lists above (desktop + mobile).
               3. Drop a hero image into /public/notes/{slug}-hero.{jpg,webp,svg}.
-              4. In landing-page.html and about.html, replace the OLDEST of the
-                 three preview cards with the new post.
+              4. Add an entry to the TOP of /notes-manifest.json (slug, title,
+                 date, excerpt, heroImage, heroAlt). Preview cards on landing
+                 and about pages render automatically from this file.
               5. Bump <lastmod> for /notes in public/sitemap.xml.
           -->
 

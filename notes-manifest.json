@@ -1,0 +1,26 @@
+[
+  {
+    "slug": "a-journey-in-three",
+    "title": "A Journey in Three",
+    "date": "Jun 4, 2026",
+    "excerpt": "MDMA moves through distinct pharmacological phases, but therapeutic approaches treat the session as one uniform event. This essay maps a framework connecting the pharmacological arc to corresponding shifts in technique.",
+    "heroImage": "/notes/a-journey-in-three.jpg",
+    "heroAlt": ""
+  },
+  {
+    "slug": "two-new-meditations",
+    "title": "Two new meditations: Metta Heart and The House of Jung",
+    "date": "May 20, 2026",
+    "excerpt": "Two 30-minute audio meditations for the peak phase — a somatic loving-kindness practice rooted in Buddhist metta tradition, and a Jungian guided imagery journey into the depths of the unconscious.",
+    "heroImage": "/notes/two-new-meditations-hero.jpg",
+    "heroAlt": "Warm amber and deep blue gradients merging in a dark field"
+  },
+  {
+    "slug": "why-meditation-and-mdma-mix",
+    "title": "Why meditation and MDMA mix",
+    "date": "Apr 10, 2026",
+    "excerpt": "Most people assume someone on MDMA would be too scattered to meditate. The research says the opposite — the capacities meditation depends on are not only preserved but often feel enhanced.",
+    "heroImage": "/notes/why-meditation-and-mdma-mix-hero.jpg",
+    "heroAlt": "Warm rose-and-red color field with soft orange flecks and a small blue mark near the bottom"
+  }
+]

@@ -826,10 +826,7 @@
       </section>
 
       <!-- ─── LATEST NOTES ─── -->
-      <!--
-        KEEP IN SYNC: when publishing a new post in notes.html, replace the
-        OLDEST card below with the new post. The same grid lives in about.html.
-      -->
+      <!-- Cards auto-rendered from /notes-manifest.json by shared.js -->
       <section class="notes-previews">
         <div class="container">
           <div style="text-align: center">
@@ -840,56 +837,7 @@
               m-session.
             </p>
           </div>
-          <div class="notes-preview-grid rv rv-d3">
-            <a
-              class="notes-preview-card"
-              href="/notes#post-two-new-meditations"
-              onclick="window.plausible && plausible('blog-preview-click', { props: { post: 'two-new-meditations', location: 'landing' } })"
-            >
-              <div
-                class="notes-preview-image"
-                style="background-image: url('/notes/two-new-meditations-hero.jpg')"
-                role="img"
-                aria-label="Warm amber and deep blue gradients merging in a dark field"
-              ></div>
-              <div class="notes-preview-body">
-                <div class="notes-preview-meta">May 20, 2026</div>
-                <h3 class="notes-preview-title">
-                  Two new meditations: Metta Heart and The House of Jung
-                </h3>
-                <p class="notes-preview-excerpt">
-                  Two 30-minute audio meditations for the peak phase &mdash;
-                  a somatic loving-kindness practice rooted in Buddhist metta
-                  tradition, and a Jungian guided imagery journey into the
-                  depths of the unconscious.
-                </p>
-                <span class="notes-preview-cta">Read more &rarr;</span>
-              </div>
-            </a>
-            <a
-              class="notes-preview-card"
-              href="/notes#post-why-meditation-and-mdma-mix"
-              onclick="window.plausible && plausible('blog-preview-click', { props: { post: 'why-meditation-and-mdma-mix', location: 'landing' } })"
-            >
-              <div
-                class="notes-preview-image"
-                style="background-image: url('/notes/why-meditation-and-mdma-mix-hero.jpg'); background-position: center bottom;"
-                role="img"
-                aria-label="Warm rose-and-red color field with soft orange flecks and a small blue mark near the bottom"
-              ></div>
-              <div class="notes-preview-body">
-                <div class="notes-preview-meta">Apr 10, 2026</div>
-                <h3 class="notes-preview-title">Why meditation and MDMA mix</h3>
-                <p class="notes-preview-excerpt">
-                  Most people assume someone on MDMA would be too scattered to
-                  meditate. The research says the opposite &mdash; the
-                  capacities meditation depends on are not only preserved but
-                  often feel enhanced.
-                </p>
-                <span class="notes-preview-cta">Read more &rarr;</span>
-              </div>
-            </a>
-          </div>
+          <div class="notes-preview-grid rv rv-d3" data-notes-preview data-notes-count="3" data-notes-location="landing"></div>
         </div>
       </section>
 

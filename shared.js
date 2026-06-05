@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════
 // SHARED JS — m-session marketing site
-// Theme, scroll reveal, logo, menu, PJAX
+// Theme, scroll reveal, logo, menu, notes, PJAX
 // ═══════════════════════════════════════
 
 // Internal namespace for cross-module communication
@@ -208,6 +208,44 @@ var __ms = {};
   });
 })();
 
+// Notes preview — auto-render latest posts from manifest
+(function () {
+  var cache = null;
+  function renderNotePreviews() {
+    var mounts = document.querySelectorAll('[data-notes-preview]');
+    if (!mounts.length) return;
+    var doRender = function (posts) {
+      mounts.forEach(function (el) {
+        var count = parseInt(el.getAttribute('data-notes-count'), 10) || 3;
+        var location = el.getAttribute('data-notes-location') || 'unknown';
+        var html = '';
+        var shown = posts.slice(0, count);
+        for (var i = 0; i < shown.length; i++) {
+          var p = shown[i];
+          html += '<a class="notes-preview-card" href="/notes#post-' + p.slug + '"' +
+            ' onclick="window.plausible&&plausible(\'blog-preview-click\',{props:{post:\'' + p.slug + '\',location:\'' + location + '\'}})">' +
+            '<div class="notes-preview-image" style="background-image:url(\'' + p.heroImage + '\')"' +
+            ' role="img" aria-label="' + (p.heroAlt || '') + '"></div>' +
+            '<div class="notes-preview-body">' +
+            '<div class="notes-preview-meta">' + p.date + '</div>' +
+            '<h3 class="notes-preview-title">' + p.title + '</h3>' +
+            '<p class="notes-preview-excerpt">' + p.excerpt + '</p>' +
+            '<span class="notes-preview-cta">Read more &rarr;</span>' +
+            '</div></a>';
+        }
+        el.innerHTML = html;
+      });
+    };
+    if (cache) { doRender(cache); return; }
+    fetch('/notes-manifest.json')
+      .then(function (r) { return r.json(); })
+      .then(function (posts) { cache = posts; doRender(posts); })
+      .catch(function (err) { console.warn('notes-manifest.json failed to load:', err); });
+  }
+  __ms.renderNotePreviews = renderNotePreviews;
+  renderNotePreviews();
+})();
+
 // PJAX Navigation — client-side content swap
 (function () {
   // Disable browser scroll restoration so our explicit scrollTo(0,0) always wins
@@ -329,6 +367,7 @@ var __ms = {};
         __ms.initScrollReveal();
         __ms.initFaqAccordion();
         __ms.updateMenuActive();
+        __ms.renderNotePreviews();
 
         // Execute page-specific inline scripts from new page body
         var newBody = doc.querySelector('body');

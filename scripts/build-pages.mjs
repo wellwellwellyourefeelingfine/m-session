@@ -68,6 +68,12 @@ await Promise.all(
   jsFiles.map((f) => copyFile(join(root, f), join(dist, f)))
 );
 
+// 3b. JSON data files (e.g. notes-manifest.json)
+const jsonFiles = rootEntries.filter((f) => f.endsWith('.json') && f !== 'package.json' && f !== 'package-lock.json');
+await Promise.all(
+  jsonFiles.map((f) => copyFile(join(root, f), join(dist, f)))
+);
+
 // 4. Marketing assets from public/
 const favicons = publicEntries.filter((f) => f.startsWith('favicon-'));
 const publicAssets = [...PUBLIC_ROOT_ASSETS, ...favicons];
@@ -81,5 +87,5 @@ await Promise.all(
 await cp(join(root, 'public', 'notes'), join(dist, 'notes'), { recursive: true });
 
 console.log(
-  `[build-pages] copied ${htmlFiles.length} HTML, ${cssFiles.length} CSS, ${jsFiles.length} JS, ${publicAssets.length} public assets, and 1 directory (notes) into dist/`
+  `[build-pages] copied ${htmlFiles.length} HTML, ${cssFiles.length} CSS, ${jsFiles.length} JS, ${jsonFiles.length} JSON, ${publicAssets.length} public assets, and 1 directory (notes) into dist/`
 );
